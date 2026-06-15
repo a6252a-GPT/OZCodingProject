@@ -1,5 +1,5 @@
-using UnityEngine;
-
+﻿using UnityEngine;
+//테스트
 namespace TeamProject01.Gameplay
 {
     public sealed class CoreDataFlowExample : MonoBehaviour // 코어 송수신 예시
