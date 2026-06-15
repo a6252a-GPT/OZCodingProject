@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class ConvoyHudController : MonoBehaviour // 컨보이 HUD
+    public sealed class ConvoyHudController : MonoBehaviour // 컨보이 HUD 차민규
     {
         public ConvoyController Controller; // 표시 대상
         public Text SpeedText; // 속도 텍스트
