@@ -21,7 +21,8 @@ namespace TeamProject01.Gameplay
 
         public int EnemyId { get; private set; } // 외부 식별값
 
-        private bool dead; // 사망 처리됨
+        private bool dead; // 사망 처리됨 
+        //사망 처리
 
         public static int ActiveCount // 활성 수
         {
