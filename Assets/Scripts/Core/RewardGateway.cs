@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class GrowthRewardReceiver : MonoBehaviour // 보상 전달 입구
+    public sealed class RewardGateway : MonoBehaviour // 몬스터 보상 → 코어 전달 입구
     {
-        public static GrowthRewardReceiver Active { get; private set; } // 현재 수신자
+        public static RewardGateway Active { get; private set; } // 현재 입구
 
-        public event Action<RewardData> RewardReceived; // 보상 수신 알림
+        public event Action<RewardData> RewardReceived; // UI/테스트용 보상 알림
 
         private void Awake() // 등록
         {
@@ -22,7 +22,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        public bool ReceiveReward(RewardData reward) // 데이터를 받는 곳!! 몬스터 → 보상 입구
+        public bool ReceiveReward(RewardData reward) // 데이터를 받는 곳!! 몬스터 → 코어 보상 입구
         {
             if (!reward.IsValid)
             {
@@ -31,11 +31,11 @@ namespace TeamProject01.Gameplay
 
             if (!CoreStatProvider.TryApplyReward(reward)) // 데이터를 보내는 곳!! 보상 입구 → 코어
             {
-                Debug.LogWarning("[GrowthRewardReceiver] CoreStatProvider 없음: 보상 적용 실패", this); // 코어 누락
+                Debug.LogWarning("[RewardGateway] CoreStatProvider 없음: 보상 적용 실패", this); // 코어 누락
                 return false; // 코어 없음
             }
 
-            RewardReceived?.Invoke(reward); // 외부 알림
+            RewardReceived?.Invoke(reward); // 외부 알림, 레벨업 판단은 CoreStatData 기준
             return true; // 전달 성공
         }
 
@@ -48,7 +48,7 @@ namespace TeamProject01.Gameplay
 
             if (Active == null)
             {
-                Debug.LogWarning("[GrowthRewardReceiver] 보상 입구 없음: GameSystems에 GrowthRewardReceiver 필요"); // 입구 누락
+                Debug.LogWarning("[RewardGateway] 보상 입구 없음: GameSystems에 RewardGateway 필요"); // 입구 누락
                 return false; // 직접 전달 금지
             }
 

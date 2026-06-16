@@ -24,7 +24,7 @@ namespace TeamProject01.Gameplay
         public void ReceiveGrowth(GrowthStatData growth) // 데이터를 받는 곳!! 레벨 → 코어
         {
             LastReceivedGrowth = growth; // 받은 GrowthStatData
-            Debug.Log($"[CoreExample] GrowthStatData 수신: LevelDelta={growth.LevelDelta}, DamageBonus={growth.DamageMultiplierBonus:0.00}", this); // 수신 로그
+            Debug.Log($"[CoreExample] GrowthStatData 수신: Type={growth.ChoiceType}, LevelDelta={growth.LevelDelta}, DamageBonus={growth.DamageMultiplierBonus:0.00}", this); // 수신 로그
 
             if (!ApplyGrowthToCore || CoreStats == null || !growth.HasAnyValue)
             {

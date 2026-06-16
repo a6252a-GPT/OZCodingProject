@@ -404,7 +404,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &160880877
 Transform:
   m_ObjectHideFlags: 0
@@ -1096,37 +1096,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 297141468}
   m_CullTransparentMesh: 1
---- !u!1 &312436761
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 312436762}
-  m_Layer: 0
-  m_Name: fsdfsdfsfs
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &312436762
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312436761}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.59354, y: 0, z: 0.62272}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &370092443
 GameObject:
   m_ObjectHideFlags: 0
@@ -2501,7 +2470,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1046434456
 Transform:
   m_ObjectHideFlags: 0
@@ -3767,7 +3736,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1554711923
 Transform:
   m_ObjectHideFlags: 0
@@ -5003,19 +4972,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66ffc619cd0ead242a6b45623d4e7ff1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySpawner
-  Nexus: {fileID: 1046434456}
-  MonsterRoot: {fileID: 1077595471}
-  MonsterMaterial: {fileID: 2100000, guid: b7cd9b7a0f2ef1c4e9847a62770da775, type: 2}
-  SpawnInterval: 5
-  SpawnCount: 15
-  MinSpawnRadius: 24
-  MaxSpawnRadius: 32
-  MonsterMoveSpeed: 1.25
-  NexusStopRadius: 1.65
-  MaxActiveMonsters: 120
-  MonsterScale: {x: 0.78, y: 1.18, z: 0.78}
-  MonsterHeight: 0.72
-  SpawnGrade: 0
+  nexus: {fileID: 0}
+  monsterRoot: {fileID: 0}
+  monsterMaterial: {fileID: 0}
+  meleeMonsterPrefab: {fileID: 0}
+  rangedMonsterPrefab: {fileID: 0}
+  spawnInterval: 5
+  spawnCount: 15
+  minSpawnRadius: 24
+  maxSpawnRadius: 32
+  monsterMoveSpeed: 1.25
+  nexusStopRadius: 1.65
+  maxActiveMonsters: 120
+  monsterHeight: 0.72
+  spawnGrade: 0
+  rangedSpawnChance: 0.35
 --- !u!1 &1845001538
 GameObject:
   m_ObjectHideFlags: 0
@@ -5740,6 +5711,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.CoreStatProvider
   CurrentLevel: 1
+  FlatDamageBonus: 0
   DamageMultiplier: 1
   AttackSpeedMultiplier: 1
   TurnSpeedBonus: 0
@@ -5996,4 +5968,3 @@ SceneRoots:
   - {fileID: 160880877}
   - {fileID: 1554711923}
   - {fileID: 2097635006}
-  - {fileID: 312436762}
