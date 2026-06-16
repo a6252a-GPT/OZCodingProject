@@ -22,7 +22,7 @@ namespace TeamProject01.Gameplay
 
             LastSentReward = RewardData.Create(ExperienceReward, GoldReward, EnemyId, transform.position); // 데이터를 보내는 곳!! 몬스터 → 보상 입구
             Debug.Log($"[MonsterExample] RewardData 송신: Exp={LastSentReward.Experience}, Gold={LastSentReward.Gold}", this); // 송신 로그
-            GrowthRewardReceiver.SubmitReward(LastSentReward); // 보상 입구 → 코어
+            RewardGateway.SubmitReward(LastSentReward); // 보상 입구 → 코어
         }
     }
 }
