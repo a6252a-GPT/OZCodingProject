@@ -6,6 +6,7 @@ namespace TeamProject01.Gameplay
     public struct CoreStatData // 코어 → 세그먼트 전달값
     {
         public int Level; // 현재 레벨
+        public float FlatDamageBonus; // 기본 공격력 고정 보너스
         public float DamageMultiplier; // 공격력 배율
         public float AttackSpeedMultiplier; // 공격속도 배율
         public float TurnSpeedBonus; // 회전력 보너스
@@ -17,11 +18,12 @@ namespace TeamProject01.Gameplay
 
         public float ExperienceRatio => ExperienceToNextLevel <= 0 ? 0f : Mathf.Clamp01((float)CurrentExperience / ExperienceToNextLevel); // 경험치 비율
 
-        public static CoreStatData Default => new CoreStatData(1, 1f, 1f, 0f, 0f, 0, 5, 0, 0); // 기본값
+        public static CoreStatData Default => new CoreStatData(1, 0f, 1f, 1f, 0f, 0f, 0, 5, 0, 0); // 기본값
 
-        public CoreStatData(int level, float damageMultiplier, float attackSpeedMultiplier, float turnSpeedBonus, float rejoinRangeBonus, int currentExperience, int experienceToNextLevel, int totalExperience, int gold) // 생성
+        public CoreStatData(int level, float flatDamageBonus, float damageMultiplier, float attackSpeedMultiplier, float turnSpeedBonus, float rejoinRangeBonus, int currentExperience, int experienceToNextLevel, int totalExperience, int gold) // 생성
         {
             Level = Mathf.Max(1, level); // 레벨 보정
+            FlatDamageBonus = Mathf.Max(0f, flatDamageBonus); // 고정 피해 보정
             DamageMultiplier = Mathf.Max(0f, damageMultiplier); // 공격력 보정
             AttackSpeedMultiplier = Mathf.Max(0.01f, attackSpeedMultiplier); // 속도 보정
             TurnSpeedBonus = turnSpeedBonus; // 회전 보너스
@@ -34,7 +36,7 @@ namespace TeamProject01.Gameplay
 
         public float ApplyDamage(float baseDamage) // 데미지 계산
         {
-            return Mathf.Max(0f, baseDamage) * DamageMultiplier; // 배율 적용
+            return (Mathf.Max(0f, baseDamage) + FlatDamageBonus) * DamageMultiplier; // 고정값 + 배율
         }
 
         public float ApplyFireInterval(float baseInterval) // 공격속도 계산

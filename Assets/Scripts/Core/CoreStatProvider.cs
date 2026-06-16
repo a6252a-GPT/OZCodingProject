@@ -8,6 +8,7 @@ namespace TeamProject01.Gameplay
         public static CoreStatProvider Active { get; private set; } // 현재 코어
 
         [Min(1)] public int CurrentLevel = 1; // 현재 레벨
+        [Min(0f)] public float FlatDamageBonus; // 기본 공격력 고정 보너스
         [Min(0f)] public float DamageMultiplier = 1f; // 공격력 배율
         [Min(0.01f)] public float AttackSpeedMultiplier = 1f; // 공격속도 배율
         public float TurnSpeedBonus; // 회전력 보너스
@@ -22,7 +23,7 @@ namespace TeamProject01.Gameplay
 
         public int ExperienceToNextLevel => CalculateRequiredExperience(CurrentLevel); // 다음 레벨 필요량
         public float ExperienceRatio => ExperienceToNextLevel <= 0 ? 0f : Mathf.Clamp01((float)CurrentExperience / ExperienceToNextLevel); // 경험치 비율
-        public CoreStatData CurrentStats => new CoreStatData(CurrentLevel, DamageMultiplier, AttackSpeedMultiplier, TurnSpeedBonus, RejoinRangeBonus, CurrentExperience, ExperienceToNextLevel, TotalExperience, CurrentGold); // 현재값
+        public CoreStatData CurrentStats => new CoreStatData(CurrentLevel, FlatDamageBonus, DamageMultiplier, AttackSpeedMultiplier, TurnSpeedBonus, RejoinRangeBonus, CurrentExperience, ExperienceToNextLevel, TotalExperience, CurrentGold); // 현재값
 
         private void Awake() // 등록
         {
@@ -52,6 +53,15 @@ namespace TeamProject01.Gameplay
             StatsChanged?.Invoke(CurrentStats); // 변경 알림
         }
 
+        public void ApplyRunStartBonus(RunStartBonusData bonus, float baseTurnSpeed) // 다회차 시작 보너스 적용
+        {
+            FlatDamageBonus = Mathf.Max(0f, FlatDamageBonus + bonus.BaseAttackFlatBonus); // 기본 공격력
+            AttackSpeedMultiplier = Mathf.Max(0.01f, AttackSpeedMultiplier + bonus.AttackSpeedPercentBonus); // 공격속도
+            TurnSpeedBonus += Mathf.Max(0f, baseTurnSpeed) * bonus.TurnPercentBonus; // 회전력 비율 → 고정값
+            RejoinRangeBonus = Mathf.Max(0f, RejoinRangeBonus + bonus.RejoinRangeBonus); // 재결합
+            StatsChanged?.Invoke(CurrentStats); // 변경 알림
+        }
+
         public bool ApplyReward(RewardData reward) // 데이터를 받는 곳!! 보상 입구 → 코어
         {
             if (!reward.IsValid)
@@ -68,6 +78,7 @@ namespace TeamProject01.Gameplay
         public void ResetStats() // 성장값 초기화
         {
             CurrentLevel = 1; // 기본 레벨
+            FlatDamageBonus = 0f; // 기본 공격력 초기화
             DamageMultiplier = 1f; // 기본 공격력
             AttackSpeedMultiplier = 1f; // 기본 공격속도
             TurnSpeedBonus = 0f; // 회전력 초기화
