@@ -332,6 +332,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -404,7 +405,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &160880877
 Transform:
   m_ObjectHideFlags: 0
@@ -950,6 +951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -1540,6 +1542,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -1798,6 +1801,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -2470,7 +2474,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1046434456
 Transform:
   m_ObjectHideFlags: 0
@@ -3410,6 +3414,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -3633,6 +3638,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -3736,7 +3742,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1554711923
 Transform:
   m_ObjectHideFlags: 0
@@ -3889,6 +3895,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -4972,21 +4979,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66ffc619cd0ead242a6b45623d4e7ff1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySpawner
-  nexus: {fileID: 0}
-  monsterRoot: {fileID: 0}
-  monsterMaterial: {fileID: 0}
-  meleeMonsterPrefab: {fileID: 0}
-  rangedMonsterPrefab: {fileID: 0}
-  spawnInterval: 5
-  spawnCount: 15
-  minSpawnRadius: 24
-  maxSpawnRadius: 32
-  monsterMoveSpeed: 1.25
-  nexusStopRadius: 1.65
-  maxActiveMonsters: 120
-  monsterHeight: 0.72
-  spawnGrade: 0
-  rangedSpawnChance: 0.35
+  nexus: {fileID: 1046434456}
+  monsterRoot: {fileID: 1077595471}
+  spawnArea: {fileID: 969739265}
+  spawnEntries:
+  - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+    weight: 65
+  - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
+    weight: 50
+  spawnInterval: 1
+  spawnCount: 1
+  maxActiveMonsters: 20
+  spawnEdgePadding: 2
+  spawnEdgeBandWidth: 5
+  spawnGroundHeight: 0.72
 --- !u!1 &1845001538
 GameObject:
   m_ObjectHideFlags: 0
@@ -5121,6 +5127,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -5715,12 +5722,15 @@ MonoBehaviour:
   DamageMultiplier: 1
   AttackSpeedMultiplier: 1
   TurnSpeedBonus: 0
+  CollisionForceBonus: 0
   RejoinRangeBonus: 0
   CurrentExperience: 0
   TotalExperience: 0
   CurrentGold: 0
   BaseExperienceToLevelUp: 5
   ExtraExperiencePerLevel: 5
+  Convoy: {fileID: 0}
+  SegmentCatalog: []
 --- !u!4 &2097635006
 Transform:
   m_ObjectHideFlags: 0
@@ -5870,6 +5880,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
