@@ -332,6 +332,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -950,6 +951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -1403,6 +1405,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -1661,6 +1664,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -2656,7 +2660,7 @@ MonoBehaviour:
   SegmentRoot: {fileID: 1737047767}
   DetachedTailRoot: {fileID: 413415196}
   ProjectileRoot: {fileID: 1757673390}
-  HeadVisual: {fileID: 0}
+  HeadVisual: {fileID: 1556937006}
   HeadGroundCheck: {fileID: 1229768034}
   SegmentPrefab: {fileID: 7236282019396790536, guid: 4ba82ed28f1e732478e60f82ffe3795a, type: 3}
   HeadMaterial: {fileID: 2100000, guid: 3bea1a13ddce94146a9d10604e4de8a9, type: 2}
@@ -2682,6 +2686,8 @@ MonoBehaviour:
   EnableTailCollision: 1
   TailCollisionSafeSegmentCount: 4
   TailCollisionRadius: 0.82
+  EnableHeadMonsterBlocker: 1
+  HeadMonsterBlockRadius: 0.95
   TailCutCooldown: 0.45
   EnableHeadPhysicsCollider: 1
   EnableDetachedTailPhysics: 1
@@ -3214,6 +3220,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -3437,6 +3444,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -3588,7 +3596,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1966141137}
+  - {fileID: 1627697032}
   m_Father: {fileID: 1134065269}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1614721372
@@ -3725,6 +3733,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -3813,6 +3822,68 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1614743520}
   m_CullTransparentMesh: 1
+--- !u!1001 &1627697031
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1556937006}
+    m_Modifications:
+    - target: {fileID: 4931367182404603191, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_Name
+      value: PlayerWorm
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+--- !u!4 &1627697032 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7536649411660130289, guid: 66837a77955bf7249bed6e1188e85f46, type: 3}
+  m_PrefabInstance: {fileID: 1627697031}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1629651632
 GameObject:
   m_ObjectHideFlags: 0
@@ -4808,19 +4879,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66ffc619cd0ead242a6b45623d4e7ff1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySpawner
-  Nexus: {fileID: 1046434456}
-  MonsterRoot: {fileID: 1077595471}
-  MonsterMaterial: {fileID: 2100000, guid: b7cd9b7a0f2ef1c4e9847a62770da775, type: 2}
-  SpawnInterval: 5
-  SpawnCount: 15
-  MinSpawnRadius: 24
-  MaxSpawnRadius: 32
-  MonsterMoveSpeed: 1.25
-  NexusStopRadius: 1.65
-  MaxActiveMonsters: 120
-  MonsterScale: {x: 0.78, y: 1.18, z: 0.78}
-  MonsterHeight: 0.72
-  SpawnGrade: 0
+  nexus: {fileID: 1046434456}
+  monsterRoot: {fileID: 1077595471}
+  spawnArea: {fileID: 969739265}
+  spawnEntries:
+  - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+    weight: 65
+  - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
+    weight: 50
+  spawnInterval: 1
+  spawnCount: 1
+  maxActiveMonsters: 20
+  spawnEdgePadding: 2
+  spawnEdgeBandWidth: 5
+  spawnGroundHeight: 0.72
 --- !u!1 &1845001538
 GameObject:
   m_ObjectHideFlags: 0
@@ -4955,6 +5027,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5
@@ -5065,84 +5138,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!1001 &1966141136
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1556937006}
-    m_Modifications:
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 400
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 400.00015
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 400.00015
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.187
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -7511558181221131132, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: b2e3f1b52800f5b4792d2635f639dd19, type: 2}
-    - target: {fileID: 919132149155446097, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-      propertyPath: m_Name
-      value: "\uC9C0\uB801\uC774\uBAA8\uB378\uB9C11_CoreTestModel"
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
---- !u!4 &1966141137 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4a6aee4a60984dc4c8d277c161f5a099, type: 3}
-  m_PrefabInstance: {fileID: 1966141136}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2000747252
 GameObject:
   m_ObjectHideFlags: 0
@@ -5626,12 +5621,15 @@ MonoBehaviour:
   DamageMultiplier: 1
   AttackSpeedMultiplier: 1
   TurnSpeedBonus: 0
+  CollisionForceBonus: 0
   RejoinRangeBonus: 0
   CurrentExperience: 0
   TotalExperience: 0
   CurrentGold: 0
   BaseExperienceToLevelUp: 5
   ExtraExperiencePerLevel: 5
+  Convoy: {fileID: 0}
+  SegmentCatalog: []
 --- !u!4 &2097635006
 Transform:
   m_ObjectHideFlags: 0
@@ -5781,6 +5779,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 189478b8433ffd94bb2057617fe87c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SG01_MachineGunWeapon
+  SegmentId: 
   BaseDamage: 1
   MinAttackInterval: 3
   MaxAttackInterval: 5

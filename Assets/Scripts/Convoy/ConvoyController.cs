@@ -53,6 +53,8 @@ namespace TeamProject01.Gameplay
         public bool EnableTailCollision = true; // 꼬리 충돌 사용
         [Range(1, 12)] public int TailCollisionSafeSegmentCount = 4; // 앞쪽 안전칸
         [Min(0.1f)] public float TailCollisionRadius = 0.82f; // 충돌 반경
+        public bool EnableHeadMonsterBlocker = true; // 머리 몬스터 밀기
+        [Min(0.1f)] public float HeadMonsterBlockRadius = 0.95f; // 머리 차단 반경
         [Min(0f)] public float TailCutCooldown = 0.45f; // 재절단 대기
 
         [Header("Detached Tail Physics")]
@@ -113,6 +115,7 @@ namespace TeamProject01.Gameplay
             startPosition = transform.position; // 리셋 위치
             startRotation = transform.rotation; // 리셋 회전
             EnsureHeadVisual(); // 머리 보강
+            EnsureHeadMonsterBlocker(); // 머리 차단 보강
             ConfigureGroundChecks(); // 바닥 체크 연결
             EnsureHeadPhysicsCollider(); // 머리 충돌 보강
             EnsureSegmentRoot(); // 몸통 루트 보강

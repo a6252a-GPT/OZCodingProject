@@ -420,8 +420,8 @@ namespace TeamProject01.Gameplay
                 return; // 대상 없음
             }
 
-            SetText(DiamondText, $"다이아 {Meta.Diamond}"); // 다이아
-            SetText(HighestWaveText, $"최고 웨이브 {HighestReachedWave}"); // 기록
+            SetText(DiamondText, Meta.Diamond.ToString()); // 다이아
+            SetText(HighestWaveText, HighestReachedWave.ToString()); // 기록
             SetText(SelectedWormNameText, GetWormDisplayName(Meta.SelectedWormId)); // 이름
             SetText(SelectedWormBonusText, GetWormBonusText(Meta.SelectedWormId)); // 효과
             SetText(UpgradeSummaryText, BuildUpgradeSummary()); // 강화 요약
