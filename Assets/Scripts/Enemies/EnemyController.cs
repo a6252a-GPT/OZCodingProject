@@ -122,7 +122,7 @@ namespace TeamProject01.Gameplay
             }
 
             RewardData reward = RewardData.Create(ExperienceReward, GoldReward, EnemyId, transform.position); // 보상 생성
-            GrowthRewardReceiver.SubmitReward(reward); // 보상 입구 전달
+            RewardGateway.SubmitReward(reward); // 보상 입구 전달
             Kill(); // 공통 제거
         }
 
