@@ -38,9 +38,9 @@ namespace TeamProject01.Gameplay
 
         private bool dead; // 사망 처리됨
 
-        private EnemyHealth health; //EnemyController가 EnemyHealth Script Component를 사용하기 위해 저장하는 참조
-        private EnemyReward reward; //EnemyController가 EnemyReward Script Component를 사용하기 위해 저장하는 참조
-        private EnemyMovement movement; //EnemyController가 EnemyMovement Script Component를 사용하기 위해 저장하는 참조
+        private EnemyHealth health; // EnemyController가 EnemyHealth Script Component를 사용하기 위해 저장하는 참조
+        private EnemyReward reward; // EnemyController가 EnemyReward Script Component를 사용하기 위해 저장하는 참조
+        private EnemyMovement movement; // EnemyController가 EnemyMovement Script Component를 사용하기 위해 저장하는 참조
 
         public static int ActiveCount // 활성 수
         {
@@ -69,8 +69,8 @@ namespace TeamProject01.Gameplay
             EnemyId = ++nextEnemyId; // ID 부여
             EnemyTags.TryApplyTag(gameObject, grade); // 태그 보장
 
-            health = GetComponent<EnemyHealth>(); //같은 GameObject에 붙은 EnemyHealth Script Component를 찾는다.
-            reward = GetComponent<EnemyReward>(); //같은 GameObject에 붙은 EnemyReward Script Component를 찾는다.
+            health = GetComponent<EnemyHealth>(); // 같은 GameObject에 붙은 EnemyHealth Script Component를 찾는다.
+            reward = GetComponent<EnemyReward>(); // 같은 GameObject에 붙은 EnemyReward Script Component를 찾는다.
             movement = GetComponent<EnemyMovement>(); // 같은 GameObject에 붙은 EnemyMovement Script Component를 찾는다.
 
             if (nexus == null)
@@ -84,7 +84,7 @@ namespace TeamProject01.Gameplay
         {
             if (dead) // 이미 사망 처리된 몬스터라면
             {
-                return; // 작동하지않는다.
+                return; // 작동하지 않는다.
             }
 
             if (movement != null) // EnemyMovement Script Component가 붙어 있다면
@@ -98,7 +98,6 @@ namespace TeamProject01.Gameplay
             }
 
             Vector3 offset = nexus.position - transform.position; // 넥서스 방향
-
             offset.y = 0f; // 평면 이동
 
             if (offset.sqrMagnitude <= stopRadius * stopRadius)
@@ -116,7 +115,7 @@ namespace TeamProject01.Gameplay
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 목표 바라보기
         }
 
-        //EnemyMovement 없으면 EnemyController.Update가 이동, EnemyMovement있으면 EnemyMovement.Update가 이동
+        // EnemyMovement 없으면 EnemyController.Update가 이동, EnemyMovement 있으면 EnemyMovement.Update가 이동
         public void Configure(Transform nexus, Material material, float moveSpeed, float stopRadius, float groundHeight, EnemyGrade grade = EnemyGrade.Monster) // 스포너가 생성된 몬스터에 초기값을 넣어주는 함수
         {
             this.nexus = nexus; // 이동 목표 Nexus를 EnemyController에 저장한다.
@@ -144,7 +143,7 @@ namespace TeamProject01.Gameplay
 
             if (health == null)
             {
-                KillByDamage(damage); // EnemyHealth가 없는 기존 예시 몬스터라면 기존처럼 한 방 처치로 처리한다. 추후 Prefab 기반으로 완전히 바꾸면 삭제
+                KillByDamage(damage); // EnemyHealth가 없는 기존 예시 몬스터라면 기존처럼 한 방 처치로 처리한다.
                 return;
             }
 
@@ -180,8 +179,8 @@ namespace TeamProject01.Gameplay
             }
             else
             {
-                RewardData rewardData = RewardData.Create(experienceReward, goldReward, EnemyId, transform.position); // 기존 예시 구조 임시 대응(EnemyReward가 있으면 새 구조 사용, EnemyReward가 없으면 기존 RewardData.Create 방식 사용)
-                GrowthRewardReceiver.SubmitReward(rewardData); // 보상 입구 전달
+                RewardData rewardData = RewardData.Create(experienceReward, goldReward, EnemyId, transform.position); // EnemyReward가 없으면 기존 RewardData 방식 사용
+                RewardGateway.SubmitReward(rewardData); // 보상 입구 전달
             }
 
             Kill(); // 공통 제거
@@ -195,10 +194,12 @@ namespace TeamProject01.Gameplay
 
             string[] tags = EnemyTags.TargetTags; // 탐색 태그
             bool foundRegisteredTag = false; // 태그 등록 여부
+
             for (int tagIndex = 0; tagIndex < tags.Length; tagIndex++)
             {
                 GameObject[] candidates = FindObjectsByTag(tags[tagIndex], out bool tagRegistered); // 태그 후보
                 foundRegisteredTag |= tagRegistered; // 등록 확인
+
                 for (int i = 0; i < candidates.Length; i++)
                 {
                     EnemyController monster = candidates[i].GetComponentInParent<EnemyController>(); // 몬스터 확인
@@ -241,6 +242,7 @@ namespace TeamProject01.Gameplay
             Vector3 offset = monster.transform.position - origin; // 후보 거리
             offset.y = 0f; // 평면 거리
             float distance = offset.sqrMagnitude; // 제곱 거리
+
             if (distance > bestDistance)
             {
                 return; // 사거리 밖
@@ -253,6 +255,7 @@ namespace TeamProject01.Gameplay
         private void ApplyMaterial() // 재질 적용
         {
             Renderer renderer = GetComponent<Renderer>(); // 표시 renderer
+
             if (renderer != null && monsterMaterial != null)
             {
                 renderer.sharedMaterial = monsterMaterial; // 몬스터 재질
