@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyMeleeAttack : MonoBehaviour  //근거리 몬스터
+    public sealed class EnemyMeleeAttack : MonoBehaviour //근거리 몬스터
     {
         [SerializeField] private Transform nexus; // 공격 타겟이 되는 Nexus Transform
 
@@ -10,14 +10,22 @@ namespace TeamProject01.Gameplay
         [SerializeField] private int attackDamage = 1; // Nexus에 줄 피해량
 
         [Min(0.1f)]
-        [SerializeField] private float attackRange = 1.6f; // Nexus를 공격할 수 있는 거리, EnemyMovement의 StopRadius와 같은 값으로 맞춘다.
+        [SerializeField] private float attackRange = 1.6f; // Nexus를 공격할 수 있는 거리
 
         [Min(0.1f)]
         [SerializeField] private float attackDelay = 1.0f; // 공격 사이의 대기 시간, 공격속도 역할
 
+        public float AttackRange // EnemyMovement가 근거리 공격 사거리를 읽기 위한 property
+        {
+            get
+            {
+                return attackRange; // 근거리 공격 가능 거리를 반환한다.
+            }
+        }
+
         private float attackTimer; // 다음 공격까지 남은 시간을 저장하는 변수
 
-        private void Awake() 
+        private void Awake()
         {
             if (nexus == null) // Inspector에서 Nexus가 연결되지 않았다면
             {
@@ -26,7 +34,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void Update() 
+        private void Update()
         {
             if (nexus == null) // 공격 대상이 없다면
             {
