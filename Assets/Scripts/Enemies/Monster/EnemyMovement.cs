@@ -1,91 +1,94 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyMovement : MonoBehaviour //¸ó½ºÅÍ ÀÌµ¿
+    public sealed class EnemyMovement : MonoBehaviour //ëª¬ìŠ¤í„° ì´ë™
     {
-        private const float FallbackStopRadius = 1.6f; // °ø°İ Script°¡ ¾øÀ» ¶§¸¸ »ç¿ëÇÒ ¿¹ºñ Á¤Áö °Å¸®
+        private const float FallbackStopRadius = 1.6f; // ê³µê²© Scriptê°€ ì—†ì„ ë•Œë§Œ ì‚¬ìš©í•  ì˜ˆë¹„ ì •ì§€ ê±°ë¦¬
 
-        [SerializeField] private Transform nexus; // ÀÌµ¿ ¸ñÇ¥
+        [SerializeField] private Transform nexus; // ì´ë™ ëª©í‘œ
 
         [Min(0.1f)]
-        [SerializeField] private float moveSpeed = 1.25f; // ¸ó½ºÅÍ ÀÌµ¿ ¼Óµµ
+        [SerializeField] private float moveSpeed = 1.25f; // ëª¬ìŠ¤í„° ì´ë™ ì†ë„
 
         [Min(0.05f)]
-        [SerializeField] private float bodyRadius = 0.46f; // ¸ó½ºÅÍ°¡ ÀÌµ¿ÇÒ ¶§ ¼¼±×¸ÕÆ®¿Í °ãÄ¡°Å³ª ¹Ğ°í µé¾î°¡´Â °ÍÀ» º¸Á¤ÇÑ´Ù.
+        [SerializeField] private float bodyRadius = 0.46f; // ëª¬ìŠ¤í„°ê°€ ì´ë™í•  ë•Œ ì„¸ê·¸ë¨¼íŠ¸ì™€ ê²¹ì¹˜ê±°ë‚˜ ë°€ê³  ë“¤ì–´ê°€ëŠ” ê²ƒì„ ë³´ì •í•œë‹¤.
 
         [Min(0f)]
-        [SerializeField] private float groundHeight = 0.72f; // ¹Ù´Ú À§¿¡ ¸ó½ºÅÍ¸¦ ¿Ã·ÁµÑ ³ôÀÌ ¿ÀÇÁ¼Â
+        [SerializeField] private float groundHeight = 0.72f; // ë°”ë‹¥ ìœ„ì— ëª¬ìŠ¤í„°ë¥¼ ì˜¬ë ¤ë‘˜ ë†’ì´ ì˜¤í”„ì…‹
 
-        public bool IsInStopRange { get; private set; } // ÇöÀç Nexus°¡ ¸ØÃã °Å¸® ¾È¿¡ ÀÖ´ÂÁö ¿ÜºÎ¿¡¼­ ÀĞ´Â °ª
+        public bool IsInStopRange { get; private set; } // í˜„ì¬ Nexusê°€ ë©ˆì¶¤ ê±°ë¦¬ ì•ˆì— ìˆëŠ”ì§€ ì™¸ë¶€ì—ì„œ ì½ëŠ” ê°’
 
-        private EnemyMeleeAttack meleeAttack; // °°Àº GameObject¿¡ ºÙÀº ±Ù°Å¸® °ø°İ Script Component ÂüÁ¶
-        private EnemyRangedAttack rangedAttack; // °°Àº GameObject¿¡ ºÙÀº ¿ø°Å¸® °ø°İ Script Component ÂüÁ¶
+        private EnemyMeleeAttack meleeAttack; // ê°™ì€ GameObjectì— ë¶™ì€ ê·¼ê±°ë¦¬ ê³µê²© Script Component ì°¸ì¡°
+        private EnemyRangedAttack rangedAttack; // ê°™ì€ GameObjectì— ë¶™ì€ ì›ê±°ë¦¬ ê³µê²© Script Component ì°¸ì¡°
 
         private void Awake()
         {
-            meleeAttack = GetComponent<EnemyMeleeAttack>(); // °°Àº GameObject¿¡ ºÙÀº EnemyMeleeAttack Script Component¸¦ Ã£´Â´Ù.
-            rangedAttack = GetComponent<EnemyRangedAttack>(); // °°Àº GameObject¿¡ ºÙÀº EnemyRangedAttack Script Component¸¦ Ã£´Â´Ù.
+            meleeAttack = GetComponent<EnemyMeleeAttack>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyMeleeAttack Script Componentë¥¼ ì°¾ëŠ”ë‹¤.
+            rangedAttack = GetComponent<EnemyRangedAttack>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyRangedAttack Script Componentë¥¼ ì°¾ëŠ”ë‹¤.
 
-            if (nexus == null) //Nexus°¡ ¿¬°áµÇÁö ¾Ê¾Ò´Ù¸é
+            if (nexus == null) //Nexusê°€ ì—°ê²°ë˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                GameObject nexusObject = GameObject.Find("Nexus_Core");  //¾À¿¡¼­ ÀÌ¸§ÀÌ Nexus_CoreÀÎ GameObject¸¦ Ã£´Â´Ù.
-                nexus = nexusObject != null ? nexusObject.transform : null; //Ã£¾Ò´Ù¸é TransformÀ» ÀúÀåÇÏ°í, ¸ø Ã£¾Ò´Ù¸é null·Î µĞ´Ù.
+                GameObject nexusObject = GameObject.Find("Nexus_Core");  //ì”¬ì—ì„œ ì´ë¦„ì´ Nexus_Coreì¸ GameObjectë¥¼ ì°¾ëŠ”ë‹¤.
+                nexus = nexusObject != null ? nexusObject.transform : null; //ì°¾ì•˜ë‹¤ë©´ Transformì„ ì €ì¥í•˜ê³ , ëª» ì°¾ì•˜ë‹¤ë©´ nullë¡œ ë‘”ë‹¤.
             }
         }
 
         private void Update()
         {
-            if (nexus == null) //ÀÌµ¿ ¸ñÇ¥°¡ ¾øÀ¸¸é
+            if (nexus == null) //ì´ë™ ëª©í‘œê°€ ì—†ìœ¼ë©´
             {
-                return; //Á¾·áÇÑ´Ù.
+                return; //ì¢…ë£Œí•œë‹¤.
             }
 
-            Vector3 offset = nexus.position - transform.position; // ÇöÀç ¸ó½ºÅÍ À§Ä¡¿¡¼­ Nexus±îÁöÀÇ ¹æÇâ°ú °Å¸® º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
+            Vector3 offset = nexus.position - transform.position; // í˜„ì¬ ëª¬ìŠ¤í„° ìœ„ì¹˜ì—ì„œ Nexusê¹Œì§€ì˜ ë°©í–¥ê³¼ ê±°ë¦¬ ë²¡í„°ë¥¼ êµ¬í•œë‹¤.
 
-            offset.y = 0f; //³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            offset.y = 0f; //ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            float stopDistance = GetStopDistance(); // °ø°İ ScriptÀÇ AttackRange ¶Ç´Â ¿¹ºñ Á¤Áö °Å¸®¸¦ °¡Á®¿Â´Ù.
+            float stopDistance = GetStopDistance(); // ê³µê²© Scriptì˜ AttackRange ë˜ëŠ” ì˜ˆë¹„ ì •ì§€ ê±°ë¦¬ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
-            if (offset.sqrMagnitude <= stopDistance * stopDistance) // Nexus¿ÍÀÇ °Å¸®°¡ ¸ØÃã °Å¸® ¾ÈÀÌ¶ó¸é
+            if (offset.sqrMagnitude <= stopDistance * stopDistance) // Nexusì™€ì˜ ê±°ë¦¬ê°€ ë©ˆì¶¤ ê±°ë¦¬ ì•ˆì´ë¼ë©´
             {
-                IsInStopRange = true; // ÇöÀç ¸ØÃã °Å¸® ¾È¿¡ ÀÖ´Ù°í »óÅÂ¸¦ ÀúÀåÇÑ´Ù.
+                IsInStopRange = true; // í˜„ì¬ ë©ˆì¶¤ ê±°ë¦¬ ì•ˆì— ìˆë‹¤ê³  ìƒíƒœë¥¼ ì €ì¥í•œë‹¤.
+                //ì „ì°¬ìš° ì¶”ê°€
+                Vector3 resolvedPosition = SegmentBlocker.ResolveMonsterPosition(transform.position, transform.position, bodyRadius);
+                transform.position = resolvedPosition;
 
-                return; // °ø°İ »ç°Å¸® ¾È¿¡¼­´Â ÀÌµ¿ÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ê³µê²© ì‚¬ê±°ë¦¬ ì•ˆì—ì„œëŠ” ì´ë™í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            IsInStopRange = false; // ¸ØÃã °Å¸® ¹ÛÀÌ¶ó¸é ¾ÆÁ÷ ÀÌµ¿ÇØ¾ß ÇÏ´Â »óÅÂ·Î ÀúÀåÇÑ´Ù.
+            IsInStopRange = false; // ë©ˆì¶¤ ê±°ë¦¬ ë°–ì´ë¼ë©´ ì•„ì§ ì´ë™í•´ì•¼ í•˜ëŠ” ìƒíƒœë¡œ ì €ì¥í•œë‹¤.
 
-            Vector3 direction = offset.normalized; // Nexus ¹æÇâ º¤ÅÍ¸¦ ±æÀÌ 1Â¥¸® ¹æÇâÀ¸·Î ¸¸µç´Ù.
+            Vector3 direction = offset.normalized; // Nexus ë°©í–¥ ë²¡í„°ë¥¼ ê¸¸ì´ 1ì§œë¦¬ ë°©í–¥ìœ¼ë¡œ ë§Œë“ ë‹¤.
 
-            Vector3 desiredPosition = transform.position + direction * (moveSpeed * Time.deltaTime); // ÀÌ¹ø ÇÁ·¹ÀÓ¿¡ ÀÌµ¿ÇÏ°í ½ÍÀº ¸ñÇ¥ À§Ä¡¸¦ °è»êÇÑ´Ù.
-            desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // ¸ñÇ¥ À§Ä¡¸¦ ¹Ù´Ú ±âÁØ ³ôÀÌ¿¡ ¸Â°Ô º¸Á¤ÇÑ´Ù.
+            Vector3 desiredPosition = transform.position + direction * (moveSpeed * Time.deltaTime); // ì´ë²ˆ í”„ë ˆì„ì— ì´ë™í•˜ê³  ì‹¶ì€ ëª©í‘œ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
+            desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // ëª©í‘œ ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ê¸°ì¤€ ë†’ì´ì— ë§ê²Œ ë³´ì •í•œë‹¤.
 
-            Vector3 position = SegmentBlocker.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // ¼¼±×¸ÕÆ®¿Í °ãÄ¡Áö ¾Êµµ·Ï ÀÌµ¿ À§Ä¡¸¦ º¸Á¤ÇÑ´Ù.
-            transform.position = position; // ÃÖÁ¾ º¸Á¤µÈ À§Ä¡¸¦ ¸ó½ºÅÍ Transform¿¡ Àû¿ëÇÑ´Ù.
-            transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // ¸ó½ºÅÍ°¡ ÀÌµ¿ ¹æÇâÀ» ¹Ù¶óº¸°Ô È¸Àü½ÃÅ²´Ù.
+            Vector3 position = SegmentBlocker.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // ì„¸ê·¸ë¨¼íŠ¸ì™€ ê²¹ì¹˜ì§€ ì•Šë„ë¡ ì´ë™ ìœ„ì¹˜ë¥¼ ë³´ì •í•œë‹¤.
+            transform.position = position; // ìµœì¢… ë³´ì •ëœ ìœ„ì¹˜ë¥¼ ëª¬ìŠ¤í„° Transformì— ì ìš©í•œë‹¤.
+            transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // ëª¬ìŠ¤í„°ê°€ ì´ë™ ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ íšŒì „ì‹œí‚¨ë‹¤.
         }
 
-        private float GetStopDistance() // ¸ó½ºÅÍ°¡ ÀÌµ¿À» ¸ØÃâ °Å¸®¸¦ °áÁ¤ÇÏ´Â ÇÔ¼ö
+        private float GetStopDistance() // ëª¬ìŠ¤í„°ê°€ ì´ë™ì„ ë©ˆì¶œ ê±°ë¦¬ë¥¼ ê²°ì •í•˜ëŠ” í•¨ìˆ˜
         {
-            if (meleeAttack != null) // ±Ù°Å¸® °ø°İ Script Component°¡ ÀÖ´Ù¸é
+            if (meleeAttack != null) // ê·¼ê±°ë¦¬ ê³µê²© Script Componentê°€ ìˆë‹¤ë©´
             {
-                return meleeAttack.AttackRange; // ±Ù°Å¸® °ø°İ »ç°Å¸®¸¦ ¸ØÃã °Å¸®·Î »ç¿ëÇÑ´Ù.
+                return meleeAttack.AttackRange; // ê·¼ê±°ë¦¬ ê³µê²© ì‚¬ê±°ë¦¬ë¥¼ ë©ˆì¶¤ ê±°ë¦¬ë¡œ ì‚¬ìš©í•œë‹¤.
             }
 
-            if (rangedAttack != null) // ¿ø°Å¸® °ø°İ Script Component°¡ ÀÖ´Ù¸é
+            if (rangedAttack != null) // ì›ê±°ë¦¬ ê³µê²© Script Componentê°€ ìˆë‹¤ë©´
             {
-                return rangedAttack.AttackRange; // ¿ø°Å¸® °ø°İ »ç°Å¸®¸¦ ¸ØÃã °Å¸®·Î »ç¿ëÇÑ´Ù.
+                return rangedAttack.AttackRange; // ì›ê±°ë¦¬ ê³µê²© ì‚¬ê±°ë¦¬ë¥¼ ë©ˆì¶¤ ê±°ë¦¬ë¡œ ì‚¬ìš©í•œë‹¤.
             }
 
-            return FallbackStopRadius; // °ø°İ Script°¡ ¾ø´Â ¸ó½ºÅÍ¶ó¸é ¿¹ºñ Á¤Áö °Å¸®¸¦ »ç¿ëÇÑ´Ù.
+            return FallbackStopRadius; // ê³µê²© Scriptê°€ ì—†ëŠ” ëª¬ìŠ¤í„°ë¼ë©´ ì˜ˆë¹„ ì •ì§€ ê±°ë¦¬ë¥¼ ì‚¬ìš©í•œë‹¤.
         }
 
-        public void Configure(Transform nexus, float moveSpeed, float groundHeight)// Spawner³ª Controller°¡ ÀÌµ¿ ÃÊ±â°ªÀ» ³Ö¾îÁÖ´Â ÇÔ¼ö
+        public void Configure(Transform nexus, float moveSpeed, float groundHeight)// Spawnerë‚˜ Controllerê°€ ì´ë™ ì´ˆê¸°ê°’ì„ ë„£ì–´ì£¼ëŠ” í•¨ìˆ˜
         {
-            this.nexus = nexus; // ÀÌµ¿ ¸ñÇ¥ Nexus¸¦ ÀúÀåÇÑ´Ù.
-            this.moveSpeed = moveSpeed; // ÀÌµ¿ ¼Óµµ¸¦ ÀúÀåÇÑ´Ù.
-            this.groundHeight = groundHeight; // ¹Ù´Ú ³ôÀÌ ¿ÀÇÁ¼ÂÀ» ÀúÀåÇÑ´Ù.
+            this.nexus = nexus; // ì´ë™ ëª©í‘œ Nexusë¥¼ ì €ì¥í•œë‹¤.
+            this.moveSpeed = moveSpeed; // ì´ë™ ì†ë„ë¥¼ ì €ì¥í•œë‹¤.
+            this.groundHeight = groundHeight; // ë°”ë‹¥ ë†’ì´ ì˜¤í”„ì…‹ì„ ì €ì¥í•œë‹¤.
         }
     }
 }

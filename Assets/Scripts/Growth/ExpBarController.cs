@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,13 +9,18 @@ namespace TeamProject01.Gameplay
     {
         public Slider ExpSlider; // UI Slider
         public TextMeshProUGUI LevelText; // 레벨 표시 (LevelTest)
-        public ExpTest ExpTestSource; // 임시 테스트
+        //전찬우 수정
+        // public ExpTest ExpTestSource; // 임시 테스트
         public LevelUpUi LevelUpUi; // 레벨업 패널
         public CardUI CardUi; // 레벨업 UI 호출 (LevelUpUi 없을 때)
-        public bool PreferExpTest = true; // 테스트 우선
+        //전찬우 수정
+        // public bool PreferExpTest = true; // 테스트 우선
 
         private CoreStatProvider subscribedCore;
-        private ExpTest subscribedExpTest;
+        //전찬우 수정
+        // private ExpTest subscribedExpTest;
+        //전찬우 추가
+        private bool levelUpUiOpened; // 코어 레벨업 UI 중복 호출 방지
 
         private void Awake()
         {
@@ -34,17 +39,36 @@ namespace TeamProject01.Gameplay
 
         private void OnEnable()
         {
-            if (UsesExpTest())
-            {
-                TrySubscribeExpTest();
-                RefreshFromExpTest();
-                return;
-            }
+            //전찬우 수정
+            // if (UsesExpTest())
+            // {
+            //     TrySubscribeExpTest();
+            //     RefreshFromExpTest();
+            //     return;
+            // }
 
             TrySubscribeCore();
             CoreStatData stats = CoreStatProvider.GetCurrentOrDefault();
-            SetFillRatio(stats.ExperienceRatio);
-            SetLevelDisplay(stats.Level);
+            RefreshFromCore(stats); //전찬우 수정
+        }
+
+        //전찬우 추가
+        private void Start()
+        {
+            TrySubscribeCore(); // Awake/OnEnable 순서 보정
+            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault()); // 최신 코어값 재반영
+        }
+
+        //전찬우 추가
+        private void Update()
+        {
+            if (subscribedCore != null || CoreStatProvider.Active == null)
+            {
+                return; // 이미 연결 또는 코어 없음
+            }
+
+            TrySubscribeCore(); // 늦게 생성된 코어 연결
+            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault()); // 연결 즉시 표시 보정
         }
 
         private void OnDisable()
@@ -55,36 +79,38 @@ namespace TeamProject01.Gameplay
                 subscribedCore = null;
             }
 
-            if (subscribedExpTest != null)
-            {
-                subscribedExpTest.Changed -= OnExpTestChanged;
-                subscribedExpTest.LevelUpTriggered -= OnLevelUpTriggered;
-                subscribedExpTest = null;
-            }
+            //전찬우 수정
+            // if (subscribedExpTest != null)
+            // {
+            //     subscribedExpTest.Changed -= OnExpTestChanged;
+            //     subscribedExpTest.LevelUpTriggered -= OnLevelUpTriggered;
+            //     subscribedExpTest = null;
+            // }
         }
 
-        private bool UsesExpTest()
-        {
-            return PreferExpTest && ResolveExpTest() != null;
-        }
-
-        private ExpTest ResolveExpTest()
-        {
-            return ExpTestSource != null ? ExpTestSource : ExpTest.Active;
-        }
-
-        private void TrySubscribeExpTest()
-        {
-            ExpTest expTest = ResolveExpTest();
-            if (subscribedExpTest != null || expTest == null)
-            {
-                return;
-            }
-
-            subscribedExpTest = expTest;
-            subscribedExpTest.Changed += OnExpTestChanged;
-            subscribedExpTest.LevelUpTriggered += OnLevelUpTriggered;
-        }
+        //전찬우 수정
+        // private bool UsesExpTest()
+        // {
+        //     return PreferExpTest && ResolveExpTest() != null;
+        // }
+        //
+        // private ExpTest ResolveExpTest()
+        // {
+        //     return ExpTestSource != null ? ExpTestSource : ExpTest.Active;
+        // }
+        //
+        // private void TrySubscribeExpTest()
+        // {
+        //     ExpTest expTest = ResolveExpTest();
+        //     if (subscribedExpTest != null || expTest == null)
+        //     {
+        //         return;
+        //     }
+        //
+        //     subscribedExpTest = expTest;
+        //     subscribedExpTest.Changed += OnExpTestChanged;
+        //     subscribedExpTest.LevelUpTriggered += OnLevelUpTriggered;
+        // }
 
         private void OnLevelUpTriggered()
         {
@@ -108,34 +134,53 @@ namespace TeamProject01.Gameplay
             subscribedCore.StatsChanged += OnStatsChanged;
         }
 
-        private void OnExpTestChanged()
-        {
-            RefreshFromExpTest();
-        }
+        //전찬우 수정
+        // private void OnExpTestChanged()
+        // {
+        //     RefreshFromExpTest();
+        // }
 
         private void OnStatsChanged(CoreStatData stats)
         {
-            if (UsesExpTest())
-            {
-                RefreshFromExpTest();
-                return;
-            }
+            //전찬우 수정
+            // if (UsesExpTest())
+            // {
+            //     RefreshFromExpTest();
+            //     return;
+            // }
 
-            SetFillRatio(stats.ExperienceRatio);
-            SetLevelDisplay(stats.Level);
+            RefreshFromCore(stats); //전찬우 수정
+
+            if (stats.CanLevelUp && !levelUpUiOpened) //전찬우 추가
+            {
+                levelUpUiOpened = true; //전찬우 추가
+                OnLevelUpTriggered(); //전찬우 추가
+            }
+            else if (!stats.CanLevelUp) //전찬우 추가
+            {
+                levelUpUiOpened = false; //전찬우 추가
+            }
         }
 
-        private void RefreshFromExpTest()
-        {
-            TrySubscribeExpTest();
-            ExpTest expTest = ResolveExpTest();
-            if (expTest == null)
-            {
-                return;
-            }
+        //전찬우 수정
+        // private void RefreshFromExpTest()
+        // {
+        //     TrySubscribeExpTest();
+        //     ExpTest expTest = ResolveExpTest();
+        //     if (expTest == null)
+        //     {
+        //         return;
+        //     }
+        //
+        //     SetFillRatio(expTest.FillRatio);
+        //     SetLevelDisplay(expTest.Level);
+        // }
 
-            SetFillRatio(expTest.FillRatio);
-            SetLevelDisplay(expTest.Level);
+        //전찬우 추가
+        private void RefreshFromCore(CoreStatData stats)
+        {
+            SetFillRatio(stats.ExperienceRatio); // 코어 경험치 비율
+            SetLevelDisplay(stats.Level); // 코어 레벨
         }
 
         private void SetFillRatio(float ratio)
