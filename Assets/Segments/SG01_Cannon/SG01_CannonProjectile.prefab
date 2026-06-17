@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 3203843577070947059}
   - component: {fileID: 142196270094321801}
   m_Layer: 0
-  m_Name: SG01_MachineGunProjectile
+  m_Name: SG01_CannonProjectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

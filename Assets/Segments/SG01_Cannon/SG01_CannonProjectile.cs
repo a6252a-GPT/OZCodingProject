@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class SG01_MachineGunProjectile : MonoBehaviour // 기관총 투사체
+    public sealed class SG01_CannonProjectile : MonoBehaviour // 캐논 투사체
     {
         public EnemyController Target; // 추적 대상
         public DamageData Damage; // 피해 전달값
@@ -12,9 +12,19 @@ namespace TeamProject01.Gameplay
 
         public static void Spawn(Transform root, GameObject prefab, Vector3 position, EnemyController target, float speed, float hitRadius, float lifetime, DamageData damage) // 탄 생성
         {
-            SG01_MachineGunProjectile projectile = Instantiate(prefab, position, Quaternion.identity, root).GetComponent<SG01_MachineGunProjectile>(); // 프리팹 생성
+            if (prefab == null)
+            {
+                return; // 프리팹 없음
+            }
+
+            SG01_CannonProjectile projectile = Instantiate(prefab, position, Quaternion.identity, root).GetComponent<SG01_CannonProjectile>(); // 프리팹 생성
+            if (projectile == null)
+            {
+                return; // 캐논 투사체 컴포넌트 없음
+            }
+
             projectile.Target = target; // 목표 설정
-            projectile.Damage = damage; // 중요!! 무기 → 투사체 받기
+            projectile.Damage = damage; // 중요!! 무기 -> 투사체 받기
             projectile.Speed = speed; // 탄속 설정
             projectile.HitRadius = hitRadius; // 명중 반경
             projectile.Lifetime = lifetime; // 수명 설정
@@ -40,7 +50,7 @@ namespace TeamProject01.Gameplay
             float distance = offset.magnitude; // 거리
             if (distance <= HitRadius)
             {
-                Target.ApplyDamage(Damage.WithHitPosition(targetPosition)); // 중요!! 투사체 → 몬스터
+                Target.ApplyDamage(Damage.WithHitPosition(targetPosition)); // 중요!! 투사체 -> 몬스터
                 Destroy(gameObject); // 탄 제거
                 return; // 종료
             }
@@ -51,4 +61,3 @@ namespace TeamProject01.Gameplay
         }
     }
 }
-

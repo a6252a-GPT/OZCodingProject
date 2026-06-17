@@ -18,6 +18,7 @@ namespace TeamProject01.Gameplay
             }
 
             int firstCollidableIndex = Mathf.Clamp(TailCollisionSafeSegmentCount, 0, segments.Count); // 앞쪽 제외
+            firstCollidableIndex = Mathf.Max(firstCollidableIndex, GetFirstDetachableSegmentIndex()); // 스타터는 절단 보호
             float radiusSqr = TailCollisionRadius * TailCollisionRadius; // 제곱 반경
             Vector3 headPosition = transform.position; // 머리 위치
 
@@ -51,6 +52,7 @@ namespace TeamProject01.Gameplay
 
         private void CutTailFromIndex(int index, Vector3 burstCenter) // 꼬리 절단
         {
+            index = Mathf.Max(index, GetFirstDetachableSegmentIndex()); // 스타터는 분리하지 않음
             if (index < 0 || index >= segments.Count)
             {
                 return; // 범위 밖

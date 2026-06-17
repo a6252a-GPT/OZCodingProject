@@ -186,6 +186,7 @@ namespace TeamProject01.Gameplay
                     segmentGroundChecks.Add(GetSegmentGroundCheck(child)); // 바닥 체크 등록
                     segmentRuntimes.Add(GetSegmentRuntime(child, segments.Count - 1, true)); // 런타임 등록
                     ApplySegmentMaterial(child, i); // 교차 재질
+                    HideLegacySegmentVisualIfModelExists(child); // 새 모델 사용 시 두부 렌더러 숨김
                     DisableAttachedSegmentPhysics(child); // 붙은 몸통 물리 끔
                     EnsureSegmentMonsterBlocker(child); // 몬스터 막기
                 }
@@ -204,9 +205,10 @@ namespace TeamProject01.Gameplay
             GameObject segment = Instantiate(segmentPrefab); // 프리팹 생성
             segment.name = $"ConvoySegment_{index + 1:00}"; // 체인 이름
             segment.transform.SetParent(SegmentRoot, false); // 몸통 루트
-            segment.transform.localScale = SegmentScale; // 몸통 크기
+            segment.transform.localScale = GetSafeSegmentScale(); // 몸통 크기
             DisableAttachedSegmentPhysics(segment.transform); // 붙은 몸통 상태
             ApplySegmentMaterial(segment.transform, index); // 교차 재질
+            HideLegacySegmentVisualIfModelExists(segment.transform); // 새 모델 사용 시 두부 렌더러 숨김
             ConfigureGroundCheck(GetSegmentGroundCheck(segment.transform), VisualCenterHeight); // 바닥 체크
             GetSegmentRuntime(segment.transform, index, true); // 런타임 연결
             return segment.transform; // 생성 결과
@@ -403,6 +405,20 @@ namespace TeamProject01.Gameplay
             DestroyUnityObject(segment.GetComponent<Rigidbody>()); // 바디 제거
             DestroyUnityObject(segment.GetComponent<Collider>()); // 콜라이더 제거
             EnsureSegmentMonsterBlocker(segment); // 몬스터 막기
+        }
+
+        private void HideLegacySegmentVisualIfModelExists(Transform segment) // 기존 두부 표시 숨김
+        {
+            if (segment == null || segment.Find("Visual") == null)
+            {
+                return; // 새 모델 없음
+            }
+
+            MeshRenderer legacyRenderer = segment.GetComponent<MeshRenderer>(); // 루트 두부 렌더러
+            if (legacyRenderer != null)
+            {
+                legacyRenderer.enabled = false; // 표시만 숨김
+            }
         }
 
         private void EnsureSegmentMonsterBlocker(Transform segment) // 몬스터 차단 보장

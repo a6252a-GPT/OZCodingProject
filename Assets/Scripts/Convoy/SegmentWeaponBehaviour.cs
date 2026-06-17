@@ -32,7 +32,7 @@ namespace TeamProject01.Gameplay
             }
 
             string typeName = GetType().Name; // 클래스명 fallback
-            return typeName.EndsWith("Weapon", System.StringComparison.Ordinal) ? typeName.Substring(0, typeName.Length - 6) : typeName; // SG01_MachineGun
+            return typeName.EndsWith("Weapon", System.StringComparison.Ordinal) ? typeName.Substring(0, typeName.Length - 6) : typeName; // SG01_Cannon
         }
 
         public abstract void TickWeapon(float deltaTime); // 무기 갱신

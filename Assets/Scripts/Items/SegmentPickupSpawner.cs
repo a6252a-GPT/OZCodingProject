@@ -99,14 +99,14 @@ namespace TeamProject01.Gameplay
                 {
                     int index = (startIndex + i) % SegmentPrefabs.Length; // 순환 검사
                     GameObject prefab = SegmentPrefabs[index]; // 후보 프리팹
-                    if (prefab != null)
+                    if (Controller == null ? prefab != null : Controller.CanAddSegmentPrefab(prefab))
                     {
-                        return prefab; // 유효 후보
+                        return prefab; // 유효하고 추가 가능한 후보
                     }
                 }
             }
 
-            return Controller != null ? Controller.SegmentPrefab : null; // 기본 프리팹 fallback
+            return Controller != null && Controller.CanAddSegmentPrefab(Controller.SegmentPrefab) ? Controller.SegmentPrefab : null; // 기본 프리팹 fallback
         }
 
         private Vector3 PickSpawnPosition() // 위치 선택

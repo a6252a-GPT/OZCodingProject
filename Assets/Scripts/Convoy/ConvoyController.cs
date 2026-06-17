@@ -37,7 +37,9 @@ namespace TeamProject01.Gameplay
         public ConvoyControlMode ControlMode = ConvoyControlMode.RelativeTurn; // 현재 모드
 
         [Header("Body Follow")]
-        [Range(1, 40)] public int StartingSegmentCount = 9; // 시작 길이
+        public bool EnableStartingSegments = false; // 시작 세그먼트 자동 생성
+        public bool ClearScenePlacedSegmentsOnStart = true; // 씬 배치 시작 세그먼트 제거
+        [Range(0, 40)] public int StartingSegmentCount = 0; // 시작 길이
         [Range(1, 100)] public int MaxSegmentCount = 100; // 최대 길이
         [Min(0.1f)] public float SegmentSpacing = 1.18f; // 몸통 간격
         [Min(0.01f)] public float MinPathSampleDistance = 0.08f; // 경로 샘플 간격
@@ -45,7 +47,10 @@ namespace TeamProject01.Gameplay
         [Min(1f)] public float SegmentTurnResponse = 22f; // 회전 추적
         [Min(128)] public int PathSampleLimit = 2048; // 경로 보관량
         public Vector3 HeadScale = new Vector3(1.25f, 0.6f, 1.45f); // 머리 크기
-        public Vector3 SegmentScale = new Vector3(1.05f, 0.48f, 1.05f); // 몸통 크기
+        public Vector3 SegmentScale = Vector3.one; // 몸통 크기
+        public bool ApplySegmentScaleAtRuntime = true; // 런타임 몸통 크기 반영
+        public bool PreventSegmentVerticalSquash = true; // 새 모델 납작해짐 방지
+        [Min(0.01f)] public float MinimumSegmentScaleY = 1f; // 최소 세로 크기
         [Min(0f)] public float VisualCenterHeight = 0.32f; // 표시 높이
         [Min(0f)] public float HeadVisualLean = 8f; // 회전 기울기
 
@@ -85,6 +90,10 @@ namespace TeamProject01.Gameplay
         [Header("Segment Weapons")]
         public bool EnableSegmentAutoFire = true; // 자동 발사 사용
 
+        [Header("Segment Add Limit")]
+        public bool RestrictAddedSegmentsToAllowedId = true; // 자동 추가 세그먼트 제한
+        public string AllowedAddedSegmentId = "SG01_Cannon"; // 현재 자동 추가 허용 세그먼트
+
         private readonly List<Transform> segments = new List<Transform>(128); // 연결 몸통
         private readonly List<GroundCheck> segmentGroundChecks = new List<GroundCheck>(128); // 몸통 바닥 체크
         private readonly List<ConvoySegmentRuntime> segmentRuntimes = new List<ConvoySegmentRuntime>(128); // 몸통 런타임
@@ -98,6 +107,7 @@ namespace TeamProject01.Gameplay
         private float currentForwardSpeed; // 현재 전진속도
         private float tailCutCooldownRemaining; // 절단 쿨타임
         private int detachedTailSerial; // 분리 그룹 번호
+        private Vector3 lastAppliedSegmentScale; // 마지막 적용 몸통 크기
 
         public int SegmentCount => segments.Count; // 표시 길이
         public int MaxSegments => MaxSegmentCount; // 외부 최대 길이
@@ -122,6 +132,7 @@ namespace TeamProject01.Gameplay
             EnsureDetachedTailRoot(); // 분리 루트 보강
             EnsureProjectileRoot(); // 투사체 루트 보강
             CollectExistingSegments(); // 씬 배치 몸통 수집
+            ClearInitialSegmentsIfNeeded(); // 시작 몸통 제거
         }
 
         private void Start() // 시작 세팅
@@ -130,12 +141,16 @@ namespace TeamProject01.Gameplay
             transform.position = SnapHeadToGround(transform.position); // 현재 바닥 보정
             currentForwardSpeed = BaseSpeed; // 초기 속도
             ResetPath(); // 경로 초기화
+            EnsureStarterSegmentFromCurrentLoadout(); // 선택 지렁이 기본 무기 세그먼트
 
-            while (segments.Count < StartingSegmentCount)
+            if (EnableStartingSegments)
             {
-                if (!AddSegment(SegmentPrefab, false))
+                while (GetRegularSegmentCount() < StartingSegmentCount)
                 {
-                    break; // 최대치 도달
+                    if (!AddSegment(SegmentPrefab, false))
+                    {
+                        break; // 최대치 도달
+                    }
                 }
             }
 
@@ -174,6 +189,7 @@ namespace TeamProject01.Gameplay
 
             SamplePathIfNeeded(); // 경로 기록
             UpdateHeadVisual(deltaTime); // 머리 표시
+            ApplyRuntimeSegmentScaleIfNeeded(); // 런타임 몸통 크기 반영
             UpdateSegments(deltaTime); // 몸통 추적
             UpdateSegmentWeapons(deltaTime); // 세그먼트 사격
             UpdateTailCollision(deltaTime); // 자기 충돌
@@ -183,9 +199,9 @@ namespace TeamProject01.Gameplay
 
         private bool AddSegment(GameObject segmentPrefab, bool snapToPath) // 몸통 추가
         {
-            if (segments.Count >= MaxSegmentCount)
+            if (!CanAddSegmentPrefab(segmentPrefab))
             {
-                return false; // 최대 길이
+                return false; // 최대 길이 또는 허용되지 않은 세그먼트
             }
 
             Transform segment = CreateSegment(segments.Count, segmentPrefab); // 새 몸통
@@ -205,6 +221,67 @@ namespace TeamProject01.Gameplay
 
             NotifySegmentCountChanged(); // 길이 변경 알림
             return true; // 추가 성공
+        }
+
+        private void ApplyRuntimeSegmentScaleIfNeeded() // 런타임 스케일 튜닝
+        {
+            if (!ApplySegmentScaleAtRuntime)
+            {
+                return; // 수동 반영 안 함
+            }
+
+            Vector3 targetScale = GetSafeSegmentScale(); // 안전 크기
+            if ((lastAppliedSegmentScale - targetScale).sqrMagnitude <= 0.000001f)
+            {
+                return; // 변경 없음
+            }
+
+            for (int i = 0; i < segments.Count; i++)
+            {
+                Transform segment = segments[i]; // 현재 몸통
+                if (segment != null)
+                {
+                    segment.localScale = targetScale; // 기존 몸통에도 적용
+                }
+            }
+
+            lastAppliedSegmentScale = targetScale; // 적용값 저장
+        }
+
+        private Vector3 GetSafeSegmentScale() // 몸통 크기 보정
+        {
+            float yScale = Mathf.Max(0.01f, SegmentScale.y); // 기본 세로 크기
+            if (PreventSegmentVerticalSquash)
+            {
+                yScale = Mathf.Max(MinimumSegmentScaleY, yScale); // 납작해짐 방지
+            }
+
+            return new Vector3(
+                Mathf.Max(0.01f, SegmentScale.x),
+                yScale,
+                Mathf.Max(0.01f, SegmentScale.z)); // 0 스케일 방지
+        }
+
+        private void ClearInitialSegmentsIfNeeded() // 시작 세그먼트 제거
+        {
+            if (EnableStartingSegments || !ClearScenePlacedSegmentsOnStart || segments.Count == 0)
+            {
+                return; // 제거 필요 없음
+            }
+
+            for (int i = segments.Count - 1; i >= 0; i--)
+            {
+                Transform segment = segments[i]; // 기존 배치 몸통
+                if (segment != null)
+                {
+                    DestroyUnityObject(segment.gameObject); // 런타임 시작 몸통 제거
+                }
+            }
+
+            segments.Clear(); // 체인 비움
+            segmentGroundChecks.Clear(); // 바닥 체크 비움
+            segmentRuntimes.Clear(); // 런타임 비움
+            NotifySegmentCountChanged(); // 길이 0 알림
         }
 
         public bool TryAddSegment() // 외부 추가 입구
@@ -236,7 +313,43 @@ namespace TeamProject01.Gameplay
 
         public bool CanAddSegmentPrefab(GameObject segmentPrefab) // 지정 프리팹 추가 가능
         {
-            return segments.Count < MaxSegmentCount && segmentPrefab != null; // 길이와 프리팹 확인
+            return segments.Count < MaxSegmentCount && IsAllowedSegmentPrefab(segmentPrefab); // 길이/허용 ID 확인
+        }
+
+        private bool IsAllowedSegmentPrefab(GameObject segmentPrefab) // 추가 허용 프리팹 확인
+        {
+            if (segmentPrefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
+            if (!RestrictAddedSegmentsToAllowedId || string.IsNullOrWhiteSpace(AllowedAddedSegmentId))
+            {
+                return true; // 제한 비활성
+            }
+
+            string allowedId = AllowedAddedSegmentId.Trim(); // 허용 ID
+            if (string.Equals(segmentPrefab.name, allowedId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true; // 프리팹 이름 일치
+            }
+
+            SegmentWeaponBehaviour weapon = segmentPrefab.GetComponent<SegmentWeaponBehaviour>(); // 세그먼트 무기
+            if (weapon == null)
+            {
+                return false; // ID 판단 불가
+            }
+
+            string segmentId = string.IsNullOrWhiteSpace(weapon.SegmentId)
+                ? GetSegmentIdFromWeaponType(weapon.GetType())
+                : weapon.SegmentId.Trim(); // 명시 ID 우선
+            return string.Equals(segmentId, allowedId, StringComparison.OrdinalIgnoreCase); // ID 일치 여부
+        }
+
+        private static string GetSegmentIdFromWeaponType(Type weaponType) // 무기 타입명 기반 ID
+        {
+            string typeName = weaponType != null ? weaponType.Name : string.Empty; // 타입명
+            return typeName.EndsWith("Weapon", StringComparison.Ordinal) ? typeName.Substring(0, typeName.Length - 6) : typeName; // SG01_Cannon
         }
 
         public int GetSegmentCount() // 외부 길이 조회
