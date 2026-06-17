@@ -52,6 +52,33 @@ namespace TeamProject01.Gameplay
             rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative; // 관통 완화
         }
 
+        private void EnsureHeadMonsterBlocker() // 머리 몬스터 차단 보장
+        {
+            if (HeadVisual == null)
+            {
+                return; // 대상 없음
+            }
+
+            SegmentBlocker blocker = HeadVisual.GetComponent<SegmentBlocker>(); // 머리 차단
+            if (!EnableHeadMonsterBlocker)
+            {
+                if (blocker != null)
+                {
+                    blocker.enabled = false; // 차단 끔
+                }
+
+                return; // 사용 안 함
+            }
+
+            if (blocker == null)
+            {
+                blocker = HeadVisual.gameObject.AddComponent<SegmentBlocker>(); // 차단 추가
+            }
+
+            blocker.enabled = true; // 목록 등록
+            blocker.Configure(HeadMonsterBlockRadius); // 머리 반경 적용
+        }
+
         private void ConfigureGroundChecks() // 바닥 체크 연결
         {
             if (HeadGroundCheck == null)

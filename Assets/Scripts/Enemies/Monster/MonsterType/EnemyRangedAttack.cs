@@ -15,6 +15,14 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)]
         [SerializeField] private float attackDelay = 1.5f; // 공격 사이의 대기 시간, 공격속도 역할
 
+        public float AttackRange // EnemyMovement가 원거리 공격 사거리를 읽기 위한 property
+        {
+            get
+            {
+                return attackRange; // 원거리 공격 가능 거리를 반환한다.
+            }
+        }
+
         private float attackTimer; // 다음 공격까지 남은 시간을 저장하는 변수
 
         private void Awake()

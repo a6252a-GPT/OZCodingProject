@@ -1,0 +1,206 @@
+﻿using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace TeamProject01.Gameplay
+{
+    [DisallowMultipleComponent]
+    public sealed class ExpBarController : MonoBehaviour // 경험치 Slider (0~1)
+    {
+        public Slider ExpSlider; // UI Slider
+        public TextMeshProUGUI LevelText; // 레벨 표시 (LevelTest)
+        //전찬우 수정
+        // public ExpTest ExpTestSource; // 임시 테스트
+        public LevelUpUi LevelUpUi; // 레벨업 패널
+        public CardUI CardUi; // 레벨업 UI 호출 (LevelUpUi 없을 때)
+        //전찬우 수정
+        // public bool PreferExpTest = true; // 테스트 우선
+
+        private CoreStatProvider subscribedCore;
+        //전찬우 수정
+        // private ExpTest subscribedExpTest;
+        //전찬우 추가
+        private bool levelUpUiOpened; // 코어 레벨업 UI 중복 호출 방지
+
+        private void Awake()
+        {
+            if (ExpSlider == null)
+            {
+                ExpSlider = GetComponentInChildren<Slider>(true);
+            }
+
+            if (ExpSlider != null)
+            {
+                ExpSlider.minValue = 0f;
+                ExpSlider.maxValue = 1f;
+                ExpSlider.interactable = false;
+            }
+        }
+
+        private void OnEnable()
+        {
+            //전찬우 수정
+            // if (UsesExpTest())
+            // {
+            //     TrySubscribeExpTest();
+            //     RefreshFromExpTest();
+            //     return;
+            // }
+
+            TrySubscribeCore();
+            CoreStatData stats = CoreStatProvider.GetCurrentOrDefault();
+            RefreshFromCore(stats); //전찬우 수정
+        }
+
+        //전찬우 추가
+        private void Start()
+        {
+            TrySubscribeCore(); // Awake/OnEnable 순서 보정
+            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault()); // 최신 코어값 재반영
+        }
+
+        //전찬우 추가
+        private void Update()
+        {
+            if (subscribedCore != null || CoreStatProvider.Active == null)
+            {
+                return; // 이미 연결 또는 코어 없음
+            }
+
+            TrySubscribeCore(); // 늦게 생성된 코어 연결
+            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault()); // 연결 즉시 표시 보정
+        }
+
+        private void OnDisable()
+        {
+            if (subscribedCore != null)
+            {
+                subscribedCore.StatsChanged -= OnStatsChanged;
+                subscribedCore = null;
+            }
+
+            //전찬우 수정
+            // if (subscribedExpTest != null)
+            // {
+            //     subscribedExpTest.Changed -= OnExpTestChanged;
+            //     subscribedExpTest.LevelUpTriggered -= OnLevelUpTriggered;
+            //     subscribedExpTest = null;
+            // }
+        }
+
+        //전찬우 수정
+        // private bool UsesExpTest()
+        // {
+        //     return PreferExpTest && ResolveExpTest() != null;
+        // }
+        //
+        // private ExpTest ResolveExpTest()
+        // {
+        //     return ExpTestSource != null ? ExpTestSource : ExpTest.Active;
+        // }
+        //
+        // private void TrySubscribeExpTest()
+        // {
+        //     ExpTest expTest = ResolveExpTest();
+        //     if (subscribedExpTest != null || expTest == null)
+        //     {
+        //         return;
+        //     }
+        //
+        //     subscribedExpTest = expTest;
+        //     subscribedExpTest.Changed += OnExpTestChanged;
+        //     subscribedExpTest.LevelUpTriggered += OnLevelUpTriggered;
+        // }
+
+        private void OnLevelUpTriggered()
+        {
+            if (LevelUpUi != null)
+            {
+                LevelUpUi.Open();
+                return;
+            }
+
+            CardUi?.PlayLevelUpTween();
+        }
+
+        private void TrySubscribeCore()
+        {
+            if (subscribedCore != null || CoreStatProvider.Active == null)
+            {
+                return;
+            }
+
+            subscribedCore = CoreStatProvider.Active;
+            subscribedCore.StatsChanged += OnStatsChanged;
+        }
+
+        //전찬우 수정
+        // private void OnExpTestChanged()
+        // {
+        //     RefreshFromExpTest();
+        // }
+
+        private void OnStatsChanged(CoreStatData stats)
+        {
+            //전찬우 수정
+            // if (UsesExpTest())
+            // {
+            //     RefreshFromExpTest();
+            //     return;
+            // }
+
+            RefreshFromCore(stats); //전찬우 수정
+
+            if (stats.CanLevelUp && !levelUpUiOpened) //전찬우 추가
+            {
+                levelUpUiOpened = true; //전찬우 추가
+                OnLevelUpTriggered(); //전찬우 추가
+            }
+            else if (!stats.CanLevelUp) //전찬우 추가
+            {
+                levelUpUiOpened = false; //전찬우 추가
+            }
+        }
+
+        //전찬우 수정
+        // private void RefreshFromExpTest()
+        // {
+        //     TrySubscribeExpTest();
+        //     ExpTest expTest = ResolveExpTest();
+        //     if (expTest == null)
+        //     {
+        //         return;
+        //     }
+        //
+        //     SetFillRatio(expTest.FillRatio);
+        //     SetLevelDisplay(expTest.Level);
+        // }
+
+        //전찬우 추가
+        private void RefreshFromCore(CoreStatData stats)
+        {
+            SetFillRatio(stats.ExperienceRatio); // 코어 경험치 비율
+            SetLevelDisplay(stats.Level); // 코어 레벨
+        }
+
+        private void SetFillRatio(float ratio)
+        {
+            if (ExpSlider == null)
+            {
+                return;
+            }
+
+            ExpSlider.value = Mathf.Clamp01(ratio);
+        }
+
+        private void SetLevelDisplay(int level)
+        {
+            if (LevelText == null)
+            {
+                return;
+            }
+
+            LevelText.text = $"LV : {Mathf.Max(1, level)}";
+        }
+    }
+}
