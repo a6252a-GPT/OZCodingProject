@@ -37,7 +37,9 @@ namespace TeamProject01.Gameplay
         public ConvoyControlMode ControlMode = ConvoyControlMode.RelativeTurn; // 현재 모드
 
         [Header("Body Follow")]
-        [Range(1, 40)] public int StartingSegmentCount = 9; // 시작 길이
+        public bool EnableStartingSegments = false; // 시작 세그먼트 자동 생성
+        public bool ClearScenePlacedSegmentsOnStart = true; // 씬 배치 시작 세그먼트 제거
+        [Range(0, 40)] public int StartingSegmentCount = 0; // 시작 길이
         [Range(1, 100)] public int MaxSegmentCount = 100; // 최대 길이
         [Min(0.1f)] public float SegmentSpacing = 1.18f; // 몸통 간격
         [Min(0.01f)] public float MinPathSampleDistance = 0.08f; // 경로 샘플 간격
@@ -45,7 +47,10 @@ namespace TeamProject01.Gameplay
         [Min(1f)] public float SegmentTurnResponse = 22f; // 회전 추적
         [Min(128)] public int PathSampleLimit = 2048; // 경로 보관량
         public Vector3 HeadScale = new Vector3(1.25f, 0.6f, 1.45f); // 머리 크기
-        public Vector3 SegmentScale = new Vector3(1.05f, 0.48f, 1.05f); // 몸통 크기
+        public Vector3 SegmentScale = Vector3.one; // 몸통 크기
+        public bool ApplySegmentScaleAtRuntime = true; // 런타임 몸통 크기 반영
+        public bool PreventSegmentVerticalSquash = true; // 새 모델 납작해짐 방지
+        [Min(0.01f)] public float MinimumSegmentScaleY = 1f; // 최소 세로 크기
         [Min(0f)] public float VisualCenterHeight = 0.32f; // 표시 높이
         [Min(0f)] public float HeadVisualLean = 8f; // 회전 기울기
 
@@ -85,9 +90,19 @@ namespace TeamProject01.Gameplay
         [Header("Segment Weapons")]
         public bool EnableSegmentAutoFire = true; // 자동 발사 사용
 
+        [Header("Segment Catalog Add")]
+        public bool UseCatalogForDefaultAdd = true; // 기본 추가는 카탈로그 랜덤 사용
+        public SegmentCatalogAsset DefaultAddSegmentCatalog; // 스페이스/자동 추가 후보
+
+        [Header("Segment Add Limit")]
+        public bool RestrictAddedSegmentsToAllowedId = true; // 자동 추가 세그먼트 제한
+        public string AllowedAddedSegmentId = "SG01_Cannon"; // 현재 자동 추가 허용 세그먼트
+
         private readonly List<Transform> segments = new List<Transform>(128); // 연결 몸통
         private readonly List<GroundCheck> segmentGroundChecks = new List<GroundCheck>(128); // 몸통 바닥 체크
         private readonly List<ConvoySegmentRuntime> segmentRuntimes = new List<ConvoySegmentRuntime>(128); // 몸통 런타임
+        private readonly Dictionary<string, int> currentSegmentLevelsById = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); // 세그먼트별 현재 모델 레벨
+        private readonly Dictionary<string, SegmentDefinition> segmentDefinitionsById = new Dictionary<string, SegmentDefinition>(StringComparer.OrdinalIgnoreCase); // 레벨 프리팹 찾기용 정의
         private readonly List<DetachedTailGroup> detachedTails = new List<DetachedTailGroup>(16); // 분리 꼬리
         private readonly List<Vector3> path = new List<Vector3>(2048); // 머리 경로
         private Material rejoinAreaMaterial; // 재결합 재질
@@ -98,10 +113,21 @@ namespace TeamProject01.Gameplay
         private float currentForwardSpeed; // 현재 전진속도
         private float tailCutCooldownRemaining; // 절단 쿨타임
         private int detachedTailSerial; // 분리 그룹 번호
+        private Vector3 lastAppliedSegmentScale; // 마지막 적용 몸통 크기
+
+        //성원추가
+        // Enemy effect runtime
+        private Vector3 knockbackDirection; // 외부 넉백 방향
+        private float knockbackDistanceRemaining; // 남은 넉백 거리
+        private float knockbackTimeRemaining; // 남은 넉백 시간
+        private float knockbackTotalTime; // 넉백 전체 시간
+        private float knockbackElapsedTime; // 넉백 진행 시간
+        private float knockbackHeight; // 넉백 중 공중으로 뜨는 높이
+        ////////////
 
         public int SegmentCount => segments.Count; // 표시 길이
         public int MaxSegments => MaxSegmentCount; // 외부 최대 길이
-        public bool CanAddSegment => CanAddSegmentPrefab(SegmentPrefab); // 기본 추가 가능
+        public bool CanAddSegment => CanAddDefaultSegment(); // 기본 추가 가능
         public CoreStatData CurrentCoreStats => CoreStatProvider.GetCurrentOrDefault(); // 현재 성장값
         public float CurrentSpeed => currentForwardSpeed; // HUD 속도
         public float CurrentTurnVelocity => currentTurnVelocity; // HUD 회전
@@ -121,7 +147,22 @@ namespace TeamProject01.Gameplay
             EnsureSegmentRoot(); // 몸통 루트 보강
             EnsureDetachedTailRoot(); // 분리 루트 보강
             EnsureProjectileRoot(); // 투사체 루트 보강
+            RegisterDefaultAddCatalogDefinitions(); // 카탈로그 후보 등록
             CollectExistingSegments(); // 씬 배치 몸통 수집
+            ClearInitialSegmentsIfNeeded(); // 시작 몸통 제거
+        }
+
+        ////// 전찬우추가 - 컨보이 타겟 등록은 ConvoyController가 직접 책임진다.
+        private void OnEnable() // 전찬우추가 - 컨보이가 활성화될 때 몬스터용 타겟 API에 자기 자신을 등록한다.
+        {
+            MonsterInteractionApi.RegisterConvoyTarget(transform); // 전찬우추가 - 몬스터가 GameObject.Find 없이 컨보이를 찾을 수 있게 한다.
+        }
+
+        ////// 전찬우추가 - 컨보이 비활성화 시 API에 남은 참조와 요청을 정리한다.
+        private void OnDisable() // 전찬우추가 - 컨보이가 꺼질 때 몬스터용 타겟 API에서 자기 자신을 해제한다.
+        {
+            MonsterInteractionApi.UnregisterConvoyTarget(transform); // 전찬우추가 - 비활성화된 컨보이가 몬스터 타겟으로 남지 않게 한다.
+            MonsterInteractionApi.ClearConvoyKnockbackRequests(); // 전찬우추가 - 씬 전환/비활성화 때 소비되지 않은 넉백 요청을 비운다.
         }
 
         private void Start() // 시작 세팅
@@ -130,12 +171,16 @@ namespace TeamProject01.Gameplay
             transform.position = SnapHeadToGround(transform.position); // 현재 바닥 보정
             currentForwardSpeed = BaseSpeed; // 초기 속도
             ResetPath(); // 경로 초기화
+            EnsureStarterSegmentFromCurrentLoadout(); // 선택 지렁이 기본 무기 세그먼트
 
-            while (segments.Count < StartingSegmentCount)
+            if (EnableStartingSegments)
             {
-                if (!AddSegment(SegmentPrefab, false))
+                while (GetRegularSegmentCount() < StartingSegmentCount)
                 {
-                    break; // 최대치 도달
+                    if (!AddSegment(SegmentPrefab, false))
+                    {
+                        break; // 최대치 도달
+                    }
                 }
             }
 
@@ -160,7 +205,7 @@ namespace TeamProject01.Gameplay
 
             if (input.AddSegment)
             {
-                AddSegment(SegmentPrefab, true); // 테스트 추가
+                AddDefaultSegment(true); // 테스트 랜덤 추가
             }
 
             if (input.RemoveSegment)
@@ -169,11 +214,58 @@ namespace TeamProject01.Gameplay
             }
 
             ApplyControl(input, deltaTime); // 모드별 조향
-            transform.position += transform.forward * (currentForwardSpeed * deltaTime); // 전진
-            transform.position = SnapHeadToGround(transform.position); // 머리 바닥 유지
+
+            //성원 수정
+            Vector3 currentPosition = transform.position; // 이동하기 전 현재 위치를 저장한다.
+
+            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
+            // if (EnemyApi.TryConsumeKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 기존: EnemyApi에 등록된 넉백 요청 확인
+            ////// 전찬우추가 - 컨보이는 공용 상호작용 API에서 넉백 요청만 소비한다.
+            if (MonsterInteractionApi.TryConsumeConvoyKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 전찬우추가 - 몬스터가 요청한 컨보이 넉백이 있는지 확인한다.
+            {
+                ApplyKnockback(apiKnockbackDirection, apiKnockbackDistance, apiKnockbackDuration, apiKnockbackHeight); // 전찬우추가 - 실제 이동 적용은 컨보이 컨트롤러가 책임진다.
+            }
+
+            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
+            // float slowMultiplier = EnemyApi.GetSlowMultiplier(currentPosition); // 기존: 현재 위치의 슬로우 장판 속도 배율 조회
+            ////// 전찬우추가 - 슬로우 조회도 MonsterInteractionApi를 통해서만 한다.
+            float slowMultiplier = MonsterInteractionApi.GetConvoySpeedMultiplier(currentPosition); // 전찬우추가 - 현재 컨보이 위치에 적용될 슬로우 배율을 가져온다.
+
+            Vector3 forwardDisplacement = transform.forward * (currentForwardSpeed * slowMultiplier * deltaTime); // 기본 전진 이동량을 계산한다.
+
+            float knockbackVerticalOffset; // 이번 프레임에 공중으로 뜰 높이
+            Vector3 knockbackDisplacement = ConsumeKnockbackDisplacement(deltaTime, out knockbackVerticalOffset); // 수평 넉백 이동량과 공중 높이를 계산한다.
+
+            Vector3 desiredPosition = currentPosition + forwardDisplacement + knockbackDisplacement; // 전진 이동량과 넉백 이동량을 합친다.
+
+            desiredPosition = SnapHeadToGround(desiredPosition); // 이동하려는 위치를 먼저 바닥 높이에 맞춘다.
+            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
+            // desiredPosition = EnemyApi.ResolveObstaclePosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 기존: 적 장애물과 겹치지 않도록 위치 보정
+            ////// 전찬우추가 - 컨보이 위치 보정은 MonsterInteractionApi를 통해 요청한다.
+            desiredPosition = MonsterInteractionApi.ResolveConvoyPosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 전찬우추가 - 적 장애물과 겹치지 않도록 컨보이 위치를 보정한다.
+            desiredPosition.y += knockbackVerticalOffset; // 넉백 중이면 바닥 위치에서 공중 높이만큼 띄운다.
+
+            transform.position = desiredPosition; // 최종 보정된 위치를 적용한다.
+            ////////////
 
             SamplePathIfNeeded(); // 경로 기록
             UpdateHeadVisual(deltaTime); // 머리 표시
+
+
+            //성원 추가
+            if (HeadVisual != null && knockbackTimeRemaining > 0.0f && knockbackTotalTime > 0.0f) // 넉백 중이면
+            {
+                Vector3 localKnockbackDirection = transform.InverseTransformDirection(knockbackDirection); // 월드 넉백 방향을 플레이어 기준 방향으로 바꾼다.
+
+                float tumbleAngle = knockbackElapsedTime * 900.0f; // 넉백 진행 시간에 따라 회전 각도를 계산한다.
+
+                float pitchAngle = -localKnockbackDirection.z * tumbleAngle; // 앞뒤로 밀리면 X축 회전
+                float rollAngle = localKnockbackDirection.x * tumbleAngle; // 좌우로 밀리면 Z축 회전
+
+                HeadVisual.localRotation = Quaternion.Euler(pitchAngle, 0.0f, rollAngle); // 현재 넉백 시간 기준 회전을 적용한다.
+            }
+            ///////////
+
             UpdateSegments(deltaTime); // 몸통 추적
             UpdateSegmentWeapons(deltaTime); // 세그먼트 사격
             UpdateTailCollision(deltaTime); // 자기 충돌
@@ -183,12 +275,13 @@ namespace TeamProject01.Gameplay
 
         private bool AddSegment(GameObject segmentPrefab, bool snapToPath) // 몸통 추가
         {
-            if (segments.Count >= MaxSegmentCount)
+            GameObject resolvedPrefab = ResolveSegmentPrefabForCurrentLevel(segmentPrefab); // 현재 레벨 반영
+            if (!CanAddSegmentPrefab(resolvedPrefab))
             {
-                return false; // 최대 길이
+                return false; // 최대 길이 또는 허용되지 않은 세그먼트
             }
 
-            Transform segment = CreateSegment(segments.Count, segmentPrefab); // 새 몸통
+            Transform segment = CreateSegment(segments.Count, resolvedPrefab); // 새 몸통
             if (segment == null)
             {
                 return false; // 프리팹 없음
@@ -200,16 +293,77 @@ namespace TeamProject01.Gameplay
 
             if (snapToPath)
             {
-                SnapSegmentToPath(segment, segments.Count); // 끝 위치 정렬
+                SnapSegmentToPath(segment, segments.Count - 1); // 끝 위치 정렬
             }
 
             NotifySegmentCountChanged(); // 길이 변경 알림
             return true; // 추가 성공
         }
 
+        private void ApplyRuntimeSegmentScaleIfNeeded() // 런타임 스케일 튜닝
+        {
+            if (!ApplySegmentScaleAtRuntime)
+            {
+                return; // 수동 반영 안 함
+            }
+
+            Vector3 targetScale = GetSafeSegmentScale(); // 안전 크기
+            if ((lastAppliedSegmentScale - targetScale).sqrMagnitude <= 0.000001f)
+            {
+                return; // 변경 없음
+            }
+
+            for (int i = 0; i < segments.Count; i++)
+            {
+                Transform segment = segments[i]; // 현재 몸통
+                if (segment != null)
+                {
+                    segment.localScale = targetScale; // 기존 몸통에도 적용
+                }
+            }
+
+            lastAppliedSegmentScale = targetScale; // 적용값 저장
+        }
+
+        private Vector3 GetSafeSegmentScale() // 몸통 크기 보정
+        {
+            float yScale = Mathf.Max(0.01f, SegmentScale.y); // 기본 세로 크기
+            if (PreventSegmentVerticalSquash)
+            {
+                yScale = Mathf.Max(MinimumSegmentScaleY, yScale); // 납작해짐 방지
+            }
+
+            return new Vector3(
+                Mathf.Max(0.01f, SegmentScale.x),
+                yScale,
+                Mathf.Max(0.01f, SegmentScale.z)); // 0 스케일 방지
+        }
+
+        private void ClearInitialSegmentsIfNeeded() // 시작 세그먼트 제거
+        {
+            if (EnableStartingSegments || !ClearScenePlacedSegmentsOnStart || segments.Count == 0)
+            {
+                return; // 제거 필요 없음
+            }
+
+            for (int i = segments.Count - 1; i >= 0; i--)
+            {
+                Transform segment = segments[i]; // 기존 배치 몸통
+                if (segment != null)
+                {
+                    DestroyUnityObject(segment.gameObject); // 런타임 시작 몸통 제거
+                }
+            }
+
+            segments.Clear(); // 체인 비움
+            segmentGroundChecks.Clear(); // 바닥 체크 비움
+            segmentRuntimes.Clear(); // 런타임 비움
+            NotifySegmentCountChanged(); // 길이 0 알림
+        }
+
         public bool TryAddSegment() // 외부 추가 입구
         {
-            return AddSegment(SegmentPrefab, true); // 기본 정렬 추가
+            return AddDefaultSegment(true); // 기본 랜덤 추가
         }
 
         public bool TryAddSegment(GameObject segmentPrefab) // 프리팹 지정 추가 입구
@@ -223,7 +377,7 @@ namespace TeamProject01.Gameplay
             int targetCount = Mathf.Max(0, count); // 음수 방지
             for (int i = 0; i < targetCount; i++)
             {
-                if (!AddSegment(SegmentPrefab, snapToPath))
+                if (!AddDefaultSegment(snapToPath))
                 {
                     break; // 더 이상 추가 불가
                 }
@@ -236,7 +390,146 @@ namespace TeamProject01.Gameplay
 
         public bool CanAddSegmentPrefab(GameObject segmentPrefab) // 지정 프리팹 추가 가능
         {
-            return segments.Count < MaxSegmentCount && segmentPrefab != null; // 길이와 프리팹 확인
+            GameObject resolvedPrefab = ResolveSegmentPrefabForCurrentLevel(segmentPrefab); // 현재 레벨 반영
+            return segments.Count < MaxSegmentCount && IsAllowedSegmentPrefab(resolvedPrefab); // 길이/허용 ID 확인
+        }
+
+        public bool TryGetRandomAddableSegmentPrefab(out GameObject prefab) // 카탈로그 랜덤 후보 제공
+        {
+            if (TryPickCatalogSegmentPrefab(out prefab))
+            {
+                return true; // 카탈로그 후보
+            }
+
+            prefab = ResolveSegmentPrefabForCurrentLevel(SegmentPrefab); // 기존 기본값
+            return CanAddSegmentPrefab(prefab); // fallback 가능 여부
+        }
+
+        private bool AddDefaultSegment(bool snapToPath) // 기본 추가
+        {
+            return TryGetRandomAddableSegmentPrefab(out GameObject prefab) && AddSegment(prefab, snapToPath); // 랜덤 생성
+        }
+
+        private bool CanAddDefaultSegment() // 기본 추가 가능
+        {
+            return TryGetRandomAddableSegmentPrefab(out _); // 후보 존재 여부
+        }
+
+        private bool TryPickCatalogSegmentPrefab(out GameObject prefab) // 카탈로그에서 추가 후보 선택
+        {
+            prefab = null; // 기본값
+            if (!UseCatalogForDefaultAdd)
+            {
+                return false; // 카탈로그 미사용
+            }
+
+            SegmentCatalogAsset catalog = GetDefaultAddCatalog(); // 등록 데이터
+            if (catalog == null || catalog.Segments == null || catalog.Segments.Length == 0)
+            {
+                return false; // 후보 없음
+            }
+
+            int startIndex = UnityEngine.Random.Range(0, catalog.Segments.Length); // 랜덤 시작
+            for (int i = 0; i < catalog.Segments.Length; i++)
+            {
+                int index = (startIndex + i) % catalog.Segments.Length; // 순환 검사
+                SegmentDefinition definition = catalog.Segments[index]; // 후보 정의
+                if (TryGetAddableCatalogSegmentPrefab(definition, out prefab))
+                {
+                    return true; // 사용 가능
+                }
+            }
+
+            return false; // 추가 가능한 후보 없음
+        }
+
+        private bool TryGetAddableCatalogSegmentPrefab(SegmentDefinition definition, out GameObject prefab) // 정의 → 현재 레벨 프리팹
+        {
+            prefab = null; // 기본값
+            if (definition == null || !definition.HasId || definition.StarterOnly || !definition.CanAddByLevelChoice)
+            {
+                return false; // 추가 후보 아님
+            }
+
+            RegisterSegmentDefinition(definition); // 레벨 추적 등록
+            int level = GetCurrentSegmentLevelInternal(definition.NormalizedId, definition); // 현재 레벨
+            return definition.TryGetSegmentPrefab(level, out prefab) && CanAddSegmentPrefab(prefab); // 생성 가능 확인
+        }
+
+        private SegmentCatalogAsset GetDefaultAddCatalog() // 기본 추가 카탈로그
+        {
+            if (DefaultAddSegmentCatalog != null)
+            {
+                return DefaultAddSegmentCatalog; // 컨보이 직접 설정
+            }
+
+            return CoreStatProvider.Active != null ? CoreStatProvider.Active.SegmentCatalogAsset : null; // 코어 fallback
+        }
+
+        private void RegisterDefaultAddCatalogDefinitions() // 카탈로그 정의 등록
+        {
+            SegmentCatalogAsset catalog = GetDefaultAddCatalog(); // 등록 데이터
+            if (catalog == null || catalog.Segments == null)
+            {
+                return; // 없음
+            }
+
+            for (int i = 0; i < catalog.Segments.Length; i++)
+            {
+                RegisterSegmentDefinition(catalog.Segments[i]); // 추가 레벨 후보 등록
+            }
+        }
+
+        private bool IsAllowedSegmentPrefab(GameObject segmentPrefab) // 추가 허용 프리팹 확인
+        {
+            if (segmentPrefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
+            if (!RestrictAddedSegmentsToAllowedId || string.IsNullOrWhiteSpace(AllowedAddedSegmentId))
+            {
+                return true; // 제한 비활성
+            }
+
+            string allowedId = AllowedAddedSegmentId.Trim(); // 허용 ID
+            if (string.Equals(segmentPrefab.name, allowedId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true; // 프리팹 이름 일치
+            }
+
+            if (!TryGetSegmentIdFromPrefab(segmentPrefab, out string segmentId))
+            {
+                return false; // ID 판단 불가
+            }
+
+            return string.Equals(segmentId, allowedId, StringComparison.OrdinalIgnoreCase); // ID 일치 여부
+        }
+
+        private static bool TryGetSegmentIdFromPrefab(GameObject segmentPrefab, out string segmentId) // 프리팹 ID 확인
+        {
+            segmentId = string.Empty; // 기본값
+            if (segmentPrefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
+            SegmentWeaponBehaviour weapon = segmentPrefab.GetComponent<SegmentWeaponBehaviour>(); // 세그먼트 무기
+            if (weapon == null)
+            {
+                return false; // ID 판단 불가
+            }
+
+            segmentId = string.IsNullOrWhiteSpace(weapon.SegmentId)
+                ? GetSegmentIdFromWeaponType(weapon.GetType())
+                : weapon.SegmentId.Trim(); // 명시 ID 우선
+            return !string.IsNullOrWhiteSpace(segmentId); // 유효 ID
+        }
+
+        private static string GetSegmentIdFromWeaponType(Type weaponType) // 무기 타입명 기반 ID
+        {
+            string typeName = weaponType != null ? weaponType.Name : string.Empty; // 타입명
+            return typeName.EndsWith("Weapon", StringComparison.Ordinal) ? typeName.Substring(0, typeName.Length - 6) : typeName; // SG01_Cannon
         }
 
         public int GetSegmentCount() // 외부 길이 조회
@@ -273,6 +566,16 @@ namespace TeamProject01.Gameplay
             currentTurnInput = 0f; // 입력 초기화
             currentForwardSpeed = GetAutoForwardSpeed(); // 속도 복구
             tailCutCooldownRemaining = 0f; // 절단 쿨 초기화
+
+            //성원추가
+            knockbackDirection = Vector3.zero; // 넉백 방향 초기화
+            knockbackDistanceRemaining = 0.0f; // 남은 넉백 거리 초기화
+            knockbackTimeRemaining = 0.0f; // 남은 넉백 시간 초기화
+            knockbackTotalTime = 0.0f; // 넉백 전체 시간 초기화
+            knockbackElapsedTime = 0.0f; // 넉백 진행 시간 초기화
+            knockbackHeight = 0.0f; // 넉백 높이 초기화
+            //////////////////
+
             ClearDetachedTailGroups(); // 분리 꼬리 제거
             SyncSegmentRuntimes(true); // 런타임 보정
             ResetPath(); // 경로 재생성
@@ -292,6 +595,62 @@ namespace TeamProject01.Gameplay
             currentTurnInput = 0f; // 입력 제거
         }
 
+        public void ApplyKnockback(Vector3 direction, float distance, float duration, float height = 0.0f) // 외부에서 컨보이를 밀어내고 공중으로 띄우는 API
+        {
+            direction.y = 0.0f; // 수평 이동 방향은 바닥 평면 기준으로만 계산한다.
+
+            if (direction.sqrMagnitude <= 0.0001f) // 방향이 없다면
+            {
+                return; // 넉백을 적용하지 않는다.
+            }
+
+            knockbackDirection = direction.normalized; // 넉백 방향을 길이 1로 저장한다.
+            knockbackDistanceRemaining = Mathf.Max(0.0f, distance);  // 밀릴 거리를 저장한다.
+
+            //성원 수정
+            knockbackTotalTime = Mathf.Max(0.01f, duration); // 넉백 전체 시간을 저장한다.
+            knockbackTimeRemaining = knockbackTotalTime; // 남은 시간을 전체 시간으로 초기화한다.
+            knockbackElapsedTime = 0.0f; // 진행 시간을 초기화한다.
+
+            knockbackHeight = Mathf.Max(0.0f, height); // 공중으로 뜰 최대 높이를 저장한다.
+
+            //////////////
+        }
+
+        //성원 추가
+        private Vector3 ConsumeKnockbackDisplacement(float deltaTime, out float verticalOffset) // 이번 프레임 넉백 이동량과 공중 높이를 계산한다.
+        {
+            verticalOffset = 0.0f; // 기본 공중 높이는 0이다.
+
+            if (knockbackDistanceRemaining <= 0.0f || knockbackTimeRemaining <= 0.0f) // 남은 넉백이 없다면
+            {
+                return Vector3.zero; // 이동량 없음
+            }
+
+            float moveDistance = knockbackDistanceRemaining * (deltaTime / knockbackTimeRemaining); // 이번 프레임 수평 넉백 거리를 계산한다.
+            moveDistance = Mathf.Min(moveDistance, knockbackDistanceRemaining); // 남은 거리보다 많이 움직이지 않게 제한한다.
+
+            knockbackDistanceRemaining -= moveDistance; // 사용한 거리만큼 남은 넉백 거리를 줄인다.
+            knockbackTimeRemaining -= deltaTime; // 지난 시간만큼 남은 넉백 시간을 줄인다.
+            knockbackElapsedTime += deltaTime; // 지난 시간만큼 넉백 진행 시간을 늘린다.
+
+            float progress = Mathf.Clamp01(knockbackElapsedTime / knockbackTotalTime); // 넉백 진행률을 계산한다.
+            verticalOffset = Mathf.Sin(progress * Mathf.PI) * knockbackHeight; // 중간에서 가장 높아지는 포물선 높이를 계산한다.
+
+            if (knockbackDistanceRemaining <= 0.0f || knockbackTimeRemaining <= 0.0f) // 넉백이 끝났다면
+            {
+                knockbackDistanceRemaining = 0.0f; // 남은 거리 초기화
+                knockbackTimeRemaining = 0.0f; // 남은 시간 초기화
+                knockbackElapsedTime = 0.0f; // 진행 시간 초기화
+                knockbackTotalTime = 0.0f; // 전체 시간 초기화
+                knockbackHeight = 0.0f; // 공중 높이 초기화
+                verticalOffset = 0.0f; // 끝나는 순간 바닥으로 내려오게 한다.
+            }
+
+            return knockbackDirection * moveDistance; // 이번 프레임 수평 넉백 이동량을 반환한다.
+        }
+        ////////////////////////
+
         private void NotifySegmentCountChanged() // 길이 변경 알림
         {
             SegmentCountChanged?.Invoke(segments.Count); // 현재 길이 전달
@@ -308,10 +667,6 @@ namespace TeamProject01.Gameplay
             CoreStatData stats = CoreStatProvider.GetCurrentOrDefault(); // 코어 성장값
             return Mathf.Max(0.1f, RejoinAreaRadius + stats.RejoinRangeBonus); // 보너스 적용
         }
-
-
-
-
 
         private static float ExpLerp(float current, float target, float sharpness, float deltaTime) // 지수 보간
         {

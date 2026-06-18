@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b5019bdfdcf0884995dbf6aa7aadd17, type: 3}
+  m_Name: AP_SG01_Cannon_Lv1
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentAttackProfile
+  DisplayName: SG01 Cannon Lv1
+  Description: "\uC9C1\uC120 \uD22C\uC0AC\uCCB4 1\uBC1C\uC744 \uBC1C\uC0AC\uD558\uB294
+    SG01 \uCE90\uB17C \uB808\uBCA8 1 \uACF5\uACA9"
+  MoveType: 0
+  ImpactType: 0
+  SearchRange: 24
+  TargetAimHeight: 0.45
+  AttackSpawnHeight: 0.42
+  BaseDamage: 1
+  MinAttackInterval: 3
+  MaxAttackInterval: 5
+  ProjectilePrefab: {fileID: 3922023557786018810, guid: 47f001771f7ff6c43b11ca522e63ca7f, type: 3}
+  ProjectileCount: 1
+  SpreadAngle: 0
+  ProjectileSpeed: 20
+  ProjectileHitRadius: 0.5
+  ProjectileLifetime: 5
+  PierceCount: 1
+  ArcHeight: 3
+  ExplosionRadius: 3
+  ExplosionLifetime: 0.35
+  LaserDuration: 0.5
+  LaserTickInterval: 0.15
+  RequireAimBeforeFire: 1
+  HeadTurnSpeed: 540
+  FireAngleTolerance: 8
+  MuzzleVfxPrefab: {fileID: 0}
+  MuzzleVfxLifetime: 1.5
+  HitVfxPrefab: {fileID: 0}
+  HitVfxLifetime: 2
+  ExplosionVfxPrefab: {fileID: 0}
+  ExplosionVfxLifetime: 2

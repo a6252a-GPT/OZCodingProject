@@ -11,6 +11,7 @@ namespace TeamProject01.Gameplay
         public ConvoyController Owner { get; private set; } // 소유 컨보이
         public int ChainIndex { get; private set; } // 연결 순번
         public bool IsAttached { get; private set; } // 연결 상태
+        [Min(1)] public int SegmentLevel = 1; // 현재 레벨
 
         private void Awake() // 참조 준비
         {
@@ -48,6 +49,11 @@ namespace TeamProject01.Gameplay
             }
 
             Weapon.TickWeapon(deltaTime); // 무기 갱신
+        }
+
+        public void SetSegmentLevel(int level) // 레벨 지정
+        {
+            SegmentLevel = Mathf.Max(1, level); // 최소 1
         }
 
         private void CacheReferences() // 참조 수집
