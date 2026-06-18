@@ -8,6 +8,7 @@ namespace TeamProject01.Gameplay
 
         public ConvoySegmentRuntime Segment { get; private set; } // 소유 세그먼트
         public bool IsWeaponActive { get; private set; } // 작동 여부
+        public string EffectiveSegmentId => GetEffectiveSegmentId(); // 실제 강화/교체 ID
 
         public virtual void Configure(ConvoySegmentRuntime segment) // 세그먼트 연결
         {
@@ -32,7 +33,7 @@ namespace TeamProject01.Gameplay
             }
 
             string typeName = GetType().Name; // 클래스명 fallback
-            return typeName.EndsWith("Weapon", System.StringComparison.Ordinal) ? typeName.Substring(0, typeName.Length - 6) : typeName; // SG01_MachineGun
+            return typeName.EndsWith("Weapon", System.StringComparison.Ordinal) ? typeName.Substring(0, typeName.Length - 6) : typeName; // SG01_Cannon
         }
 
         public abstract void TickWeapon(float deltaTime); // 무기 갱신

@@ -99,6 +99,8 @@ namespace TeamProject01.Gameplay
                 return; // 대상 없음
             }
 
+            Convoy.ApplySelectedWormStarterSegment(bonus.SelectedWormId); // 선택 지렁이 시작 무기 확정
+
             if (bonus.StartingSegmentBonus > 0)
             {
                 Convoy.AddSegments(bonus.StartingSegmentBonus, true); // 시작 세그먼트 추가

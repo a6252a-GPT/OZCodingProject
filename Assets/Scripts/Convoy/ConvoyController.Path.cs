@@ -8,7 +8,8 @@ namespace TeamProject01.Gameplay
         {
             path.Clear(); // 기존 경로 제거
 
-            float requiredDistance = Mathf.Max((MaxSegmentCount + 4) * SegmentSpacing, 24f); // 필요 길이
+            float starterExtraDistance = EnableStarterSegment ? Mathf.Max(0f, StarterSegmentDistanceBehindHead - SegmentSpacing) : 0f; // 스타터 추가 거리
+            float requiredDistance = Mathf.Max((MaxSegmentCount + 4) * SegmentSpacing + starterExtraDistance, 24f); // 필요 길이
             float sampleStep = Mathf.Max(MinPathSampleDistance * 4f, 0.25f); // 초기 간격
 
             for (float distance = requiredDistance; distance >= 0f; distance -= sampleStep)
@@ -70,7 +71,7 @@ namespace TeamProject01.Gameplay
                     continue; // 삭제됨
                 }
 
-                GetPoseBehindHead((i + 1) * SegmentSpacing, out Vector3 targetPosition, out Vector3 targetForward);
+                GetPoseBehindHead(GetSegmentDistanceBehindHead(i), out Vector3 targetPosition, out Vector3 targetForward);
                 targetPosition = SnapSegmentToGround(i, targetPosition); // 몸통 바닥 유지
 
                 segment.position = Vector3.Lerp(segment.position, targetPosition, moveFactor); // 위치 추적
@@ -88,20 +89,37 @@ namespace TeamProject01.Gameplay
             SyncSegmentGroundChecks(); // 체크 목록 보정
             for (int i = 0; i < segments.Count; i++)
             {
-                SnapSegmentToPath(segments[i], i + 1); // 순번별 배치
+                SnapSegmentToPath(segments[i], i); // 순번별 배치
             }
         }
 
-        private void SnapSegmentToPath(Transform segment, int oneBasedIndex) // 단일 몸통 정렬
+        private void SnapSegmentToPath(Transform segment, int segmentIndex) // 단일 몸통 정렬
         {
             if (segment == null)
             {
                 return; // 대상 없음
             }
 
-            GetPoseBehindHead(oneBasedIndex * SegmentSpacing, out Vector3 targetPosition, out Vector3 targetForward);
-            targetPosition = SnapSegmentToGround(oneBasedIndex - 1, targetPosition); // 몸통 바닥 유지
+            GetPoseBehindHead(GetSegmentDistanceBehindHead(segmentIndex), out Vector3 targetPosition, out Vector3 targetForward);
+            targetPosition = SnapSegmentToGround(segmentIndex, targetPosition); // 몸통 바닥 유지
             segment.SetPositionAndRotation(targetPosition, Quaternion.LookRotation(targetForward, Vector3.up)); // pose 적용
+        }
+
+        private float GetSegmentDistanceBehindHead(int segmentIndex) // 머리에서 세그먼트까지의 경로 거리
+        {
+            int safeIndex = Mathf.Max(0, segmentIndex); // 음수 방지
+            if (HasActiveStarterSegment)
+            {
+                float starterDistance = Mathf.Max(0.1f, StarterSegmentDistanceBehindHead); // 스타터 전용 간격
+                if (safeIndex == 0)
+                {
+                    return starterDistance; // 스타터는 머리에서 조금 더 떨어진다.
+                }
+
+                return starterDistance + safeIndex * SegmentSpacing; // 스타터 뒤는 기존 간격 유지
+            }
+
+            return (safeIndex + 1) * SegmentSpacing; // 일반 체인 기존 규칙
         }
 
         private void GetPoseBehindHead(float distanceBehindHead, out Vector3 position, out Vector3 forward) // 뒤쪽 pose
