@@ -99,6 +99,16 @@ namespace TeamProject01.Gameplay
         private float tailCutCooldownRemaining; // 절단 쿨타임
         private int detachedTailSerial; // 분리 그룹 번호
 
+        //성원추가
+        // Enemy effect runtime
+        private Vector3 knockbackDirection; // 외부 넉백 방향
+        private float knockbackDistanceRemaining; // 남은 넉백 거리
+        private float knockbackTimeRemaining; // 남은 넉백 시간
+        private float knockbackTotalTime; // 넉백 전체 시간
+        private float knockbackElapsedTime; // 넉백 진행 시간
+        private float knockbackHeight; // 넉백 중 공중으로 뜨는 높이
+        ////////////
+
         public int SegmentCount => segments.Count; // 표시 길이
         public int MaxSegments => MaxSegmentCount; // 외부 최대 길이
         public bool CanAddSegment => CanAddSegmentPrefab(SegmentPrefab); // 기본 추가 가능
@@ -169,11 +179,48 @@ namespace TeamProject01.Gameplay
             }
 
             ApplyControl(input, deltaTime); // 모드별 조향
-            transform.position += transform.forward * (currentForwardSpeed * deltaTime); // 전진
-            transform.position = SnapHeadToGround(transform.position); // 머리 바닥 유지
+
+            //성원 수정
+            Vector3 currentPosition = transform.position; // 이동하기 전 현재 위치를 저장한다.
+
+            if (EnemyApi.TryConsumeKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // EnemyApi에 등록된 넉백 요청이 있는지 확인한다.
+            {
+                ApplyKnockback(apiKnockbackDirection, apiKnockbackDistance, apiKnockbackDuration, apiKnockbackHeight); // 넉백 방향, 거리, 시간, 높이를 적용한다.
+            }
+
+            float slowMultiplier = EnemyApi.GetSlowMultiplier(currentPosition); // 현재 위치의 슬로우 장판 속도 배율을 가져온다.
+
+            Vector3 forwardDisplacement = transform.forward * (currentForwardSpeed * slowMultiplier * deltaTime); // 기본 전진 이동량을 계산한다.
+
+            float knockbackVerticalOffset; // 이번 프레임에 공중으로 뜰 높이
+            Vector3 knockbackDisplacement = ConsumeKnockbackDisplacement(deltaTime, out knockbackVerticalOffset); // 수평 넉백 이동량과 공중 높이를 계산한다.
+
+            Vector3 desiredPosition = currentPosition + forwardDisplacement + knockbackDisplacement; // 전진 이동량과 넉백 이동량을 합친다.
+
+            desiredPosition = SnapHeadToGround(desiredPosition); // 이동하려는 위치를 먼저 바닥 높이에 맞춘다.
+            desiredPosition = EnemyApi.ResolveObstaclePosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 적 장애물과 겹치지 않도록 위치를 보정한다.
+            desiredPosition.y += knockbackVerticalOffset; // 넉백 중이면 바닥 위치에서 공중 높이만큼 띄운다.
+
+            transform.position = desiredPosition; // 최종 보정된 위치를 적용한다.
+            ////////////
 
             SamplePathIfNeeded(); // 경로 기록
             UpdateHeadVisual(deltaTime); // 머리 표시
+
+            //성원 추가
+            if (HeadVisual != null && knockbackTimeRemaining > 0.0f && knockbackTotalTime > 0.0f) // 넉백 중이면
+            {
+                Vector3 localKnockbackDirection = transform.InverseTransformDirection(knockbackDirection); // 월드 넉백 방향을 플레이어 기준 방향으로 바꾼다.
+
+                float tumbleAngle = knockbackElapsedTime * 900.0f; // 넉백 진행 시간에 따라 회전 각도를 계산한다.
+
+                float pitchAngle = -localKnockbackDirection.z * tumbleAngle; // 앞뒤로 밀리면 X축 회전
+                float rollAngle = localKnockbackDirection.x * tumbleAngle; // 좌우로 밀리면 Z축 회전
+
+                HeadVisual.localRotation = Quaternion.Euler(pitchAngle, 0.0f, rollAngle); // 현재 넉백 시간 기준 회전을 적용한다.
+            }
+            ///////////
+
             UpdateSegments(deltaTime); // 몸통 추적
             UpdateSegmentWeapons(deltaTime); // 세그먼트 사격
             UpdateTailCollision(deltaTime); // 자기 충돌
@@ -273,6 +320,16 @@ namespace TeamProject01.Gameplay
             currentTurnInput = 0f; // 입력 초기화
             currentForwardSpeed = GetAutoForwardSpeed(); // 속도 복구
             tailCutCooldownRemaining = 0f; // 절단 쿨 초기화
+
+            //성원추가
+            knockbackDirection = Vector3.zero; // 넉백 방향 초기화
+            knockbackDistanceRemaining = 0.0f; // 남은 넉백 거리 초기화
+            knockbackTimeRemaining = 0.0f; // 남은 넉백 시간 초기화
+            knockbackTotalTime = 0.0f; // 넉백 전체 시간 초기화
+            knockbackElapsedTime = 0.0f; // 넉백 진행 시간 초기화
+            knockbackHeight = 0.0f; // 넉백 높이 초기화
+            //////////////////
+
             ClearDetachedTailGroups(); // 분리 꼬리 제거
             SyncSegmentRuntimes(true); // 런타임 보정
             ResetPath(); // 경로 재생성
@@ -292,6 +349,62 @@ namespace TeamProject01.Gameplay
             currentTurnInput = 0f; // 입력 제거
         }
 
+        public void ApplyKnockback(Vector3 direction, float distance, float duration, float height = 0.0f) // 외부에서 컨보이를 밀어내고 공중으로 띄우는 API
+        {
+            direction.y = 0.0f; // 수평 이동 방향은 바닥 평면 기준으로만 계산한다.
+
+            if (direction.sqrMagnitude <= 0.0001f) // 방향이 없다면
+            {
+                return; // 넉백을 적용하지 않는다.
+            }
+
+            knockbackDirection = direction.normalized; // 넉백 방향을 길이 1로 저장한다.
+            knockbackDistanceRemaining = Mathf.Max(0.0f, distance);  // 밀릴 거리를 저장한다.
+
+            //성원 수정
+            knockbackTotalTime = Mathf.Max(0.01f, duration); // 넉백 전체 시간을 저장한다.
+            knockbackTimeRemaining = knockbackTotalTime; // 남은 시간을 전체 시간으로 초기화한다.
+            knockbackElapsedTime = 0.0f; // 진행 시간을 초기화한다.
+
+            knockbackHeight = Mathf.Max(0.0f, height); // 공중으로 뜰 최대 높이를 저장한다.
+
+            //////////////
+        }
+
+        //성원 추가
+        private Vector3 ConsumeKnockbackDisplacement(float deltaTime, out float verticalOffset) // 이번 프레임 넉백 이동량과 공중 높이를 계산한다.
+        {
+            verticalOffset = 0.0f; // 기본 공중 높이는 0이다.
+
+            if (knockbackDistanceRemaining <= 0.0f || knockbackTimeRemaining <= 0.0f) // 남은 넉백이 없다면
+            {
+                return Vector3.zero; // 이동량 없음
+            }
+
+            float moveDistance = knockbackDistanceRemaining * (deltaTime / knockbackTimeRemaining); // 이번 프레임 수평 넉백 거리를 계산한다.
+            moveDistance = Mathf.Min(moveDistance, knockbackDistanceRemaining); // 남은 거리보다 많이 움직이지 않게 제한한다.
+
+            knockbackDistanceRemaining -= moveDistance; // 사용한 거리만큼 남은 넉백 거리를 줄인다.
+            knockbackTimeRemaining -= deltaTime; // 지난 시간만큼 남은 넉백 시간을 줄인다.
+            knockbackElapsedTime += deltaTime; // 지난 시간만큼 넉백 진행 시간을 늘린다.
+
+            float progress = Mathf.Clamp01(knockbackElapsedTime / knockbackTotalTime); // 넉백 진행률을 계산한다.
+            verticalOffset = Mathf.Sin(progress * Mathf.PI) * knockbackHeight; // 중간에서 가장 높아지는 포물선 높이를 계산한다.
+
+            if (knockbackDistanceRemaining <= 0.0f || knockbackTimeRemaining <= 0.0f) // 넉백이 끝났다면
+            {
+                knockbackDistanceRemaining = 0.0f; // 남은 거리 초기화
+                knockbackTimeRemaining = 0.0f; // 남은 시간 초기화
+                knockbackElapsedTime = 0.0f; // 진행 시간 초기화
+                knockbackTotalTime = 0.0f; // 전체 시간 초기화
+                knockbackHeight = 0.0f; // 공중 높이 초기화
+                verticalOffset = 0.0f; // 끝나는 순간 바닥으로 내려오게 한다.
+            }
+
+            return knockbackDirection * moveDistance; // 이번 프레임 수평 넉백 이동량을 반환한다.
+        }
+        ////////////////////////
+
         private void NotifySegmentCountChanged() // 길이 변경 알림
         {
             SegmentCountChanged?.Invoke(segments.Count); // 현재 길이 전달
@@ -308,10 +421,6 @@ namespace TeamProject01.Gameplay
             CoreStatData stats = CoreStatProvider.GetCurrentOrDefault(); // 코어 성장값
             return Mathf.Max(0.1f, RejoinAreaRadius + stats.RejoinRangeBonus); // 보너스 적용
         }
-
-
-
-
 
         private static float ExpLerp(float current, float target, float sharpness, float deltaTime) // 지수 보간
         {

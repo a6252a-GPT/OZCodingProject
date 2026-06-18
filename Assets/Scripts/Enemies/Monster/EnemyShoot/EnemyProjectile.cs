@@ -16,7 +16,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float arcHeight = 3f; // 포물선으로 솟아오를 높이
 
         [Min(0.1f)]
-        [SerializeField] private float lifeTime = 5f; // 투사체 최대 생존 시간
+        [SerializeField] private float lifeTime = 5f; // 투사체 최대 유지 시간
 
         private Vector3 startPosition; // 투사체가 발사된 시작 위치
         private Vector3 targetPosition; // 투사체가 도착할 목표 위치
@@ -29,9 +29,9 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
-            lifeTimer += Time.deltaTime; // 지난 시간만큼 생존 시간을 증가(날아가다없어지면 안되니까)
+            lifeTimer += Time.deltaTime; // 지난 시간만큼 유지 시간을 증가(날아가다없어지면 안되니까)
 
-            if (lifeTimer >= lifeTime) // 생존 시간이 제한 시간을 넘었다면
+            if (lifeTimer >= lifeTime) // 유지 시간이 제한 시간을 넘었다면
             {
                 Destroy(gameObject); // 투사체를 제거한다.
                 return; // 더 이상 처리하지 않는다.
@@ -97,7 +97,7 @@ namespace TeamProject01.Gameplay
             travelDuration = distance / moveSpeed; // 거리와 속도를 이용해 도착 시간을 계산한다.
             travelDuration = Mathf.Max(0.1f, travelDuration); // 너무 짧은 시간이 되지 않도록 최소 시간을 보장한다.
 
-            lifeTimer = 0f; // 생존 시간을 0으로 초기화한다.
+            lifeTimer = 0f; // 유지 시간을 0으로 초기화한다.
             travelTimer = 0f; // 비행 시간을 0으로 초기화한다.
             isConfigured = true; // 투사체 설정이 끝났다고 표시한다.
         }

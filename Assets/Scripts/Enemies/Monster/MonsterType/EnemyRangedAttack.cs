@@ -54,7 +54,7 @@ namespace TeamProject01.Gameplay
             }
 
             Vector3 offset = nexus.position - transform.position; // 현재 몬스터 위치에서 Nexus까지의 방향과 거리 벡터를 구한다.
-            offset.y = 0f; // 3D 평면 거리만 사용할 것이므로 높이 차이는 제거한다.
+            offset.y = 0f; // 높이 차이는 제거한다.
 
             if (offset.sqrMagnitude > attackRange * attackRange) // Nexus가 공격 사거리 밖이라면
             {
@@ -70,7 +70,7 @@ namespace TeamProject01.Gameplay
             Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position; // FirePoint가 있으면 그 위치에서, 없으면 몬스터 위치에서 발사한다.
 
             Vector3 offset = nexus.position - spawnPosition; // 발사 위치에서 Nexus까지의 방향과 거리 벡터를 구한다.
-            offset.y = 0f; // 3D 평면 방향만 사용할 것이므로 높이 차이는 제거한다.
+            offset.y = 0f; // 높이 차이는 제거한다.
 
             Quaternion spawnRotation = transform.rotation; // 기본 회전값은 현재 몬스터 회전값으로 둔다.
 
