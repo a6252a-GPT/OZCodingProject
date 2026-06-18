@@ -55,6 +55,24 @@ public class SegmentAddCard : MonoBehaviour
         SetButtonInteractable(false); // 버튼 비활성화
     }
 
+    ////// 무기 강화 3단계 카드 설정
+    public void ConfigureWeaponEnhancement(WeaponDefinition definition, int levelDeltaValue)
+    {
+        if (definition == null)
+        {
+            ConfigureEmpty(); // 데이터 없음
+            return;
+        }
+
+        levelDelta = Mathf.Max(1, levelDeltaValue); // 소비 레벨
+        segmentId = definition.NormalizedTargetSegmentId; // 대상 세그먼트
+        IsSelectableChoice = definition.HasAnyStatBonus && !string.IsNullOrWhiteSpace(segmentId); // 유효 강화만 선택
+        string title = string.IsNullOrWhiteSpace(definition.DisplayName) ? definition.NormalizedId : definition.DisplayName; // 제목
+        string description = string.IsNullOrWhiteSpace(definition.Description) ? definition.NormalizedId : definition.Description; // 설명
+        ApplyTexts(title, description); // 카드 문구
+        SetButtonInteractable(IsSelectableChoice); // 버튼 상태
+    }
+
     public GrowthStatData CreateGrowthStatData() // 코어로 보낼 세그먼트 추가 데이터
     {
         ////// 전찬우수정 - 런타임 주입 ID/보정값을 사용

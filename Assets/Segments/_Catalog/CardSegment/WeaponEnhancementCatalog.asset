@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c9d8e1f2a3b4c5d6e7f8091a2b3c4d5, type: 3}
+  m_Name: WeaponEnhancementCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponCatalogAsset
+  CannonEnhancements:
+  - {fileID: 11400000, guid: 1a2b3c4d5e6f7890abcdef1234567890, type: 2}
+  - {fileID: 11400000, guid: 1bfc13936c938c24da3779ff7cf71e3d, type: 2}
+  - {fileID: 11400000, guid: d9b4386e5c48a9048b0b255cd23c7dd2, type: 2}
+  MissileEnhancements:
+  - {fileID: 11400000, guid: 7492b4fcc052422a9318029690c0a526, type: 2}
+  - {fileID: 11400000, guid: 04b6c07338255534581b41e57cee7964, type: 2}
+  - {fileID: 11400000, guid: edfb9734a2ac96243815cb162c228957, type: 2}
+  AdditionalCategories: []

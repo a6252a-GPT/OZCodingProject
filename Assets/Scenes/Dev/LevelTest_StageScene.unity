@@ -1223,7 +1223,11 @@ MonoBehaviour:
   - {fileID: 1511448857506858134, guid: a07c2db2c65b556429e27d4e3eeac86c, type: 3}
   - {fileID: 1511448857506858134, guid: ea0d40b0a429b164ea58817dc21f486b, type: 3}
   - {fileID: 1511448857506858134, guid: 34155b9013e604f48890dfdf542819f4, type: 3}
-  doubleUpgradeChancePercent: 30
+  weaponCatalogAsset: {fileID: 11400000, guid: 3c4d5e6f7890abcdef1234567890abcd, type: 2}
+  rareCardChancePercent: 30
+  uniqueCardChancePercent: 10
+  baseCardSpawnWeight: 100
+  selectedCardWeightBonus: 50
   cardSlots:
   - {fileID: 485978112}
   - {fileID: 146833078}
@@ -3367,18 +3371,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.CoreStatProvider
   CurrentLevel: 1
   FlatDamageBonus: 0
-  DamageMultiplier: 1
+  DamageMultiplier: 10
   AttackSpeedMultiplier: 1
   TurnSpeedBonus: 0
   CollisionForceBonus: 0
   RejoinRangeBonus: 0
+  CurrentGold: 0
   CurrentExperience: 0
   TotalExperience: 0
-  CurrentGold: 0
   BaseExperienceToLevelUp: 5
   ExtraExperiencePerLevel: 5
   Convoy: {fileID: 0}
   SegmentCatalogAsset: {fileID: 11400000, guid: bf871c57c4a7aff49b7e7f24dc632e0e, type: 2}
+  WeaponCatalogAsset: {fileID: 0}
   SegmentCatalog: []
 --- !u!4 &1307710826
 Transform:

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a0f8e3dff97434fb869669e78b80a7a, type: 3}
+  m_Name: WE_Missile_ExplosionRadius
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponDefinition
+  EnhancementId: WE_Missile_ExplosionBoost
+  DisplayName: "\uBBF8\uC0AC\uC77C \uAC15\uD654"
+  Description: "\uBBF8\uC0AC\uC77C \uBC94\uC704 \uC99D\uAC00"
+  TargetSegmentId: SG02_Missile
+  BaseDamage: 0
+  ProjectileSpeed: 0
+  PierceCount: 0
+  ExplosionRadius: 0.5
