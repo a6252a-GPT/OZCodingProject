@@ -370,8 +370,14 @@ MonoBehaviour:
   spawnArea: {fileID: 969739265}
   spawnEntries:
   - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-    weight: 65
+    weight: 60
   - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
+    weight: 60
+  - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+    weight: 50
+  - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
+    weight: 50
+  - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
     weight: 50
   spawnInterval: 1
   spawnCount: 1
@@ -1231,7 +1237,7 @@ RectTransform:
   m_Father: {fileID: 540447468}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -5550,7 +5556,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1554711923
 Transform:
   m_ObjectHideFlags: 0
@@ -6742,7 +6748,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1844910181}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
