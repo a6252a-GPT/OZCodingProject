@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5270b07fd574654e94d23ef856f9811, type: 3}
+  m_Name: StarterCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.StarterCatalogAsset
+  Starters:
+  - WormId: worm_basic
+    StarterDefinition: {fileID: 11400000, guid: 0272680e250261f40b787294e7dc286c, type: 2}
+    StarterPrefab: {fileID: 1038346915152058676, guid: 794390654abf338439524985f164a609, type: 3}
+    Memo: "\uAE30\uBCF8 \uC9C0\uB801\uC774 \uC2DC\uC791 \uCE90\uB17C"

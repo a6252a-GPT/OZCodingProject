@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbb6300c20ecd1d41bca8461b5e42865, type: 3}
+  m_Name: SegmentCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentCatalogAsset
+  Segments:
+  - {fileID: 11400000, guid: 67867b31e58f13e45bac2578caf9032d, type: 2}
+  - {fileID: 11400000, guid: da936b363b9e52e4f9845ad4f92ebd0d, type: 2}
