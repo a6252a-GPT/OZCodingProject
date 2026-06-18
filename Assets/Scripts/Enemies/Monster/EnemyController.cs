@@ -127,7 +127,7 @@ namespace TeamProject01.Gameplay
 
             for (int tagIndex = 0; tagIndex < tags.Length; tagIndex++) // 태그 목록을 순회한다.
             {
-                GameObject[] candidates = FindObjectsByTag(tags[tagIndex], out bool tagRegistered); /// 태그 후보
+                GameObject[] candidates = FindObjectsByTag(tags[tagIndex], out bool tagRegistered); /// 태그 대상
                 foundRegisteredTag |= tagRegistered; // 등록 확인
 
                 for (int i = 0; i < candidates.Length; i++) // 찾은 후보들을 순회한다.
@@ -162,19 +162,19 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private static void TryPickNearest(EnemyController enemy, Vector3 origin, ref float bestDistance, ref EnemyController target) // 최단 후보
+        private static void TryPickNearest(EnemyController enemy, Vector3 origin, ref float bestDistance, ref EnemyController target) // 최단 대상
         {
-            if (enemy == null || enemy.dead) // 후보가 없거나 이미 죽었다면
+            if (enemy == null || enemy.dead) // 대상이 없거나 이미 죽었다면
             {
                 return; // 대상에서 제외한다.
             }
 
-            Vector3 offset = enemy.transform.position - origin; // 후보 거리
+            Vector3 offset = enemy.transform.position - origin; // 대상 거리
             offset.y = 0f; // 평면 거리
 
             float distance = offset.sqrMagnitude;  // 제곱 거리
 
-            if (distance > bestDistance) // 현재 최고 후보보다 멀다면
+            if (distance > bestDistance) // 현재 최고 대상보다 멀다면
             {
                 return; // 갱신하지 않는다.
             }
