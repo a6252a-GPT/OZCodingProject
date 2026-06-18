@@ -8,6 +8,7 @@ namespace TeamProject01.Gameplay
 
         public ConvoySegmentRuntime Segment { get; private set; } // 소유 세그먼트
         public bool IsWeaponActive { get; private set; } // 작동 여부
+        public string EffectiveSegmentId => GetEffectiveSegmentId(); // 실제 강화/교체 ID
 
         public virtual void Configure(ConvoySegmentRuntime segment) // 세그먼트 연결
         {

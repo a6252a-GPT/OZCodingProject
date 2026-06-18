@@ -7,7 +7,9 @@ namespace TeamProject01.Gameplay
     {
         [Header("Starter Segment")]
         public bool EnableStarterSegment; // 선택 지렁이 기본 무기 세그먼트
+        public StarterCatalogAsset StarterCatalog; // 지렁이별 시작 무기 데이터에셋
         public GameObject StarterSegmentPrefab; // 공통 fallback 시작 세그먼트
+        [Min(0.1f)] public float StarterSegmentDistanceBehindHead = 1.7f; // 머리와 스타터 사이 거리
         public WormStarterSegmentEntry[] StarterSegmentsByWorm; // 지렁이별 시작 세그먼트
 
         private Transform starterSegment; // 현재 시작 세그먼트
@@ -90,6 +92,11 @@ namespace TeamProject01.Gameplay
 
         private GameObject ResolveStarterSegmentPrefab(string wormId) // 지렁이별 스타터 선택
         {
+            if (StarterCatalog != null && StarterCatalog.TryGetStarterPrefab(wormId, out GameObject catalogPrefab))
+            {
+                return catalogPrefab; // 데이터에셋 우선
+            }
+
             if (StarterSegmentsByWorm != null)
             {
                 for (int i = 0; i < StarterSegmentsByWorm.Length; i++)

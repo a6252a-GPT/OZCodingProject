@@ -92,6 +92,11 @@ namespace TeamProject01.Gameplay
 
         private GameObject PickSegmentPrefab() // 세그먼트 후보 선택
         {
+            if (Controller != null && Controller.TryGetRandomAddableSegmentPrefab(out GameObject catalogPrefab))
+            {
+                return catalogPrefab; // 카탈로그 기준 랜덤 후보
+            }
+
             if (SegmentPrefabs != null && SegmentPrefabs.Length > 0)
             {
                 int startIndex = Random.Range(0, SegmentPrefabs.Length); // 시작 후보

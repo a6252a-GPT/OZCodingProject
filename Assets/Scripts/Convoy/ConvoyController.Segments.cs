@@ -210,8 +210,412 @@ namespace TeamProject01.Gameplay
             ApplySegmentMaterial(segment.transform, index); // 교차 재질
             HideLegacySegmentVisualIfModelExists(segment.transform); // 새 모델 사용 시 두부 렌더러 숨김
             ConfigureGroundCheck(GetSegmentGroundCheck(segment.transform), VisualCenterHeight); // 바닥 체크
-            GetSegmentRuntime(segment.transform, index, true); // 런타임 연결
+            ConvoySegmentRuntime runtime = GetSegmentRuntime(segment.transform, index, true); // 런타임 연결
+            if (runtime != null)
+            {
+                runtime.SetSegmentLevel(InferSegmentLevel(segmentPrefab)); // 프리팹 레벨 기록
+            }
+
             return segment.transform; // 생성 결과
+        }
+
+        public int LevelUpAttachedSegments(string segmentId, SegmentDefinition definition) // 테스트용 일괄 레벨업
+        {
+            return LevelUpAttachedSegments(segmentId, definition, out _); // 기존 호출 호환
+        }
+
+        public int LevelUpAttachedSegments(string segmentId, SegmentDefinition definition, out int appliedLevel) // 테스트용 일괄 레벨업
+        {
+            appliedLevel = GetCurrentSegmentLevel(segmentId, definition); // 현재 표시 레벨
+            if (definition == null || string.IsNullOrWhiteSpace(segmentId))
+            {
+                return 0; // 대상 없음
+            }
+
+            RegisterSegmentDefinition(definition); // 이후 추가 세그먼트 레벨 추적
+            SyncSegmentRuntimes(true); // 현재 목록 보정
+            int changed = 0; // 교체 수
+            string targetId = NormalizeSegmentId(segmentId); // 비교 ID
+            int maxLevel = Mathf.Max(1, definition.MaxLevel); // 최대 레벨
+            int currentLevel = Mathf.Clamp(GetCurrentSegmentLevelInternal(targetId, definition), 1, maxLevel); // 현재 모델 레벨
+            int nextLevel = Mathf.Min(currentLevel + 1, maxLevel); // 다음 레벨
+            if (nextLevel == currentLevel || !definition.TryGetLevel(nextLevel, out SegmentLevelDefinition levelData))
+            {
+                appliedLevel = currentLevel; // 최대 레벨
+                return 0; // 더 이상 강화 없음
+            }
+
+            currentSegmentLevelsById[targetId] = nextLevel; // 신규 추가도 같은 레벨 사용
+            appliedLevel = nextLevel; // UI 표시용
+            for (int i = 0; i < segments.Count; i++)
+            {
+                ConvoySegmentRuntime runtime = i < segmentRuntimes.Count ? segmentRuntimes[i] : null; // 현재 런타임
+                if (!IsSegmentId(runtime, targetId))
+                {
+                    continue; // 다른 세그먼트
+                }
+
+                if (segments[i] == starterSegment)
+                {
+                    if (ReplaceStarterSegmentWeapon(i, levelData, nextLevel))
+                    {
+                        changed++; // 스타터 헤드/무기만 교체
+                    }
+
+                    continue; // 스타터 바디 고정
+                }
+
+                if (ReplaceAttachedSegment(i, levelData.SegmentPrefab, nextLevel))
+                {
+                    changed++; // 성공
+                }
+            }
+
+            if (changed > 0)
+            {
+                SyncSegmentRuntimes(true); // 교체 후 인덱스 보정
+                SnapSegmentsToPath(); // 위치 정렬
+                NotifySegmentCountChanged(); // HUD 갱신
+            }
+
+            return changed; // 교체 결과
+        }
+
+        public int GetCurrentSegmentLevel(string segmentId, SegmentDefinition definition = null) // 현재 세그먼트 모델 레벨
+        {
+            string targetId = NormalizeSegmentId(segmentId); // 비교 ID
+            if (string.IsNullOrWhiteSpace(targetId))
+            {
+                return 1; // 기본 레벨
+            }
+
+            if (definition != null)
+            {
+                RegisterSegmentDefinition(definition); // 정의 보관
+            }
+
+            return GetCurrentSegmentLevelInternal(targetId, definition); // 현재값
+        }
+
+        private int GetCurrentSegmentLevelInternal(string segmentId, SegmentDefinition definition) // 내부 레벨 조회
+        {
+            string targetId = NormalizeSegmentId(segmentId); // 비교 ID
+            if (string.IsNullOrWhiteSpace(targetId))
+            {
+                return 1; // 기본 레벨
+            }
+
+            if (definition == null && segmentDefinitionsById.TryGetValue(targetId, out SegmentDefinition registeredDefinition))
+            {
+                definition = registeredDefinition; // 등록 정의 사용
+            }
+
+            int maxLevel = definition != null ? Mathf.Max(1, definition.MaxLevel) : int.MaxValue; // 최대 레벨
+            if (currentSegmentLevelsById.TryGetValue(targetId, out int storedLevel))
+            {
+                return Mathf.Clamp(storedLevel, 1, maxLevel); // 저장값 우선
+            }
+
+            int scannedLevel = 1; // 기본 레벨
+            for (int i = 0; i < segmentRuntimes.Count; i++)
+            {
+                ConvoySegmentRuntime runtime = segmentRuntimes[i]; // 현재 런타임
+                if (IsSegmentId(runtime, targetId))
+                {
+                    scannedLevel = Mathf.Max(scannedLevel, runtime.SegmentLevel); // 배치 상태 반영
+                }
+            }
+
+            return Mathf.Clamp(scannedLevel, 1, maxLevel); // 최종 보정
+        }
+
+        private GameObject ResolveSegmentPrefabForCurrentLevel(GameObject segmentPrefab) // 현재 레벨 프리팹 변환
+        {
+            if (!TryGetSegmentIdFromPrefab(segmentPrefab, out string segmentId))
+            {
+                return segmentPrefab; // ID 없으면 원본
+            }
+
+            if (!segmentDefinitionsById.TryGetValue(segmentId, out SegmentDefinition definition))
+            {
+                return segmentPrefab; // 아직 레벨 정의 없음
+            }
+
+            int level = GetCurrentSegmentLevelInternal(segmentId, definition); // 현재 레벨
+            return definition.TryGetSegmentPrefab(level, out GameObject leveledPrefab) ? leveledPrefab : segmentPrefab; // 레벨 프리팹
+        }
+
+        private void RegisterSegmentDefinition(SegmentDefinition definition) // 세그먼트 정의 보관
+        {
+            if (definition == null || !definition.HasId)
+            {
+                return; // 등록 불가
+            }
+
+            string segmentId = definition.NormalizedId; // 자기 ID
+            segmentDefinitionsById[segmentId] = definition; // 추가/교체용
+
+            string upgradeId = definition.UpgradeId; // 공유 강화 ID
+            if (!string.IsNullOrWhiteSpace(upgradeId))
+            {
+                segmentDefinitionsById[upgradeId] = definition; // 스타터 공유 강화 대비
+            }
+        }
+
+        private static string NormalizeSegmentId(string segmentId) // ID 보정
+        {
+            return string.IsNullOrWhiteSpace(segmentId) ? string.Empty : segmentId.Trim(); // 공백 제거
+        }
+
+        private bool ReplaceAttachedSegment(int index, GameObject prefab, int level) // 붙은 세그먼트 교체
+        {
+            if (prefab == null || index < 0 || index >= segments.Count || SegmentRoot == null)
+            {
+                return false; // 교체 불가
+            }
+
+            Transform oldSegment = segments[index]; // 기존 세그먼트
+            if (oldSegment == null)
+            {
+                return false; // 대상 없음
+            }
+
+            bool wasStarter = starterSegment == oldSegment; // 스타터 여부
+            string oldName = oldSegment.name; // 이름 유지
+            int oldSiblingIndex = oldSegment.GetSiblingIndex(); // 순서 유지
+            Vector3 position = oldSegment.position; // 위치 유지
+            Quaternion rotation = oldSegment.rotation; // 회전 유지
+            Vector3 scale = oldSegment.localScale; // 런타임 크기 유지
+
+            GameObject instance = Instantiate(prefab); // 새 레벨
+            Transform newSegment = instance.transform; // 새 루트
+            newSegment.name = oldName; // 기존 이름 유지
+            newSegment.SetParent(SegmentRoot, true); // 월드 pose 유지
+            newSegment.SetPositionAndRotation(position, rotation); // 위치/회전 복구
+            newSegment.localScale = scale; // 크기 복구
+            newSegment.SetSiblingIndex(Mathf.Clamp(oldSiblingIndex, 0, SegmentRoot.childCount - 1)); // 계층 순서
+
+            DisableAttachedSegmentPhysics(newSegment); // 붙은 몸통 상태
+            ApplySegmentMaterial(newSegment, index); // 교차 재질
+            HideLegacySegmentVisualIfModelExists(newSegment); // 레거시 표시 정리
+            GroundCheck groundCheck = GetSegmentGroundCheck(newSegment); // 바닥 체크
+            ConvoySegmentRuntime runtime = GetSegmentRuntime(newSegment, index, true); // 런타임
+            if (runtime != null)
+            {
+                runtime.SetSegmentLevel(level); // 새 레벨 저장
+            }
+
+            segments[index] = newSegment; // 체인 교체
+            if (index < segmentGroundChecks.Count)
+            {
+                segmentGroundChecks[index] = groundCheck; // 체크 교체
+            }
+
+            if (index < segmentRuntimes.Count)
+            {
+                segmentRuntimes[index] = runtime; // 런타임 교체
+            }
+
+            if (wasStarter)
+            {
+                starterSegment = newSegment; // 스타터 추적 유지
+                activeStarterSegmentPrefab = prefab; // 현재 프리팹 갱신
+            }
+
+            DestroyUnityObject(oldSegment.gameObject); // 기존 제거
+            return true; // 완료
+        }
+
+        private bool ReplaceStarterSegmentWeapon(int index, SegmentLevelDefinition levelData, int level) // 스타터 바디 유지 교체
+        {
+            if (index < 0 || index >= segments.Count || levelData.HeadPrefab == null)
+            {
+                return false; // 교체 불가
+            }
+
+            Transform segment = segments[index]; // 스타터 루트
+            if (segment == null)
+            {
+                return false; // 대상 없음
+            }
+
+            GenericSegmentWeapon weapon = segment.GetComponent<GenericSegmentWeapon>(); // 루트 무기
+            if (weapon == null)
+            {
+                return false; // 무기 없음
+            }
+
+            Transform oldHead = FindWeaponHeadRoot(segment, weapon); // 기존 헤드
+            string headName = oldHead != null ? oldHead.name : "SG01_CannonHead"; // 이름 유지
+            int siblingIndex = oldHead != null ? oldHead.GetSiblingIndex() : segment.childCount; // 순서 유지
+            Vector3 localPosition = oldHead != null ? oldHead.localPosition : Vector3.zero; // 위치 유지
+            Quaternion localRotation = oldHead != null ? oldHead.localRotation : Quaternion.identity; // 회전 유지
+            Vector3 localScale = oldHead != null ? oldHead.localScale : Vector3.one; // 스케일 유지
+
+            GameObject instance = Instantiate(levelData.HeadPrefab, segment, false); // 새 헤드
+            Transform newHead = instance.transform; // 새 헤드 루트
+            newHead.name = headName; // 기존 이름 유지
+            newHead.localPosition = localPosition; // 마운트 위치 유지
+            newHead.localRotation = localRotation; // 마운트 회전 유지
+            newHead.localScale = localScale; // 마운트 스케일 유지
+            newHead.SetSiblingIndex(Mathf.Clamp(siblingIndex, 0, segment.childCount - 1)); // 계층 순서
+
+            if (oldHead != null)
+            {
+                DestroyUnityObject(oldHead.gameObject); // 기존 헤드 제거
+            }
+
+            if (levelData.AttackProfile != null)
+            {
+                weapon.AttackProfile = levelData.AttackProfile; // 레벨별 공격 데이터
+            }
+
+            RebindWeaponSockets(weapon, newHead); // 새 포구/피벗 연결
+            ConvoySegmentRuntime runtime = GetSegmentRuntime(segment, index, true); // 런타임
+            if (runtime != null)
+            {
+                runtime.SetSegmentLevel(level); // 스타터 무기 레벨 저장
+                runtime.Configure(this, index, true); // 무기 재연결
+            }
+
+            return true; // 완료
+        }
+
+        private static Transform FindWeaponHeadRoot(Transform segment, GenericSegmentWeapon weapon) // 헤드 루트 찾기
+        {
+            Transform headRoot = FindDirectChildContaining(segment, weapon != null ? weapon.HeadYawPivot : null); // 피벗 기준
+            if (headRoot != null)
+            {
+                return headRoot; // 현재 헤드
+            }
+
+            headRoot = FindDirectChild(segment, "SG01_CannonHead"); // 스타터 이름
+            if (headRoot != null)
+            {
+                return headRoot; // 발견
+            }
+
+            headRoot = FindDirectChild(segment, "Head"); // 일반 이름
+            if (headRoot != null)
+            {
+                return headRoot; // 발견
+            }
+
+            for (int i = 0; segment != null && i < segment.childCount; i++)
+            {
+                Transform child = segment.GetChild(i); // 후보
+                if (FindChildRecursive(child, "YawPivot") != null && FindChildRecursive(child, "Muzzle") != null)
+                {
+                    return child; // 헤드 구조
+                }
+            }
+
+            return null; // 없음
+        }
+
+        private static Transform FindDirectChildContaining(Transform root, Transform descendant) // 직계 자식 찾기
+        {
+            if (root == null || descendant == null)
+            {
+                return null; // 검색 불가
+            }
+
+            Transform current = descendant; // 시작점
+            while (current != null && current.parent != null && current.parent != root)
+            {
+                current = current.parent; // 루트 직계까지 상승
+            }
+
+            return current != null && current.parent == root ? current : null; // 직계 자식
+        }
+
+        private static Transform FindDirectChild(Transform root, string childName) // 직계 이름 검색
+        {
+            if (root == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null; // 검색 불가
+            }
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i); // 후보
+                if (child.name == childName)
+                {
+                    return child; // 발견
+                }
+            }
+
+            return null; // 없음
+        }
+
+        private static void RebindWeaponSockets(GenericSegmentWeapon weapon, Transform headRoot) // 새 헤드 연결
+        {
+            if (weapon == null)
+            {
+                return; // 대상 없음
+            }
+
+            weapon.HeadYawPivot = FindChildRecursive(headRoot, "YawPivot"); // 회전축
+            weapon.Muzzle = FindChildRecursive(headRoot, "Muzzle"); // 포구
+            Transform vfxRoot = weapon.Muzzle != null ? weapon.Muzzle : headRoot; // VFX 검색 기준
+            weapon.MuzzleVfxSocket = FindChildRecursive(vfxRoot, "VFX_Muzzle"); // 발사 VFX
+            weapon.LoadedProjectileRoot = FindChildRecursive(headRoot, "LoadedProjectiles"); // 장전탄 표시
+            if (weapon.LoadedProjectileRoot == null)
+            {
+                weapon.LoadedProjectileRoot = FindChildRecursive(headRoot, "MissileList"); // 기존 이름 fallback
+            }
+
+            if (weapon.LoadedProjectileRoot == null)
+            {
+                weapon.LoadedProjectileRoot = FindChildRecursive(headRoot, "MisslieList"); // 기존 오타 fallback
+            }
+        }
+
+        private static Transform FindChildRecursive(Transform root, string childName) // 하위 이름 검색
+        {
+            if (root == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null; // 검색 불가
+            }
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i); // 후보
+                if (child.name == childName)
+                {
+                    return child; // 발견
+                }
+
+                Transform found = FindChildRecursive(child, childName); // 재귀
+                if (found != null)
+                {
+                    return found; // 발견
+                }
+            }
+
+            return null; // 없음
+        }
+
+        private static bool IsSegmentId(ConvoySegmentRuntime runtime, string segmentId) // ID 비교
+        {
+            if (runtime == null || runtime.Weapon == null || string.IsNullOrWhiteSpace(segmentId))
+            {
+                return false; // 비교 불가
+            }
+
+            return string.Equals(runtime.Weapon.EffectiveSegmentId, segmentId, System.StringComparison.OrdinalIgnoreCase); // ID 일치
+        }
+
+        private static int InferSegmentLevel(GameObject segmentPrefab) // 프리팹 이름에서 Lv 추정
+        {
+            string name = segmentPrefab != null ? segmentPrefab.name : string.Empty; // 이름
+            int marker = name.LastIndexOf("_Lv", System.StringComparison.OrdinalIgnoreCase); // 레벨 표기
+            if (marker >= 0 && int.TryParse(name.Substring(marker + 3), out int level))
+            {
+                return Mathf.Max(1, level); // 추정 성공
+            }
+
+            return 1; // 기본 Lv1
         }
 
         private void UpdateSegmentWeapons(float deltaTime) // 자동 사격 갱신

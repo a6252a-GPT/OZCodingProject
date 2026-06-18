@@ -90,6 +90,10 @@ namespace TeamProject01.Gameplay
         [Header("Segment Weapons")]
         public bool EnableSegmentAutoFire = true; // 자동 발사 사용
 
+        [Header("Segment Catalog Add")]
+        public bool UseCatalogForDefaultAdd = true; // 기본 추가는 카탈로그 랜덤 사용
+        public SegmentCatalogAsset DefaultAddSegmentCatalog; // 스페이스/자동 추가 후보
+
         [Header("Segment Add Limit")]
         public bool RestrictAddedSegmentsToAllowedId = true; // 자동 추가 세그먼트 제한
         public string AllowedAddedSegmentId = "SG01_Cannon"; // 현재 자동 추가 허용 세그먼트
@@ -97,6 +101,8 @@ namespace TeamProject01.Gameplay
         private readonly List<Transform> segments = new List<Transform>(128); // 연결 몸통
         private readonly List<GroundCheck> segmentGroundChecks = new List<GroundCheck>(128); // 몸통 바닥 체크
         private readonly List<ConvoySegmentRuntime> segmentRuntimes = new List<ConvoySegmentRuntime>(128); // 몸통 런타임
+        private readonly Dictionary<string, int> currentSegmentLevelsById = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); // 세그먼트별 현재 모델 레벨
+        private readonly Dictionary<string, SegmentDefinition> segmentDefinitionsById = new Dictionary<string, SegmentDefinition>(StringComparer.OrdinalIgnoreCase); // 레벨 프리팹 찾기용 정의
         private readonly List<DetachedTailGroup> detachedTails = new List<DetachedTailGroup>(16); // 분리 꼬리
         private readonly List<Vector3> path = new List<Vector3>(2048); // 머리 경로
         private Material rejoinAreaMaterial; // 재결합 재질
@@ -111,7 +117,7 @@ namespace TeamProject01.Gameplay
 
         public int SegmentCount => segments.Count; // 표시 길이
         public int MaxSegments => MaxSegmentCount; // 외부 최대 길이
-        public bool CanAddSegment => CanAddSegmentPrefab(SegmentPrefab); // 기본 추가 가능
+        public bool CanAddSegment => CanAddDefaultSegment(); // 기본 추가 가능
         public CoreStatData CurrentCoreStats => CoreStatProvider.GetCurrentOrDefault(); // 현재 성장값
         public float CurrentSpeed => currentForwardSpeed; // HUD 속도
         public float CurrentTurnVelocity => currentTurnVelocity; // HUD 회전
@@ -131,6 +137,7 @@ namespace TeamProject01.Gameplay
             EnsureSegmentRoot(); // 몸통 루트 보강
             EnsureDetachedTailRoot(); // 분리 루트 보강
             EnsureProjectileRoot(); // 투사체 루트 보강
+            RegisterDefaultAddCatalogDefinitions(); // 카탈로그 후보 등록
             CollectExistingSegments(); // 씬 배치 몸통 수집
             ClearInitialSegmentsIfNeeded(); // 시작 몸통 제거
         }
@@ -175,7 +182,7 @@ namespace TeamProject01.Gameplay
 
             if (input.AddSegment)
             {
-                AddSegment(SegmentPrefab, true); // 테스트 추가
+                AddDefaultSegment(true); // 테스트 랜덤 추가
             }
 
             if (input.RemoveSegment)
@@ -199,12 +206,13 @@ namespace TeamProject01.Gameplay
 
         private bool AddSegment(GameObject segmentPrefab, bool snapToPath) // 몸통 추가
         {
-            if (!CanAddSegmentPrefab(segmentPrefab))
+            GameObject resolvedPrefab = ResolveSegmentPrefabForCurrentLevel(segmentPrefab); // 현재 레벨 반영
+            if (!CanAddSegmentPrefab(resolvedPrefab))
             {
                 return false; // 최대 길이 또는 허용되지 않은 세그먼트
             }
 
-            Transform segment = CreateSegment(segments.Count, segmentPrefab); // 새 몸통
+            Transform segment = CreateSegment(segments.Count, resolvedPrefab); // 새 몸통
             if (segment == null)
             {
                 return false; // 프리팹 없음
@@ -216,7 +224,7 @@ namespace TeamProject01.Gameplay
 
             if (snapToPath)
             {
-                SnapSegmentToPath(segment, segments.Count); // 끝 위치 정렬
+                SnapSegmentToPath(segment, segments.Count - 1); // 끝 위치 정렬
             }
 
             NotifySegmentCountChanged(); // 길이 변경 알림
@@ -286,7 +294,7 @@ namespace TeamProject01.Gameplay
 
         public bool TryAddSegment() // 외부 추가 입구
         {
-            return AddSegment(SegmentPrefab, true); // 기본 정렬 추가
+            return AddDefaultSegment(true); // 기본 랜덤 추가
         }
 
         public bool TryAddSegment(GameObject segmentPrefab) // 프리팹 지정 추가 입구
@@ -300,7 +308,7 @@ namespace TeamProject01.Gameplay
             int targetCount = Mathf.Max(0, count); // 음수 방지
             for (int i = 0; i < targetCount; i++)
             {
-                if (!AddSegment(SegmentPrefab, snapToPath))
+                if (!AddDefaultSegment(snapToPath))
                 {
                     break; // 더 이상 추가 불가
                 }
@@ -313,7 +321,94 @@ namespace TeamProject01.Gameplay
 
         public bool CanAddSegmentPrefab(GameObject segmentPrefab) // 지정 프리팹 추가 가능
         {
-            return segments.Count < MaxSegmentCount && IsAllowedSegmentPrefab(segmentPrefab); // 길이/허용 ID 확인
+            GameObject resolvedPrefab = ResolveSegmentPrefabForCurrentLevel(segmentPrefab); // 현재 레벨 반영
+            return segments.Count < MaxSegmentCount && IsAllowedSegmentPrefab(resolvedPrefab); // 길이/허용 ID 확인
+        }
+
+        public bool TryGetRandomAddableSegmentPrefab(out GameObject prefab) // 카탈로그 랜덤 후보 제공
+        {
+            if (TryPickCatalogSegmentPrefab(out prefab))
+            {
+                return true; // 카탈로그 후보
+            }
+
+            prefab = ResolveSegmentPrefabForCurrentLevel(SegmentPrefab); // 기존 기본값
+            return CanAddSegmentPrefab(prefab); // fallback 가능 여부
+        }
+
+        private bool AddDefaultSegment(bool snapToPath) // 기본 추가
+        {
+            return TryGetRandomAddableSegmentPrefab(out GameObject prefab) && AddSegment(prefab, snapToPath); // 랜덤 생성
+        }
+
+        private bool CanAddDefaultSegment() // 기본 추가 가능
+        {
+            return TryGetRandomAddableSegmentPrefab(out _); // 후보 존재 여부
+        }
+
+        private bool TryPickCatalogSegmentPrefab(out GameObject prefab) // 카탈로그에서 추가 후보 선택
+        {
+            prefab = null; // 기본값
+            if (!UseCatalogForDefaultAdd)
+            {
+                return false; // 카탈로그 미사용
+            }
+
+            SegmentCatalogAsset catalog = GetDefaultAddCatalog(); // 등록 데이터
+            if (catalog == null || catalog.Segments == null || catalog.Segments.Length == 0)
+            {
+                return false; // 후보 없음
+            }
+
+            int startIndex = UnityEngine.Random.Range(0, catalog.Segments.Length); // 랜덤 시작
+            for (int i = 0; i < catalog.Segments.Length; i++)
+            {
+                int index = (startIndex + i) % catalog.Segments.Length; // 순환 검사
+                SegmentDefinition definition = catalog.Segments[index]; // 후보 정의
+                if (TryGetAddableCatalogSegmentPrefab(definition, out prefab))
+                {
+                    return true; // 사용 가능
+                }
+            }
+
+            return false; // 추가 가능한 후보 없음
+        }
+
+        private bool TryGetAddableCatalogSegmentPrefab(SegmentDefinition definition, out GameObject prefab) // 정의 → 현재 레벨 프리팹
+        {
+            prefab = null; // 기본값
+            if (definition == null || !definition.HasId || definition.StarterOnly || !definition.CanAddByLevelChoice)
+            {
+                return false; // 추가 후보 아님
+            }
+
+            RegisterSegmentDefinition(definition); // 레벨 추적 등록
+            int level = GetCurrentSegmentLevelInternal(definition.NormalizedId, definition); // 현재 레벨
+            return definition.TryGetSegmentPrefab(level, out prefab) && CanAddSegmentPrefab(prefab); // 생성 가능 확인
+        }
+
+        private SegmentCatalogAsset GetDefaultAddCatalog() // 기본 추가 카탈로그
+        {
+            if (DefaultAddSegmentCatalog != null)
+            {
+                return DefaultAddSegmentCatalog; // 컨보이 직접 설정
+            }
+
+            return CoreStatProvider.Active != null ? CoreStatProvider.Active.SegmentCatalogAsset : null; // 코어 fallback
+        }
+
+        private void RegisterDefaultAddCatalogDefinitions() // 카탈로그 정의 등록
+        {
+            SegmentCatalogAsset catalog = GetDefaultAddCatalog(); // 등록 데이터
+            if (catalog == null || catalog.Segments == null)
+            {
+                return; // 없음
+            }
+
+            for (int i = 0; i < catalog.Segments.Length; i++)
+            {
+                RegisterSegmentDefinition(catalog.Segments[i]); // 추가 레벨 후보 등록
+            }
         }
 
         private bool IsAllowedSegmentPrefab(GameObject segmentPrefab) // 추가 허용 프리팹 확인
@@ -334,16 +429,32 @@ namespace TeamProject01.Gameplay
                 return true; // 프리팹 이름 일치
             }
 
+            if (!TryGetSegmentIdFromPrefab(segmentPrefab, out string segmentId))
+            {
+                return false; // ID 판단 불가
+            }
+
+            return string.Equals(segmentId, allowedId, StringComparison.OrdinalIgnoreCase); // ID 일치 여부
+        }
+
+        private static bool TryGetSegmentIdFromPrefab(GameObject segmentPrefab, out string segmentId) // 프리팹 ID 확인
+        {
+            segmentId = string.Empty; // 기본값
+            if (segmentPrefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
             SegmentWeaponBehaviour weapon = segmentPrefab.GetComponent<SegmentWeaponBehaviour>(); // 세그먼트 무기
             if (weapon == null)
             {
                 return false; // ID 판단 불가
             }
 
-            string segmentId = string.IsNullOrWhiteSpace(weapon.SegmentId)
+            segmentId = string.IsNullOrWhiteSpace(weapon.SegmentId)
                 ? GetSegmentIdFromWeaponType(weapon.GetType())
                 : weapon.SegmentId.Trim(); // 명시 ID 우선
-            return string.Equals(segmentId, allowedId, StringComparison.OrdinalIgnoreCase); // ID 일치 여부
+            return !string.IsNullOrWhiteSpace(segmentId); // 유효 ID
         }
 
         private static string GetSegmentIdFromWeaponType(Type weaponType) // 무기 타입명 기반 ID
