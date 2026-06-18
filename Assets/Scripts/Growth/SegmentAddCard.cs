@@ -55,7 +55,7 @@ public class SegmentAddCard : MonoBehaviour
         SetButtonInteractable(false); // 버튼 비활성화
     }
 
-    ////// 무기 강화 3단계 카드 설정
+    ////// 무기 강화 2단계 카드 설정 (세그먼트 선택 후 강화 카드 UI)
     public void ConfigureWeaponEnhancement(WeaponDefinition definition, int levelDeltaValue)
     {
         if (definition == null)

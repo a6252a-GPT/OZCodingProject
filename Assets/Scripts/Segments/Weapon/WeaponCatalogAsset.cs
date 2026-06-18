@@ -12,7 +12,7 @@ namespace TeamProject01.Gameplay
     }
 
     [CreateAssetMenu(menuName = "OZ/Segments/Weapon Catalog", fileName = "WeaponCatalog")]
-    public sealed class WeaponCatalogAsset : ScriptableObject // 카드 3단계용 무기 강화 카탈로그
+    public sealed class WeaponCatalogAsset : ScriptableObject // 무기 강화 2단계 카드용 카탈로그
     {
         [Header("Cannon")]
         public WeaponDefinition[] CannonEnhancements = Array.Empty<WeaponDefinition>(); // 캐논 강화 목록

@@ -115,8 +115,8 @@ public class LevelUpUi : MonoBehaviour
     private void LogCoreStats()
     {
         CoreStatData stats = CoreStatProvider.GetCurrentOrDefault(); // 코어 없으면 기본값
-        lastLoggedExp = stats.CurrentExperience;
-        lastLoggedLevel = stats.Level;
+        lastLoggedExp = stats.CurrentExperience; // 중복 로그 방지용 저장
+        lastLoggedLevel = stats.Level; // 중복 로그 방지용 저장
         LogCoreStats(stats); // 공통 로그 출력
     }
 

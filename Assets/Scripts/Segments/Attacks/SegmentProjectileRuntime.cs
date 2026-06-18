@@ -19,10 +19,11 @@ namespace TeamProject01.Gameplay
         private float arcTimer; // 곡사 진행 시간
         private float arcDuration; // 곡사 전체 시간
         private int remainingPierces; // 남은 관통 수
+        // 건준 추가 시작 =====
         private float effectiveProjectileSpeed; // 강화 반영 속도
         private float effectiveExplosionRadius; // 강화 반영 폭발 반경
 
-        public static SegmentProjectileRuntime Spawn(Transform root, GameObject prefab, Vector3 position, Vector3 direction, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus = default) // 생성
+        public static SegmentProjectileRuntime Spawn(Transform root, GameObject prefab, Vector3 position, Vector3 direction, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus = default) // 생성 (weaponBonus=카드 강화 누적값)
         {
             GameObject instance;
             if (prefab != null)
@@ -50,7 +51,7 @@ namespace TeamProject01.Gameplay
             return runtime;
         }
 
-        private void Configure(Vector3 fireDirection, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus) // 값 주입
+        private void Configure(Vector3 fireDirection, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus) // 값 주입 (프로필+강화 합산)
         {
             this.profile = profile; // 프로필
             this.target = target; // 목표
@@ -58,14 +59,14 @@ namespace TeamProject01.Gameplay
             direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : transform.forward; // 방향
             lifeTimer = profile != null ? Mathf.Max(0.1f, profile.ProjectileLifetime) : 0.1f; // 수명
             effectiveProjectileSpeed = profile != null
-                ? Mathf.Max(0.1f, profile.ProjectileSpeed + weaponBonus.ProjectileSpeedBonus)
-                : 0.1f; // 속도
+                ? Mathf.Max(0.1f, profile.ProjectileSpeed + weaponBonus.ProjectileSpeedBonus) // 기본+강화 속도
+                : 0.1f;
             remainingPierces = profile != null
-                ? Mathf.Max(1, profile.PierceCount + weaponBonus.PierceCountBonus)
-                : 1; // 관통 수
+                ? Mathf.Max(1, profile.PierceCount + weaponBonus.PierceCountBonus) // 기본+강화 관통
+                : 1;
             effectiveExplosionRadius = profile != null
-                ? Mathf.Max(0.1f, profile.ExplosionRadius + weaponBonus.ExplosionRadiusBonus)
-                : 0.1f; // 폭발 반경
+                ? Mathf.Max(0.1f, profile.ExplosionRadius + weaponBonus.ExplosionRadiusBonus) // 기본+강화 폭발
+                : 0.1f;
             startPosition = transform.position; // 시작
             float targetAimHeight = profile != null ? profile.TargetAimHeight : 0.45f; // 조준 높이
             endPosition = target != null ? target.transform.position + Vector3.up * targetAimHeight : startPosition + direction * 8f; // 도착
@@ -75,6 +76,7 @@ namespace TeamProject01.Gameplay
             hitEnemyIds.Clear(); // 중복 초기화
             explosionEnemyIds.Clear(); // 중복 초기화
         }
+        // 건준 추가 끝 =====
 
         private void Update() // 이동 루프
         {
@@ -107,7 +109,9 @@ namespace TeamProject01.Gameplay
 
         private void UpdateStraightProjectile() // 직선 이동
         {
+            // 건준 추가 시작 =====
             transform.position += direction * (effectiveProjectileSpeed * Time.deltaTime); // 이동
+            // 건준 추가 끝 =====
             if (direction.sqrMagnitude > 0.0001f)
             {
                 transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 방향
@@ -211,7 +215,9 @@ namespace TeamProject01.Gameplay
         {
             PlayExplosionVfx(position); // 폭발 VFX
             DamageData explosionDamage = DamageData.Create(damage.Amount, DamageType.Explosion, damage.SourceSegmentIndex, position, damage.SourceObject); // 폭발 피해
+            // 건준 추가 시작 =====
             Collider[] hits = Physics.OverlapSphere(position, effectiveExplosionRadius); // 범위 검색
+            // 건준 추가 끝 =====
             for (int i = 0; i < hits.Length; i++)
             {
                 EnemyController enemy = hits[i].GetComponentInParent<EnemyController>(); // 몬스터
@@ -267,7 +273,9 @@ namespace TeamProject01.Gameplay
             }
 
             GameObject instance = Instantiate(profile.ExplosionVfxPrefab, position, Quaternion.identity); // 생성
+            // 건준 추가 시작 =====
             instance.transform.localScale = Vector3.one * (effectiveExplosionRadius * 2f); // 범위 표시
+            // 건준 추가 끝 =====
             float lifetime = profile.ExplosionVfxLifetime > 0f ? profile.ExplosionVfxLifetime : profile.ExplosionLifetime; // 제거 시간
             if (lifetime > 0f)
             {

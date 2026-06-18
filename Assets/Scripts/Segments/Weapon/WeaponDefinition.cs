@@ -25,34 +25,34 @@ namespace TeamProject01.Gameplay
 
         public void ApplyBonuses(ref float baseDamage, ref float projectileSpeed, ref int pierceCount, ref float explosionRadius) // 공격 프로필 수치에 보너스 반영
         {
-            baseDamage = Mathf.Max(0f, baseDamage + BaseDamage);
-            projectileSpeed = Mathf.Max(0.1f, projectileSpeed + ProjectileSpeed);
-            pierceCount = Mathf.Max(0, pierceCount + PierceCount);
-            explosionRadius = Mathf.Max(0.1f, explosionRadius + ExplosionRadius);
+            baseDamage = Mathf.Max(0f, baseDamage + BaseDamage); // 피해량 합산
+            projectileSpeed = Mathf.Max(0.1f, projectileSpeed + ProjectileSpeed); // 속도 합산
+            pierceCount = Mathf.Max(0, pierceCount + PierceCount); // 관통 합산
+            explosionRadius = Mathf.Max(0.1f, explosionRadius + ExplosionRadius); // 폭발 반경 합산
         }
     }
 
     [Serializable]
     public struct WeaponStatBonusData // 세그먼트별 무기 강화 누적값
     {
-        public float BaseDamageBonus;
-        public float ProjectileSpeedBonus;
-        public int PierceCountBonus;
-        public float ExplosionRadiusBonus;
+        public float BaseDamageBonus; // 누적 피해 보너스
+        public float ProjectileSpeedBonus; // 누적 투사체 속도 보너스
+        public int PierceCountBonus; // 누적 관통 보너스
+        public float ExplosionRadiusBonus; // 누적 폭발 반경 보너스
 
-        public bool HasAny => BaseDamageBonus > 0f || ProjectileSpeedBonus > 0f || PierceCountBonus > 0 || ExplosionRadiusBonus > 0f;
+        public bool HasAny => BaseDamageBonus > 0f || ProjectileSpeedBonus > 0f || PierceCountBonus > 0 || ExplosionRadiusBonus > 0f; // 보너스 존재 여부
 
         public void AddDefinition(WeaponDefinition definition) // 강화 1종 누적
         {
             if (definition == null)
             {
-                return;
+                return; // null 무시
             }
 
-            BaseDamageBonus += definition.BaseDamage;
-            ProjectileSpeedBonus += definition.ProjectileSpeed;
-            PierceCountBonus += definition.PierceCount;
-            ExplosionRadiusBonus += definition.ExplosionRadius;
+            BaseDamageBonus += definition.BaseDamage; // 카드 피해 누적
+            ProjectileSpeedBonus += definition.ProjectileSpeed; // 카드 속도 누적
+            PierceCountBonus += definition.PierceCount; // 카드 관통 누적
+            ExplosionRadiusBonus += definition.ExplosionRadius; // 카드 폭발 반경 누적
         }
     }
 }

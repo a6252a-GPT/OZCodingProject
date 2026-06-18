@@ -203,18 +203,18 @@ public class CardUI : MonoBehaviour
             SpawnedCardEntry entry = CreateSpawnedCard(picked[i], cardSlots[i], picked[i]); // sourcePrefab=선택 가중치 추적용
             if (entry != null)
             {
-                spawnedCards.Add(entry);
+                spawnedCards.Add(entry); // 생성 목록 등록
             }
         }
 
-        PlaySpawnOpenTween(spawnedCards);
+        PlaySpawnOpenTween(spawnedCards); // 등장 연출
     }
 
     private static LevelUpCardPhase ResolveLevelUpCardPhase()
     {
-        CoreStatProvider core = CoreStatProvider.Active;
+        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
         int cycleIndex = core != null ? core.LevelUpCardCycleIndex : 0; // 0=1→2 스탯, 1=2→3 무기, 2=3→4 세그먼트
-        return (LevelUpCardPhase)(cycleIndex % 3);
+        return (LevelUpCardPhase)(cycleIndex % 3); // 3종 순환
     }
 
     ////// 전찬우추가 - 세그먼트 ADD 풀: 카탈로그 후보 3장 생성, 부족하면 없음 카드 표시
@@ -275,15 +275,15 @@ public class CardUI : MonoBehaviour
             CoreStatProvider.Active.TryGetWeaponEnhanceChoiceCandidates(candidates); // Segment Catalog 풀
         }
 
-        int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length);
-        List<SegmentCatalogEntry> picked = PickRandomSegmentEntries(candidates, spawnCount);
+        int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
+        List<SegmentCatalogEntry> picked = PickRandomSegmentEntries(candidates, spawnCount); // 후보 랜덤 선택
         for (int i = 0; i < spawnCount; i++)
         {
-            GameObject prefab = GetSegmentCardTemplate(i);
-            SpawnedCardEntry entry = CreateSpawnedCard(prefab, cardSlots[i]);
+            GameObject prefab = GetSegmentCardTemplate(i); // 슬롯별 카드 템플릿
+            SpawnedCardEntry entry = CreateSpawnedCard(prefab, cardSlots[i]); // 카드 생성
             if (entry == null)
             {
-                continue;
+                continue; // 생성 실패
             }
 
             if (i < picked.Count)
@@ -295,18 +295,18 @@ public class CardUI : MonoBehaviour
                 ConfigureEmptySegmentEntry(entry); // 후보 부족
             }
 
-            spawnedCards.Add(entry);
+            spawnedCards.Add(entry); // 생성 목록 등록
         }
 
-        PlaySpawnOpenTween(spawnedCards);
+        PlaySpawnOpenTween(spawnedCards); // 등장 연출
     }
 
     private void ConfigureWeaponEnhanceCandidateEntry(SpawnedCardEntry entry, SegmentCatalogEntry catalogEntry)
     {
         entry.SegmentRole = SegmentCardRole.Candidate; // 1단계 후보 (무기 강화 흐름)
-        entry.SegmentCatalogEntry = catalogEntry;
-        entry.SegmentId = catalogEntry.NormalizedId;
-        entry.LevelDelta = entry.SegmentAddCard != null ? entry.SegmentAddCard.LevelDelta : 1;
+        entry.SegmentCatalogEntry = catalogEntry; // 선택 후 2단계에 전달
+        entry.SegmentId = catalogEntry.NormalizedId; // 대상 세그먼트 ID
+        entry.LevelDelta = entry.SegmentAddCard != null ? entry.SegmentAddCard.LevelDelta : 1; // 소비 레벨
         entry.CanSelect = catalogEntry.HasId; // 카탈로그 풀 — 세그먼트 추가와 동일하게 선택
         entry.SegmentAddCard?.ConfigureCandidate(catalogEntry); // 세그먼트 추가와 동일 UI
     }
@@ -321,24 +321,24 @@ public class CardUI : MonoBehaviour
             return;
         }
 
-        bool[] selectable = { canAdd, canLevelUp };
-        SegmentCardRole[] roles = { SegmentCardRole.AddAction, SegmentCardRole.LevelUpAction };
-        int spawnCount = 2;
+        bool[] selectable = { canAdd, canLevelUp }; // 각 액션 선택 가능 여부
+        SegmentCardRole[] roles = { SegmentCardRole.AddAction, SegmentCardRole.LevelUpAction }; // 액션 종류
+        int spawnCount = 2; // 추가/레벨업 2장
         for (int i = 0; i < spawnCount; i++)
         {
-            GameObject prefab = GetSegmentCardTemplate(i);
-            SpawnedCardEntry spawnedEntry = CreateSpawnedCard(prefab, parentSlot);
+            GameObject prefab = GetSegmentCardTemplate(i); // 카드 프리팹
+            SpawnedCardEntry spawnedEntry = CreateSpawnedCard(prefab, parentSlot); // 중앙 슬롯에 생성
             if (spawnedEntry == null)
             {
-                continue;
+                continue; // 생성 실패
             }
 
-            ConfigureSegmentActionEntry(spawnedEntry, entry, levelDelta, roles[i], selectable[i]);
-            ApplyCenteredActionCardPosition(spawnedEntry, i, spawnCount);
-            spawnedCards.Add(spawnedEntry);
+            ConfigureSegmentActionEntry(spawnedEntry, entry, levelDelta, roles[i], selectable[i]); // 액션 데이터 주입
+            ApplyCenteredActionCardPosition(spawnedEntry, i, spawnCount); // 좌우 중앙 배치
+            spawnedCards.Add(spawnedEntry); // 목록 등록
         }
 
-        PlaySpawnOpenTween(spawnedCards);
+        PlaySpawnOpenTween(spawnedCards); // 등장 연출
     }
 
     ////// 2단계 - 선택 세그먼트에 맞는 무기 강화 카드 생성
@@ -616,7 +616,7 @@ public class CardUI : MonoBehaviour
             return;
         }
 
-        loggedWeaponEnhancementInitial = true;
+        loggedWeaponEnhancementInitial = true; // 1회만 출력
         CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
         if (core == null)
         {
@@ -667,50 +667,50 @@ public class CardUI : MonoBehaviour
 
     private static bool TryGetSegmentAttackProfile(CoreStatProvider core, string segmentId, out SegmentAttackProfile profile)
     {
-        profile = null;
+        profile = null; // 기본값
         if (core == null || core.SegmentCatalogAsset == null || string.IsNullOrWhiteSpace(segmentId))
         {
-            return false;
+            return false; // 조회 불가
         }
 
         if (!core.SegmentCatalogAsset.TryFind(segmentId, out SegmentDefinition definition))
         {
-            return false;
+            return false; // 정의 없음
         }
 
-        int level = 1;
+        int level = 1; // 기본 레벨
         if (core.TryGetSegmentModelLevelInfo(segmentId, out int currentLevel, out _))
         {
-            level = currentLevel;
+            level = currentLevel; // 장착 중이면 현재 모델 레벨
         }
 
         if (definition.TryGetLevel(level, out SegmentLevelDefinition levelDef) && levelDef.AttackProfile != null)
         {
-            profile = levelDef.AttackProfile;
+            profile = levelDef.AttackProfile; // 레벨 정의에서 프로필
             return true;
         }
 
         if (!definition.TryGetSegmentPrefab(level, out GameObject prefab) || prefab == null)
         {
-            return false;
+            return false; // 프리팹 없음
         }
 
-        GenericSegmentWeapon weapon = prefab.GetComponentInChildren<GenericSegmentWeapon>(true);
+        GenericSegmentWeapon weapon = prefab.GetComponentInChildren<GenericSegmentWeapon>(true); // 무기 컴포넌트
         if (weapon == null || weapon.AttackProfile == null)
         {
-            return false;
+            return false; // 프로필 없음
         }
 
-        profile = weapon.AttackProfile;
+        profile = weapon.AttackProfile; // 프리팹에서 프로필
         return true;
     }
 
     private static string FormatWeaponStatEffective(SegmentAttackProfile profile, WeaponStatBonusData bonus) // 기본 + 강화 합산
     {
-        float baseDamage = profile.BaseDamage + bonus.BaseDamageBonus;
-        float projectileSpeed = profile.ProjectileSpeed + bonus.ProjectileSpeedBonus;
-        int pierceCount = profile.PierceCount + bonus.PierceCountBonus;
-        float explosionRadius = profile.ExplosionRadius + bonus.ExplosionRadiusBonus;
+        float baseDamage = profile.BaseDamage + bonus.BaseDamageBonus; // 합산 피해
+        float projectileSpeed = profile.ProjectileSpeed + bonus.ProjectileSpeedBonus; // 합산 속도
+        int pierceCount = profile.PierceCount + bonus.PierceCountBonus; // 합산 관통
+        float explosionRadius = profile.ExplosionRadius + bonus.ExplosionRadiusBonus; // 합산 폭발 반경
         return $"BaseDamage {baseDamage:0.##}, ProjectileSpeed {projectileSpeed:0.##}, PierceCount {pierceCount}, ExplosionRadius {explosionRadius:0.##}";
     }
 
@@ -1104,7 +1104,7 @@ public class CardUI : MonoBehaviour
     ////// 세그먼트 후보 클릭 - 무기강화/추가·레벨업 흐름 분기
     private void HandleSegmentCandidateClicked(SpawnedCardEntry selectedEntry)
     {
-        CoreStatProvider core = CoreStatProvider.Active;
+        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
         if (core == null || string.IsNullOrWhiteSpace(selectedEntry.SegmentId))
         {
             Debug.LogWarning("[CardUI] 세그먼트 후보 적용 실패: CoreStatProvider 또는 SegmentId 없음", selectedEntry.Root);
@@ -1113,14 +1113,14 @@ public class CardUI : MonoBehaviour
 
         if (currentSpawnPhase == LevelUpCardPhase.WeaponEnhance)
         {
-            isProcessingSelection = true;
+            isProcessingSelection = true; // 2단계 전환 중
             PlaySegmentEnhancementChoiceSequence(selectedEntry); // 2단계: 선택 세그먼트 강화 카드
             return;
         }
 
-        bool canAdd = core.CanAddSegment(selectedEntry.SegmentId);
-        bool canLevelUp = core.CanLevelUpSegmentModel(selectedEntry.SegmentId);
-        isProcessingSelection = true;
+        bool canAdd = core.CanAddSegment(selectedEntry.SegmentId); // 추가 가능 여부
+        bool canLevelUp = core.CanLevelUpSegmentModel(selectedEntry.SegmentId); // 레벨업 가능 여부
+        isProcessingSelection = true; // 2단계 전환 중
         PlaySegmentActionChoiceSequence(selectedEntry, canAdd, canLevelUp); // 추가/레벨업 2장
     }
 
@@ -1155,7 +1155,7 @@ public class CardUI : MonoBehaviour
         });
     }
 
-    ////// 전찬우추가 - 후보 카드가 사라진 뒤 추가/레벨업/강화 2차 카드 표시
+    ////// 전찬우추가 - 후보 카드가 사라진 뒤 추가/레벨업 2차 카드 표시
     private void PlaySegmentActionChoiceSequence(SpawnedCardEntry selectedEntry, bool canAdd, bool canLevelUp)
     {
         SegmentCatalogEntry catalogEntry = selectedEntry.SegmentCatalogEntry; // 후보 데이터 보관
@@ -1297,8 +1297,8 @@ public class CardUI : MonoBehaviour
         sequence.OnComplete(() =>
         {
             CoreStatProvider.Active?.CompleteLevelUpChoice(); // 순환 진행 + 선반영 해제
-            ResolveLevelUpUi()?.Close();
-            isProcessingSelection = false;
+            ResolveLevelUpUi()?.Close(); // 패널 닫기
+            isProcessingSelection = false; // 다음 입력 허용
         });
     }
 
@@ -1344,7 +1344,7 @@ public class CardUI : MonoBehaviour
         public string SegmentId;
         ////// 전찬우추가 - 세그먼트 ADD 흐름용 레벨 소비량
         public int LevelDelta = 1;
-        ////// 3단계 무기 강화 선택 데이터
+        ////// 2단계 무기 강화 선택 데이터
         public WeaponDefinition WeaponDefinition;
         ////// 전찬우추가 - 없음/불가 카드 클릭 차단
         public bool CanSelect = true;
