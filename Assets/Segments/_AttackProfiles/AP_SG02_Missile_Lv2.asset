@@ -18,6 +18,8 @@ MonoBehaviour:
   MoveType: 2
   ImpactType: 2
   SearchRange: 28
+  AttackAreaMode: 1
+  SideConeAngle: 100
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.5
   BaseDamage: 1.2

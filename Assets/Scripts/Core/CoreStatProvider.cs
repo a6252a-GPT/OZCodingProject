@@ -170,7 +170,7 @@ namespace TeamProject01.Gameplay
             return results.Count > 0; // 후보 존재
         }
 
-        ////// 전찬우추가 - 세그먼트 ADD 카드용 후보 수집: 추가 가능 또는 레벨업 가능이면 후보에 노출
+        // 세그먼트 ADD 카드용 후보 수집: 추가 가능 또는 레벨업 가능이면 후보에 노출
         public bool TryGetSegmentChoiceCandidates(List<SegmentCatalogEntry> results)
         {
             if (results == null)
@@ -199,7 +199,7 @@ namespace TeamProject01.Gameplay
             return results.Count > 0; // 후보 존재
         }
 
-        ////// 전찬우추가 - 현재 세그먼트 모델 레벨/최대 레벨 조회
+        // 현재 세그먼트 모델 레벨/최대 레벨 조회
         public bool TryGetSegmentModelLevelInfo(string segmentId, out int currentLevel, out int maxLevel)
         {
             currentLevel = 1; // 기본 현재 레벨
@@ -215,7 +215,7 @@ namespace TeamProject01.Gameplay
             return true; // 조회 성공
         }
 
-        ////// 전찬우추가 - 해당 세그먼트가 현재 붙어 있고 모델 레벨업 가능한지 확인
+        // 해당 세그먼트가 현재 붙어 있고 모델 레벨업 가능한지 확인
         public bool CanLevelUpSegmentModel(string segmentId)
         {
             EnsureConvoyReference(); // 컨보이 보강
@@ -250,14 +250,14 @@ namespace TeamProject01.Gameplay
             return definition.TryGetLevel(currentLevel + 1, out _); // 다음 레벨 프리팹 존재 여부
         }
 
-        ////// 전찬우추가 - 카드 2차 선택에서 세그먼트 추가를 코어 경유로 적용
+        // 카드 2차 선택에서 세그먼트 추가를 코어 경유로 적용
         public bool TryApplySegmentAddChoice(string segmentId, int levelDelta, int count = 1)
         {
             GrowthStatData growth = GrowthStatData.CreateAddSegment(levelDelta, segmentId, count); // 추가 성장 데이터
             return ApplyGrowth(growth); // 기존 성장 적용 흐름 사용
         }
 
-        ////// 전찬우추가 - 카드 2차 선택에서 해당 세그먼트 모델 레벨업을 코어 경유로 적용
+        // 카드 2차 선택에서 해당 세그먼트 모델 레벨업을 코어 경유로 적용
         public bool TryApplySegmentLevelUpChoice(string segmentId, int levelDelta)
         {
             EnsureConvoyReference(); // 컨보이 보강
@@ -513,7 +513,7 @@ namespace TeamProject01.Gameplay
             return prefab != null; // 최종 확인
         }
 
-        ////// 전찬우추가 - 카탈로그 데이터에셋에서 세그먼트 정의 찾기
+        // 카탈로그 데이터에셋에서 세그먼트 정의 찾기
         private bool TryFindSegmentDefinition(string segmentId, out SegmentDefinition definition)
         {
             definition = null; // 기본값

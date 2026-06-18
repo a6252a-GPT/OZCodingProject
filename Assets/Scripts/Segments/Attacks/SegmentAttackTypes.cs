@@ -6,7 +6,8 @@ namespace TeamProject01.Gameplay
         PiercingProjectile = 1, // 관통 투사체
         ArcProjectile = 2, // 곡사 투사체
         HomingProjectile = 3, // 추적 투사체
-        Laser = 4 // 레이저
+        Laser = 4, // 레이저
+        ChainLightning = 5 // 즉시 체인 번개
     }
 
     public enum SegmentAttackImpactType // 명중 처리 방식
@@ -14,6 +15,14 @@ namespace TeamProject01.Gameplay
         DirectDamage = 0, // 직접 피해
         PierceDamage = 1, // 관통 피해
         ExplosionArea = 2, // 폭발 범위 피해
-        ContinuousDamage = 3 // 지속 피해
+        ContinuousDamage = 3, // 지속 피해
+        ChainDamage = 4 // 체인 번개 피해
+    }
+
+    // 세그먼트가 몬스터를 찾을 때 사용하는 공격 가능 범위 형태
+    public enum SegmentAttackAreaMode
+    {
+        FullCircle = 0, // 기존 방식: 사거리 안이면 모든 방향 공격 가능
+        SideCones = 1 // 좌우 부채꼴 안에서만 공격 가능
     }
 }

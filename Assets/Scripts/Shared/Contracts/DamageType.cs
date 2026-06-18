@@ -6,6 +6,7 @@ namespace TeamProject01.Gameplay
         Projectile, // 투사체 피해
         Fire, // 화염 피해
         Laser, // 레이저 피해
-        Explosion // 폭발 피해
+        Explosion, // 폭발 피해
+        Electric // 전기 피해
     }
 }

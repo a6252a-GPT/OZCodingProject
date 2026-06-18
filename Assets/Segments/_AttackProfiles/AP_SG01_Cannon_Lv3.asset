@@ -18,6 +18,8 @@ MonoBehaviour:
   MoveType: 0
   ImpactType: 0
   SearchRange: 28
+  AttackAreaMode: 1
+  SideConeAngle: 100
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.42
   BaseDamage: 1.45
@@ -44,3 +46,10 @@ MonoBehaviour:
   HitVfxLifetime: 2
   ExplosionVfxPrefab: {fileID: 0}
   ExplosionVfxLifetime: 2
+  RecoilDistance: 0.18
+  RecoilTiltAngle: 5
+  RecoilKickDuration: 0.07
+  RecoilReturnDuration: 0.26
+  RecoilSettleDistanceRatio: 0.16
+  RecoilSettleTiltRatio: 0.3
+  RecoilSettleDuration: 0.16

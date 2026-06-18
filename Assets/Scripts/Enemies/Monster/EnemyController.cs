@@ -148,6 +148,40 @@ namespace TeamProject01.Gameplay
             return target != null; // 대상을 찾았다면 true를 반환한다.
         }
 
+        ////// 전찬우추가 - 세그먼트가 원형/부채꼴 같은 추가 조건을 걸고 가까운 몬스터를 찾을 때 사용
+        public static bool TryFindNearest(Vector3 origin, float range, System.Func<EnemyController, bool> filter, out EnemyController target) // 조건 포함 가까운 적 검색
+        {
+            CleanupActiveList(); // 목록에서 null이거나 죽은 몬스터를 정리한다.
+
+            target = null; // 찾지 못했을 때의 기본값
+            float bestDistance = range * range; // 사거리 제곱
+
+            string[] tags = EnemyTags.TargetTags; // 탐색 태그
+            bool foundRegisteredTag = false; // 태그 등록 여부
+
+            for (int tagIndex = 0; tagIndex < tags.Length; tagIndex++) // 태그 목록을 순회한다.
+            {
+                GameObject[] candidates = FindObjectsByTag(tags[tagIndex], out bool tagRegistered); // 태그 대상
+                foundRegisteredTag |= tagRegistered; // 등록 확인
+
+                for (int i = 0; i < candidates.Length; i++) // 찾은 후보들을 순회한다.
+                {
+                    EnemyController enemy = candidates[i].GetComponentInParent<EnemyController>(); // 몬스터 확인
+                    TryPickNearest(enemy, origin, filter, ref bestDistance, ref target); // 조건을 만족하는 최단 대상 갱신
+                }
+            }
+
+            if (!foundRegisteredTag) // 태그가 아직 Unity에 등록되지 않은 경우
+            {
+                for (int i = 0; i < ActiveMonsters.Count; i++) // 등록 목록을 직접 순회한다.
+                {
+                    TryPickNearest(ActiveMonsters[i], origin, filter, ref bestDistance, ref target); // 조건을 만족하는 가장 가까운 대상인지 확인한다.
+                }
+            }
+
+            return target != null; // 대상을 찾았다면 true를 반환한다.
+        }
+
         private static GameObject[] FindObjectsByTag(string tagName, out bool tagRegistered) // 태그 검색
         {
             try
@@ -181,6 +215,33 @@ namespace TeamProject01.Gameplay
 
             bestDistance = distance; // 최단 갱신
             target = enemy;  // 대상 갱신
+        }
+
+        ////// 전찬우추가 - 기본 최단 검색에 세그먼트 공격 범위 같은 추가 필터를 적용
+        private static void TryPickNearest(EnemyController enemy, Vector3 origin, System.Func<EnemyController, bool> filter, ref float bestDistance, ref EnemyController target) // 조건 포함 최단 대상
+        {
+            if (enemy == null || enemy.dead) // 대상이 없거나 이미 죽었다면
+            {
+                return; // 대상에서 제외한다.
+            }
+
+            if (filter != null && !filter(enemy)) // 추가 조건이 있고 통과하지 못했다면
+            {
+                return; // 대상에서 제외한다.
+            }
+
+            Vector3 offset = enemy.transform.position - origin; // 대상 거리
+            offset.y = 0f; // 평면 거리
+
+            float distance = offset.sqrMagnitude; // 제곱 거리
+
+            if (distance > bestDistance) // 현재 최고 대상보다 멀다면
+            {
+                return; // 갱신하지 않는다.
+            }
+
+            bestDistance = distance; // 최단 갱신
+            target = enemy; // 대상 갱신
         }
 
         private static void CleanupActiveList() // 목록 정리
