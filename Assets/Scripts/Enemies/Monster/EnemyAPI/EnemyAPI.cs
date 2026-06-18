@@ -1,101 +1,107 @@
+////// ì „ì°¬ìš°ì‚­ì œ - ê¸°ì¡´ EnemyApiëŠ” MonsterInteractionApië¡œ ëŒ€ì²´í–ˆìŠµë‹ˆë‹¤.
+////// ì „ì°¬ìš°ì‚­ì œ - íŒŒì¼ì€ ì‚­ì œí•˜ì§€ ì•Šê³  ê¸°ì¡´ ì½”ë“œë¥¼ ì•„ë˜ì— ë³´ì¡´ ì£¼ì„ìœ¼ë¡œ ë‚¨ê¹ë‹ˆë‹¤.
+////// ì „ì°¬ìš°ì‚­ì œ - ìƒˆ ì½”ë“œì—ì„œëŠ” EnemyApië¥¼ ì§ì ‘ í˜¸ì¶œí•˜ì§€ ë§ê³  MonsterInteractionApië¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
+
+/*
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public static class EnemyApi // ÇÃ·¹ÀÌ¾î/ÄÁº¸ÀÌ°¡ ¸ó½ºÅÍ È¿°ú¸¦ Á¶È¸ÇÏ´Â °ø¿ë API
+    public static class EnemyApi // í”Œë ˆì´ì–´/ì»¨ë³´ì´ê°€ ëª¬ìŠ¤í„° íš¨ê³¼ë¥¼ ì¡°íšŒí•˜ëŠ” ê³µìš© API
     {
-        private struct KnockbackRequest // ÀÚÆøÀÌ³ª Æø¹ß ¸ó½ºÅÍ°¡ ³²±â´Â ³Ë¹é ¿äÃ» Á¤º¸
+        private struct KnockbackRequest // ìí­ì´ë‚˜ í­ë°œ ëª¬ìŠ¤í„°ê°€ ë‚¨ê¸°ëŠ” ë„‰ë°± ìš”ì²­ ì •ë³´
         {
-            public Vector3 Center; // Æø¹ß Áß½É À§Ä¡
-            public float Radius; // Æø¹ß ÆÇÁ¤ ¹İ°æ
-            public float Distance; // ¹Ğ·Á³¯ °Å¸®
-            public float Duration; // ¹Ğ·Á³ª´Â ½Ã°£
-            public float Height; // °øÁßÀ¸·Î ¶ß´Â ³ôÀÌ
-            public float ExpireTime; // ¿äÃ»ÀÌ ÀÚµ¿ Á¦°ÅµÉ ½Ã°£
+            public Vector3 Center; // í­ë°œ ì¤‘ì‹¬ ìœ„ì¹˜
+            public float Radius; // í­ë°œ íŒì • ë°˜ê²½
+            public float Distance; // ë°€ë ¤ë‚  ê±°ë¦¬
+            public float Duration; // ë°€ë ¤ë‚˜ëŠ” ì‹œê°„
+            public float Height; // ê³µì¤‘ìœ¼ë¡œ ëœ¨ëŠ” ë†’ì´
+            public float ExpireTime; // ìš”ì²­ì´ ìë™ ì œê±°ë  ì‹œê°„
         }
 
-        private static readonly List<KnockbackRequest> knockbackRequests = new List<KnockbackRequest>(16); // ÇöÀç ´ë±â ÁßÀÎ ³Ë¹é ¿äÃ» ¸ñ·Ï
+        private static readonly List<KnockbackRequest> knockbackRequests = new List<KnockbackRequest>(16); // í˜„ì¬ ëŒ€ê¸° ì¤‘ì¸ ë„‰ë°± ìš”ì²­ ëª©ë¡
 
-        public static Vector3 ResolveObstaclePosition(Vector3 currentPosition, Vector3 desiredPosition, float moverRadius) // Àå¾Ö¹° À§Ä¡ º¸Á¤ API
+        public static Vector3 ResolveObstaclePosition(Vector3 currentPosition, Vector3 desiredPosition, float moverRadius) // ì¥ì• ë¬¼ ìœ„ì¹˜ ë³´ì • API
         {
-            return EnemyObstacle.ResolvePosition(currentPosition, desiredPosition, moverRadius); // ½ÇÁ¦ Àå¾Ö¹° ScriptÀÇ º¸Á¤ ÇÔ¼ö¸¦ È£ÃâÇÑ´Ù.
+            return EnemyObstacle.ResolvePosition(currentPosition, desiredPosition, moverRadius); // ì‹¤ì œ ì¥ì• ë¬¼ Scriptì˜ ë³´ì • í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•œë‹¤.
         }
 
-        public static float GetSlowMultiplier(Vector3 targetPosition) // ½½·Î¿ì ÀåÆÇ ¼Óµµ ¹èÀ² API
+        public static float GetSlowMultiplier(Vector3 targetPosition) // ìŠ¬ë¡œìš° ì¥íŒ ì†ë„ ë°°ìœ¨ API
         {
-            return EnemySlowZone.GetSpeedMultiplier(targetPosition); // ½ÇÁ¦ ½½·Î¿ì ÀåÆÇ ScriptÀÇ ¼Óµµ ¹èÀ² ÇÔ¼ö¸¦ È£ÃâÇÑ´Ù.
+            return EnemySlowZone.GetSpeedMultiplier(targetPosition); // ì‹¤ì œ ìŠ¬ë¡œìš° ì¥íŒ Scriptì˜ ì†ë„ ë°°ìœ¨ í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•œë‹¤.
         }
 
-        public static void RequestKnockback(Vector3 center, float radius, float distance, float duration) // ±âÁ¸ ¼öÆò ³Ë¹é ¿äÃ» ÇÔ¼ö
+        public static void RequestKnockback(Vector3 center, float radius, float distance, float duration) // ê¸°ì¡´ ìˆ˜í‰ ë„‰ë°± ìš”ì²­ í•¨ìˆ˜
         {
-            RequestKnockback(center, radius, distance, duration, 0.0f); // ³ôÀÌ 0À¸·Î Ã³¸®ÇØ¼­ ±âÁ¸ ÄÚµå°¡ ±×´ë·Î µ¿ÀÛÇÏ°Ô ÇÑ´Ù.
+            RequestKnockback(center, radius, distance, duration, 0.0f); // ë†’ì´ 0ìœ¼ë¡œ ì²˜ë¦¬í•´ì„œ ê¸°ì¡´ ì½”ë“œê°€ ê·¸ëŒ€ë¡œ ë™ì‘í•˜ê²Œ í•œë‹¤.
         }
 
-        public static void RequestKnockback(Vector3 center, float radius, float distance, float duration, float height) // ¸ó½ºÅÍ°¡ Æø¹ß ³Ë¹éÀ» ¿äÃ»ÇÏ´Â ÇÔ¼ö
+        public static void RequestKnockback(Vector3 center, float radius, float distance, float duration, float height) // ëª¬ìŠ¤í„°ê°€ í­ë°œ ë„‰ë°±ì„ ìš”ì²­í•˜ëŠ” í•¨ìˆ˜
         {
-            KnockbackRequest request = new KnockbackRequest(); // »õ ³Ë¹é ¿äÃ» µ¥ÀÌÅÍ¸¦ ¸¸µç´Ù.
+            KnockbackRequest request = new KnockbackRequest(); // ìƒˆ ë„‰ë°± ìš”ì²­ ë°ì´í„°ë¥¼ ë§Œë“ ë‹¤.
 
-            center.y = 0.0f; // Æø¹ß ÆÇÁ¤Àº ¹Ù´Ú Æò¸é ±âÁØÀ¸·Î Ã³¸®ÇÑ´Ù.
+            center.y = 0.0f; // í­ë°œ íŒì •ì€ ë°”ë‹¥ í‰ë©´ ê¸°ì¤€ìœ¼ë¡œ ì²˜ë¦¬í•œë‹¤.
 
-            request.Center = center; // Æø¹ß Áß½É À§Ä¡¸¦ ÀúÀåÇÑ´Ù.
-            request.Radius = Mathf.Max(0.1f, radius); // Æø¹ß ¹İ°æÀ» ÀúÀåÇÑ´Ù.
-            request.Distance = Mathf.Max(0.0f, distance); // ¹Ğ·Á³¯ °Å¸®¸¦ ÀúÀåÇÑ´Ù.
-            request.Duration = Mathf.Max(0.01f, duration); // ¹Ğ·Á³ª´Â ½Ã°£À» ÀúÀåÇÑ´Ù.
-            request.Height = Mathf.Max(0.0f, height); // °øÁßÀ¸·Î ¶ß´Â ³ôÀÌ¸¦ ÀúÀåÇÑ´Ù.
-            request.ExpireTime = Time.time + 0.25f; // ÂªÀº ½Ã°£ ¾È¿¡ ¼ÒºñµÇÁö ¾ÊÀ¸¸é ¿äÃ»À» ¹ö¸°´Ù.
+            request.Center = center; // í­ë°œ ì¤‘ì‹¬ ìœ„ì¹˜ë¥¼ ì €ì¥í•œë‹¤.
+            request.Radius = Mathf.Max(0.1f, radius); // í­ë°œ ë°˜ê²½ì„ ì €ì¥í•œë‹¤.
+            request.Distance = Mathf.Max(0.0f, distance); // ë°€ë ¤ë‚  ê±°ë¦¬ë¥¼ ì €ì¥í•œë‹¤.
+            request.Duration = Mathf.Max(0.01f, duration); // ë°€ë ¤ë‚˜ëŠ” ì‹œê°„ì„ ì €ì¥í•œë‹¤.
+            request.Height = Mathf.Max(0.0f, height); // ê³µì¤‘ìœ¼ë¡œ ëœ¨ëŠ” ë†’ì´ë¥¼ ì €ì¥í•œë‹¤.
+            request.ExpireTime = Time.time + 0.25f; // ì§§ì€ ì‹œê°„ ì•ˆì— ì†Œë¹„ë˜ì§€ ì•Šìœ¼ë©´ ìš”ì²­ì„ ë²„ë¦°ë‹¤.
 
-            knockbackRequests.Add(request); // ³Ë¹é ¿äÃ» ¸ñ·Ï¿¡ µî·ÏÇÑ´Ù.
+            knockbackRequests.Add(request); // ë„‰ë°± ìš”ì²­ ëª©ë¡ì— ë“±ë¡í•œë‹¤.
         }
 
-        public static bool TryConsumeKnockback(Vector3 targetPosition, out Vector3 direction, out float distance, out float duration) // ±âÁ¸ ¼öÆò ³Ë¹é ¼Òºñ ÇÔ¼ö
+        public static bool TryConsumeKnockback(Vector3 targetPosition, out Vector3 direction, out float distance, out float duration) // ê¸°ì¡´ ìˆ˜í‰ ë„‰ë°± ì†Œë¹„ í•¨ìˆ˜
         {
-            float height; // ±âÁ¸ ¹æ½Ä¿¡¼­´Â ³ôÀÌ¸¦ »ç¿ëÇÏÁö ¾Ê´Â´Ù.
-            return TryConsumeKnockback(targetPosition, out direction, out distance, out duration, out height); // »õ ÇÔ¼ö·Î ³Ñ±â°í height¸¸ ¹ö¸°´Ù.
+            float height; // ê¸°ì¡´ ë°©ì‹ì—ì„œëŠ” ë†’ì´ë¥¼ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
+            return TryConsumeKnockback(targetPosition, out direction, out distance, out duration, out height); // ìƒˆ í•¨ìˆ˜ë¡œ ë„˜ê¸°ê³  heightë§Œ ë²„ë¦°ë‹¤.
         }
 
-        public static bool TryConsumeKnockback(Vector3 targetPosition, out Vector3 direction, out float distance, out float duration, out float height) // ÄÁº¸ÀÌ°¡ ¹ŞÀ» ³Ë¹é ¿äÃ»ÀÌ ÀÖ´ÂÁö È®ÀÎÇÑ´Ù.
+        public static bool TryConsumeKnockback(Vector3 targetPosition, out Vector3 direction, out float distance, out float duration, out float height) // ì»¨ë³´ì´ê°€ ë°›ì„ ë„‰ë°± ìš”ì²­ì´ ìˆëŠ”ì§€ í™•ì¸í•œë‹¤.
         {
-            targetPosition.y = 0.0f; // ÆÇÁ¤Àº ¹Ù´Ú Æò¸é ±âÁØÀ¸·Î ÇÑ´Ù.
+            targetPosition.y = 0.0f; // íŒì •ì€ ë°”ë‹¥ í‰ë©´ ê¸°ì¤€ìœ¼ë¡œ í•œë‹¤.
 
-            for (int i = knockbackRequests.Count - 1; i >= 0; i--) // µÚ¿¡¼­ºÎÅÍ ³Ë¹é ¿äÃ» ¸ñ·ÏÀ» È®ÀÎÇÑ´Ù.
+            for (int i = knockbackRequests.Count - 1; i >= 0; i--) // ë’¤ì—ì„œë¶€í„° ë„‰ë°± ìš”ì²­ ëª©ë¡ì„ í™•ì¸í•œë‹¤.
             {
-                KnockbackRequest request = knockbackRequests[i]; // ÇöÀç ³Ë¹é ¿äÃ»À» °¡Á®¿Â´Ù.
+                KnockbackRequest request = knockbackRequests[i]; // í˜„ì¬ ë„‰ë°± ìš”ì²­ì„ ê°€ì ¸ì˜¨ë‹¤.
 
-                if (Time.time > request.ExpireTime) // ¿äÃ» ½Ã°£ÀÌ Áö³µ´Ù¸é
+                if (Time.time > request.ExpireTime) // ìš”ì²­ ì‹œê°„ì´ ì§€ë‚¬ë‹¤ë©´
                 {
-                    knockbackRequests.RemoveAt(i); // ¿À·¡µÈ ¿äÃ»À» Á¦°ÅÇÑ´Ù.
-                    continue; // ´ÙÀ½ ¿äÃ»À» È®ÀÎÇÑ´Ù.
+                    knockbackRequests.RemoveAt(i); // ì˜¤ë˜ëœ ìš”ì²­ì„ ì œê±°í•œë‹¤.
+                    continue; // ë‹¤ìŒ ìš”ì²­ì„ í™•ì¸í•œë‹¤.
                 }
 
-                Vector3 offset = targetPosition - request.Center; // Æø¹ß Áß½É¿¡¼­ ´ë»ó±îÁöÀÇ ¹æÇâ°ú °Å¸® º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
-                offset.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+                Vector3 offset = targetPosition - request.Center; // í­ë°œ ì¤‘ì‹¬ì—ì„œ ëŒ€ìƒê¹Œì§€ì˜ ë°©í–¥ê³¼ ê±°ë¦¬ ë²¡í„°ë¥¼ êµ¬í•œë‹¤.
+                offset.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-                if (offset.sqrMagnitude > request.Radius * request.Radius) // ´ë»óÀÌ Æø¹ß ¹üÀ§ ¹ÛÀÌ¶ó¸é
+                if (offset.sqrMagnitude > request.Radius * request.Radius) // ëŒ€ìƒì´ í­ë°œ ë²”ìœ„ ë°–ì´ë¼ë©´
                 {
-                    continue; // ÀÌ ¿äÃ»Àº Àû¿ëÇÏÁö ¾Ê´Â´Ù.
+                    continue; // ì´ ìš”ì²­ì€ ì ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
                 }
 
-                direction = offset.sqrMagnitude > 0.0001f ? offset.normalized : Vector3.forward; // Æø¹ß Áß½É¿¡¼­ ¹Ù±ùÂÊÀ¸·Î ¹Ğ ¹æÇâÀ» ¸¸µç´Ù.
-                distance = request.Distance; // ¹Ğ·Á³¯ °Å¸®¸¦ ¹İÈ¯ÇÑ´Ù.
-                duration = request.Duration; // ¹Ğ·Á³ª´Â ½Ã°£À» ¹İÈ¯ÇÑ´Ù.
-                height = request.Height; // °øÁßÀ¸·Î ¶ß´Â ³ôÀÌ¸¦ ¹İÈ¯ÇÑ´Ù.
+                direction = offset.sqrMagnitude > 0.0001f ? offset.normalized : Vector3.forward; // í­ë°œ ì¤‘ì‹¬ì—ì„œ ë°”ê¹¥ìª½ìœ¼ë¡œ ë°€ ë°©í–¥ì„ ë§Œë“ ë‹¤.
+                distance = request.Distance; // ë°€ë ¤ë‚  ê±°ë¦¬ë¥¼ ë°˜í™˜í•œë‹¤.
+                duration = request.Duration; // ë°€ë ¤ë‚˜ëŠ” ì‹œê°„ì„ ë°˜í™˜í•œë‹¤.
+                height = request.Height; // ê³µì¤‘ìœ¼ë¡œ ëœ¨ëŠ” ë†’ì´ë¥¼ ë°˜í™˜í•œë‹¤.
 
-                knockbackRequests.RemoveAt(i); // ÇÑ ¹ø Àû¿ëÇÑ ³Ë¹é ¿äÃ»Àº Á¦°ÅÇÑ´Ù.
-                return true; // ¹ŞÀ» ³Ë¹é ¿äÃ»ÀÌ ÀÖ´Ù°í ¾Ë¸°´Ù.
+                knockbackRequests.RemoveAt(i); // í•œ ë²ˆ ì ìš©í•œ ë„‰ë°± ìš”ì²­ì€ ì œê±°í•œë‹¤.
+                return true; // ë°›ì„ ë„‰ë°± ìš”ì²­ì´ ìˆë‹¤ê³  ì•Œë¦°ë‹¤.
             }
 
-            direction = Vector3.zero; // ¹ŞÀ» ³Ë¹é ¹æÇâ ¾øÀ½
-            distance = 0.0f; // ¹ŞÀ» ³Ë¹é °Å¸® ¾øÀ½
-            duration = 0.0f; // ¹ŞÀ» ³Ë¹é ½Ã°£ ¾øÀ½
-            height = 0.0f; // ¹ŞÀ» ³Ë¹é ³ôÀÌ ¾øÀ½
+            direction = Vector3.zero; // ë°›ì„ ë„‰ë°± ë°©í–¥ ì—†ìŒ
+            distance = 0.0f; // ë°›ì„ ë„‰ë°± ê±°ë¦¬ ì—†ìŒ
+            duration = 0.0f; // ë°›ì„ ë„‰ë°± ì‹œê°„ ì—†ìŒ
+            height = 0.0f; // ë°›ì„ ë„‰ë°± ë†’ì´ ì—†ìŒ
 
-            return false; // ¹ŞÀ» ³Ë¹é ¿äÃ»ÀÌ ¾ø´Ù.
+            return false; // ë°›ì„ ë„‰ë°± ìš”ì²­ì´ ì—†ë‹¤.
         }
 
-        public static void ClearKnockbackRequests() // ³²¾Æ ÀÖ´Â ³Ë¹é ¿äÃ»À» ¸ğµÎ Á¦°ÅÇÑ´Ù.
+        public static void ClearKnockbackRequests() // ë‚¨ì•„ ìˆëŠ” ë„‰ë°± ìš”ì²­ì„ ëª¨ë‘ ì œê±°í•œë‹¤.
         {
-            knockbackRequests.Clear(); // ³Ë¹é ¿äÃ» ¸ñ·ÏÀ» ºñ¿î´Ù.
+            knockbackRequests.Clear(); // ë„‰ë°± ìš”ì²­ ëª©ë¡ì„ ë¹„ìš´ë‹¤.
         }
     }
 }
+*/

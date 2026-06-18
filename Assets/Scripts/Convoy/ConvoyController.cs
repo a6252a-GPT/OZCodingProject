@@ -152,6 +152,19 @@ namespace TeamProject01.Gameplay
             ClearInitialSegmentsIfNeeded(); // 시작 몸통 제거
         }
 
+        ////// 전찬우추가 - 컨보이 타겟 등록은 ConvoyController가 직접 책임진다.
+        private void OnEnable() // 전찬우추가 - 컨보이가 활성화될 때 몬스터용 타겟 API에 자기 자신을 등록한다.
+        {
+            MonsterInteractionApi.RegisterConvoyTarget(transform); // 전찬우추가 - 몬스터가 GameObject.Find 없이 컨보이를 찾을 수 있게 한다.
+        }
+
+        ////// 전찬우추가 - 컨보이 비활성화 시 API에 남은 참조와 요청을 정리한다.
+        private void OnDisable() // 전찬우추가 - 컨보이가 꺼질 때 몬스터용 타겟 API에서 자기 자신을 해제한다.
+        {
+            MonsterInteractionApi.UnregisterConvoyTarget(transform); // 전찬우추가 - 비활성화된 컨보이가 몬스터 타겟으로 남지 않게 한다.
+            MonsterInteractionApi.ClearConvoyKnockbackRequests(); // 전찬우추가 - 씬 전환/비활성화 때 소비되지 않은 넉백 요청을 비운다.
+        }
+
         private void Start() // 시작 세팅
         {
             startPosition = SnapHeadToGround(startPosition); // 시작 바닥 보정
@@ -205,12 +218,18 @@ namespace TeamProject01.Gameplay
             //성원 수정
             Vector3 currentPosition = transform.position; // 이동하기 전 현재 위치를 저장한다.
 
-            if (EnemyApi.TryConsumeKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // EnemyApi에 등록된 넉백 요청이 있는지 확인한다.
+            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
+            // if (EnemyApi.TryConsumeKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 기존: EnemyApi에 등록된 넉백 요청 확인
+            ////// 전찬우추가 - 컨보이는 공용 상호작용 API에서 넉백 요청만 소비한다.
+            if (MonsterInteractionApi.TryConsumeConvoyKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 전찬우추가 - 몬스터가 요청한 컨보이 넉백이 있는지 확인한다.
             {
-                ApplyKnockback(apiKnockbackDirection, apiKnockbackDistance, apiKnockbackDuration, apiKnockbackHeight); // 넉백 방향, 거리, 시간, 높이를 적용한다.
+                ApplyKnockback(apiKnockbackDirection, apiKnockbackDistance, apiKnockbackDuration, apiKnockbackHeight); // 전찬우추가 - 실제 이동 적용은 컨보이 컨트롤러가 책임진다.
             }
 
-            float slowMultiplier = EnemyApi.GetSlowMultiplier(currentPosition); // 현재 위치의 슬로우 장판 속도 배율을 가져온다.
+            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
+            // float slowMultiplier = EnemyApi.GetSlowMultiplier(currentPosition); // 기존: 현재 위치의 슬로우 장판 속도 배율 조회
+            ////// 전찬우추가 - 슬로우 조회도 MonsterInteractionApi를 통해서만 한다.
+            float slowMultiplier = MonsterInteractionApi.GetConvoySpeedMultiplier(currentPosition); // 전찬우추가 - 현재 컨보이 위치에 적용될 슬로우 배율을 가져온다.
 
             Vector3 forwardDisplacement = transform.forward * (currentForwardSpeed * slowMultiplier * deltaTime); // 기본 전진 이동량을 계산한다.
 
@@ -220,7 +239,10 @@ namespace TeamProject01.Gameplay
             Vector3 desiredPosition = currentPosition + forwardDisplacement + knockbackDisplacement; // 전진 이동량과 넉백 이동량을 합친다.
 
             desiredPosition = SnapHeadToGround(desiredPosition); // 이동하려는 위치를 먼저 바닥 높이에 맞춘다.
-            desiredPosition = EnemyApi.ResolveObstaclePosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 적 장애물과 겹치지 않도록 위치를 보정한다.
+            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
+            // desiredPosition = EnemyApi.ResolveObstaclePosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 기존: 적 장애물과 겹치지 않도록 위치 보정
+            ////// 전찬우추가 - 컨보이 위치 보정은 MonsterInteractionApi를 통해 요청한다.
+            desiredPosition = MonsterInteractionApi.ResolveConvoyPosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 전찬우추가 - 적 장애물과 겹치지 않도록 컨보이 위치를 보정한다.
             desiredPosition.y += knockbackVerticalOffset; // 넉백 중이면 바닥 위치에서 공중 높이만큼 띄운다.
 
             transform.position = desiredPosition; // 최종 보정된 위치를 적용한다.

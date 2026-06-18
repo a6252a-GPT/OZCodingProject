@@ -1,195 +1,209 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemySlowZoneThrower : MonoBehaviour // ½½·Î¿ì ÀåÆÇ ÅõÃ´ ¿¤¸®Æ® ¸ó½ºÅÍ
+    public sealed class EnemySlowZoneThrower : MonoBehaviour // ìŠ¬ë¡œìš° ì¥íŒ íˆ¬ì²™ ì—˜ë¦¬íŠ¸ ëª¬ìŠ¤í„°
     {
-        private Transform target; // ÅõÃ´ ´ë»ó À§Ä¡¸¦ ÀúÀåÇÑ´Ù.
+        private Transform target; // íˆ¬ì²™ ëŒ€ìƒ ìœ„ì¹˜ë¥¼ ì €ì¥í•œë‹¤.
 
-        [SerializeField] private string targetName = "PlayerConvoy"; // targetÀÌ ºñ¾î ÀÖÀ¸¸é ÀÌ ÀÌ¸§À¸·Î Ã£´Â´Ù.
+        ////// ì „ì°¬ìš°ì‚­ì œ - ê¸°ì¡´ ì´ë¦„ ê¸°ë°˜ PlayerConvoy ê²€ìƒ‰ í•„ë“œëŠ” MonsterInteractionApi íƒ€ê²Ÿ ì¡°íšŒë¡œ ëŒ€ì²´í•œë‹¤.
+        // [SerializeField] private string targetName = "PlayerConvoy"; // targetì´ ë¹„ì–´ ìˆìœ¼ë©´ ì´ ì´ë¦„ìœ¼ë¡œ ì°¾ëŠ”ë‹¤.
 
-        [SerializeField] private Transform firePoint; // Åõ»çÃ¼°¡ ¹ß»çµÉ À§Ä¡
+        [SerializeField] private Transform firePoint; // íˆ¬ì‚¬ì²´ê°€ ë°œì‚¬ë  ìœ„ì¹˜
 
-        [SerializeField] private EnemySlowZoneProjectile projectilePrefab; // ¹ß»çÇÒ ½½·Î¿ì Åõ»çÃ¼ Prefab
+        [SerializeField] private EnemySlowZoneProjectile projectilePrefab; // ë°œì‚¬í•  ìŠ¬ë¡œìš° íˆ¬ì‚¬ì²´ Prefab
 
-        [SerializeField] private EnemySlowZone slowZonePrefab; // ÂøÅº ÈÄ »ı¼ºÇÒ ½½·Î¿ì ÀåÆÇ Prefab
+        [SerializeField] private EnemySlowZone slowZonePrefab; // ì°©íƒ„ í›„ ìƒì„±í•  ìŠ¬ë¡œìš° ì¥íŒ Prefab
 
-        [SerializeField] private GameObject areaTelegraphPrefab; // ÂøÅº ¿¹°í Ç¥½Ã Prefab, EnemyAreaTelegraph »ç¿ë
+        [SerializeField] private GameObject areaTelegraphPrefab; // ì°©íƒ„ ì˜ˆê³  í‘œì‹œ Prefab, EnemyAreaTelegraph ì‚¬ìš©
 
-        [SerializeField] private Transform projectileRoot; // »ı¼ºµÈ Åõ»çÃ¼¸¦ Á¤¸®ÇÒ ºÎ¸ğ Transform
+        [SerializeField] private Transform projectileRoot; // ìƒì„±ëœ íˆ¬ì‚¬ì²´ë¥¼ ì •ë¦¬í•  ë¶€ëª¨ Transform
 
-        [SerializeField] private Transform slowZoneRoot; // »ı¼ºµÈ ÀåÆÇÀ» Á¤¸®ÇÒ ºÎ¸ğ Transform
+        [SerializeField] private Transform slowZoneRoot; // ìƒì„±ëœ ì¥íŒì„ ì •ë¦¬í•  ë¶€ëª¨ Transform
 
-        [SerializeField] private Transform telegraphRoot; // »ı¼ºµÈ ¹üÀ§ Ç¥½Ã¸¦ Á¤¸®ÇÒ ºÎ¸ğ Transform
+        [SerializeField] private Transform telegraphRoot; // ìƒì„±ëœ ë²”ìœ„ í‘œì‹œë¥¼ ì •ë¦¬í•  ë¶€ëª¨ Transform
 
         [Min(0.1f)]
-        [SerializeField] private float attackRange = 10.0f; // ÅõÃ´ »ç°Å¸®
+        [SerializeField] private float attackRange = 10.0f; // íˆ¬ì²™ ì‚¬ê±°ë¦¬
 
         [Min(0.0f)]
-        [SerializeField] private float forwardImpactDistance = 4.5f; // ¼ÒÈ¯ ±âÁØ ´ë»ó ¾ÕÂÊÀ¸·Î ¾ó¸¶³ª ¶³¾îÁø °÷¿¡ ÀåÆÇÀ» ¼ÒÈ¯ÇÒÁö
+        [SerializeField] private float forwardImpactDistance = 4.5f; // ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒ ì•ìª½ìœ¼ë¡œ ì–¼ë§ˆë‚˜ ë–¨ì–´ì§„ ê³³ì— ì¥íŒì„ ì†Œí™˜í• ì§€
         [Min(0.0f)]
-        [SerializeField] private float sideRandomRange = 2.5f; //¼ÒÈ¯ ±âÁØ ´ë»ó ¾ÕÂÊ À§Ä¡¿¡¼­ ÁÂ¿ì·Î »ı¼º ·£´ı ¹üÀ§
+        [SerializeField] private float sideRandomRange = 2.5f; //ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒ ì•ìª½ ìœ„ì¹˜ì—ì„œ ì¢Œìš°ë¡œ ìƒì„± ëœë¤ ë²”ìœ„
 
         [Min(0.1f)]
-        [SerializeField] private float attackDelay = 3.0f; // ÅõÃ´ °£°İ
+        [SerializeField] private float attackDelay = 3.0f; // íˆ¬ì²™ ê°„ê²©
 
         [Min(0.1f)]
-        [SerializeField] private float slowZoneRadius = 3.0f; // »ı¼ºµÉ ½½·Î¿ì ÀåÆÇ ¹İ°æ
+        [SerializeField] private float slowZoneRadius = 3.0f; // ìƒì„±ë  ìŠ¬ë¡œìš° ì¥íŒ ë°˜ê²½
 
         [Min(0.1f)]
-        [SerializeField] private float slowZoneLifeTime = 4.0f; // »ı¼ºµÉ ½½·Î¿ì ÀåÆÇ À¯Áö ½Ã°£
+        [SerializeField] private float slowZoneLifeTime = 4.0f; // ìƒì„±ë  ìŠ¬ë¡œìš° ì¥íŒ ìœ ì§€ ì‹œê°„
 
         [Range(0.1f, 1.0f)]
-        [SerializeField] private float speedMultiplier = 0.5f; // ÀåÆÇ ¾È¿¡¼­ ÇÃ·¹ÀÌ¾î ÀÌµ¿¼Óµµ ¹èÀ²
+        [SerializeField] private float speedMultiplier = 0.5f; // ì¥íŒ ì•ˆì—ì„œ í”Œë ˆì´ì–´ ì´ë™ì†ë„ ë°°ìœ¨
 
         [Min(0.0f)]
-        [SerializeField] private float telegraphGroundHeight = 0.03f; // ÂøÅº ¿¹°í Ç¥½Ã ³ôÀÌ
+        [SerializeField] private float telegraphGroundHeight = 0.03f; // ì°©íƒ„ ì˜ˆê³  í‘œì‹œ ë†’ì´
 
         [Min(0.0f)]
-        [SerializeField] private float slowZoneGroundHeight = 0.04f; // ½½·Î¿ì ÀåÆÇ ³ôÀÌ
+        [SerializeField] private float slowZoneGroundHeight = 0.04f; // ìŠ¬ë¡œìš° ì¥íŒ ë†’ì´
 
-        public float AttackRange //¿ÜºÎ¿¡¼­ »ç°Å¸®¸¦ ÀĞÀ» ¼ö ÀÖ°Ô ¿­¾îµĞ property
+        public float AttackRange //ì™¸ë¶€ì—ì„œ ì‚¬ê±°ë¦¬ë¥¼ ì½ì„ ìˆ˜ ìˆê²Œ ì—´ì–´ë‘” property
         {
             get
             {
-                return attackRange; //»ç°Å¸®¸¦ ¹İÈ¯ÇÑ´Ù.
+                return attackRange; //ì‚¬ê±°ë¦¬ë¥¼ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        private float attackTimer; // ´ÙÀ½ ÅõÃ´±îÁö ³²Àº ½Ã°£
+        private float attackTimer; // ë‹¤ìŒ íˆ¬ì²™ê¹Œì§€ ë‚¨ì€ ì‹œê°„
 
         private void Awake()
         {
-            TryFindTarget(); // targetÀÌ ºñ¾î ÀÖ´Ù¸é ÀÌ¸§À¸·Î Ã£´Â´Ù.
-            attackTimer = attackDelay; // »ı¼º Á÷ÈÄ ¹Ù·Î ´øÁöÁö ¾Êµµ·Ï Ã¹ °ø°İ ´ë±â ½Ã°£À» ¼³Á¤ÇÑ´Ù.
+            TryFindTarget(); // targetì´ ë¹„ì–´ ìˆë‹¤ë©´ ì´ë¦„ìœ¼ë¡œ ì°¾ëŠ”ë‹¤.
+            attackTimer = attackDelay; // ìƒì„± ì§í›„ ë°”ë¡œ ë˜ì§€ì§€ ì•Šë„ë¡ ì²« ê³µê²© ëŒ€ê¸° ì‹œê°„ì„ ì„¤ì •í•œë‹¤.
         }
 
         private void Update()
         {
-            if (target == null) // ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                TryFindTarget(); // ´Ù½Ã Ã£¾Æº»´Ù.
+                TryFindTarget(); // ë‹¤ì‹œ ì°¾ì•„ë³¸ë‹¤.
             }
 
-            if (target == null) // ±×·¡µµ ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ê·¸ë˜ë„ ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return; // °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (projectilePrefab == null) // Åõ»çÃ¼ PrefabÀÌ ¾ø´Ù¸é
+            if (projectilePrefab == null) // íˆ¬ì‚¬ì²´ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; // °ø°İÇÒ ¼ö ¾ø´Ù.
+                return; // ê³µê²©í•  ìˆ˜ ì—†ë‹¤.
             }
 
-            if (slowZonePrefab == null) // ÀåÆÇ PrefabÀÌ ¾ø´Ù¸é
+            if (slowZonePrefab == null) // ì¥íŒ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; // ÂøÅº ÈÄ ¸¸µé °ÍÀÌ ¾øÀ¸¹Ç·Î °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ì°©íƒ„ í›„ ë§Œë“¤ ê²ƒì´ ì—†ìœ¼ë¯€ë¡œ ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (areaTelegraphPrefab == null) // ÂøÅº ¿¹°í Ç¥½Ã PrefabÀÌ ¾ø´Ù¸é
+            if (areaTelegraphPrefab == null) // ì°©íƒ„ ì˜ˆê³  í‘œì‹œ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; // °æ°í Ç¥½Ã¸¦ ¸¸µé ¼ö ¾øÀ¸¹Ç·Î °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ê²½ê³  í‘œì‹œë¥¼ ë§Œë“¤ ìˆ˜ ì—†ìœ¼ë¯€ë¡œ ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            attackTimer -= Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ °ø°İ ´ë±â ½Ã°£À» ÁÙÀÎ´Ù.
+            attackTimer -= Time.deltaTime; // ì§€ë‚œ ì‹œê°„ë§Œí¼ ê³µê²© ëŒ€ê¸° ì‹œê°„ì„ ì¤„ì¸ë‹¤.
 
-            if (attackTimer > 0.0f) // ¾ÆÁ÷ °ø°İ ´ë±â ½Ã°£ÀÌ ³²¾Æ ÀÖ´Ù¸é
+            if (attackTimer > 0.0f) // ì•„ì§ ê³µê²© ëŒ€ê¸° ì‹œê°„ì´ ë‚¨ì•„ ìˆë‹¤ë©´
             {
-                return; // ÀÌ¹ø ÇÁ·¹ÀÓ¿¡´Â °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ì´ë²ˆ í”„ë ˆì„ì—ëŠ” ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Vector3 offset = target.position - transform.position; // ¸ó½ºÅÍ¿¡¼­ ´ë»ó±îÁöÀÇ ¹æÇâ°ú °Å¸®
-            offset.y = 0.0f; //³ôÀÌ¸¦ Á¦°ÅÇÑ´Ù.
+            Vector3 offset = target.position - transform.position; // ëª¬ìŠ¤í„°ì—ì„œ ëŒ€ìƒê¹Œì§€ì˜ ë°©í–¥ê³¼ ê±°ë¦¬
+            offset.y = 0.0f; //ë†’ì´ë¥¼ ì œê±°í•œë‹¤.
 
-            if (offset.sqrMagnitude > attackRange * attackRange) // ´ë»óÀÌ »ç°Å¸® ¹ÛÀÌ¶ó¸é
+            if (offset.sqrMagnitude > attackRange * attackRange) // ëŒ€ìƒì´ ì‚¬ê±°ë¦¬ ë°–ì´ë¼ë©´
             {
-                return; // °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Shoot(); // Åõ»çÃ¼ ¹ß»ç
-            attackTimer = attackDelay; // ´ÙÀ½ °ø°İ ´ë±â ½Ã°£ ¼³Á¤
+            Shoot(); // íˆ¬ì‚¬ì²´ ë°œì‚¬
+            attackTimer = attackDelay; // ë‹¤ìŒ ê³µê²© ëŒ€ê¸° ì‹œê°„ ì„¤ì •
         }
 
         private void TryFindTarget()
         {
-            if (string.IsNullOrEmpty(targetName)) // Ã£À» ÀÌ¸§ÀÌ ºñ¾î ÀÖ´Ù¸é
+            ////// ì „ì°¬ìš°ì‚­ì œ - ê¸°ì¡´ GameObject.Find ê¸°ë°˜ íƒ€ê²Ÿ ê²€ìƒ‰ ì½”ë“œëŠ” ì•„ë˜ì— ë³´ì¡´í•œë‹¤.
+            // private void TryFindTarget()
+            //         {
+            //             if (string.IsNullOrEmpty(targetName)) // ì°¾ì„ ì´ë¦„ì´ ë¹„ì–´ ìˆë‹¤ë©´
+            //             {
+            //                 return; // ì°¾ì§€ ì•ŠëŠ”ë‹¤.
+            //             }
+            // 
+            //             GameObject targetObject = GameObject.Find(targetName); // ì”¬ì—ì„œ ì´ë¦„ì´ ê°™ì€ GameObjectë¥¼ ì°¾ëŠ”ë‹¤.
+            // 
+            //             if (targetObject != null) // ì°¾ì•˜ë‹¤ë©´
+            //             {
+            //                 target = targetObject.transform; // Transformì„ ì €ì¥í•œë‹¤.
+            //             }
+            //         }
+
+            ////// ì „ì°¬ìš°ì¶”ê°€ - ì»¨ë³´ì´ íƒ€ê²Ÿì€ MonsterInteractionApiì—ì„œë§Œ ì¡°íšŒí•œë‹¤.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // ì „ì°¬ìš°ì¶”ê°€ - ë“±ë¡ëœ ì»¨ë³´ì´ íƒ€ê²Ÿì´ ìˆëŠ”ì§€ í™•ì¸í•œë‹¤.
             {
-                return; // Ã£Áö ¾Ê´Â´Ù.
+                target = apiTarget; // ì „ì°¬ìš°ì¶”ê°€ - ì¡°íšŒëœ ì»¨ë³´ì´ Transformì„ ìŠ¬ë¡œìš° íˆ¬ì²™ ëŒ€ìƒìœ¼ë¡œ ì €ì¥í•œë‹¤.
+                return; // ì „ì°¬ìš°ì¶”ê°€ - íƒ€ê²Ÿì„ ì°¾ì•˜ìœ¼ë¯€ë¡œ ë©”ì„œë“œë¥¼ ì¢…ë£Œí•œë‹¤.
             }
 
-            GameObject targetObject = GameObject.Find(targetName); // ¾À¿¡¼­ ÀÌ¸§ÀÌ °°Àº GameObject¸¦ Ã£´Â´Ù.
-
-            if (targetObject != null) // Ã£¾Ò´Ù¸é
-            {
-                target = targetObject.transform; // TransformÀ» ÀúÀåÇÑ´Ù.
-            }
+            target = null; // ì „ì°¬ìš°ì¶”ê°€ - ë“±ë¡ëœ ì»¨ë³´ì´ê°€ ì—†ìœ¼ë©´ íˆ¬ì²™ ëŒ€ìƒì„ ë¹„ì›Œë‘”ë‹¤.
         }
 
         public bool IsTargetInAttackRange()
         {
-            if (target == null) //´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) //ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                TryFindTarget(); //ÀÌ¸§À¸·Î Ã£¾Æº»´Ù.
+                TryFindTarget(); //ì´ë¦„ìœ¼ë¡œ ì°¾ì•„ë³¸ë‹¤.
             }
 
-            if (target == null) //´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) //ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return false; //½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return false; //ì‹¤í–‰í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Vector3 offset = target.position - transform.position; //¸ó½ºÅÍ¿¡¼­ ´ë»ó±îÁö °Å¸® º¤ÅÍ
-            offset.y = 0.0f; //³ôÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 offset = target.position - transform.position; //ëª¬ìŠ¤í„°ì—ì„œ ëŒ€ìƒê¹Œì§€ ê±°ë¦¬ ë²¡í„°
+            offset.y = 0.0f; //ë†’ì´ëŠ” ì œê±°í•œë‹¤.
 
-            return offset.sqrMagnitude <= attackRange * attackRange; //´ë»óÀÌ ÅõÃ´ »ç°Å¸® ¾È¿¡ ÀÖ´ÂÁö ¹İÈ¯ÇÑ´Ù.
+            return offset.sqrMagnitude <= attackRange * attackRange; //ëŒ€ìƒì´ íˆ¬ì²™ ì‚¬ê±°ë¦¬ ì•ˆì— ìˆëŠ”ì§€ ë°˜í™˜í•œë‹¤.
         }
 
         private Vector3 PickImpactPosition()
         {
-            Vector3 forward = target.forward; // PlayerConvoy°¡ ¹Ù¶óº¸´Â ¾Õ ¹æÇâÀ» °¡Á®¿Â´Ù.
-            forward.y = 0.0f; // ³ôÀÌ ¹æÇâÀ» Á¦°ÅÇÑ´Ù.
+            Vector3 forward = target.forward; // PlayerConvoyê°€ ë°”ë¼ë³´ëŠ” ì• ë°©í–¥ì„ ê°€ì ¸ì˜¨ë‹¤.
+            forward.y = 0.0f; // ë†’ì´ ë°©í–¥ì„ ì œê±°í•œë‹¤.
 
-            if (forward.sqrMagnitude <= 0.0001f) // ¾Õ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
+            if (forward.sqrMagnitude <= 0.0001f) // ì• ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ì—†ë‹¤ë©´
             {
-                forward = transform.forward; // µğ¹öÇÁ ¸ó½ºÅÍÀÇ ¾Õ ¹æÇâÀ» ´ë½Å »ç¿ëÇÑ´Ù.
-                forward.y = 0.0f; // ³ôÀÌ ¹æÇâÀ» Á¦°ÅÇÑ´Ù.
+                forward = transform.forward; // ë””ë²„í”„ ëª¬ìŠ¤í„°ì˜ ì• ë°©í–¥ì„ ëŒ€ì‹  ì‚¬ìš©í•œë‹¤.
+                forward.y = 0.0f; // ë†’ì´ ë°©í–¥ì„ ì œê±°í•œë‹¤.
             }
 
-            if (forward.sqrMagnitude <= 0.0001f) // ±×·¡µµ ¾Õ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
+            if (forward.sqrMagnitude <= 0.0001f) // ê·¸ë˜ë„ ì• ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ì—†ë‹¤ë©´
             {
-                forward = Vector3.forward; // ¿ùµå ±âÁØ ¾Õ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
+                forward = Vector3.forward; // ì›”ë“œ ê¸°ì¤€ ì• ë°©í–¥ì„ ì‚¬ìš©í•œë‹¤.
             }
 
-            forward.Normalize(); // ¾Õ ¹æÇâ º¤ÅÍ¸¦ ±æÀÌ 1·Î ¸¸µç´Ù.
+            forward.Normalize(); // ì• ë°©í–¥ ë²¡í„°ë¥¼ ê¸¸ì´ 1ë¡œ ë§Œë“ ë‹¤.
 
-            Vector3 right = new Vector3(forward.z, 0.0f, -forward.x); // ¾Õ ¹æÇâÀ» ±âÁØÀ¸·Î ¿À¸¥ÂÊ ¹æÇâÀ» ¸¸µç´Ù.
+            Vector3 right = new Vector3(forward.z, 0.0f, -forward.x); // ì• ë°©í–¥ì„ ê¸°ì¤€ìœ¼ë¡œ ì˜¤ë¥¸ìª½ ë°©í–¥ì„ ë§Œë“ ë‹¤.
 
-            float sideOffset = Random.Range(-sideRandomRange, sideRandomRange); // ÁÂ¿ì ·£´ı À§Ä¡¸¦ Á¤ÇÑ´Ù.
+            float sideOffset = Random.Range(-sideRandomRange, sideRandomRange); // ì¢Œìš° ëœë¤ ìœ„ì¹˜ë¥¼ ì •í•œë‹¤.
 
-            Vector3 position = target.position + forward * forwardImpactDistance + right * sideOffset; // ´ë»ó ¾ÕÂÊ ÀÏÁ¤ °Å¸® À§Ä¡¿¡ ÁÂ¿ì ·£´ı°ªÀ» ´õÇØ ÂøÅº À§Ä¡¸¦ °è»êÇÑ´Ù.
+            Vector3 position = target.position + forward * forwardImpactDistance + right * sideOffset; // ëŒ€ìƒ ì•ìª½ ì¼ì • ê±°ë¦¬ ìœ„ì¹˜ì— ì¢Œìš° ëœë¤ê°’ì„ ë”í•´ ì°©íƒ„ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
 
-            return position; // °è»êµÈ ÂøÅº À§Ä¡¸¦ ¹İÈ¯ÇÑ´Ù.
+            return position; // ê³„ì‚°ëœ ì°©íƒ„ ìœ„ì¹˜ë¥¼ ë°˜í™˜í•œë‹¤.
         }
 
         private void Shoot()
         {
-            Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position; // FirePoint°¡ ÀÖÀ¸¸é ±× À§Ä¡¿¡¼­, ¾øÀ¸¸é ÀÚ±â À§Ä¡¿¡¼­ ¹ß»çÇÑ´Ù.
+            Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position; // FirePointê°€ ìˆìœ¼ë©´ ê·¸ ìœ„ì¹˜ì—ì„œ, ì—†ìœ¼ë©´ ìê¸° ìœ„ì¹˜ì—ì„œ ë°œì‚¬í•œë‹¤.
 
-            Vector3 targetPosition = PickImpactPosition(); // ÇÃ·¹ÀÌ¾î ¾ÕÂÊ À§Ä¡¸¦ ÂøÅº À§Ä¡·Î Á¤ÇÑ´Ù.
+            Vector3 targetPosition = PickImpactPosition(); // í”Œë ˆì´ì–´ ì•ìª½ ìœ„ì¹˜ë¥¼ ì°©íƒ„ ìœ„ì¹˜ë¡œ ì •í•œë‹¤.
 
-            Vector3 offset = targetPosition - spawnPosition; // ¹ß»ç À§Ä¡¿¡¼­ ÂøÅº À§Ä¡±îÁöÀÇ ¹æÇâ
-            offset.y = 0.0f; //³ôÀÌ¸¦ Á¦°ÅÇÑ´Ù.
+            Vector3 offset = targetPosition - spawnPosition; // ë°œì‚¬ ìœ„ì¹˜ì—ì„œ ì°©íƒ„ ìœ„ì¹˜ê¹Œì§€ì˜ ë°©í–¥
+            offset.y = 0.0f; //ë†’ì´ë¥¼ ì œê±°í•œë‹¤.
 
-            Quaternion spawnRotation = transform.rotation; // ±âº» È¸Àü°ª
+            Quaternion spawnRotation = transform.rotation; // ê¸°ë³¸ íšŒì „ê°’
 
-            if (offset.sqrMagnitude > 0.0001f) // ¹æÇâÀ» °è»êÇÒ ¼ö ÀÖ´Ù¸é
+            if (offset.sqrMagnitude > 0.0001f) // ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ìˆë‹¤ë©´
             {
-                spawnRotation = Quaternion.LookRotation(offset.normalized, Vector3.up); // Åõ»çÃ¼°¡ ÂøÅº ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+                spawnRotation = Quaternion.LookRotation(offset.normalized, Vector3.up); // íˆ¬ì‚¬ì²´ê°€ ì°©íƒ„ ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
             }
 
-            EnemySlowZoneProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, projectileRoot); // Åõ»çÃ¼ »ı¼º
+            EnemySlowZoneProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, projectileRoot); // íˆ¬ì‚¬ì²´ ìƒì„±
 
             projectile.Configure(targetPosition, slowZonePrefab, areaTelegraphPrefab, slowZoneRoot, telegraphRoot, 
-                                 slowZoneRadius, slowZoneLifeTime, speedMultiplier, telegraphGroundHeight, slowZoneGroundHeight); // Åõ»çÃ¼¿¡ ÂøÅº À§Ä¡¿Í ÀåÆÇ Á¤º¸¸¦ Àü´ŞÇÑ´Ù.
+                                 slowZoneRadius, slowZoneLifeTime, speedMultiplier, telegraphGroundHeight, slowZoneGroundHeight); // íˆ¬ì‚¬ì²´ì— ì°©íƒ„ ìœ„ì¹˜ì™€ ì¥íŒ ì •ë³´ë¥¼ ì „ë‹¬í•œë‹¤.
         }        
     }
 }

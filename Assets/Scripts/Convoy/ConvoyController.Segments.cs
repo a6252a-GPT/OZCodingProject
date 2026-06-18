@@ -297,6 +297,29 @@ namespace TeamProject01.Gameplay
             return GetCurrentSegmentLevelInternal(targetId, definition); // 현재값
         }
 
+        ////// 전찬우추가 - 코어/레벨 UI가 해당 세그먼트가 실제로 붙어 있는지 확인하는 조회 API
+        public int CountAttachedSegments(string segmentId)
+        {
+            string targetId = NormalizeSegmentId(segmentId); // 비교 ID 보정
+            if (string.IsNullOrWhiteSpace(targetId))
+            {
+                return 0; // 대상 없음
+            }
+
+            SyncSegmentRuntimes(true); // 현재 체인 런타임 보정
+            int count = 0; // 일치 개수
+            for (int i = 0; i < segmentRuntimes.Count; i++)
+            {
+                ConvoySegmentRuntime runtime = segmentRuntimes[i]; // 현재 런타임
+                if (runtime != null && runtime.IsAttached && IsSegmentId(runtime, targetId))
+                {
+                    count++; // 해당 ID 세그먼트
+                }
+            }
+
+            return count; // 결과 반환
+        }
+
         private int GetCurrentSegmentLevelInternal(string segmentId, SegmentDefinition definition) // 내부 레벨 조회
         {
             string targetId = NormalizeSegmentId(segmentId); // 비교 ID

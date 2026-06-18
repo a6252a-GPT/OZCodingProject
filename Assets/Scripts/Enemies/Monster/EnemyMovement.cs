@@ -58,7 +58,10 @@ namespace TeamProject01.Gameplay
             {
                 IsInStopRange = isNexusInStopRange; // 이 값은 Nexus 공격 사거리 여부만 저장한다.
 
-                Vector3 resolvedPosition = SegmentBlocker.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                ////// 전찬우삭제 - 몬스터가 SegmentBlocker를 직접 호출하지 않도록 MonsterInteractionApi로 대체한다.
+                // Vector3 resolvedPosition = SegmentBlocker.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 기존: 정지 중 세그먼트 겹침 보정
+                ////// 전찬우추가 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
+                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 공격, 투척, 소환 중이면 Nexus 쪽으로 더 이동하지 않는다.
@@ -71,7 +74,10 @@ namespace TeamProject01.Gameplay
             Vector3 desiredPosition = transform.position + direction * (moveSpeed * Time.deltaTime); // 이번 프레임에 이동하고 싶은 목표 위치를 계산한다.
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
-            Vector3 position = SegmentBlocker.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
+            ////// 전찬우삭제 - 몬스터가 SegmentBlocker를 직접 호출하지 않도록 MonsterInteractionApi로 대체한다.
+            // Vector3 position = SegmentBlocker.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 기존: 이동 중 세그먼트 겹침 보정
+            ////// 전찬우추가 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
+            Vector3 position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
             transform.position = position; // 최종 보정된 위치를 몬스터 Transform에 적용한다.
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 몬스터가 이동 방향을 바라보게 회전시킨다.
         }

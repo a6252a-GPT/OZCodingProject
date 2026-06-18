@@ -1,358 +1,375 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemySuicideCharger : MonoBehaviour // ÇÃ·¹ÀÌ¾î ÄÁº¸ÀÌ¸¦ ÇâÇØ µ¹ÁøÇÑ µÚ ÀÚÆøÇÏ´Â ¸ó½ºÅÍ
+    public sealed class EnemySuicideCharger : MonoBehaviour // í”Œë ˆì´ì–´ ì»¨ë³´ì´ë¥¼ í–¥í•´ ëŒì§„í•œ ë’¤ ìí­í•˜ëŠ” ëª¬ìŠ¤í„°
     {
         [Header("Target")]
-        [SerializeField] private string targetName = "PlayerConvoy"; // ÃßÀûÇÒ PlayerConvoy ¿ÀºêÁ§Æ® ÀÌ¸§
-        private Transform target; // ÃßÀû ´ë»ó Transform
+        ////// ì „ì°¬ìš°ì‚­ì œ - ê¸°ì¡´ ì´ë¦„ ê¸°ë°˜ PlayerConvoy ê²€ìƒ‰ í•„ë“œëŠ” MonsterInteractionApi íƒ€ê²Ÿ ì¡°íšŒë¡œ ëŒ€ì²´í•œë‹¤.
+        // [SerializeField] private string targetName = "PlayerConvoy"; // ì¶”ì í•  PlayerConvoy ì˜¤ë¸Œì íŠ¸ ì´ë¦„
+        private Transform target; // ì¶”ì  ëŒ€ìƒ Transform
 
         [Header("Movement")]
         [Min(0.1f)]
-        [SerializeField] private float moveSpeed = 7.0f; // ÀÚÆø ¸ó½ºÅÍ µ¹Áø ¼Óµµ
+        [SerializeField] private float moveSpeed = 7.0f; // ìí­ ëª¬ìŠ¤í„° ëŒì§„ ì†ë„
 
         [Min(0.0f)]
-        [SerializeField] private float groundHeight = 0.72f; // ¹Ù´Ú À§¿¡ ¸ó½ºÅÍ¸¦ ¿Ã·ÁµÑ ³ôÀÌ
+        [SerializeField] private float groundHeight = 0.72f; // ë°”ë‹¥ ìœ„ì— ëª¬ìŠ¤í„°ë¥¼ ì˜¬ë ¤ë‘˜ ë†’ì´
 
         [Min(0.1f)]
-        [SerializeField] private float explosionStartRange = 1.2f; // ÀÌ °Å¸® ¾È¿¡ µé¾î¿À¸é ÀÚÆø ÁØºñ ½ÃÀÛ
+        [SerializeField] private float explosionStartRange = 1.2f; // ì´ ê±°ë¦¬ ì•ˆì— ë“¤ì–´ì˜¤ë©´ ìí­ ì¤€ë¹„ ì‹œì‘
 
         [Header("Explosion")]
         [Min(0.1f)]
-        [SerializeField] private float explosionRadius = 3.0f; // ½ÇÁ¦ Æø¹ß ÆÇÁ¤ ¹İ°æ
+        [SerializeField] private float explosionRadius = 3.0f; // ì‹¤ì œ í­ë°œ íŒì • ë°˜ê²½
 
         [Min(0.1f)]
-        [SerializeField] private float chargeTime = 1.2f; // ¸öÀÌ Ä¿Áö°í ¹üÀ§°¡ ÁøÇØÁö´Â ½Ã°£
+        [SerializeField] private float chargeTime = 1.2f; // ëª¸ì´ ì»¤ì§€ê³  ë²”ìœ„ê°€ ì§„í•´ì§€ëŠ” ì‹œê°„
 
         [Min(0.1f)]
-        [SerializeField] private float knockbackDistance = 10.0f; // ÇÃ·¹ÀÌ¾î¸¦ ¹Ğ¾î³¾ °Å¸®
+        [SerializeField] private float knockbackDistance = 10.0f; // í”Œë ˆì´ì–´ë¥¼ ë°€ì–´ë‚¼ ê±°ë¦¬
 
         [Min(0.01f)]
-        [SerializeField] private float knockbackDuration = 1.0f; // ÇÃ·¹ÀÌ¾î°¡ ¹Ğ·Á³ª´Â ½Ã°£
+        [SerializeField] private float knockbackDuration = 1.0f; // í”Œë ˆì´ì–´ê°€ ë°€ë ¤ë‚˜ëŠ” ì‹œê°„
 
         [Min(0.0f)]
-        [SerializeField] private float knockbackHeight = 3.0f; // ÇÃ·¹ÀÌ¾î°¡ °øÁßÀ¸·Î ¶°¿À¸¦ ³ôÀÌ
+        [SerializeField] private float knockbackHeight = 3.0f; // í”Œë ˆì´ì–´ê°€ ê³µì¤‘ìœ¼ë¡œ ë– ì˜¤ë¥¼ ë†’ì´
 
         [Min(1.0f)]
-        [SerializeField] private float bodyScaleMultiplier = 1.8f; // ÀÚÆø ÁØºñ Áß ¸öÀÌ Ä¿Áú ¹èÀ²
+        [SerializeField] private float bodyScaleMultiplier = 1.8f; // ìí­ ì¤€ë¹„ ì¤‘ ëª¸ì´ ì»¤ì§ˆ ë°°ìœ¨
 
         [Header("Charge Visual")]
-        [SerializeField] private Color chargeColor = Color.red; // ÀÚÆø ÁØºñ Áß º¯ÇÒ ¸ö »ö
+        [SerializeField] private Color chargeColor = Color.red; // ìí­ ì¤€ë¹„ ì¤‘ ë³€í•  ëª¸ ìƒ‰
 
         [Header("Telegraph")]
-        [SerializeField] private GameObject areaTelegraphPrefab; // Æø¹ß ¹üÀ§ Ç¥½Ã Prefab
-        [SerializeField] private Transform telegraphRoot; // ¹üÀ§ Ç¥½Ã¸¦ Á¤¸®ÇÒ ºÎ¸ğ Transform
+        [SerializeField] private GameObject areaTelegraphPrefab; // í­ë°œ ë²”ìœ„ í‘œì‹œ Prefab
+        [SerializeField] private Transform telegraphRoot; // ë²”ìœ„ í‘œì‹œë¥¼ ì •ë¦¬í•  ë¶€ëª¨ Transform
 
         [Min(0.0f)]
-        [SerializeField] private float telegraphGroundHeight = 0.03f; // ¹üÀ§ Ç¥½Ã¸¦ ¹Ù´Úº¸´Ù »ìÂ¦ À§¿¡ µÑ ³ôÀÌ
+        [SerializeField] private float telegraphGroundHeight = 0.03f; // ë²”ìœ„ í‘œì‹œë¥¼ ë°”ë‹¥ë³´ë‹¤ ì‚´ì§ ìœ„ì— ë‘˜ ë†’ì´
 
         [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphStartAlpha = 0.1f; // ¹üÀ§ Ç¥½Ã ½ÃÀÛ Åõ¸íµµ
+        [SerializeField] private float telegraphStartAlpha = 0.1f; // ë²”ìœ„ í‘œì‹œ ì‹œì‘ íˆ¬ëª…ë„
 
         [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphEndAlpha = 1.0f; // Æø¹ß Á÷Àü ¹üÀ§ Ç¥½Ã Åõ¸íµµ
+        [SerializeField] private float telegraphEndAlpha = 1.0f; // í­ë°œ ì§ì „ ë²”ìœ„ í‘œì‹œ íˆ¬ëª…ë„
 
-        private Vector3 originalScale; // Ã³À½ ¸ö Å©±â
-        private float chargeTimer; // ÀÚÆø ÁØºñ°¡ ÁøÇàµÈ ½Ã°£
-        private bool isCharging; // ÀÚÆø ÁØºñ ÁßÀÎÁö È®ÀÎ
-        private bool hasExploded; // ÀÌ¹Ì Æø¹ßÇß´ÂÁö È®ÀÎ
+        private Vector3 originalScale; // ì²˜ìŒ ëª¸ í¬ê¸°
+        private float chargeTimer; // ìí­ ì¤€ë¹„ê°€ ì§„í–‰ëœ ì‹œê°„
+        private bool isCharging; // ìí­ ì¤€ë¹„ ì¤‘ì¸ì§€ í™•ì¸
+        private bool hasExploded; // ì´ë¯¸ í­ë°œí–ˆëŠ”ì§€ í™•ì¸
 
-        private GameObject currentTelegraph; // ÇöÀç »ı¼ºµÈ Æø¹ß ¹üÀ§ Ç¥½Ã
+        private GameObject currentTelegraph; // í˜„ì¬ ìƒì„±ëœ í­ë°œ ë²”ìœ„ í‘œì‹œ
 
-        private Renderer[] bodyRenderers; // ¸ö »öÀ» ¹Ù²Ü Renderer ¸ñ·Ï
-        private MaterialPropertyBlock bodyPropertyBlock; // MaterialÀ» Á÷Á¢ ¹Ù²ÙÁö ¾Ê°í »ö¸¸ µ¤¾î¾µ µµ±¸
-        private Color originalBodyColor = Color.white; // Ã³À½ ¸ö »ö
-        private int bodyColorPropertyId; // Material »ö»ó ¼Ó¼º ID
-        private bool hasBodyColorProperty; // »ö»ó ¼Ó¼ºÀ» Ã£¾Ò´ÂÁö ¿©ºÎ
+        private Renderer[] bodyRenderers; // ëª¸ ìƒ‰ì„ ë°”ê¿€ Renderer ëª©ë¡
+        private MaterialPropertyBlock bodyPropertyBlock; // Materialì„ ì§ì ‘ ë°”ê¾¸ì§€ ì•Šê³  ìƒ‰ë§Œ ë®ì–´ì“¸ ë„êµ¬
+        private Color originalBodyColor = Color.white; // ì²˜ìŒ ëª¸ ìƒ‰
+        private int bodyColorPropertyId; // Material ìƒ‰ìƒ ì†ì„± ID
+        private bool hasBodyColorProperty; // ìƒ‰ìƒ ì†ì„±ì„ ì°¾ì•˜ëŠ”ì§€ ì—¬ë¶€
 
         private void Awake()
         {
-            originalScale = transform.localScale; // ½ÃÀÛ ¸ö Å©±â¸¦ ÀúÀåÇÑ´Ù.
-            CacheBodyRenderers(); // ¸ö »öÀ» ¹Ù²Ü Renderer Á¤º¸¸¦ ÁØºñÇÑ´Ù.
-            TryFindTarget(); // PlayerConvoy¸¦ Ã£´Â´Ù.
+            originalScale = transform.localScale; // ì‹œì‘ ëª¸ í¬ê¸°ë¥¼ ì €ì¥í•œë‹¤.
+            CacheBodyRenderers(); // ëª¸ ìƒ‰ì„ ë°”ê¿€ Renderer ì •ë³´ë¥¼ ì¤€ë¹„í•œë‹¤.
+            TryFindTarget(); // PlayerConvoyë¥¼ ì°¾ëŠ”ë‹¤.
         }
 
         private void Update()
         {
-            if (hasExploded) // ÀÌ¹Ì Æø¹ßÇß´Ù¸é
+            if (hasExploded) // ì´ë¯¸ í­ë°œí–ˆë‹¤ë©´
             {
-                return; // ´õ ÀÌ»ó Ã³¸®ÇÏÁö ¾Ê´Â´Ù.
+                return; // ë” ì´ìƒ ì²˜ë¦¬í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (target == null) // ÃßÀû ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ì¶”ì  ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                TryFindTarget(); // ´Ù½Ã Ã£´Â´Ù.
+                TryFindTarget(); // ë‹¤ì‹œ ì°¾ëŠ”ë‹¤.
             }
 
-            if (target == null) // ±×·¡µµ ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ê·¸ë˜ë„ ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return; // ÃßÀûÇÒ ¼ö ¾øÀ¸¹Ç·Î Á¾·áÇÑ´Ù.
+                return; // ì¶”ì í•  ìˆ˜ ì—†ìœ¼ë¯€ë¡œ ì¢…ë£Œí•œë‹¤.
             }
 
-            if (isCharging) // ÀÚÆø ÁØºñ ÁßÀÌ¶ó¸é
+            if (isCharging) // ìí­ ì¤€ë¹„ ì¤‘ì´ë¼ë©´
             {
-                UpdateCharge(); // ¸ö Å©±â, ¸ö »ö, ¹üÀ§ Ç¥½Ã¸¦ °»½ÅÇÑ´Ù.
-                return; // µ¹Áø ÀÌµ¿Àº ÇÏÁö ¾Ê´Â´Ù.
+                UpdateCharge(); // ëª¸ í¬ê¸°, ëª¸ ìƒ‰, ë²”ìœ„ í‘œì‹œë¥¼ ê°±ì‹ í•œë‹¤.
+                return; // ëŒì§„ ì´ë™ì€ í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            ChaseTarget(); // ¾ÆÁ÷ ÀÚÆø ÁØºñ ÀüÀÌ¸é PlayerConvoy¸¦ ÇâÇØ ´Ş·Á°£´Ù.
+            ChaseTarget(); // ì•„ì§ ìí­ ì¤€ë¹„ ì „ì´ë©´ PlayerConvoyë¥¼ í–¥í•´ ë‹¬ë ¤ê°„ë‹¤.
         }
 
         private void OnDisable()
         {
-            DestroyTelegraph(); // ºñÈ°¼ºÈ­µÉ ¶§ ¹üÀ§ Ç¥½Ã°¡ ³²Áö ¾Êµµ·Ï Á¦°ÅÇÑ´Ù.
-            ClearBodyColorOverride(); // »ö µ¤¾î¾²±â¸¦ Á¦°ÅÇÑ´Ù.
+            DestroyTelegraph(); // ë¹„í™œì„±í™”ë  ë•Œ ë²”ìœ„ í‘œì‹œê°€ ë‚¨ì§€ ì•Šë„ë¡ ì œê±°í•œë‹¤.
+            ClearBodyColorOverride(); // ìƒ‰ ë®ì–´ì“°ê¸°ë¥¼ ì œê±°í•œë‹¤.
         }
 
         private void TryFindTarget()
         {
-            if (string.IsNullOrEmpty(targetName)) // Ã£À» ÀÌ¸§ÀÌ ºñ¾î ÀÖ´Ù¸é
+            ////// ì „ì°¬ìš°ì‚­ì œ - ê¸°ì¡´ GameObject.Find ê¸°ë°˜ íƒ€ê²Ÿ ê²€ìƒ‰ ì½”ë“œëŠ” ì•„ë˜ì— ë³´ì¡´í•œë‹¤.
+            // private void TryFindTarget()
+            //         {
+            //             if (string.IsNullOrEmpty(targetName)) // ì°¾ì„ ì´ë¦„ì´ ë¹„ì–´ ìˆë‹¤ë©´
+            //             {
+            //                 return; // ì°¾ì§€ ì•ŠëŠ”ë‹¤.
+            //             }
+            // 
+            //             GameObject targetObject = GameObject.Find(targetName); // ì”¬ì—ì„œ ì´ë¦„ì´ ê°™ì€ GameObjectë¥¼ ì°¾ëŠ”ë‹¤.
+            // 
+            //             if (targetObject == null) // ì°¾ì§€ ëª»í–ˆë‹¤ë©´
+            //             {
+            //                 return; // ì¢…ë£Œí•œë‹¤.
+            //             }
+            // 
+            //             target = targetObject.transform; // ì°¾ì€ ëŒ€ìƒ Transformì„ ì €ì¥í•œë‹¤.
+            //         }
+
+            ////// ì „ì°¬ìš°ì¶”ê°€ - ì»¨ë³´ì´ íƒ€ê²Ÿì€ MonsterInteractionApiì—ì„œë§Œ ì¡°íšŒí•œë‹¤.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // ì „ì°¬ìš°ì¶”ê°€ - ë“±ë¡ëœ ì»¨ë³´ì´ íƒ€ê²Ÿì´ ìˆëŠ”ì§€ í™•ì¸í•œë‹¤.
             {
-                return; // Ã£Áö ¾Ê´Â´Ù.
+                target = apiTarget; // ì „ì°¬ìš°ì¶”ê°€ - ì¡°íšŒëœ ì»¨ë³´ì´ Transformì„ ìí­ ëª¬ìŠ¤í„°ì˜ ì¶”ì  ëŒ€ìƒìœ¼ë¡œ ì €ì¥í•œë‹¤.
+                return; // ì „ì°¬ìš°ì¶”ê°€ - íƒ€ê²Ÿì„ ì°¾ì•˜ìœ¼ë¯€ë¡œ ë©”ì„œë“œë¥¼ ì¢…ë£Œí•œë‹¤.
             }
 
-            GameObject targetObject = GameObject.Find(targetName); // ¾À¿¡¼­ ÀÌ¸§ÀÌ °°Àº GameObject¸¦ Ã£´Â´Ù.
-
-            if (targetObject == null) // Ã£Áö ¸øÇß´Ù¸é
-            {
-                return; // Á¾·áÇÑ´Ù.
-            }
-
-            target = targetObject.transform; // Ã£Àº ´ë»ó TransformÀ» ÀúÀåÇÑ´Ù.
+            target = null; // ì „ì°¬ìš°ì¶”ê°€ - ë“±ë¡ëœ ì»¨ë³´ì´ê°€ ì—†ìœ¼ë©´ ì¶”ì  ëŒ€ìƒì„ ë¹„ì›Œë‘”ë‹¤.
         }
 
         private void ChaseTarget()
         {
-            Vector3 offset = target.position - transform.position; // ¸ó½ºÅÍ¿¡¼­ PlayerConvoy±îÁöÀÇ ¹æÇâ°ú °Å¸® º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
-            offset.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 offset = target.position - transform.position; // ëª¬ìŠ¤í„°ì—ì„œ PlayerConvoyê¹Œì§€ì˜ ë°©í–¥ê³¼ ê±°ë¦¬ ë²¡í„°ë¥¼ êµ¬í•œë‹¤.
+            offset.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            if (offset.sqrMagnitude <= explosionStartRange * explosionStartRange) // °ÅÀÇ ºÙ¾ú´Ù¸é
+            if (offset.sqrMagnitude <= explosionStartRange * explosionStartRange) // ê±°ì˜ ë¶™ì—ˆë‹¤ë©´
             {
-                BeginCharge(); // ÀÚÆø ÁØºñ¸¦ ½ÃÀÛÇÑ´Ù.
-                return; // ÀÌ¹ø ÇÁ·¹ÀÓ ÀÌµ¿Àº ÇÏÁö ¾Ê´Â´Ù.
+                BeginCharge(); // ìí­ ì¤€ë¹„ë¥¼ ì‹œì‘í•œë‹¤.
+                return; // ì´ë²ˆ í”„ë ˆì„ ì´ë™ì€ í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Vector3 direction = offset.normalized; // PlayerConvoy ¹æÇâÀ» ±æÀÌ 1Â¥¸® ¹æÇâÀ¸·Î ¸¸µç´Ù.
-            Vector3 desiredPosition = transform.position + direction * (moveSpeed * Time.deltaTime); // ÀÌ¹ø ÇÁ·¹ÀÓ ÀÌµ¿ÇÏ·Á´Â À§Ä¡¸¦ °è»êÇÑ´Ù.
-            desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // ¹Ù´Ú ³ôÀÌ¿¡ ¸ÂÃá´Ù.
+            Vector3 direction = offset.normalized; // PlayerConvoy ë°©í–¥ì„ ê¸¸ì´ 1ì§œë¦¬ ë°©í–¥ìœ¼ë¡œ ë§Œë“ ë‹¤.
+            Vector3 desiredPosition = transform.position + direction * (moveSpeed * Time.deltaTime); // ì´ë²ˆ í”„ë ˆì„ ì´ë™í•˜ë ¤ëŠ” ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
+            desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // ë°”ë‹¥ ë†’ì´ì— ë§ì¶˜ë‹¤.
 
-            transform.position = desiredPosition; // °è»êµÈ À§Ä¡¸¦ Àû¿ëÇÑ´Ù.
-            transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // ÀÌµ¿ ¹æÇâÀ» ¹Ù¶óº¸°Ô È¸ÀüÇÑ´Ù.
+            transform.position = desiredPosition; // ê³„ì‚°ëœ ìœ„ì¹˜ë¥¼ ì ìš©í•œë‹¤.
+            transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // ì´ë™ ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ íšŒì „í•œë‹¤.
         }
 
         private void BeginCharge()
         {
-            isCharging = true; // ÀÚÆø ÁØºñ »óÅÂ·Î ÀüÈ¯ÇÑ´Ù.
-            chargeTimer = 0.0f; // ÀÚÆø ÁØºñ ½Ã°£À» ÃÊ±âÈ­ÇÑ´Ù.
+            isCharging = true; // ìí­ ì¤€ë¹„ ìƒíƒœë¡œ ì „í™˜í•œë‹¤.
+            chargeTimer = 0.0f; // ìí­ ì¤€ë¹„ ì‹œê°„ì„ ì´ˆê¸°í™”í•œë‹¤.
 
-            CacheBodyRenderers(); // ¸ö »öÀ» ¹Ù²Ü Renderer Á¤º¸¸¦ ÁØºñÇÑ´Ù.
-            SetBodyChargeColor(0.0f); // Ã³À½¿¡´Â ¿ø·¡ »öÀ¸·Î ½ÃÀÛÇÑ´Ù.
+            CacheBodyRenderers(); // ëª¸ ìƒ‰ì„ ë°”ê¿€ Renderer ì •ë³´ë¥¼ ì¤€ë¹„í•œë‹¤.
+            SetBodyChargeColor(0.0f); // ì²˜ìŒì—ëŠ” ì›ë˜ ìƒ‰ìœ¼ë¡œ ì‹œì‘í•œë‹¤.
 
-            CreateTelegraph(); // Æø¹ß ¹üÀ§ Ç¥½Ã¸¦ »ı¼ºÇÑ´Ù.
+            CreateTelegraph(); // í­ë°œ ë²”ìœ„ í‘œì‹œë¥¼ ìƒì„±í•œë‹¤.
         }
 
         private void UpdateCharge()
         {
-            chargeTimer += Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ ÀÚÆø ÁØºñ ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
+            chargeTimer += Time.deltaTime; // ì§€ë‚œ ì‹œê°„ë§Œí¼ ìí­ ì¤€ë¹„ ì‹œê°„ì„ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-            float progress = chargeTimer / chargeTime; // ÀÚÆø ÁØºñ ÁøÇà·üÀ» °è»êÇÑ´Ù.
-            progress = Mathf.Clamp01(progress); // ÁøÇà·üÀ» 0¿¡¼­ 1 »çÀÌ·Î Á¦ÇÑÇÑ´Ù.
+            float progress = chargeTimer / chargeTime; // ìí­ ì¤€ë¹„ ì§„í–‰ë¥ ì„ ê³„ì‚°í•œë‹¤.
+            progress = Mathf.Clamp01(progress); // ì§„í–‰ë¥ ì„ 0ì—ì„œ 1 ì‚¬ì´ë¡œ ì œí•œí•œë‹¤.
 
-            Vector3 currentScale = Vector3.Lerp(originalScale, originalScale * bodyScaleMultiplier, progress); // ÇöÀç ÁøÇà·ü¿¡ ¸Â´Â ¸ö Å©±â¸¦ °è»êÇÑ´Ù.
-            transform.localScale = currentScale; // °è»êµÈ ¸ö Å©±â¸¦ Àû¿ëÇÑ´Ù.
+            Vector3 currentScale = Vector3.Lerp(originalScale, originalScale * bodyScaleMultiplier, progress); // í˜„ì¬ ì§„í–‰ë¥ ì— ë§ëŠ” ëª¸ í¬ê¸°ë¥¼ ê³„ì‚°í•œë‹¤.
+            transform.localScale = currentScale; // ê³„ì‚°ëœ ëª¸ í¬ê¸°ë¥¼ ì ìš©í•œë‹¤.
 
-            float scaleLift = (currentScale.y - originalScale.y) * 0.7f; // Ä¿Áø Y Å©±âÀÇ Àı¹İ¸¸Å­ À§·Î ¿Ã¸± ³ôÀÌ¸¦ °è»êÇÑ´Ù.
-            transform.position = GroundService.ProjectToGround(transform.position, groundHeight + scaleLift); // ¸öÀÌ Ä¿Áø ¸¸Å­ À§·Î ¿Ã·Á ¶¥¿¡ ¹ÚÈ÷Áö ¾Ê°Ô ÇÑ´Ù.
+            float scaleLift = (currentScale.y - originalScale.y) * 0.7f; // ì»¤ì§„ Y í¬ê¸°ì˜ ì ˆë°˜ë§Œí¼ ìœ„ë¡œ ì˜¬ë¦´ ë†’ì´ë¥¼ ê³„ì‚°í•œë‹¤.
+            transform.position = GroundService.ProjectToGround(transform.position, groundHeight + scaleLift); // ëª¸ì´ ì»¤ì§„ ë§Œí¼ ìœ„ë¡œ ì˜¬ë ¤ ë•…ì— ë°•íˆì§€ ì•Šê²Œ í•œë‹¤.
 
-            SetBodyChargeColor(progress); // ¸ö »öÀ» Á¡Á¡ »¡°£»öÀ¸·Î ¹Ù²Û´Ù.
+            SetBodyChargeColor(progress); // ëª¸ ìƒ‰ì„ ì ì  ë¹¨ê°„ìƒ‰ìœ¼ë¡œ ë°”ê¾¼ë‹¤.
 
-            UpdateTelegraph(progress); // ¹üÀ§ Ç¥½Ã Å©±â¿Í Åõ¸íµµ¸¦ °»½ÅÇÑ´Ù..
+            UpdateTelegraph(progress); // ë²”ìœ„ í‘œì‹œ í¬ê¸°ì™€ íˆ¬ëª…ë„ë¥¼ ê°±ì‹ í•œë‹¤..
 
-            if (progress >= 1.0f) // ÀÚÆø ÁØºñ ½Ã°£ÀÌ ³¡³µ´Ù¸é
+            if (progress >= 1.0f) // ìí­ ì¤€ë¹„ ì‹œê°„ì´ ëë‚¬ë‹¤ë©´
             {
-                Explode(); // Æø¹ßÇÑ´Ù.
+                Explode(); // í­ë°œí•œë‹¤.
             }
         }
 
         private void Explode()
         {
-            hasExploded = true; // Æø¹ß ¿Ï·á »óÅÂ·Î Ç¥½ÃÇÑ´Ù.
+            hasExploded = true; // í­ë°œ ì™„ë£Œ ìƒíƒœë¡œ í‘œì‹œí•œë‹¤.
 
-            TryKnockbackTarget(); // Æø¹ß ¹üÀ§ ¾È¿¡ PlayerConvoy°¡ ÀÖÀ¸¸é ³Ë¹éÀ» ¿äÃ»ÇÑ´Ù.
+            TryKnockbackTarget(); // í­ë°œ ë²”ìœ„ ì•ˆì— PlayerConvoyê°€ ìˆìœ¼ë©´ ë„‰ë°±ì„ ìš”ì²­í•œë‹¤.
 
-            DestroyTelegraph(); // Æø¹ß ¹üÀ§ Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
-            Destroy(gameObject); // ÀÚÆø ¸ó½ºÅÍ¸¦ Á¦°ÅÇÑ´Ù.
+            DestroyTelegraph(); // í­ë°œ ë²”ìœ„ í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
+            Destroy(gameObject); // ìí­ ëª¬ìŠ¤í„°ë¥¼ ì œê±°í•œë‹¤.
         }
 
         private void TryKnockbackTarget()
         {
-            if (target == null) // ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return; // ³Ë¹éÇÒ ¼ö ¾ø´Ù.
+                return; // ë„‰ë°±í•  ìˆ˜ ì—†ë‹¤.
             }
 
-            Vector3 offset = target.position - transform.position; // Æø¹ß Áß½É¿¡¼­ PlayerConvoy±îÁöÀÇ º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
-            offset.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 offset = target.position - transform.position; // í­ë°œ ì¤‘ì‹¬ì—ì„œ PlayerConvoyê¹Œì§€ì˜ ë²¡í„°ë¥¼ êµ¬í•œë‹¤.
+            offset.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            if (offset.sqrMagnitude > explosionRadius * explosionRadius) // Æø¹ß ¹üÀ§ ¹ÛÀÌ¶ó¸é
+            if (offset.sqrMagnitude > explosionRadius * explosionRadius) // í­ë°œ ë²”ìœ„ ë°–ì´ë¼ë©´
             {
-                return; // ³Ë¹éÇÏÁö ¾Ê´Â´Ù.
+                return; // ë„‰ë°±í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            EnemyApi.RequestKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // EnemyApi¿¡ Æø¹ß ³Ë¹é°ú °øÁß ³ôÀÌ¸¦ ¿äÃ»ÇÑ´Ù.
+            ////// ì „ì°¬ìš°ì‚­ì œ - EnemyApi ì§ì ‘ í˜¸ì¶œì€ MonsterInteractionApi ìš”ì²­ìœ¼ë¡œ ëŒ€ì²´í•œë‹¤.
+            // EnemyApi.RequestKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // ê¸°ì¡´: EnemyApiì— í­ë°œ ë„‰ë°± ìš”ì²­
+            ////// ì „ì°¬ìš°ì¶”ê°€ - ëª¬ìŠ¤í„°ëŠ” ì»¨ë³´ì´ë¥¼ ì§ì ‘ ì›€ì§ì´ì§€ ì•Šê³  ë„‰ë°± ìš”ì²­ë§Œ ë“±ë¡í•œë‹¤.
+            MonsterInteractionApi.RequestConvoyKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // ì „ì°¬ìš°ì¶”ê°€ - í­ë°œ ë²”ìœ„ ì•ˆì˜ ì»¨ë³´ì´ì—ê²Œ ë„‰ë°±ì„ ìš”ì²­í•œë‹¤.
         }
 
         private void CacheBodyRenderers()
         {
-            if (bodyRenderers != null && bodyRenderers.Length > 0) // ÀÌ¹Ì Renderer¸¦ Ã£¾Ò´Ù¸é
+            if (bodyRenderers != null && bodyRenderers.Length > 0) // ì´ë¯¸ Rendererë¥¼ ì°¾ì•˜ë‹¤ë©´
             {
-                return; // ´Ù½Ã Ã£Áö ¾Ê´Â´Ù.
+                return; // ë‹¤ì‹œ ì°¾ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            bodyRenderers = GetComponentsInChildren<Renderer>(); // ÇöÀç ¿ÀºêÁ§Æ®¿Í ÀÚ½ÄÀÇ ¸ğµç Renderer¸¦ °¡Á®¿Â´Ù.
-            bodyPropertyBlock = new MaterialPropertyBlock(); // »ö µ¤¾î¾²±â¿ë PropertyBlockÀ» ¸¸µç´Ù.
+            bodyRenderers = GetComponentsInChildren<Renderer>(); // í˜„ì¬ ì˜¤ë¸Œì íŠ¸ì™€ ìì‹ì˜ ëª¨ë“  Rendererë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+            bodyPropertyBlock = new MaterialPropertyBlock(); // ìƒ‰ ë®ì–´ì“°ê¸°ìš© PropertyBlockì„ ë§Œë“ ë‹¤.
 
-            hasBodyColorProperty = false; // ¾ÆÁ÷ »ö ¼Ó¼ºÀ» Ã£Áö ¸øÇÑ »óÅÂ·Î ½ÃÀÛÇÑ´Ù.
-            bodyColorPropertyId = 0; // »ö ¼Ó¼º ID ÃÊ±âÈ­
+            hasBodyColorProperty = false; // ì•„ì§ ìƒ‰ ì†ì„±ì„ ì°¾ì§€ ëª»í•œ ìƒíƒœë¡œ ì‹œì‘í•œë‹¤.
+            bodyColorPropertyId = 0; // ìƒ‰ ì†ì„± ID ì´ˆê¸°í™”
 
-            if (bodyRenderers == null || bodyRenderers.Length == 0) // Renderer°¡ ¾ø´Ù¸é
+            if (bodyRenderers == null || bodyRenderers.Length == 0) // Rendererê°€ ì—†ë‹¤ë©´
             {
-                return; // »öÀ» ¹Ù²Ü ¼ö ¾ø´Ù.
+                return; // ìƒ‰ì„ ë°”ê¿€ ìˆ˜ ì—†ë‹¤.
             }
 
-            Material sharedMaterial = bodyRenderers[0].sharedMaterial; // Ã¹ ¹øÂ° RendererÀÇ °øÀ¯ MaterialÀ» °¡Á®¿Â´Ù.
+            Material sharedMaterial = bodyRenderers[0].sharedMaterial; // ì²« ë²ˆì§¸ Rendererì˜ ê³µìœ  Materialì„ ê°€ì ¸ì˜¨ë‹¤.
 
-            if (sharedMaterial == null) // MaterialÀÌ ¾ø´Ù¸é
+            if (sharedMaterial == null) // Materialì´ ì—†ë‹¤ë©´
             {
-                return; // »öÀ» ÀĞÀ» ¼ö ¾ø´Ù.
+                return; // ìƒ‰ì„ ì½ì„ ìˆ˜ ì—†ë‹¤.
             }
 
-            if (sharedMaterial.HasProperty("_BaseColor")) // URP Lit MaterialÀÌ¸é
+            if (sharedMaterial.HasProperty("_BaseColor")) // URP Lit Materialì´ë©´
             {
-                bodyColorPropertyId = Shader.PropertyToID("_BaseColor"); // BaseColor ¼Ó¼º ID¸¦ ÀúÀåÇÑ´Ù.
-                originalBodyColor = sharedMaterial.GetColor("_BaseColor"); // ¿ø·¡ »öÀ» ÀúÀåÇÑ´Ù.
-                hasBodyColorProperty = true; // »ö ¼Ó¼ºÀ» Ã£¾Ò´Ù°í Ç¥½ÃÇÑ´Ù.
+                bodyColorPropertyId = Shader.PropertyToID("_BaseColor"); // BaseColor ì†ì„± IDë¥¼ ì €ì¥í•œë‹¤.
+                originalBodyColor = sharedMaterial.GetColor("_BaseColor"); // ì›ë˜ ìƒ‰ì„ ì €ì¥í•œë‹¤.
+                hasBodyColorProperty = true; // ìƒ‰ ì†ì„±ì„ ì°¾ì•˜ë‹¤ê³  í‘œì‹œí•œë‹¤.
             }
-            else if (sharedMaterial.HasProperty("_Color")) // ±âº» MaterialÀÌ¸é
+            else if (sharedMaterial.HasProperty("_Color")) // ê¸°ë³¸ Materialì´ë©´
             {
-                bodyColorPropertyId = Shader.PropertyToID("_Color"); // Color ¼Ó¼º ID¸¦ ÀúÀåÇÑ´Ù.
-                originalBodyColor = sharedMaterial.GetColor("_Color"); // ¿ø·¡ »öÀ» ÀúÀåÇÑ´Ù.
-                hasBodyColorProperty = true; // »ö ¼Ó¼ºÀ» Ã£¾Ò´Ù°í Ç¥½ÃÇÑ´Ù.
+                bodyColorPropertyId = Shader.PropertyToID("_Color"); // Color ì†ì„± IDë¥¼ ì €ì¥í•œë‹¤.
+                originalBodyColor = sharedMaterial.GetColor("_Color"); // ì›ë˜ ìƒ‰ì„ ì €ì¥í•œë‹¤.
+                hasBodyColorProperty = true; // ìƒ‰ ì†ì„±ì„ ì°¾ì•˜ë‹¤ê³  í‘œì‹œí•œë‹¤.
             }
         }
 
         private void SetBodyChargeColor(float progress)
         {
-            CacheBodyRenderers(); // Renderer Á¤º¸°¡ ÁØºñµÇ¾î ÀÖ´ÂÁö È®ÀÎÇÑ´Ù.
+            CacheBodyRenderers(); // Renderer ì •ë³´ê°€ ì¤€ë¹„ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸í•œë‹¤.
 
-            if (!hasBodyColorProperty || bodyRenderers == null || bodyPropertyBlock == null) // »öÀ» ¹Ù²Ü ÁØºñ°¡ ¾È µÆ´Ù¸é
+            if (!hasBodyColorProperty || bodyRenderers == null || bodyPropertyBlock == null) // ìƒ‰ì„ ë°”ê¿€ ì¤€ë¹„ê°€ ì•ˆ ëë‹¤ë©´
             {
-                return; // Á¾·áÇÑ´Ù.
+                return; // ì¢…ë£Œí•œë‹¤.
             }
 
-            progress = Mathf.Clamp01(progress); // ÁøÇà·üÀ» 0¿¡¼­ 1 »çÀÌ·Î Á¦ÇÑÇÑ´Ù.
+            progress = Mathf.Clamp01(progress); // ì§„í–‰ë¥ ì„ 0ì—ì„œ 1 ì‚¬ì´ë¡œ ì œí•œí•œë‹¤.
 
-            Color targetColor = chargeColor; // ¸ñÇ¥ »öÀ» °¡Á®¿Â´Ù.
-            targetColor.a = originalBodyColor.a; // Åõ¸íµµ´Â ¿ø·¡ ¸ö »öÀ» À¯ÁöÇÑ´Ù.
+            Color targetColor = chargeColor; // ëª©í‘œ ìƒ‰ì„ ê°€ì ¸ì˜¨ë‹¤.
+            targetColor.a = originalBodyColor.a; // íˆ¬ëª…ë„ëŠ” ì›ë˜ ëª¸ ìƒ‰ì„ ìœ ì§€í•œë‹¤.
 
-            Color currentColor = Color.Lerp(originalBodyColor, targetColor, progress); // ¿ø·¡ »ö¿¡¼­ ¸ñÇ¥ »öÀ¸·Î Á¡Á¡ ¹Ù²Û´Ù.
+            Color currentColor = Color.Lerp(originalBodyColor, targetColor, progress); // ì›ë˜ ìƒ‰ì—ì„œ ëª©í‘œ ìƒ‰ìœ¼ë¡œ ì ì  ë°”ê¾¼ë‹¤.
 
-            for (int i = 0; i < bodyRenderers.Length; i++) // ¸ğµç Renderer¿¡ Àû¿ëÇÑ´Ù.
+            for (int i = 0; i < bodyRenderers.Length; i++) // ëª¨ë“  Rendererì— ì ìš©í•œë‹¤.
             {
-                if (bodyRenderers[i] == null) // Renderer°¡ ¾ø´Ù¸é
+                if (bodyRenderers[i] == null) // Rendererê°€ ì—†ë‹¤ë©´
                 {
-                    continue; // °Ç³Ê¶Ú´Ù.
+                    continue; // ê±´ë„ˆë›´ë‹¤.
                 }
 
-                bodyRenderers[i].GetPropertyBlock(bodyPropertyBlock); // ±âÁ¸ PropertyBlockÀ» °¡Á®¿Â´Ù.
-                bodyPropertyBlock.SetColor(bodyColorPropertyId, currentColor); // »ö¸¸ µ¤¾î¾´´Ù.
-                bodyRenderers[i].SetPropertyBlock(bodyPropertyBlock); // Renderer¿¡ Àû¿ëÇÑ´Ù.
+                bodyRenderers[i].GetPropertyBlock(bodyPropertyBlock); // ê¸°ì¡´ PropertyBlockì„ ê°€ì ¸ì˜¨ë‹¤.
+                bodyPropertyBlock.SetColor(bodyColorPropertyId, currentColor); // ìƒ‰ë§Œ ë®ì–´ì“´ë‹¤.
+                bodyRenderers[i].SetPropertyBlock(bodyPropertyBlock); // Rendererì— ì ìš©í•œë‹¤.
             }
         }        
 
         private void ClearBodyColorOverride()
         {
-            if (bodyRenderers == null) // Renderer ¸ñ·ÏÀÌ ¾ø´Ù¸é
+            if (bodyRenderers == null) // Renderer ëª©ë¡ì´ ì—†ë‹¤ë©´
             {
-                return; // Ã³¸®ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì²˜ë¦¬í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            for (int i = 0; i < bodyRenderers.Length; i++) // ¸ğµç Renderer¸¦ ¼øÈ¸ÇÑ´Ù.
+            for (int i = 0; i < bodyRenderers.Length; i++) // ëª¨ë“  Rendererë¥¼ ìˆœíšŒí•œë‹¤.
             {
-                if (bodyRenderers[i] == null) // Renderer°¡ ¾ø´Ù¸é
+                if (bodyRenderers[i] == null) // Rendererê°€ ì—†ë‹¤ë©´
                 {
-                    continue; // °Ç³Ê¶Ú´Ù.
+                    continue; // ê±´ë„ˆë›´ë‹¤.
                 }
 
-                bodyRenderers[i].SetPropertyBlock(null); // »ö µ¤¾î¾²±â¸¦ Á¦°ÅÇÑ´Ù.
+                bodyRenderers[i].SetPropertyBlock(null); // ìƒ‰ ë®ì–´ì“°ê¸°ë¥¼ ì œê±°í•œë‹¤.
             }
         }
 
         private void CreateTelegraph()
         {
-            if (areaTelegraphPrefab == null) // ¹üÀ§ Ç¥½Ã PrefabÀÌ ¾ø´Ù¸é
+            if (areaTelegraphPrefab == null) // ë²”ìœ„ í‘œì‹œ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; // »ı¼ºÇÏÁö ¾Ê´Â´Ù.
+                return; // ìƒì„±í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Vector3 telegraphPosition = GroundService.ProjectToGround(transform.position, telegraphGroundHeight); // ÇöÀç ¸ó½ºÅÍ À§Ä¡¸¦ ¹Ù´Ú ±âÁØÀ¸·Î º¸Á¤ÇÑ´Ù.
-            currentTelegraph = Instantiate(areaTelegraphPrefab, telegraphPosition, Quaternion.identity, telegraphRoot); // ¹üÀ§ Ç¥½Ã¸¦ »ı¼ºÇÑ´Ù.
+            Vector3 telegraphPosition = GroundService.ProjectToGround(transform.position, telegraphGroundHeight); // í˜„ì¬ ëª¬ìŠ¤í„° ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ê¸°ì¤€ìœ¼ë¡œ ë³´ì •í•œë‹¤.
+            currentTelegraph = Instantiate(areaTelegraphPrefab, telegraphPosition, Quaternion.identity, telegraphRoot); // ë²”ìœ„ í‘œì‹œë¥¼ ìƒì„±í•œë‹¤.
 
-            float diameter = explosionRadius * 2.0f; // ¹İ°æÀ» Áö¸§À¸·Î ¹Ù²Û´Ù.
-            currentTelegraph.transform.localScale = new Vector3(diameter, currentTelegraph.transform.localScale.y, diameter); // ¹üÀ§ Ç¥½Ã Å©±â¸¦ Æø¹ß ¹İ°æ¿¡ ¸ÂÃá´Ù.
+            float diameter = explosionRadius * 2.0f; // ë°˜ê²½ì„ ì§€ë¦„ìœ¼ë¡œ ë°”ê¾¼ë‹¤.
+            currentTelegraph.transform.localScale = new Vector3(diameter, currentTelegraph.transform.localScale.y, diameter); // ë²”ìœ„ í‘œì‹œ í¬ê¸°ë¥¼ í­ë°œ ë°˜ê²½ì— ë§ì¶˜ë‹¤.
 
-            SetTelegraphAlpha(currentTelegraph, telegraphStartAlpha); // Ã³À½¿¡´Â Èå¸®°Ô Ç¥½ÃÇÑ´Ù.
+            SetTelegraphAlpha(currentTelegraph, telegraphStartAlpha); // ì²˜ìŒì—ëŠ” íë¦¬ê²Œ í‘œì‹œí•œë‹¤.
         }
 
         private void UpdateTelegraph(float progress)
         {
-            if (currentTelegraph == null) // ¹üÀ§ Ç¥½Ã°¡ ¾ø´Ù¸é
+            if (currentTelegraph == null) // ë²”ìœ„ í‘œì‹œê°€ ì—†ë‹¤ë©´
             {
-                return; // °»½ÅÇÏÁö ¾Ê´Â´Ù.
+                return; // ê°±ì‹ í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            currentTelegraph.transform.position = GroundService.ProjectToGround(transform.position, telegraphGroundHeight); // ¸ó½ºÅÍ À§Ä¡¸¦ µû¶ó¿À°Ô ÇÑ´Ù.
+            currentTelegraph.transform.position = GroundService.ProjectToGround(transform.position, telegraphGroundHeight); // ëª¬ìŠ¤í„° ìœ„ì¹˜ë¥¼ ë”°ë¼ì˜¤ê²Œ í•œë‹¤.
 
-            float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); // ÁøÇàµµ¿¡ µû¶ó Á¡Á¡ ÁøÇÏ°Ô ¸¸µç´Ù.
-            SetTelegraphAlpha(currentTelegraph, alpha); // °è»êµÈ Åõ¸íµµ¸¦ Àû¿ëÇÑ´Ù.
+            float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); // ì§„í–‰ë„ì— ë”°ë¼ ì ì  ì§„í•˜ê²Œ ë§Œë“ ë‹¤.
+            SetTelegraphAlpha(currentTelegraph, alpha); // ê³„ì‚°ëœ íˆ¬ëª…ë„ë¥¼ ì ìš©í•œë‹¤.
         }
 
         private void DestroyTelegraph()
         {
-            if (currentTelegraph != null) // ¹üÀ§ Ç¥½Ã°¡ ÀÖ´Ù¸é
+            if (currentTelegraph != null) // ë²”ìœ„ í‘œì‹œê°€ ìˆë‹¤ë©´
             {
-                Destroy(currentTelegraph); // ¹üÀ§ Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
-                currentTelegraph = null; // ÂüÁ¶¸¦ ºñ¿î´Ù.
+                Destroy(currentTelegraph); // ë²”ìœ„ í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
+                currentTelegraph = null; // ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
         }
 
         private void SetTelegraphAlpha(GameObject telegraph, float alpha)
         {
-            if (telegraph == null) // ¹üÀ§ Ç¥½Ã ¿ÀºêÁ§Æ®°¡ ¾ø´Ù¸é
+            if (telegraph == null) // ë²”ìœ„ í‘œì‹œ ì˜¤ë¸Œì íŠ¸ê°€ ì—†ë‹¤ë©´
             {
-                return; // Ã³¸®ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì²˜ë¦¬í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            alpha = Mathf.Clamp01(alpha); // Åõ¸íµµ¸¦ 0¿¡¼­ 1 »çÀÌ·Î Á¦ÇÑÇÑ´Ù.
+            alpha = Mathf.Clamp01(alpha); // íˆ¬ëª…ë„ë¥¼ 0ì—ì„œ 1 ì‚¬ì´ë¡œ ì œí•œí•œë‹¤.
 
-            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(); // ¹üÀ§ Ç¥½ÃÀÇ ¸ğµç Renderer¸¦ °¡Á®¿Â´Ù.
+            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(); // ë²”ìœ„ í‘œì‹œì˜ ëª¨ë“  Rendererë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
-            for (int i = 0; i < renderers.Length; i++) // Renderer¸¦ ÇÏ³ª¾¿ ¼øÈ¸ÇÑ´Ù.
+            for (int i = 0; i < renderers.Length; i++) // Rendererë¥¼ í•˜ë‚˜ì”© ìˆœíšŒí•œë‹¤.
             {
-                Material material = renderers[i].material; // ÇöÀç RendererÀÇ MaterialÀ» °¡Á®¿Â´Ù.
+                Material material = renderers[i].material; // í˜„ì¬ Rendererì˜ Materialì„ ê°€ì ¸ì˜¨ë‹¤.
 
-                if (material.HasProperty("_BaseColor")) // URP Lit °è¿­ MaterialÀÌ¸é
+                if (material.HasProperty("_BaseColor")) // URP Lit ê³„ì—´ Materialì´ë©´
                 {
-                    Color color = material.GetColor("_BaseColor"); // ÇöÀç BaseColor¸¦ °¡Á®¿Â´Ù.
-                    color.a = alpha; // Alpha °ªÀ» ¹Ù²Û´Ù.
-                    material.SetColor("_BaseColor", color); // º¯°æµÈ »öÀ» ´Ù½Ã ³Ö´Â´Ù.
+                    Color color = material.GetColor("_BaseColor"); // í˜„ì¬ BaseColorë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+                    color.a = alpha; // Alpha ê°’ì„ ë°”ê¾¼ë‹¤.
+                    material.SetColor("_BaseColor", color); // ë³€ê²½ëœ ìƒ‰ì„ ë‹¤ì‹œ ë„£ëŠ”ë‹¤.
                 }
-                else if (material.HasProperty("_Color")) // ±âº» Material °è¿­ÀÌ¸é
+                else if (material.HasProperty("_Color")) // ê¸°ë³¸ Material ê³„ì—´ì´ë©´
                 {
-                    Color color = material.color; // ÇöÀç »öÀ» °¡Á®¿Â´Ù.
-                    color.a = alpha; // Alpha °ªÀ» ¹Ù²Û´Ù.
-                    material.color = color; // º¯°æµÈ »öÀ» ´Ù½Ã ³Ö´Â´Ù.
+                    Color color = material.color; // í˜„ì¬ ìƒ‰ì„ ê°€ì ¸ì˜¨ë‹¤.
+                    color.a = alpha; // Alpha ê°’ì„ ë°”ê¾¼ë‹¤.
+                    material.color = color; // ë³€ê²½ëœ ìƒ‰ì„ ë‹¤ì‹œ ë„£ëŠ”ë‹¤.
                 }
             }
         }

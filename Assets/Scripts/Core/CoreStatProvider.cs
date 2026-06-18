@@ -170,6 +170,118 @@ namespace TeamProject01.Gameplay
             return results.Count > 0; // 후보 존재
         }
 
+        ////// 전찬우추가 - 세그먼트 ADD 카드용 후보 수집: 추가 가능 또는 레벨업 가능이면 후보에 노출
+        public bool TryGetSegmentChoiceCandidates(List<SegmentCatalogEntry> results)
+        {
+            if (results == null)
+            {
+                return false; // 받을 목록 없음
+            }
+
+            results.Clear(); // 이전 결과 제거
+            SegmentCatalogEntry[] catalog = GetCatalogEntries(); // 데이터에셋 우선
+            if (catalog.Length == 0)
+            {
+                return false; // 카탈로그 없음
+            }
+
+            for (int i = 0; i < catalog.Length; i++)
+            {
+                SegmentCatalogEntry entry = catalog[i]; // 후보
+                bool canAdd = entry.CanShowAsAddChoice && CanAddSegment(entry.SegmentId); // 추가 가능 여부
+                bool canLevelUp = entry.CanShowAsUpgradeChoice && CanLevelUpSegmentModel(entry.SegmentId); // 모델 레벨업 가능 여부
+                if (canAdd || canLevelUp)
+                {
+                    results.Add(entry); // 세그먼트 3번 카드 후보 등록
+                }
+            }
+
+            return results.Count > 0; // 후보 존재
+        }
+
+        ////// 전찬우추가 - 현재 세그먼트 모델 레벨/최대 레벨 조회
+        public bool TryGetSegmentModelLevelInfo(string segmentId, out int currentLevel, out int maxLevel)
+        {
+            currentLevel = 1; // 기본 현재 레벨
+            maxLevel = 1; // 기본 최대 레벨
+            EnsureConvoyReference(); // 컨보이 보강
+            if (Convoy == null || !TryFindSegmentDefinition(segmentId, out SegmentDefinition definition))
+            {
+                return false; // 조회 불가
+            }
+
+            maxLevel = Mathf.Max(1, definition.MaxLevel); // 정의 최대 레벨
+            currentLevel = Mathf.Clamp(Convoy.GetCurrentSegmentLevel(definition.NormalizedId, definition), 1, maxLevel); // 컨보이 현재 레벨
+            return true; // 조회 성공
+        }
+
+        ////// 전찬우추가 - 해당 세그먼트가 현재 붙어 있고 모델 레벨업 가능한지 확인
+        public bool CanLevelUpSegmentModel(string segmentId)
+        {
+            EnsureConvoyReference(); // 컨보이 보강
+            if (Convoy == null || !TryFindSegmentDefinition(segmentId, out SegmentDefinition definition))
+            {
+                return false; // 정의/컨보이 없음
+            }
+
+            string targetId = definition.NormalizedId; // 비교 ID
+            if (!definition.UseLevels || definition.MaxLevel <= 1)
+            {
+                return false; // 레벨 미사용
+            }
+
+            if (!definition.CanUpgradeByLevelChoice)
+            {
+                return false; // 레벨 선택 강화 비허용
+            }
+
+            if (Convoy.CountAttachedSegments(targetId) <= 0)
+            {
+                return false; // 붙어 있는 해당 세그먼트 없음
+            }
+
+            int currentLevel = Convoy.GetCurrentSegmentLevel(targetId, definition); // 현재 모델 레벨
+            int maxLevel = Mathf.Max(1, definition.MaxLevel); // 최대 레벨
+            if (currentLevel >= maxLevel)
+            {
+                return false; // 이미 만렙
+            }
+
+            return definition.TryGetLevel(currentLevel + 1, out _); // 다음 레벨 프리팹 존재 여부
+        }
+
+        ////// 전찬우추가 - 카드 2차 선택에서 세그먼트 추가를 코어 경유로 적용
+        public bool TryApplySegmentAddChoice(string segmentId, int levelDelta, int count = 1)
+        {
+            GrowthStatData growth = GrowthStatData.CreateAddSegment(levelDelta, segmentId, count); // 추가 성장 데이터
+            return ApplyGrowth(growth); // 기존 성장 적용 흐름 사용
+        }
+
+        ////// 전찬우추가 - 카드 2차 선택에서 해당 세그먼트 모델 레벨업을 코어 경유로 적용
+        public bool TryApplySegmentLevelUpChoice(string segmentId, int levelDelta)
+        {
+            EnsureConvoyReference(); // 컨보이 보강
+            if (Convoy == null || !CanApplyLevelDelta(levelDelta) || !CanLevelUpSegmentModel(segmentId))
+            {
+                return false; // 경험치 부족 또는 레벨업 불가
+            }
+
+            if (!TryFindSegmentDefinition(segmentId, out SegmentDefinition definition))
+            {
+                return false; // 정의 없음
+            }
+
+            int changed = Convoy.LevelUpAttachedSegments(definition.NormalizedId, definition, out _); // 해당 세그먼트 전체 모델 교체
+            if (changed <= 0)
+            {
+                return false; // 실제 변경 없음
+            }
+
+            ApplyLevelDeltaUnchecked(levelDelta); // 경험치 소비 + 플레이어 레벨 증가
+            StatsChanged?.Invoke(CurrentStats); // UI 갱신
+            return true; // 적용 성공
+        }
+
         public bool TryFindSegmentEntry(string segmentId, out SegmentCatalogEntry entry) // ID로 세그먼트 찾기
         {
             entry = default; // 기본값
@@ -399,6 +511,18 @@ namespace TeamProject01.Gameplay
 
             prefab = entry.Prefab; // 프리팹
             return prefab != null; // 최종 확인
+        }
+
+        ////// 전찬우추가 - 카탈로그 데이터에셋에서 세그먼트 정의 찾기
+        private bool TryFindSegmentDefinition(string segmentId, out SegmentDefinition definition)
+        {
+            definition = null; // 기본값
+            if (SegmentCatalogAsset != null && SegmentCatalogAsset.TryFind(segmentId, out definition))
+            {
+                return true; // 데이터에셋에서 발견
+            }
+
+            return false; // 배열 fallback은 프리팹만 있어서 모델 레벨업 정의를 알 수 없음
         }
 
         private SegmentCatalogEntry[] GetCatalogEntries() // 현재 세그먼트 목록

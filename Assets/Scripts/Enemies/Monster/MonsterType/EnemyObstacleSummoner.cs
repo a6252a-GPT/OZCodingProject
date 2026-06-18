@@ -1,303 +1,317 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public class EnemyObstacleSummoner : MonoBehaviour //¿¤¸®Æ® ¸ó½ºÅÍ°¡ Àå¾Ö¹° ¼ÒÈ¯
+    public class EnemyObstacleSummoner : MonoBehaviour //ì—˜ë¦¬íŠ¸ ëª¬ìŠ¤í„°ê°€ ì¥ì• ë¬¼ ì†Œí™˜
     {
-        [SerializeField] private EnemyObstacle obstaclePrefab; //½ÇÁ¦ Àå¾Ö¹° Prefab »ı¼º
-        [SerializeField] private GameObject telegraphPrefab; //Àå¾Ö¹° »ı¼±Àü ¹üÀ§ Ç¥½Ã Prefab
+        [SerializeField] private EnemyObstacle obstaclePrefab; //ì‹¤ì œ ì¥ì• ë¬¼ Prefab ìƒì„±
+        [SerializeField] private GameObject telegraphPrefab; //ì¥ì• ë¬¼ ìƒì„ ì „ ë²”ìœ„ í‘œì‹œ Prefab
 
-        private Transform summonTarget; //¼ÒÈ¯ Å¸°Ù ´ë»ó ÀúÀåÇÑ´Ù.
+        private Transform summonTarget; //ì†Œí™˜ íƒ€ê²Ÿ ëŒ€ìƒ ì €ì¥í•œë‹¤.
 
-        [SerializeField] private string summonTargetName = "PlayerConvoy"; //PlayerConvoyRoot¸¦ Å¸°ÙÀ¸·Î ÁöÁ¤ÇÑ´Ù.
-
-        [Min(0.1f)]
-        [SerializeField] private float detectionRange = 10.0f; //´ë»óÀÌ ÀÌ ¹üÀ§ ¾È¿¡ µé¾î¿ÔÀ» ¶§¸¸ Àå¾Ö¹°À» ¼ÒÈ¯ÇÑ´Ù.
-
-        [SerializeField] private Transform obstacleRoot; //»ı¼ºµÈ Àå¾Ö¹° Á¤¸®ÇÒ ºÎ¸ğ Transform
-        [SerializeField] private Transform telegraphRoot; //»ı¼ºµÈ Àå¾Ö¹° ¹üÀ§ Ç¥½Ã ºÎ¸ğ Transform
-
-        [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphStartAlpha = 0.07f; //¹üÀ§ Ç¥½Ã°¡ Ã³À½ »ı¼ºµÉ ¶§ÀÇ Åõ¸íµµ
-
-        [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphEndAlpha = 1.0f; //Àå¾Ö¹°ÀÌ ³ª¿À±â Á÷Àü ¹üÀ§ Ç¥½ÃÀÇ Åõ¸íµµ
-
-        [Min(0.01f)]
-        [SerializeField] private float summonInterval = 5.0f; //¸î ÃÊ¸¶´Ù Àå¾Ö¹° ¼ÒÈ¯ ½Ã°£
-
-        [Min(0.01f)]
-        [SerializeField] private float summonDelay = 2.0f;//¹üÀ§ Ç¥½Ã ÈÄ ¸î µÚ Àå¾Ö¹° »ı¼º
+        ////// ì „ì°¬ìš°ì‚­ì œ - ê¸°ì¡´ ì´ë¦„ ê¸°ë°˜ PlayerConvoy ê²€ìƒ‰ í•„ë“œëŠ” MonsterInteractionApi íƒ€ê²Ÿ ì¡°íšŒë¡œ ëŒ€ì²´í•œë‹¤.
+        // [SerializeField] private string summonTargetName = "PlayerConvoy"; //PlayerConvoyRootë¥¼ íƒ€ê²Ÿìœ¼ë¡œ ì§€ì •í•œë‹¤.
 
         [Min(0.1f)]
-        [SerializeField] private float forwardSummonDistance = 5.0f; //¼ÒÈ¯ ±âÁØ ´ë»ó ¾ÕÂÊÀ¸·Î ¾ó¸¶³ª ¶³¾îÁø °÷¿¡ Àå¾Ö¹°À» ¼ÒÈ¯ÇÒÁö
+        [SerializeField] private float detectionRange = 10.0f; //ëŒ€ìƒì´ ì´ ë²”ìœ„ ì•ˆì— ë“¤ì–´ì™”ì„ ë•Œë§Œ ì¥ì• ë¬¼ì„ ì†Œí™˜í•œë‹¤.
 
-        [Min(0.0f)]
-        [SerializeField] private float sideRandomRange = 2.0f; //¼ÒÈ¯ ±âÁØ ´ë»ó ¾ÕÂÊ À§Ä¡¿¡¼­ ÁÂ¿ì·Î »ı¼º ·£´ı ¹üÀ§
+        [SerializeField] private Transform obstacleRoot; //ìƒì„±ëœ ì¥ì• ë¬¼ ì •ë¦¬í•  ë¶€ëª¨ Transform
+        [SerializeField] private Transform telegraphRoot; //ìƒì„±ëœ ì¥ì• ë¬¼ ë²”ìœ„ í‘œì‹œ ë¶€ëª¨ Transform
 
-        [Min(0.0f)]
-        [SerializeField] private float telegraphGroundHeight = 0.03f; //¹üÀ§ Ç¥½Ã¸¦ ¹Ù´Úº¸´Ù »ìÂ¦ À§¿¡ Ç¥½ÃÇÑ´Ù.
+        [Range(0.01f, 1.0f)]
+        [SerializeField] private float telegraphStartAlpha = 0.07f; //ë²”ìœ„ í‘œì‹œê°€ ì²˜ìŒ ìƒì„±ë  ë•Œì˜ íˆ¬ëª…ë„
 
-        [Min(0.0f)]
-        [SerializeField] private float obstacleGroundHeight = 1.0f; //Àå¾Ö¹° Áß½ÉÀ» ¹Ù´Úº¸´Ù À§¿¡ µĞ´Ù.
+        [Range(0.01f, 1.0f)]
+        [SerializeField] private float telegraphEndAlpha = 1.0f; //ì¥ì• ë¬¼ì´ ë‚˜ì˜¤ê¸° ì§ì „ ë²”ìœ„ í‘œì‹œì˜ íˆ¬ëª…ë„
 
         [Min(0.01f)]
-        [SerializeField] private float obstacleRadius = 1.2f; //Àå¾Ö¹° ¹İ°æ
+        [SerializeField] private float summonInterval = 5.0f; //ëª‡ ì´ˆë§ˆë‹¤ ì¥ì• ë¬¼ ì†Œí™˜ ì‹œê°„
+
+        [Min(0.01f)]
+        [SerializeField] private float summonDelay = 2.0f;//ë²”ìœ„ í‘œì‹œ í›„ ëª‡ ë’¤ ì¥ì• ë¬¼ ìƒì„±
+
+        [Min(0.1f)]
+        [SerializeField] private float forwardSummonDistance = 5.0f; //ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒ ì•ìª½ìœ¼ë¡œ ì–¼ë§ˆë‚˜ ë–¨ì–´ì§„ ê³³ì— ì¥ì• ë¬¼ì„ ì†Œí™˜í• ì§€
+
+        [Min(0.0f)]
+        [SerializeField] private float sideRandomRange = 2.0f; //ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒ ì•ìª½ ìœ„ì¹˜ì—ì„œ ì¢Œìš°ë¡œ ìƒì„± ëœë¤ ë²”ìœ„
+
+        [Min(0.0f)]
+        [SerializeField] private float telegraphGroundHeight = 0.03f; //ë²”ìœ„ í‘œì‹œë¥¼ ë°”ë‹¥ë³´ë‹¤ ì‚´ì§ ìœ„ì— í‘œì‹œí•œë‹¤.
+
+        [Min(0.0f)]
+        [SerializeField] private float obstacleGroundHeight = 1.0f; //ì¥ì• ë¬¼ ì¤‘ì‹¬ì„ ë°”ë‹¥ë³´ë‹¤ ìœ„ì— ë‘”ë‹¤.
+
+        [Min(0.01f)]
+        [SerializeField] private float obstacleRadius = 1.2f; //ì¥ì• ë¬¼ ë°˜ê²½
 
         [Min(1.0f)]
-        [SerializeField] private float obstacleLifeTime = 8.0f; //»ı¼ºµÈ Àå¾Ö¹°ÀÌ À¯ÁöµÇ´Â ½Ã°£      
+        [SerializeField] private float obstacleLifeTime = 8.0f; //ìƒì„±ëœ ì¥ì• ë¬¼ì´ ìœ ì§€ë˜ëŠ” ì‹œê°„      
 
         [Min(2.0f)]
-        [SerializeField] private int maxActiveObstacles = 5; //À¯ÁöµÉ¼ö ÀÖ´Â »ı¼ºµÈ Àå¾Ö¹° ÃÖ´ë °³¼ö
+        [SerializeField] private int maxActiveObstacles = 5; //ìœ ì§€ë ìˆ˜ ìˆëŠ” ìƒì„±ëœ ì¥ì• ë¬¼ ìµœëŒ€ ê°œìˆ˜
 
-        private readonly List<EnemyObstacle> spawnedObstacles = new List<EnemyObstacle>(); //ÇöÀç »ı¼ºµÇ¾îÀÖ´Â Àå¾Ö¹° ¸ñ·Ï
+        private readonly List<EnemyObstacle> spawnedObstacles = new List<EnemyObstacle>(); //í˜„ì¬ ìƒì„±ë˜ì–´ìˆëŠ” ì¥ì• ë¬¼ ëª©ë¡
 
-        private float summonTimer; //´ÙÀ½ Àå¾Ö¹° ¼ÒÈ¯±îÁö ³²Àº ½Ã°£
-        private bool isSummoning; //¹üÀ§ Ç¥½Ã ÈÄ Àå¾Ö¹° »ı¼º ´ë±â ÁßÀÎÁö È®ÀÎ
+        private float summonTimer; //ë‹¤ìŒ ì¥ì• ë¬¼ ì†Œí™˜ê¹Œì§€ ë‚¨ì€ ì‹œê°„
+        private bool isSummoning; //ë²”ìœ„ í‘œì‹œ í›„ ì¥ì• ë¬¼ ìƒì„± ëŒ€ê¸° ì¤‘ì¸ì§€ í™•ì¸
 
         public bool IsSummoning
         {
             get
             {
-                return isSummoning; // ÇöÀç Àå¾Ö¹° ¼ÒÈ¯ °úÁ¤ÀÌ ÁøÇà ÁßÀÎÁö ¹İÈ¯ÇÑ´Ù.
+                return isSummoning; // í˜„ì¬ ì¥ì• ë¬¼ ì†Œí™˜ ê³¼ì •ì´ ì§„í–‰ ì¤‘ì¸ì§€ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        private Coroutine summonCoroutine; //ÇöÀç ½ÇÇà ÁßÀÎ Àå¾Ö¹° ¼ÒÈ¯ Coroutine
-        private GameObject currentTelegraph; //ÇöÀç »ı¼ºµÇ¾î ÀÖ´Â ¹üÀ§ Ç¥½Ã ¿ÀºêÁ§Æ®
+        private Coroutine summonCoroutine; //í˜„ì¬ ì‹¤í–‰ ì¤‘ì¸ ì¥ì• ë¬¼ ì†Œí™˜ Coroutine
+        private GameObject currentTelegraph; //í˜„ì¬ ìƒì„±ë˜ì–´ ìˆëŠ” ë²”ìœ„ í‘œì‹œ ì˜¤ë¸Œì íŠ¸
 
         private void Awake()
         {
-            TryFindSummonTarget(); //Àå¾Ö¹° ¼ÒÈ¯ ±âÁØ ´ë»óÀÌ ºñ¾îÀÖ´Ù¸é ÀÌ¸§À¸·Î Ã£¾Æ¼­ ÀúÀåÇÑ´Ù.
+            TryFindSummonTarget(); //ì¥ì• ë¬¼ ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒì´ ë¹„ì–´ìˆë‹¤ë©´ ì´ë¦„ìœ¼ë¡œ ì°¾ì•„ì„œ ì €ì¥í•œë‹¤.
         }
 
         private void OnEnable()
         {
-            summonTimer = summonInterval; //Ã³À½ ¼ÒÈ¯ ´ë±â½Ã°£À» ¼³Á¤ÇÑ´Ù.
-            isSummoning = false; //Àå¾Ö¹° ¼ÒÈ¯ ´ë±â »óÅÂ¸¦ ÃÊ±âÈ­ ÇÑ´Ù.
-            summonCoroutine = null; //ÇöÀç ½ÇÇà ÁßÀÎ Coroutine ÂüÁ¶¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-            currentTelegraph = null; //ÇöÀç »ı¼ºµÈ ¹üÀ§ Ç¥½Ã ÂüÁ¶¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+            summonTimer = summonInterval; //ì²˜ìŒ ì†Œí™˜ ëŒ€ê¸°ì‹œê°„ì„ ì„¤ì •í•œë‹¤.
+            isSummoning = false; //ì¥ì• ë¬¼ ì†Œí™˜ ëŒ€ê¸° ìƒíƒœë¥¼ ì´ˆê¸°í™” í•œë‹¤.
+            summonCoroutine = null; //í˜„ì¬ ì‹¤í–‰ ì¤‘ì¸ Coroutine ì°¸ì¡°ë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+            currentTelegraph = null; //í˜„ì¬ ìƒì„±ëœ ë²”ìœ„ í‘œì‹œ ì°¸ì¡°ë¥¼ ì´ˆê¸°í™”í•œë‹¤.
         }
 
         private void OnDisable()
         {
-            CancelSummon(true); //ºñÈ°¼ºÈ­µÉ ¶§ ÁøÇà ÁßÀÎ ¹üÀ§ Ç¥½Ã¿Í Àå¾Ö¹° ¼ÒÈ¯À» Ãë¼ÒÇÑ´Ù.
+            CancelSummon(true); //ë¹„í™œì„±í™”ë  ë•Œ ì§„í–‰ ì¤‘ì¸ ë²”ìœ„ í‘œì‹œì™€ ì¥ì• ë¬¼ ì†Œí™˜ì„ ì·¨ì†Œí•œë‹¤.
         }
 
         private void Update()
         {
-            if (obstaclePrefab == null) //Àå¾Ö¹° PrefabÀÌ ¾ø´Ù¸é
+            if (obstaclePrefab == null) //ì¥ì• ë¬¼ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; //½ÇÇàÇÏÁö ¸»°í Á¾·áÇÑ´Ù.
+                return; //ì‹¤í–‰í•˜ì§€ ë§ê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            if (telegraphPrefab == null) //Àå¾Ö¹° ¹üÀ§ Ç¥½Ã Prefab°¡ ¾ø´Ù¸é
+            if (telegraphPrefab == null) //ì¥ì• ë¬¼ ë²”ìœ„ í‘œì‹œ Prefabê°€ ì—†ë‹¤ë©´
             {
-                return; //½ÇÇàÇÏÁö ¸»°í Á¾·áÇÑ´Ù.
+                return; //ì‹¤í–‰í•˜ì§€ ë§ê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            if (summonTarget == null) //Àå¾Ö¹° ¼ÒÈ¯ ±âÁØ ´ë»óÀÌ ¾ø´Ù¸é
+            if (summonTarget == null) //ì¥ì• ë¬¼ ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                TryFindSummonTarget(); //ÀÌ¸§À¸·Î ¼ÒÈ¯ ±âÁØ ´ë»óÀ» ´Ù½Ã Ã£´Â´Ù.
+                TryFindSummonTarget(); //ì´ë¦„ìœ¼ë¡œ ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒì„ ë‹¤ì‹œ ì°¾ëŠ”ë‹¤.
             }
 
-            if (summonTarget == null) //¼ÒÈ¯ ±âÁØ ´ë»óÀÌ ¾ø´Ù¸é
+            if (summonTarget == null) //ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                CancelSummon(true); //ÁøÇà ÁßÀÎ ¹üÀ§ Ç¥½Ã¿Í Àå¾Ö¹° ¼ÒÈ¯À» Ãë¼ÒÇÑ´Ù.
-                return; //±âÁØÀÌ ¾øÀ¸¹Ç·Î Á¾·áÇÑ´Ù.
+                CancelSummon(true); //ì§„í–‰ ì¤‘ì¸ ë²”ìœ„ í‘œì‹œì™€ ì¥ì• ë¬¼ ì†Œí™˜ì„ ì·¨ì†Œí•œë‹¤.
+                return; //ê¸°ì¤€ì´ ì—†ìœ¼ë¯€ë¡œ ì¢…ë£Œí•œë‹¤.
             }
 
-            if (!IsTargetInDetectionRange()) //¼ÒÈ¯ ±âÁØ ´ë»óÀÌ °¨Áö ¹üÀ§ ¾È¿¡ ¾ø´Ù¸é
+            if (!IsTargetInDetectionRange()) //ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒì´ ê°ì§€ ë²”ìœ„ ì•ˆì— ì—†ë‹¤ë©´
             {
-                CancelSummon(true); //ÁøÇà ÁßÀÎ ¹üÀ§ Ç¥½Ã¿Í Àå¾Ö¹° ¼ÒÈ¯À» Ãë¼ÒÇÑ´Ù.
-                summonTimer = summonInterval; //´ë»óÀÌ ¹üÀ§ ¹Û¿¡ ÀÖÀ» ¶§´Â ¼ÒÈ¯ Å¸ÀÌ¸Ó¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-                return; //Àå¾Ö¹°À» ¼ÒÈ¯ÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                CancelSummon(true); //ì§„í–‰ ì¤‘ì¸ ë²”ìœ„ í‘œì‹œì™€ ì¥ì• ë¬¼ ì†Œí™˜ì„ ì·¨ì†Œí•œë‹¤.
+                summonTimer = summonInterval; //ëŒ€ìƒì´ ë²”ìœ„ ë°–ì— ìˆì„ ë•ŒëŠ” ì†Œí™˜ íƒ€ì´ë¨¸ë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+                return; //ì¥ì• ë¬¼ì„ ì†Œí™˜í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            CleanupSpawnedObstacles(); //ÀÌ¹Ì Á¦°ÅµÈ Àå¾Ö¹°À» ¸ñ·Ï¿¡¼­ Á¤¸®ÇÑ´Ù.
+            CleanupSpawnedObstacles(); //ì´ë¯¸ ì œê±°ëœ ì¥ì• ë¬¼ì„ ëª©ë¡ì—ì„œ ì •ë¦¬í•œë‹¤.
 
-            if (spawnedObstacles.Count >= maxActiveObstacles) //ÇöÀç »ı¼ºµÈ Àå¾Ö¹°ÀÌ ÃÖ´ë °³¼ö ÀÌ»óÀÌ¶ó¸é
+            if (spawnedObstacles.Count >= maxActiveObstacles) //í˜„ì¬ ìƒì„±ëœ ì¥ì• ë¬¼ì´ ìµœëŒ€ ê°œìˆ˜ ì´ìƒì´ë¼ë©´
             {
-                return; //´õ ÀÌ»ó Àå¾Ö¹°À» ¼ÒÈ¯ÇÏÁö ¾Ê´Â´Ù.
+                return; //ë” ì´ìƒ ì¥ì• ë¬¼ì„ ì†Œí™˜í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (isSummoning) //ÀÌ¹Ì ¹üÀ§ Ç¥½Ã ÈÄ Àå¾Ö¹° »ı¼º ´ë±â ÁßÀÌ¶ó¸é
+            if (isSummoning) //ì´ë¯¸ ë²”ìœ„ í‘œì‹œ í›„ ì¥ì• ë¬¼ ìƒì„± ëŒ€ê¸° ì¤‘ì´ë¼ë©´
             {
-                return; //Áßº¹ ¼ÒÈ¯À» ¸·±â À§ÇØ Á¾·áÇÑ´Ù.
+                return; //ì¤‘ë³µ ì†Œí™˜ì„ ë§‰ê¸° ìœ„í•´ ì¢…ë£Œí•œë‹¤.
             }
 
-            summonTimer -= Time.deltaTime; //Áö³­ ½Ã°£¸¸Å­ Àå¾Ö¹° ¼ÒÈ¯ ´ë±â ½Ã°£À» ÁÙÀÎ´Ù.
+            summonTimer -= Time.deltaTime; //ì§€ë‚œ ì‹œê°„ë§Œí¼ ì¥ì• ë¬¼ ì†Œí™˜ ëŒ€ê¸° ì‹œê°„ì„ ì¤„ì¸ë‹¤.
 
-            if (summonTimer > 0.0f) //¾ÆÁ÷ ¼ÒÈ¯ ´ë±â ½Ã°£ÀÌ ³²¾ÆÀÖ´Ù¸é
+            if (summonTimer > 0.0f) //ì•„ì§ ì†Œí™˜ ëŒ€ê¸° ì‹œê°„ì´ ë‚¨ì•„ìˆë‹¤ë©´
             {
-                return; //ÀÌ¹ø ÇÁ·¹ÀÓ¿¡´Â ¼ÒÈ¯ÇÏÁö ¾Ê´Â´Ù.
+                return; //ì´ë²ˆ í”„ë ˆì„ì—ëŠ” ì†Œí™˜í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            summonCoroutine = StartCoroutine(SummonObstacleRoutine()); //¹üÀ§ Ç¥½Ã ÈÄ Àå¾Ö¹°À» »ı¼ºÇÏ´Â CoroutineÀ» ½ÃÀÛÇÑ´Ù.
-            summonTimer = summonInterval; //´ÙÀ½ Àå¾Ö¹° ¼ÒÈ¯ ´ë±â ½Ã°£À» ´Ù½Ã ¼³Á¤ÇÑ´Ù.
+            summonCoroutine = StartCoroutine(SummonObstacleRoutine()); //ë²”ìœ„ í‘œì‹œ í›„ ì¥ì• ë¬¼ì„ ìƒì„±í•˜ëŠ” Coroutineì„ ì‹œì‘í•œë‹¤.
+            summonTimer = summonInterval; //ë‹¤ìŒ ì¥ì• ë¬¼ ì†Œí™˜ ëŒ€ê¸° ì‹œê°„ì„ ë‹¤ì‹œ ì„¤ì •í•œë‹¤.
         }
 
         private IEnumerator SummonObstacleRoutine()
         {
-            isSummoning = true; //ÇöÀç Àå¾Ö¹° ¼ÒÈ¯ °úÁ¤ÀÌ ÁøÇà ÁßÀÌ¶ó°í Ç¥½ÃÇÑ´Ù.
+            isSummoning = true; //í˜„ì¬ ì¥ì• ë¬¼ ì†Œí™˜ ê³¼ì •ì´ ì§„í–‰ ì¤‘ì´ë¼ê³  í‘œì‹œí•œë‹¤.
 
-            Vector3 spawnPosition = PickSummonPosition(); //Àå¾Ö¹°ÀÌ »ı¼ºµÉ À§Ä¡¸¦ Á¤ÇÑ´Ù.
+            Vector3 spawnPosition = PickSummonPosition(); //ì¥ì• ë¬¼ì´ ìƒì„±ë  ìœ„ì¹˜ë¥¼ ì •í•œë‹¤.
 
-            Vector3 telegraphPosition = GroundService.ProjectToGround(spawnPosition, telegraphGroundHeight); //¹üÀ§ Ç¥½Ã À§Ä¡¸¦ ¹Ù´Ú ±âÁØ ³ôÀÌ·Î º¸Á¤ÇÑ´Ù.
-            Vector3 obstaclePosition = GroundService.ProjectToGround(spawnPosition, obstacleGroundHeight); //½ÇÁ¦ Àå¾Ö¹° À§Ä¡¸¦ ¹Ù´Ú ±âÁØ ³ôÀÌ·Î º¸Á¤ÇÑ´Ù.
+            Vector3 telegraphPosition = GroundService.ProjectToGround(spawnPosition, telegraphGroundHeight); //ë²”ìœ„ í‘œì‹œ ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ê¸°ì¤€ ë†’ì´ë¡œ ë³´ì •í•œë‹¤.
+            Vector3 obstaclePosition = GroundService.ProjectToGround(spawnPosition, obstacleGroundHeight); //ì‹¤ì œ ì¥ì• ë¬¼ ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ê¸°ì¤€ ë†’ì´ë¡œ ë³´ì •í•œë‹¤.
 
-            GameObject telegraph = Instantiate(telegraphPrefab, telegraphPosition, Quaternion.identity, telegraphRoot); //¹üÀ§ Ç¥½Ã PrefabÀ» »ı¼ºÇÑ´Ù.
-            currentTelegraph = telegraph; //ÇöÀç »ı¼ºµÈ ¹üÀ§ Ç¥½Ã¸¦ ÀúÀåÇÑ´Ù.
+            GameObject telegraph = Instantiate(telegraphPrefab, telegraphPosition, Quaternion.identity, telegraphRoot); //ë²”ìœ„ í‘œì‹œ Prefabì„ ìƒì„±í•œë‹¤.
+            currentTelegraph = telegraph; //í˜„ì¬ ìƒì„±ëœ ë²”ìœ„ í‘œì‹œë¥¼ ì €ì¥í•œë‹¤.
 
-            telegraph.transform.localScale = new Vector3(obstacleRadius * 2.0f, telegraph.transform.localScale.y, obstacleRadius * 2.0f); //¹üÀ§ Ç¥½Ã Å©±â¸¦ Àå¾Ö¹° ¹İ°æ¿¡ ¸ÂÃá´Ù.
+            telegraph.transform.localScale = new Vector3(obstacleRadius * 2.0f, telegraph.transform.localScale.y, obstacleRadius * 2.0f); //ë²”ìœ„ í‘œì‹œ í¬ê¸°ë¥¼ ì¥ì• ë¬¼ ë°˜ê²½ì— ë§ì¶˜ë‹¤.
 
-            SetTelegraphAlpha(telegraph, telegraphStartAlpha); //¹üÀ§ Ç¥½Ã¸¦ Ã³À½¿¡´Â Èå¸®°Ô ¸¸µç´Ù.
+            SetTelegraphAlpha(telegraph, telegraphStartAlpha); //ë²”ìœ„ í‘œì‹œë¥¼ ì²˜ìŒì—ëŠ” íë¦¬ê²Œ ë§Œë“ ë‹¤.
 
-            float timer = 0.0f; //¹üÀ§ Ç¥½Ã°¡ À¯ÁöµÈ ½Ã°£À» ÀúÀåÇÑ´Ù.
+            float timer = 0.0f; //ë²”ìœ„ í‘œì‹œê°€ ìœ ì§€ëœ ì‹œê°„ì„ ì €ì¥í•œë‹¤.
 
-            while (timer < summonDelay) //¹üÀ§ Ç¥½Ã ½Ã°£ÀÌ ³¡³ª±â Àü±îÁö ¹İº¹ÇÑ´Ù.
+            while (timer < summonDelay) //ë²”ìœ„ í‘œì‹œ ì‹œê°„ì´ ëë‚˜ê¸° ì „ê¹Œì§€ ë°˜ë³µí•œë‹¤.
             {
-                if (summonTarget == null || !IsTargetInDetectionRange()) //´ë»óÀÌ ¾ø°Å³ª °¨Áö ¹üÀ§ ¹ÛÀ¸·Î ³ª°¬´Ù¸é
+                if (summonTarget == null || !IsTargetInDetectionRange()) //ëŒ€ìƒì´ ì—†ê±°ë‚˜ ê°ì§€ ë²”ìœ„ ë°–ìœ¼ë¡œ ë‚˜ê°”ë‹¤ë©´
                 {
-                    CancelSummon(false); //ÁøÇà ÁßÀÎ ¹üÀ§ Ç¥½Ã¿Í Àå¾Ö¹° ¼ÒÈ¯À» Ãë¼ÒÇÑ´Ù.
-                    yield break; //CoroutineÀ» Áï½Ã Á¾·áÇÑ´Ù.
+                    CancelSummon(false); //ì§„í–‰ ì¤‘ì¸ ë²”ìœ„ í‘œì‹œì™€ ì¥ì• ë¬¼ ì†Œí™˜ì„ ì·¨ì†Œí•œë‹¤.
+                    yield break; //Coroutineì„ ì¦‰ì‹œ ì¢…ë£Œí•œë‹¤.
                 }
 
-                timer += Time.deltaTime; //Áö³­ ½Ã°£¸¸Å­ ¹üÀ§ Ç¥½Ã ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
+                timer += Time.deltaTime; //ì§€ë‚œ ì‹œê°„ë§Œí¼ ë²”ìœ„ í‘œì‹œ ì‹œê°„ì„ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-                float progress = Mathf.Clamp01(timer / summonDelay); //ÇöÀç ÁøÇàµµ¸¦ 0¿¡¼­ 1 »çÀÌ °ªÀ¸·Î °è»êÇÑ´Ù.
-                float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); //ÁøÇàµµ¿¡ µû¶ó Åõ¸íµµ¸¦ Á¡Á¡ ÁøÇÏ°Ô ¸¸µç´Ù.
+                float progress = Mathf.Clamp01(timer / summonDelay); //í˜„ì¬ ì§„í–‰ë„ë¥¼ 0ì—ì„œ 1 ì‚¬ì´ ê°’ìœ¼ë¡œ ê³„ì‚°í•œë‹¤.
+                float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); //ì§„í–‰ë„ì— ë”°ë¼ íˆ¬ëª…ë„ë¥¼ ì ì  ì§„í•˜ê²Œ ë§Œë“ ë‹¤.
 
-                SetTelegraphAlpha(telegraph, alpha); //°è»êµÈ Åõ¸íµµ¸¦ ¹üÀ§ Ç¥½Ã¿¡ Àû¿ëÇÑ´Ù.
+                SetTelegraphAlpha(telegraph, alpha); //ê³„ì‚°ëœ íˆ¬ëª…ë„ë¥¼ ë²”ìœ„ í‘œì‹œì— ì ìš©í•œë‹¤.
 
-                yield return null; //´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ±â´Ù¸°´Ù.
+                yield return null; //ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€ ê¸°ë‹¤ë¦°ë‹¤.
             }
 
-            if (summonTarget == null || !IsTargetInDetectionRange()) //Àå¾Ö¹°ÀÌ ³ª¿À±â Á÷Àü¿¡ ´ë»óÀÌ ¹üÀ§ ¹ÛÀ¸·Î ³ª°¬´Ù¸é
+            if (summonTarget == null || !IsTargetInDetectionRange()) //ì¥ì• ë¬¼ì´ ë‚˜ì˜¤ê¸° ì§ì „ì— ëŒ€ìƒì´ ë²”ìœ„ ë°–ìœ¼ë¡œ ë‚˜ê°”ë‹¤ë©´
             {
-                CancelSummon(false); //ÁøÇà ÁßÀÎ ¹üÀ§ Ç¥½Ã¿Í Àå¾Ö¹° ¼ÒÈ¯À» Ãë¼ÒÇÑ´Ù.
-                yield break; //Àå¾Ö¹°À» »ı¼ºÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                CancelSummon(false); //ì§„í–‰ ì¤‘ì¸ ë²”ìœ„ í‘œì‹œì™€ ì¥ì• ë¬¼ ì†Œí™˜ì„ ì·¨ì†Œí•œë‹¤.
+                yield break; //ì¥ì• ë¬¼ì„ ìƒì„±í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            if (telegraph != null) //¹üÀ§ Ç¥½Ã°¡ ¾ÆÁ÷ ³²¾Æ ÀÖ´Ù¸é
+            if (telegraph != null) //ë²”ìœ„ í‘œì‹œê°€ ì•„ì§ ë‚¨ì•„ ìˆë‹¤ë©´
             {
-                Destroy(telegraph); //Àå¾Ö¹°ÀÌ ³ª¿À±â Á÷Àü¿¡ ¹üÀ§ Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
+                Destroy(telegraph); //ì¥ì• ë¬¼ì´ ë‚˜ì˜¤ê¸° ì§ì „ì— ë²”ìœ„ í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
             }
 
-            currentTelegraph = null; //ÇöÀç ¹üÀ§ Ç¥½Ã ÂüÁ¶¸¦ ºñ¿î´Ù.
+            currentTelegraph = null; //í˜„ì¬ ë²”ìœ„ í‘œì‹œ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
 
-            EnemyObstacle obstacle = Instantiate(obstaclePrefab, obstaclePosition, Quaternion.identity, obstacleRoot); //½ÇÁ¦ Àå¾Ö¹° PrefabÀ» »ı¼ºÇÑ´Ù.
-            obstacle.Configure(obstacleRadius, obstacleLifeTime); //Àå¾Ö¹° ¹İ°æ°ú À¯Áö ½Ã°£À» Àå¾Ö¹°¿¡°Ô Àü´ŞÇÑ´Ù.
+            EnemyObstacle obstacle = Instantiate(obstaclePrefab, obstaclePosition, Quaternion.identity, obstacleRoot); //ì‹¤ì œ ì¥ì• ë¬¼ Prefabì„ ìƒì„±í•œë‹¤.
+            obstacle.Configure(obstacleRadius, obstacleLifeTime); //ì¥ì• ë¬¼ ë°˜ê²½ê³¼ ìœ ì§€ ì‹œê°„ì„ ì¥ì• ë¬¼ì—ê²Œ ì „ë‹¬í•œë‹¤.
 
-            spawnedObstacles.Add(obstacle); //»ı¼ºµÈ Àå¾Ö¹°À» ÇöÀç Àå¾Ö¹° ¸ñ·Ï¿¡ µî·ÏÇÑ´Ù.
+            spawnedObstacles.Add(obstacle); //ìƒì„±ëœ ì¥ì• ë¬¼ì„ í˜„ì¬ ì¥ì• ë¬¼ ëª©ë¡ì— ë“±ë¡í•œë‹¤.
 
-            summonCoroutine = null; //ÇöÀç Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
-            isSummoning = false; //Àå¾Ö¹° ¼ÒÈ¯ °úÁ¤ÀÌ ³¡³µ´Ù°í Ç¥½ÃÇÑ´Ù.
+            summonCoroutine = null; //í˜„ì¬ Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
+            isSummoning = false; //ì¥ì• ë¬¼ ì†Œí™˜ ê³¼ì •ì´ ëë‚¬ë‹¤ê³  í‘œì‹œí•œë‹¤.
         }
 
         private void TryFindSummonTarget()
         {
-            if (string.IsNullOrEmpty(summonTargetName)) //Ã£À» ´ë»ó ÀÌ¸§ÀÌ ºñ¾î ÀÖ´Ù¸é
+            ////// ì „ì°¬ìš°ì‚­ì œ - ê¸°ì¡´ GameObject.Find ê¸°ë°˜ ì†Œí™˜ ê¸°ì¤€ ê²€ìƒ‰ ì½”ë“œëŠ” ì•„ë˜ì— ë³´ì¡´í•œë‹¤.
+            // private void TryFindSummonTarget()
+            //         {
+            //             if (string.IsNullOrEmpty(summonTargetName)) //ì°¾ì„ ëŒ€ìƒ ì´ë¦„ì´ ë¹„ì–´ ìˆë‹¤ë©´
+            //             {
+            //                 return; //ëŒ€ìƒì„ ì°¾ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
+            //             }
+            // 
+            //             GameObject targetObject = GameObject.Find(summonTargetName); //ì”¬ì—ì„œ ì´ë¦„ì´ ê°™ì€ GameObjectë¥¼ ì°¾ëŠ”ë‹¤.
+            // 
+            //             if (targetObject != null) //ëŒ€ìƒ GameObjectë¥¼ ì°¾ì•˜ë‹¤ë©´
+            //             {
+            //                 summonTarget = targetObject.transform; //ì°¾ì€ GameObjectì˜ Transformì„ ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒìœ¼ë¡œ ì €ì¥í•œë‹¤.
+            //             }
+            //         }
+
+            ////// ì „ì°¬ìš°ì¶”ê°€ - ì¥ì• ë¬¼ ì†Œí™˜ ê¸°ì¤€ ì»¨ë³´ì´ íƒ€ê²Ÿì€ MonsterInteractionApiì—ì„œë§Œ ì¡°íšŒí•œë‹¤.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // ì „ì°¬ìš°ì¶”ê°€ - ë“±ë¡ëœ ì»¨ë³´ì´ íƒ€ê²Ÿì´ ìˆëŠ”ì§€ í™•ì¸í•œë‹¤.
             {
-                return; //´ë»óÀ» Ã£Áö ¾Ê°í Á¾·áÇÑ´Ù.
+                summonTarget = apiTarget; // ì „ì°¬ìš°ì¶”ê°€ - ì¡°íšŒëœ ì»¨ë³´ì´ Transformì„ ì¥ì• ë¬¼ ì†Œí™˜ ê¸°ì¤€ìœ¼ë¡œ ì €ì¥í•œë‹¤.
+                return; // ì „ì°¬ìš°ì¶”ê°€ - ì†Œí™˜ ê¸°ì¤€ì„ ì°¾ì•˜ìœ¼ë¯€ë¡œ ë©”ì„œë“œë¥¼ ì¢…ë£Œí•œë‹¤.
             }
 
-            GameObject targetObject = GameObject.Find(summonTargetName); //¾À¿¡¼­ ÀÌ¸§ÀÌ °°Àº GameObject¸¦ Ã£´Â´Ù.
-
-            if (targetObject != null) //´ë»ó GameObject¸¦ Ã£¾Ò´Ù¸é
-            {
-                summonTarget = targetObject.transform; //Ã£Àº GameObjectÀÇ TransformÀ» ¼ÒÈ¯ ±âÁØ ´ë»óÀ¸·Î ÀúÀåÇÑ´Ù.
-            }
+            summonTarget = null; // ì „ì°¬ìš°ì¶”ê°€ - ë“±ë¡ëœ ì»¨ë³´ì´ê°€ ì—†ìœ¼ë©´ ì†Œí™˜ ê¸°ì¤€ì„ ë¹„ì›Œë‘”ë‹¤.
         }
 
         private bool IsTargetInDetectionRange()
         {
-            Vector3 offset = summonTarget.position - transform.position; //¿¤¸®Æ® ¸ó½ºÅÍ À§Ä¡¿¡¼­ ¼ÒÈ¯ ±âÁØ ´ë»ó±îÁöÀÇ ¹æÇâ°ú °Å¸® º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
-            offset.y = 0.0f; //³ôÀÌ Â÷ÀÌ¸¦ Á¦°ÅÇÑ´Ù.
+            Vector3 offset = summonTarget.position - transform.position; //ì—˜ë¦¬íŠ¸ ëª¬ìŠ¤í„° ìœ„ì¹˜ì—ì„œ ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒê¹Œì§€ì˜ ë°©í–¥ê³¼ ê±°ë¦¬ ë²¡í„°ë¥¼ êµ¬í•œë‹¤.
+            offset.y = 0.0f; //ë†’ì´ ì°¨ì´ë¥¼ ì œê±°í•œë‹¤.
 
-            return offset.sqrMagnitude <= detectionRange * detectionRange; //´ë»óÀÌ °¨Áö ¹üÀ§ ¾È¿¡ ÀÖ´ÂÁö °á°ú¸¦ ¹İÈ¯ÇÑ´Ù.
+            return offset.sqrMagnitude <= detectionRange * detectionRange; //ëŒ€ìƒì´ ê°ì§€ ë²”ìœ„ ì•ˆì— ìˆëŠ”ì§€ ê²°ê³¼ë¥¼ ë°˜í™˜í•œë‹¤.
         }
 
         private Vector3 PickSummonPosition()
         {
-            Transform target = summonTarget != null ? summonTarget : transform; //¼ÒÈ¯ ±âÁØ ´ë»óÀÌ ÀÖÀ¸¸é ±× ´ë»óÀ» »ç¿ëÇÏ°í, ¾øÀ¸¸é ÀÚ±â ÀÚ½ÅÀ» ±âÁØÀ¸·Î »ç¿ëÇÑ´Ù.
+            Transform target = summonTarget != null ? summonTarget : transform; //ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒì´ ìˆìœ¼ë©´ ê·¸ ëŒ€ìƒì„ ì‚¬ìš©í•˜ê³ , ì—†ìœ¼ë©´ ìê¸° ìì‹ ì„ ê¸°ì¤€ìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
 
-            Vector3 forward = target.forward; //¼ÒÈ¯ ±âÁØ ´ë»óÀÌ ¹Ù¶óº¸´Â ¾Õ ¹æÇâÀ» °¡Á®¿Â´Ù.
-            forward.y = 0.0f; //³ôÀÌ ¹æÇâÀ» Á¦°ÅÇÑ´Ù.
+            Vector3 forward = target.forward; //ì†Œí™˜ ê¸°ì¤€ ëŒ€ìƒì´ ë°”ë¼ë³´ëŠ” ì• ë°©í–¥ì„ ê°€ì ¸ì˜¨ë‹¤.
+            forward.y = 0.0f; //ë†’ì´ ë°©í–¥ì„ ì œê±°í•œë‹¤.
 
-            if (forward.sqrMagnitude <= 0.0001f) //¾Õ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
+            if (forward.sqrMagnitude <= 0.0001f) //ì• ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ì—†ë‹¤ë©´
             {
-                forward = transform.forward; //¿¤¸®Æ® ¸ó½ºÅÍÀÇ ¾Õ ¹æÇâÀ» ´ë½Å »ç¿ëÇÑ´Ù.
-                forward.y = 0.0f; //³ôÀÌ ¹æÇâÀ» Á¦°ÅÇÑ´Ù.
+                forward = transform.forward; //ì—˜ë¦¬íŠ¸ ëª¬ìŠ¤í„°ì˜ ì• ë°©í–¥ì„ ëŒ€ì‹  ì‚¬ìš©í•œë‹¤.
+                forward.y = 0.0f; //ë†’ì´ ë°©í–¥ì„ ì œê±°í•œë‹¤.
             }
 
-            if (forward.sqrMagnitude <= 0.0001f) //±×·¡µµ ¾Õ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
+            if (forward.sqrMagnitude <= 0.0001f) //ê·¸ë˜ë„ ì• ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ì—†ë‹¤ë©´
             {
-                forward = Vector3.forward; //¿ùµå ±âÁØ ¾Õ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
+                forward = Vector3.forward; //ì›”ë“œ ê¸°ì¤€ ì• ë°©í–¥ì„ ì‚¬ìš©í•œë‹¤.
             }
 
-            forward.Normalize(); //¾Õ ¹æÇâ º¤ÅÍ¸¦ ±æÀÌ 1·Î ¸¸µç´Ù.
+            forward.Normalize(); //ì• ë°©í–¥ ë²¡í„°ë¥¼ ê¸¸ì´ 1ë¡œ ë§Œë“ ë‹¤.
 
-            Vector3 right = new Vector3(forward.z, 0.0f, -forward.x); //¾Õ ¹æÇâÀ» ±âÁØÀ¸·Î ¿À¸¥ÂÊ ¹æÇâÀ» ¸¸µç´Ù.
+            Vector3 right = new Vector3(forward.z, 0.0f, -forward.x); //ì• ë°©í–¥ì„ ê¸°ì¤€ìœ¼ë¡œ ì˜¤ë¥¸ìª½ ë°©í–¥ì„ ë§Œë“ ë‹¤.
 
-            float sideOffset = Random.Range(-sideRandomRange, sideRandomRange); //ÁÂ¿ì ·£´ı À§Ä¡¸¦ Á¤ÇÑ´Ù.
+            float sideOffset = Random.Range(-sideRandomRange, sideRandomRange); //ì¢Œìš° ëœë¤ ìœ„ì¹˜ë¥¼ ì •í•œë‹¤.
 
-            Vector3 position = target.position + forward * forwardSummonDistance + right * sideOffset; //´ë»ó ¾ÕÂÊ ÀÏÁ¤ °Å¸® À§Ä¡¿¡ ÁÂ¿ì ·£´ı°ªÀ» ´õÇØ Àå¾Ö¹° ¼ÒÈ¯ À§Ä¡¸¦ °è»êÇÑ´Ù.
+            Vector3 position = target.position + forward * forwardSummonDistance + right * sideOffset; //ëŒ€ìƒ ì•ìª½ ì¼ì • ê±°ë¦¬ ìœ„ì¹˜ì— ì¢Œìš° ëœë¤ê°’ì„ ë”í•´ ì¥ì• ë¬¼ ì†Œí™˜ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
 
-            return position; //°è»êµÈ Àå¾Ö¹° ¼ÒÈ¯ À§Ä¡¸¦ ¹İÈ¯ÇÑ´Ù.
+            return position; //ê³„ì‚°ëœ ì¥ì• ë¬¼ ì†Œí™˜ ìœ„ì¹˜ë¥¼ ë°˜í™˜í•œë‹¤.
         }
 
         private void CleanupSpawnedObstacles()
         {
-            spawnedObstacles.RemoveAll(obstacle => obstacle == null); //ÀÌ¹Ì Á¦°ÅµÈ Àå¾Ö¹°À» ¸ñ·Ï¿¡¼­ Á¦°ÅÇÑ´Ù.
+            spawnedObstacles.RemoveAll(obstacle => obstacle == null); //ì´ë¯¸ ì œê±°ëœ ì¥ì• ë¬¼ì„ ëª©ë¡ì—ì„œ ì œê±°í•œë‹¤.
         }
 
         private void CancelSummon(bool stopCoroutine)
         {
-            if (stopCoroutine && summonCoroutine != null) //½ÇÇà ÁßÀÎ Àå¾Ö¹° ¼ÒÈ¯ CoroutineÀÌ ÀÖ°í, ¿ÜºÎ¿¡¼­ ÁßÁöÇØ¾ß ÇÑ´Ù¸é
+            if (stopCoroutine && summonCoroutine != null) //ì‹¤í–‰ ì¤‘ì¸ ì¥ì• ë¬¼ ì†Œí™˜ Coroutineì´ ìˆê³ , ì™¸ë¶€ì—ì„œ ì¤‘ì§€í•´ì•¼ í•œë‹¤ë©´
             {
-                StopCoroutine(summonCoroutine); //ÁøÇà ÁßÀÎ Àå¾Ö¹° ¼ÒÈ¯ CoroutineÀ» ÁßÁöÇÑ´Ù.
+                StopCoroutine(summonCoroutine); //ì§„í–‰ ì¤‘ì¸ ì¥ì• ë¬¼ ì†Œí™˜ Coroutineì„ ì¤‘ì§€í•œë‹¤.
             }
 
-            summonCoroutine = null; //Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+            summonCoroutine = null; //Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
 
-            if (currentTelegraph != null) //ÇöÀç »ı¼ºµÈ ¹üÀ§ Ç¥½Ã°¡ ÀÖ´Ù¸é
+            if (currentTelegraph != null) //í˜„ì¬ ìƒì„±ëœ ë²”ìœ„ í‘œì‹œê°€ ìˆë‹¤ë©´
             {
-                Destroy(currentTelegraph); //¹üÀ§ Ç¥½Ã ¿ÀºêÁ§Æ®¸¦ Á¦°ÅÇÑ´Ù.
-                currentTelegraph = null; //¹üÀ§ Ç¥½Ã ÂüÁ¶¸¦ ºñ¿î´Ù.
+                Destroy(currentTelegraph); //ë²”ìœ„ í‘œì‹œ ì˜¤ë¸Œì íŠ¸ë¥¼ ì œê±°í•œë‹¤.
+                currentTelegraph = null; //ë²”ìœ„ í‘œì‹œ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
 
-            isSummoning = false; //Àå¾Ö¹° ¼ÒÈ¯ Áß »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
+            isSummoning = false; //ì¥ì• ë¬¼ ì†Œí™˜ ì¤‘ ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
         }
 
         private void SetTelegraphAlpha(GameObject telegraph, float alpha)
         {
-            if (telegraph == null) //¹üÀ§ Ç¥½Ã ¿ÀºêÁ§Æ®°¡ ¾ø´Ù¸é
+            if (telegraph == null) //ë²”ìœ„ í‘œì‹œ ì˜¤ë¸Œì íŠ¸ê°€ ì—†ë‹¤ë©´
             {
-                return; //Åõ¸íµµ¸¦ ¹Ù²Ü ¼ö ¾øÀ¸¹Ç·Î Á¾·áÇÑ´Ù.
+                return; //íˆ¬ëª…ë„ë¥¼ ë°”ê¿€ ìˆ˜ ì—†ìœ¼ë¯€ë¡œ ì¢…ë£Œí•œë‹¤.
             }
 
-            alpha = Mathf.Clamp01(alpha); //Åõ¸íµµ °ªÀ» 0¿¡¼­ 1 »çÀÌ·Î Á¦ÇÑÇÑ´Ù.
+            alpha = Mathf.Clamp01(alpha); //íˆ¬ëª…ë„ ê°’ì„ 0ì—ì„œ 1 ì‚¬ì´ë¡œ ì œí•œí•œë‹¤.
 
-            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(); //¹üÀ§ Ç¥½Ã¿Í ÀÚ½Ä ¿ÀºêÁ§Æ®µéÀÇ Renderer¸¦ ¸ğµÎ °¡Á®¿Â´Ù.
+            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(); //ë²”ìœ„ í‘œì‹œì™€ ìì‹ ì˜¤ë¸Œì íŠ¸ë“¤ì˜ Rendererë¥¼ ëª¨ë‘ ê°€ì ¸ì˜¨ë‹¤.
 
-            for (int i = 0; i < renderers.Length; i++) //°¡Á®¿Â RendererµéÀ» ÇÏ³ª¾¿ ¼øÈ¸ÇÑ´Ù.
+            for (int i = 0; i < renderers.Length; i++) //ê°€ì ¸ì˜¨ Rendererë“¤ì„ í•˜ë‚˜ì”© ìˆœíšŒí•œë‹¤.
             {
-                Material material = renderers[i].material; //ÇöÀç Renderer°¡ »ç¿ëÇÏ´Â MaterialÀ» °¡Á®¿Â´Ù.
+                Material material = renderers[i].material; //í˜„ì¬ Rendererê°€ ì‚¬ìš©í•˜ëŠ” Materialì„ ê°€ì ¸ì˜¨ë‹¤.
 
-                if (material.HasProperty("_BaseColor")) //URP Lit °è¿­Ã³·³ _BaseColor ¼Ó¼ºÀÌ ÀÖ´Ù¸é
+                if (material.HasProperty("_BaseColor")) //URP Lit ê³„ì—´ì²˜ëŸ¼ _BaseColor ì†ì„±ì´ ìˆë‹¤ë©´
                 {
-                    Color color = material.GetColor("_BaseColor"); //ÇöÀç Base Color¸¦ °¡Á®¿Â´Ù.
-                    color.a = alpha; //Alpha °ªÀ» »õ Åõ¸íµµ·Î º¯°æÇÑ´Ù.
-                    material.SetColor("_BaseColor", color); //º¯°æµÈ »ö»óÀ» ´Ù½Ã Material¿¡ Àû¿ëÇÑ´Ù.
+                    Color color = material.GetColor("_BaseColor"); //í˜„ì¬ Base Colorë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+                    color.a = alpha; //Alpha ê°’ì„ ìƒˆ íˆ¬ëª…ë„ë¡œ ë³€ê²½í•œë‹¤.
+                    material.SetColor("_BaseColor", color); //ë³€ê²½ëœ ìƒ‰ìƒì„ ë‹¤ì‹œ Materialì— ì ìš©í•œë‹¤.
                 }
-                else if (material.HasProperty("_Color")) //±âº» MaterialÃ³·³ _Color ¼Ó¼ºÀÌ ÀÖ´Ù¸é
+                else if (material.HasProperty("_Color")) //ê¸°ë³¸ Materialì²˜ëŸ¼ _Color ì†ì„±ì´ ìˆë‹¤ë©´
                 {
-                    Color color = material.color; //ÇöÀç »ö»óÀ» °¡Á®¿Â´Ù.
-                    color.a = alpha; //Alpha °ªÀ» »õ Åõ¸íµµ·Î º¯°æÇÑ´Ù.
-                    material.color = color; //º¯°æµÈ »ö»óÀ» ´Ù½Ã Material¿¡ Àû¿ëÇÑ´Ù.
+                    Color color = material.color; //í˜„ì¬ ìƒ‰ìƒì„ ê°€ì ¸ì˜¨ë‹¤.
+                    color.a = alpha; //Alpha ê°’ì„ ìƒˆ íˆ¬ëª…ë„ë¡œ ë³€ê²½í•œë‹¤.
+                    material.color = color; //ë³€ê²½ëœ ìƒ‰ìƒì„ ë‹¤ì‹œ Materialì— ì ìš©í•œë‹¤.
                 }
             }
         }
