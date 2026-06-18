@@ -21,6 +21,7 @@ namespace TeamProject01.Gameplay
         [Min(1)] public int BaseExperienceToLevelUp = 5; // 1레벨 필요 경험치
         [Min(0)] public int ExtraExperiencePerLevel = 5; // 레벨당 증가량
         public ConvoyController Convoy; // 세그먼트 추가 입구
+        public SegmentCatalogAsset SegmentCatalogAsset; // 새 세그먼트 데이터에셋 목록
         public SegmentCatalogEntry[] SegmentCatalog = Array.Empty<SegmentCatalogEntry>(); // 사용 가능한 세그먼트 목록
 
         public event Action<CoreStatData> StatsChanged; // 성장값 변경 알림
@@ -132,12 +133,13 @@ namespace TeamProject01.Gameplay
 
         public SegmentCatalogEntry[] GetSelectableSegmentSnapshot() // 레벨시스템용 추가 후보
         {
-            if (SegmentCatalog == null || SegmentCatalog.Length == 0)
+            SegmentCatalogEntry[] catalog = GetCatalogEntries(); // 데이터에셋 우선
+            if (catalog.Length == 0)
             {
                 return Array.Empty<SegmentCatalogEntry>(); // 후보 없음
             }
 
-            List<SegmentCatalogEntry> results = new List<SegmentCatalogEntry>(SegmentCatalog.Length); // 결과 목록
+            List<SegmentCatalogEntry> results = new List<SegmentCatalogEntry>(catalog.Length); // 결과 목록
             TryGetSelectableSegments(results); // 후보 수집
             return results.ToArray(); // 외부 변경 방지
         }
@@ -150,14 +152,15 @@ namespace TeamProject01.Gameplay
             }
 
             results.Clear(); // 이전 결과 제거
-            if (SegmentCatalog == null)
+            SegmentCatalogEntry[] catalog = GetCatalogEntries(); // 데이터에셋 우선
+            if (catalog.Length == 0)
             {
                 return false; // 카탈로그 없음
             }
 
-            for (int i = 0; i < SegmentCatalog.Length; i++)
+            for (int i = 0; i < catalog.Length; i++)
             {
-                SegmentCatalogEntry entry = SegmentCatalog[i]; // 후보
+                SegmentCatalogEntry entry = catalog[i]; // 후보
                 if (entry.CanShowAsAddChoice && CanAddSegment(entry.SegmentId))
                 {
                     results.Add(entry); // 선택 가능 후보
@@ -170,15 +173,16 @@ namespace TeamProject01.Gameplay
         public bool TryFindSegmentEntry(string segmentId, out SegmentCatalogEntry entry) // ID로 세그먼트 찾기
         {
             entry = default; // 기본값
-            if (SegmentCatalog == null || string.IsNullOrWhiteSpace(segmentId))
+            if (string.IsNullOrWhiteSpace(segmentId))
             {
                 return false; // 검색 불가
             }
 
             string normalizedId = segmentId.Trim(); // 비교 ID
-            for (int i = 0; i < SegmentCatalog.Length; i++)
+            SegmentCatalogEntry[] catalog = GetCatalogEntries(); // 데이터에셋 우선
+            for (int i = 0; i < catalog.Length; i++)
             {
-                SegmentCatalogEntry candidate = SegmentCatalog[i]; // 후보
+                SegmentCatalogEntry candidate = catalog[i]; // 후보
                 if (string.Equals(candidate.NormalizedId, normalizedId, StringComparison.OrdinalIgnoreCase))
                 {
                     entry = candidate; // 결과 저장
@@ -395,6 +399,16 @@ namespace TeamProject01.Gameplay
 
             prefab = entry.Prefab; // 프리팹
             return prefab != null; // 최종 확인
+        }
+
+        private SegmentCatalogEntry[] GetCatalogEntries() // 현재 세그먼트 목록
+        {
+            if (SegmentCatalogAsset != null)
+            {
+                return SegmentCatalogAsset.BuildCatalogEntries(); // 데이터에셋 사용
+            }
+
+            return SegmentCatalog ?? Array.Empty<SegmentCatalogEntry>(); // 기존 배열 fallback
         }
 
         private void EnsureConvoyReference() // 컨보이 참조 보강

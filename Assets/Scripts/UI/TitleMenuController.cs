@@ -9,8 +9,11 @@ namespace TeamProject01.Gameplay
 {
     public sealed class TitleMenuController : MonoBehaviour // 타이틀 메뉴
     {
+        private const string CurrentCoreTestScenePath = "Assets/Scenes/Dev/CoreTest_StageScene.unity"; // 최신 코어 테스트 씬
+        private const string LegacyCoreTestScenePath = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 이전 코어 테스트 씬
+
         public MetaProgressionManager Meta; // 메타 데이터
-        public string TargetStageScenePath = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 현재 코어 테스트 대상
+        public string TargetStageScenePath = CurrentCoreTestScenePath; // 현재 코어 테스트 대상
         [Min(0)] public int HighestReachedWave; // 최고 도달 웨이브
         [Min(0)] public int TemporaryUpgradeBaseCost = 50; // 임시 강화 기본 비용
 
@@ -47,6 +50,7 @@ namespace TeamProject01.Gameplay
 
         private void Awake() // 초기 참조
         {
+            NormalizeTargetStageScenePath(); // 이전 씬 경로 보정
             if (Meta == null)
             {
                 Meta = FindFirstObjectByType<MetaProgressionManager>(); // 씬 메타 검색
@@ -397,11 +401,20 @@ namespace TeamProject01.Gameplay
 
         private void LoadStageScene() // 스테이지 로드
         {
+            NormalizeTargetStageScenePath(); // 직렬화된 이전 값 보정
 #if UNITY_EDITOR
             EditorSceneManager.LoadSceneInPlayMode(TargetStageScenePath, new LoadSceneParameters(LoadSceneMode.Single)); // 에디터 테스트
 #else
             SceneManager.LoadScene(TargetStageScenePath); // 빌드 로드
 #endif
+        }
+
+        private void NormalizeTargetStageScenePath() // 최신 코어 테스트 씬 경로 보정
+        {
+            if (string.IsNullOrWhiteSpace(TargetStageScenePath) || TargetStageScenePath == LegacyCoreTestScenePath)
+            {
+                TargetStageScenePath = CurrentCoreTestScenePath; // 최신 씬 사용
+            }
         }
 
         private void ShowOnly(GameObject target) // 패널 전환

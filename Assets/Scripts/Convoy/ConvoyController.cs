@@ -37,7 +37,9 @@ namespace TeamProject01.Gameplay
         public ConvoyControlMode ControlMode = ConvoyControlMode.RelativeTurn; // 현재 모드
 
         [Header("Body Follow")]
-        [Range(1, 40)] public int StartingSegmentCount = 9; // 시작 길이
+        public bool EnableStartingSegments = false; // 시작 세그먼트 자동 생성
+        public bool ClearScenePlacedSegmentsOnStart = true; // 씬 배치 시작 세그먼트 제거
+        [Range(0, 40)] public int StartingSegmentCount = 0; // 시작 길이
         [Range(1, 100)] public int MaxSegmentCount = 100; // 최대 길이
         [Min(0.1f)] public float SegmentSpacing = 1.18f; // 몸통 간격
         [Min(0.01f)] public float MinPathSampleDistance = 0.08f; // 경로 샘플 간격
@@ -45,7 +47,10 @@ namespace TeamProject01.Gameplay
         [Min(1f)] public float SegmentTurnResponse = 22f; // 회전 추적
         [Min(128)] public int PathSampleLimit = 2048; // 경로 보관량
         public Vector3 HeadScale = new Vector3(1.25f, 0.6f, 1.45f); // 머리 크기
-        public Vector3 SegmentScale = new Vector3(1.05f, 0.48f, 1.05f); // 몸통 크기
+        public Vector3 SegmentScale = Vector3.one; // 몸통 크기
+        public bool ApplySegmentScaleAtRuntime = true; // 런타임 몸통 크기 반영
+        public bool PreventSegmentVerticalSquash = true; // 새 모델 납작해짐 방지
+        [Min(0.01f)] public float MinimumSegmentScaleY = 1f; // 최소 세로 크기
         [Min(0f)] public float VisualCenterHeight = 0.32f; // 표시 높이
         [Min(0f)] public float HeadVisualLean = 8f; // 회전 기울기
 
@@ -85,9 +90,19 @@ namespace TeamProject01.Gameplay
         [Header("Segment Weapons")]
         public bool EnableSegmentAutoFire = true; // 자동 발사 사용
 
+        [Header("Segment Catalog Add")]
+        public bool UseCatalogForDefaultAdd = true; // 기본 추가는 카탈로그 랜덤 사용
+        public SegmentCatalogAsset DefaultAddSegmentCatalog; // 스페이스/자동 추가 후보
+
+        [Header("Segment Add Limit")]
+        public bool RestrictAddedSegmentsToAllowedId = true; // 자동 추가 세그먼트 제한
+        public string AllowedAddedSegmentId = "SG01_Cannon"; // 현재 자동 추가 허용 세그먼트
+
         private readonly List<Transform> segments = new List<Transform>(128); // 연결 몸통
         private readonly List<GroundCheck> segmentGroundChecks = new List<GroundCheck>(128); // 몸통 바닥 체크
         private readonly List<ConvoySegmentRuntime> segmentRuntimes = new List<ConvoySegmentRuntime>(128); // 몸통 런타임
+        private readonly Dictionary<string, int> currentSegmentLevelsById = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); // 세그먼트별 현재 모델 레벨
+        private readonly Dictionary<string, SegmentDefinition> segmentDefinitionsById = new Dictionary<string, SegmentDefinition>(StringComparer.OrdinalIgnoreCase); // 레벨 프리팹 찾기용 정의
         private readonly List<DetachedTailGroup> detachedTails = new List<DetachedTailGroup>(16); // 분리 꼬리
         private readonly List<Vector3> path = new List<Vector3>(2048); // 머리 경로
         private Material rejoinAreaMaterial; // 재결합 재질
@@ -98,6 +113,7 @@ namespace TeamProject01.Gameplay
         private float currentForwardSpeed; // 현재 전진속도
         private float tailCutCooldownRemaining; // 절단 쿨타임
         private int detachedTailSerial; // 분리 그룹 번호
+        private Vector3 lastAppliedSegmentScale; // 마지막 적용 몸통 크기
 
         //성원추가
         // Enemy effect runtime
@@ -111,7 +127,7 @@ namespace TeamProject01.Gameplay
 
         public int SegmentCount => segments.Count; // 표시 길이
         public int MaxSegments => MaxSegmentCount; // 외부 최대 길이
-        public bool CanAddSegment => CanAddSegmentPrefab(SegmentPrefab); // 기본 추가 가능
+        public bool CanAddSegment => CanAddDefaultSegment(); // 기본 추가 가능
         public CoreStatData CurrentCoreStats => CoreStatProvider.GetCurrentOrDefault(); // 현재 성장값
         public float CurrentSpeed => currentForwardSpeed; // HUD 속도
         public float CurrentTurnVelocity => currentTurnVelocity; // HUD 회전
@@ -131,7 +147,9 @@ namespace TeamProject01.Gameplay
             EnsureSegmentRoot(); // 몸통 루트 보강
             EnsureDetachedTailRoot(); // 분리 루트 보강
             EnsureProjectileRoot(); // 투사체 루트 보강
+            RegisterDefaultAddCatalogDefinitions(); // 카탈로그 후보 등록
             CollectExistingSegments(); // 씬 배치 몸통 수집
+            ClearInitialSegmentsIfNeeded(); // 시작 몸통 제거
         }
 
         private void Start() // 시작 세팅
@@ -140,12 +158,16 @@ namespace TeamProject01.Gameplay
             transform.position = SnapHeadToGround(transform.position); // 현재 바닥 보정
             currentForwardSpeed = BaseSpeed; // 초기 속도
             ResetPath(); // 경로 초기화
+            EnsureStarterSegmentFromCurrentLoadout(); // 선택 지렁이 기본 무기 세그먼트
 
-            while (segments.Count < StartingSegmentCount)
+            if (EnableStartingSegments)
             {
-                if (!AddSegment(SegmentPrefab, false))
+                while (GetRegularSegmentCount() < StartingSegmentCount)
                 {
-                    break; // 최대치 도달
+                    if (!AddSegment(SegmentPrefab, false))
+                    {
+                        break; // 최대치 도달
+                    }
                 }
             }
 
@@ -170,7 +192,7 @@ namespace TeamProject01.Gameplay
 
             if (input.AddSegment)
             {
-                AddSegment(SegmentPrefab, true); // 테스트 추가
+                AddDefaultSegment(true); // 테스트 랜덤 추가
             }
 
             if (input.RemoveSegment)
@@ -207,6 +229,7 @@ namespace TeamProject01.Gameplay
             SamplePathIfNeeded(); // 경로 기록
             UpdateHeadVisual(deltaTime); // 머리 표시
 
+
             //성원 추가
             if (HeadVisual != null && knockbackTimeRemaining > 0.0f && knockbackTotalTime > 0.0f) // 넉백 중이면
             {
@@ -230,12 +253,13 @@ namespace TeamProject01.Gameplay
 
         private bool AddSegment(GameObject segmentPrefab, bool snapToPath) // 몸통 추가
         {
-            if (segments.Count >= MaxSegmentCount)
+            GameObject resolvedPrefab = ResolveSegmentPrefabForCurrentLevel(segmentPrefab); // 현재 레벨 반영
+            if (!CanAddSegmentPrefab(resolvedPrefab))
             {
-                return false; // 최대 길이
+                return false; // 최대 길이 또는 허용되지 않은 세그먼트
             }
 
-            Transform segment = CreateSegment(segments.Count, segmentPrefab); // 새 몸통
+            Transform segment = CreateSegment(segments.Count, resolvedPrefab); // 새 몸통
             if (segment == null)
             {
                 return false; // 프리팹 없음
@@ -247,16 +271,77 @@ namespace TeamProject01.Gameplay
 
             if (snapToPath)
             {
-                SnapSegmentToPath(segment, segments.Count); // 끝 위치 정렬
+                SnapSegmentToPath(segment, segments.Count - 1); // 끝 위치 정렬
             }
 
             NotifySegmentCountChanged(); // 길이 변경 알림
             return true; // 추가 성공
         }
 
+        private void ApplyRuntimeSegmentScaleIfNeeded() // 런타임 스케일 튜닝
+        {
+            if (!ApplySegmentScaleAtRuntime)
+            {
+                return; // 수동 반영 안 함
+            }
+
+            Vector3 targetScale = GetSafeSegmentScale(); // 안전 크기
+            if ((lastAppliedSegmentScale - targetScale).sqrMagnitude <= 0.000001f)
+            {
+                return; // 변경 없음
+            }
+
+            for (int i = 0; i < segments.Count; i++)
+            {
+                Transform segment = segments[i]; // 현재 몸통
+                if (segment != null)
+                {
+                    segment.localScale = targetScale; // 기존 몸통에도 적용
+                }
+            }
+
+            lastAppliedSegmentScale = targetScale; // 적용값 저장
+        }
+
+        private Vector3 GetSafeSegmentScale() // 몸통 크기 보정
+        {
+            float yScale = Mathf.Max(0.01f, SegmentScale.y); // 기본 세로 크기
+            if (PreventSegmentVerticalSquash)
+            {
+                yScale = Mathf.Max(MinimumSegmentScaleY, yScale); // 납작해짐 방지
+            }
+
+            return new Vector3(
+                Mathf.Max(0.01f, SegmentScale.x),
+                yScale,
+                Mathf.Max(0.01f, SegmentScale.z)); // 0 스케일 방지
+        }
+
+        private void ClearInitialSegmentsIfNeeded() // 시작 세그먼트 제거
+        {
+            if (EnableStartingSegments || !ClearScenePlacedSegmentsOnStart || segments.Count == 0)
+            {
+                return; // 제거 필요 없음
+            }
+
+            for (int i = segments.Count - 1; i >= 0; i--)
+            {
+                Transform segment = segments[i]; // 기존 배치 몸통
+                if (segment != null)
+                {
+                    DestroyUnityObject(segment.gameObject); // 런타임 시작 몸통 제거
+                }
+            }
+
+            segments.Clear(); // 체인 비움
+            segmentGroundChecks.Clear(); // 바닥 체크 비움
+            segmentRuntimes.Clear(); // 런타임 비움
+            NotifySegmentCountChanged(); // 길이 0 알림
+        }
+
         public bool TryAddSegment() // 외부 추가 입구
         {
-            return AddSegment(SegmentPrefab, true); // 기본 정렬 추가
+            return AddDefaultSegment(true); // 기본 랜덤 추가
         }
 
         public bool TryAddSegment(GameObject segmentPrefab) // 프리팹 지정 추가 입구
@@ -270,7 +355,7 @@ namespace TeamProject01.Gameplay
             int targetCount = Mathf.Max(0, count); // 음수 방지
             for (int i = 0; i < targetCount; i++)
             {
-                if (!AddSegment(SegmentPrefab, snapToPath))
+                if (!AddDefaultSegment(snapToPath))
                 {
                     break; // 더 이상 추가 불가
                 }
@@ -283,7 +368,146 @@ namespace TeamProject01.Gameplay
 
         public bool CanAddSegmentPrefab(GameObject segmentPrefab) // 지정 프리팹 추가 가능
         {
-            return segments.Count < MaxSegmentCount && segmentPrefab != null; // 길이와 프리팹 확인
+            GameObject resolvedPrefab = ResolveSegmentPrefabForCurrentLevel(segmentPrefab); // 현재 레벨 반영
+            return segments.Count < MaxSegmentCount && IsAllowedSegmentPrefab(resolvedPrefab); // 길이/허용 ID 확인
+        }
+
+        public bool TryGetRandomAddableSegmentPrefab(out GameObject prefab) // 카탈로그 랜덤 후보 제공
+        {
+            if (TryPickCatalogSegmentPrefab(out prefab))
+            {
+                return true; // 카탈로그 후보
+            }
+
+            prefab = ResolveSegmentPrefabForCurrentLevel(SegmentPrefab); // 기존 기본값
+            return CanAddSegmentPrefab(prefab); // fallback 가능 여부
+        }
+
+        private bool AddDefaultSegment(bool snapToPath) // 기본 추가
+        {
+            return TryGetRandomAddableSegmentPrefab(out GameObject prefab) && AddSegment(prefab, snapToPath); // 랜덤 생성
+        }
+
+        private bool CanAddDefaultSegment() // 기본 추가 가능
+        {
+            return TryGetRandomAddableSegmentPrefab(out _); // 후보 존재 여부
+        }
+
+        private bool TryPickCatalogSegmentPrefab(out GameObject prefab) // 카탈로그에서 추가 후보 선택
+        {
+            prefab = null; // 기본값
+            if (!UseCatalogForDefaultAdd)
+            {
+                return false; // 카탈로그 미사용
+            }
+
+            SegmentCatalogAsset catalog = GetDefaultAddCatalog(); // 등록 데이터
+            if (catalog == null || catalog.Segments == null || catalog.Segments.Length == 0)
+            {
+                return false; // 후보 없음
+            }
+
+            int startIndex = UnityEngine.Random.Range(0, catalog.Segments.Length); // 랜덤 시작
+            for (int i = 0; i < catalog.Segments.Length; i++)
+            {
+                int index = (startIndex + i) % catalog.Segments.Length; // 순환 검사
+                SegmentDefinition definition = catalog.Segments[index]; // 후보 정의
+                if (TryGetAddableCatalogSegmentPrefab(definition, out prefab))
+                {
+                    return true; // 사용 가능
+                }
+            }
+
+            return false; // 추가 가능한 후보 없음
+        }
+
+        private bool TryGetAddableCatalogSegmentPrefab(SegmentDefinition definition, out GameObject prefab) // 정의 → 현재 레벨 프리팹
+        {
+            prefab = null; // 기본값
+            if (definition == null || !definition.HasId || definition.StarterOnly || !definition.CanAddByLevelChoice)
+            {
+                return false; // 추가 후보 아님
+            }
+
+            RegisterSegmentDefinition(definition); // 레벨 추적 등록
+            int level = GetCurrentSegmentLevelInternal(definition.NormalizedId, definition); // 현재 레벨
+            return definition.TryGetSegmentPrefab(level, out prefab) && CanAddSegmentPrefab(prefab); // 생성 가능 확인
+        }
+
+        private SegmentCatalogAsset GetDefaultAddCatalog() // 기본 추가 카탈로그
+        {
+            if (DefaultAddSegmentCatalog != null)
+            {
+                return DefaultAddSegmentCatalog; // 컨보이 직접 설정
+            }
+
+            return CoreStatProvider.Active != null ? CoreStatProvider.Active.SegmentCatalogAsset : null; // 코어 fallback
+        }
+
+        private void RegisterDefaultAddCatalogDefinitions() // 카탈로그 정의 등록
+        {
+            SegmentCatalogAsset catalog = GetDefaultAddCatalog(); // 등록 데이터
+            if (catalog == null || catalog.Segments == null)
+            {
+                return; // 없음
+            }
+
+            for (int i = 0; i < catalog.Segments.Length; i++)
+            {
+                RegisterSegmentDefinition(catalog.Segments[i]); // 추가 레벨 후보 등록
+            }
+        }
+
+        private bool IsAllowedSegmentPrefab(GameObject segmentPrefab) // 추가 허용 프리팹 확인
+        {
+            if (segmentPrefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
+            if (!RestrictAddedSegmentsToAllowedId || string.IsNullOrWhiteSpace(AllowedAddedSegmentId))
+            {
+                return true; // 제한 비활성
+            }
+
+            string allowedId = AllowedAddedSegmentId.Trim(); // 허용 ID
+            if (string.Equals(segmentPrefab.name, allowedId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true; // 프리팹 이름 일치
+            }
+
+            if (!TryGetSegmentIdFromPrefab(segmentPrefab, out string segmentId))
+            {
+                return false; // ID 판단 불가
+            }
+
+            return string.Equals(segmentId, allowedId, StringComparison.OrdinalIgnoreCase); // ID 일치 여부
+        }
+
+        private static bool TryGetSegmentIdFromPrefab(GameObject segmentPrefab, out string segmentId) // 프리팹 ID 확인
+        {
+            segmentId = string.Empty; // 기본값
+            if (segmentPrefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
+            SegmentWeaponBehaviour weapon = segmentPrefab.GetComponent<SegmentWeaponBehaviour>(); // 세그먼트 무기
+            if (weapon == null)
+            {
+                return false; // ID 판단 불가
+            }
+
+            segmentId = string.IsNullOrWhiteSpace(weapon.SegmentId)
+                ? GetSegmentIdFromWeaponType(weapon.GetType())
+                : weapon.SegmentId.Trim(); // 명시 ID 우선
+            return !string.IsNullOrWhiteSpace(segmentId); // 유효 ID
+        }
+
+        private static string GetSegmentIdFromWeaponType(Type weaponType) // 무기 타입명 기반 ID
+        {
+            string typeName = weaponType != null ? weaponType.Name : string.Empty; // 타입명
+            return typeName.EndsWith("Weapon", StringComparison.Ordinal) ? typeName.Substring(0, typeName.Length - 6) : typeName; // SG01_Cannon
         }
 
         public int GetSegmentCount() // 외부 길이 조회
