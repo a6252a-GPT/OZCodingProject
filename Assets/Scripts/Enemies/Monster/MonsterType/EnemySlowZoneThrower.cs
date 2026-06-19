@@ -110,14 +110,14 @@ namespace TeamProject01.Gameplay
 
         private void TryFindTarget()
         {
-            ////// 전찬우추가 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가 - 등록된 컨보이 타겟이 있는지 확인한다.
+            ////// 전찬우추가-0619 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가-0619 - 등록된 컨보이 타겟이 있는지 확인한다.
             {
-                target = apiTarget; // 전찬우추가 - 조회된 컨보이 Transform을 슬로우 투척 대상으로 저장한다.
-                return; // 전찬우추가 - 타겟을 찾았으므로 메서드를 종료한다.
+                target = apiTarget; // 전찬우추가-0619 - 조회된 컨보이 Transform을 슬로우 투척 대상으로 저장한다.
+                return; // 전찬우추가-0619 - 타겟을 찾았으므로 메서드를 종료한다.
             }
 
-            target = null; // 전찬우추가 - 등록된 컨보이가 없으면 투척 대상을 비워둔다.
+            target = null; // 전찬우추가-0619 - 등록된 컨보이가 없으면 투척 대상을 비워둔다.
         }
 
         public bool IsTargetInThrowRange()

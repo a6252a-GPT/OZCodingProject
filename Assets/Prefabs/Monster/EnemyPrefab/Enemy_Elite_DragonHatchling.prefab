@@ -318,7 +318,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deb41073b7dba46abc3fa1481667f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHealth
-  maxHp: 3
+  maxHp: 45
 --- !u!114 &4850679907329254931
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -381,9 +381,9 @@ MonoBehaviour:
   scanInterval: 0.3
   maxGrowthStack: 30
   maxAbsorbCountPerScan: 7
-  maxHpIncreasePercentPerOrb: 0.25
-  attackPowerIncreasePercentPerOrb: 0.05
-  attackSpeedIncreasePercentPerOrb: 0.2
+  maxHpIncreasePercentPerOrb: 0.12
+  attackPowerIncreasePercentPerOrb: 0.04
+  attackSpeedIncreasePercentPerOrb: 0.1
   scaleIncreasePercentPerOrb: 0.15
   growthStack: 0
 --- !u!114 &956455115678616907

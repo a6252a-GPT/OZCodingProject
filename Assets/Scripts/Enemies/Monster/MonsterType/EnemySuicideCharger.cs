@@ -106,14 +106,14 @@ namespace TeamProject01.Gameplay
 
         private void TryFindTarget()
         {
-            ////// 전찬우추가 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가 - 등록된 컨보이 타겟이 있는지 확인한다.
+            ////// 전찬우추가-0619 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가-0619 - 등록된 컨보이 타겟이 있는지 확인한다.
             {
-                target = apiTarget; // 전찬우추가 - 조회된 컨보이 Transform을 자폭 몬스터의 추적 대상으로 저장한다.
-                return; // 전찬우추가 - 타겟을 찾았으므로 메서드를 종료한다.
+                target = apiTarget; // 전찬우추가-0619 - 조회된 컨보이 Transform을 자폭 몬스터의 추적 대상으로 저장한다.
+                return; // 전찬우추가-0619 - 타겟을 찾았으므로 메서드를 종료한다.
             }
 
-            target = null; // 전찬우추가 - 등록된 컨보이가 없으면 추적 대상을 비워둔다.
+            target = null; // 전찬우추가-0619 - 등록된 컨보이가 없으면 추적 대상을 비워둔다.
         }
 
         private void ChaseTarget()
@@ -194,8 +194,8 @@ namespace TeamProject01.Gameplay
                 return; // 넉백하지 않는다.
             }
                        
-            ////// 전찬우추가 - 몬스터는 컨보이를 직접 움직이지 않고 넉백 요청만 등록한다.
-            MonsterInteractionApi.RequestConvoyKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // 전찬우추가 - 폭발 범위 안의 컨보이에게 넉백을 요청한다.
+            ////// 전찬우추가-0619 - 몬스터는 컨보이를 직접 움직이지 않고 넉백 요청만 등록한다.
+            MonsterInteractionApi.RequestConvoyKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // 전찬우추가-0619 - 폭발 범위 안의 컨보이에게 넉백을 요청한다.
         }
 
         private void CacheBodyRenderers()

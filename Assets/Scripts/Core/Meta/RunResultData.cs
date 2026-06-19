@@ -23,7 +23,7 @@ namespace TeamProject01.Gameplay
             data.IsClear = isClear; // 클리어
             data.EarnedDiamond = Mathf.Max(0, earnedDiamond); // 다이아
             data.EarnedGoldInRun = Mathf.Max(0, earnedGoldInRun); // 골드
-            data.SelectedWormId = string.IsNullOrWhiteSpace(selectedWormId) ? MetaWormIds.Basic : selectedWormId; // 지렁이
+            data.SelectedWormId = MetaWormIds.Normalize(selectedWormId); // 지렁이
             return data; // 결과 반환
         }
     }

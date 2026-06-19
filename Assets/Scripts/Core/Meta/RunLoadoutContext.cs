@@ -10,10 +10,7 @@ namespace TeamProject01.Gameplay
 
         public static void SetStartBonus(RunStartBonusData bonus) // 타이틀 → 스테이지
         {
-            if (string.IsNullOrWhiteSpace(bonus.SelectedWormId))
-            {
-                bonus.SelectedWormId = MetaWormIds.Basic; // 기본 지렁이
-            }
+            bonus.SelectedWormId = MetaWormIds.Normalize(bonus.SelectedWormId); // 지렁이 보정
 
             if (string.IsNullOrWhiteSpace(bonus.SelectedMapId))
             {

@@ -14,16 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponCatalogAsset
   CannonEnhancements:
   - {fileID: 11400000, guid: 1a2b3c4d5e6f7890abcdef1234567890, type: 2}
-  - {fileID: 11400000, guid: 1bfc13936c938c24da3779ff7cf71e3d, type: 2}
   - {fileID: 11400000, guid: d9b4386e5c48a9048b0b255cd23c7dd2, type: 2}
+  - {fileID: 11400000, guid: 1bfc13936c938c24da3779ff7cf71e3d, type: 2}
   MissileEnhancements:
   - {fileID: 11400000, guid: 7492b4fcc052422a9318029690c0a526, type: 2}
-  - {fileID: 11400000, guid: 04b6c07338255534581b41e57cee7964, type: 2}
   - {fileID: 11400000, guid: edfb9734a2ac96243815cb162c228957, type: 2}
+  - {fileID: 11400000, guid: 04b6c07338255534581b41e57cee7964, type: 2}
   AdditionalSegments:
-  - SegmentId: 
-    Enhancements: []
-  - SegmentId: 
-    Enhancements: []
-  - SegmentId: 
-    Enhancements: []
+  - SegmentId: SG03_Trebuchet
+    Enhancements:
+    - {fileID: 11400000, guid: 90e3d1efa082f934b9994caeecc349ea, type: 2}
+    - {fileID: 11400000, guid: a9e7c339be7919e4e8ce80be517f06fb, type: 2}
+    - {fileID: 11400000, guid: 4d3f59adb56d01d408bdae12e73cab60, type: 2}
+  - SegmentId: SG04_SawLauncher
+    Enhancements:
+    - {fileID: 11400000, guid: 10ddbcc61162e434d9add50a856f6e9a, type: 2}
+    - {fileID: 11400000, guid: ec7e1e14b4e64934a82eca92893774d5, type: 2}
+  - SegmentId: SG20_LightningObelisk
+    Enhancements:
+    - {fileID: 11400000, guid: 8b956271ff33f704cae44582ec7eed9a, type: 2}
