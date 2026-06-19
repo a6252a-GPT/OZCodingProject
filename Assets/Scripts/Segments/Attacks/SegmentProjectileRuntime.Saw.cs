@@ -14,7 +14,7 @@ namespace TeamProject01.Gameplay
 
             Vector3 targetPosition = GetEnemyHitPosition(target); // 목표 위치
             Vector3 offset = targetPosition - transform.position; // 목표 방향
-            float step = Mathf.Max(0.1f, profile.ProjectileSpeed) * Time.deltaTime; // 이번 프레임 이동량
+            float step = GetProjectileSpeed() * Time.deltaTime; // 이번 프레임 이동량
             if (offset.sqrMagnitude <= step * step)
             {
                 ReachSawTarget(target, targetPosition); // 목표 명중
@@ -30,8 +30,7 @@ namespace TeamProject01.Gameplay
 
         private void UpdateSawLostTargetProjectile() // 목표가 사라진 톱날 직선 이동
         {
-            float speed = profile != null ? profile.ProjectileSpeed : 20f; // 프로필 없을 때 기본 속도
-            float step = Mathf.Max(0.1f, speed) * Time.deltaTime; // 이동량
+            float step = GetProjectileSpeed() * Time.deltaTime; // 이동량
             transform.position += direction * step; // 현재 방향 유지
             ApplySawFlightRotation(); // 이동 방향 + 회전
 
@@ -78,7 +77,7 @@ namespace TeamProject01.Gameplay
                 int enemyId = enemy.EnemyId; // 피해 전 ID 저장
                 Vector3 hitPosition = GetEnemyHitPosition(enemy); // 실제 명중 위치
                 hitEnemyIds.Add(enemyId); // 같은 구간 중복 방지
-                enemy.ApplyDamage(pierceDamage.WithHitPosition(hitPosition)); // 관통 피해
+                SegmentHitResolver.ApplyDamageAndFeedback(enemy, pierceDamage, profile, hitPosition, position, SegmentMonsterFeedbackKind.Pierce); // 관통 피해 + 피드백
                 PlayHitVfx(hitPosition); // 명중 VFX
             }
         }
@@ -90,7 +89,7 @@ namespace TeamProject01.Gameplay
                 return; // 목표 사라짐
             }
 
-            enemy.ApplyDamage(damage.WithHitPosition(position)); // 목표 100% 피해
+            SegmentHitResolver.ApplyDamageAndFeedback(enemy, damage, profile, position, position - direction, SegmentMonsterFeedbackKind.Direct); // 목표 100% 피해 + 피드백
             PlayHitVfx(position); // 명중 VFX
         }
 

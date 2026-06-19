@@ -18,10 +18,13 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float groundHeight = 0.72f; // 바닥 위에 몬스터를 올려둘 높이 오프셋
 
         //컨보이 밀렸을 떄 뒤로 밀려나게 할때 사용할 변수(끼임현상 방지)
-        private float knockbackSpeed = 3.0f; //컨보이에 부딪쳤을 떄 몬스터가 밀려나는 속도
-        private float knockbackDuration = 0.15f; //컨보이와 부딪쳤을 때 밀려나는 시간
+        private const float ContactKnockbackSpeed = 3.0f; // 전찬우추가-6019(몬스터피드백관련) - 접촉 밀림 기본 속도
+        private const float ContactKnockbackDuration = 0.15f; // 전찬우추가-6019(몬스터피드백관련) - 접촉 밀림 기본 시간
+        private float knockbackSpeed = ContactKnockbackSpeed; // 전찬우수정-6019(몬스터피드백관련) - 현재 넉백 속도
+        private float knockbackDuration = ContactKnockbackDuration; // 전찬우수정-6019(몬스터피드백관련) - 현재 넉백 시간
         private Vector3 knockbackDirection; //현재 몬스터가 밀려나는 방향
         private float knockbackTimer; //밀리 상태 시간
+        private float staggerTimer; // 전찬우추가-6019(몬스터피드백관련) - 경직 남은 시간
 
         public bool IsInStopRange { get; private set; } // 현재 Nexus가 멈춤 거리 안에 있는지 외부에서 읽는 값
 
@@ -63,6 +66,16 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
+            if (staggerTimer > 0.0f) // 전찬우추가-6019(몬스터피드백관련) - 경직 중 이동 정지
+            {
+                staggerTimer -= Time.deltaTime; // 전찬우추가-6019(몬스터피드백관련) - 경직 시간 감소
+
+                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-6019(몬스터피드백관련) - 정지 중 위치 보정
+                transform.position = resolvedPosition; // 전찬우추가-6019(몬스터피드백관련) - 보정 위치 적용
+
+                return;
+            }
+
             if (nexus == null) //이동 목표가 없으면
             {
                 return; //종료한다.
@@ -80,8 +93,8 @@ namespace TeamProject01.Gameplay
             {
                 IsInStopRange = isNexusInStopRange; // 이 값은 Nexus 공격 사거리 여부만 저장한다.
                
-                ////// 전찬우추가 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                ////// 전찬우추가-0619 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
+                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-0619 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 공격, 투척, 소환 중이면 Nexus 쪽으로 더 이동하지 않는다.
@@ -101,13 +114,15 @@ namespace TeamProject01.Gameplay
             Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * Time.deltaTime); // 버프 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
-            ////// 전찬우추가 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
-            Vector3 position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
+            ////// 전찬우추가-0619 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
+            Vector3 position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가-0619 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
 
             Vector3 pushOffset = position - desiredPosition; // 원래 이동하려던 위치에서 얼마나 밀려났는지 계산한다.
 
             if (pushOffset.sqrMagnitude > 0.0001f) // 세그먼트 때문에 위치가 보정되었다면
             {
+                knockbackSpeed = ContactKnockbackSpeed; // 전찬우수정-6019(몬스터피드백관련) - 접촉 밀림 속도 복구
+                knockbackDuration = ContactKnockbackDuration; // 전찬우수정-6019(몬스터피드백관련) - 접촉 밀림 시간 복구
                 knockbackDirection = pushOffset.normalized; // 밀려난 방향을 저장한다.
                 knockbackTimer = knockbackDuration; // 짧은 시간 동안 밀림 상태로 만든다.
             }
@@ -129,6 +144,50 @@ namespace TeamProject01.Gameplay
             }
 
             return FallbackStopRadius; // 공격 Script가 없는 몬스터라면 예비 정지 거리를 사용한다.
+        }
+
+        public void ApplyMonsterFeedback(MonsterFeedbackData feedback) // 전찬우추가-6019(몬스터피드백관련) - 공격 피드백 적용
+        {
+            if (!feedback.IsValid)
+            {
+                return;
+            }
+
+            if (feedback.HasStagger) // 전찬우추가-6019(몬스터피드백관련) - 경직 적용
+            {
+                staggerTimer = Mathf.Max(staggerTimer, feedback.StaggerDuration);
+            }
+
+            if (!feedback.HasKnockback)
+            {
+                return;
+            }
+
+            Vector3 direction = feedback.Direction; // 전찬우추가-6019(몬스터피드백관련) - 넉백 방향
+            direction.y = 0.0f;
+
+            if (direction.sqrMagnitude <= 0.0001f) // 전찬우추가-6019(몬스터피드백관련) - 방향 보정
+            {
+                direction = transform.position - feedback.Origin;
+                direction.y = 0.0f;
+            }
+
+            if (direction.sqrMagnitude <= 0.0001f) // 전찬우추가-6019(몬스터피드백관련) - 최종 예비 방향
+            {
+                direction = -transform.forward;
+                direction.y = 0.0f;
+            }
+
+            if (direction.sqrMagnitude <= 0.0001f)
+            {
+                return;
+            }
+
+            float duration = Mathf.Max(0.01f, feedback.KnockbackDuration); // 전찬우추가-6019(몬스터피드백관련) - 넉백 시간 보정
+            knockbackDirection = direction.normalized; // 전찬우추가-6019(몬스터피드백관련) - 넉백 방향 저장
+            knockbackDuration = duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 시간 갱신
+            knockbackSpeed = feedback.KnockbackDistance / duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 속도 계산
+            knockbackTimer = duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 타이머 시작
         }
 
         public void Configure(Transform nexus, float moveSpeed, float groundHeight)// Spawner나 Controller가 이동 초기값을 넣어주는 함수

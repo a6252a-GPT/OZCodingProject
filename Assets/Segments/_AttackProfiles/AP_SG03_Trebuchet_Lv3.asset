@@ -21,9 +21,16 @@ MonoBehaviour:
   SideConeAngle: 100
   TargetAimHeight: 0.05
   AttackSpawnHeight: 0.65
-  BaseDamage: 1.75
+  BaseDamage: 14
   MinAttackInterval: 3.6
   MaxAttackInterval: 4.8
+  ApplyMonsterFeedback: 1
+  MonsterKnockbackDistance: 0.25
+  MonsterKnockbackDuration: 0.08
+  MonsterStaggerDuration: 0.06
+  MonsterExplosionFeedbackMultiplier: 2
+  MonsterPierceFeedbackMultiplier: 0.35
+  MonsterContinuousFeedbackMultiplier: 0
   ProjectilePrefab: {fileID: 1138852089107971199, guid: 2bab05cc4794f6c4db350f463c2ba772, type: 3}
   ProjectileCount: 1
   SpreadAngle: 0
@@ -31,19 +38,31 @@ MonoBehaviour:
   ProjectileFireDelay: 0.18
   UseLoadedProjectileVisuals: 1
   LoadedProjectileReloadRatio: 0.5
+  ProjectileScale: {x: 0, y: 0, z: 0}
   ProjectileSpeed: 16
   ProjectileHitRadius: 0.85
   ProjectileLifetime: 7
   PierceCount: 1
   ArcHeight: 5.2
   RollAfterArcLanding: 1
+  LandingImpactRadius: 1.1
+  LandingRollDamageRadius: 0.75
   LandingRollDistance: 2.7
-  LandingRollDuration: 0.65
+  LandingRollDuration: 1.5
   LandingRollSpinSpeed: 900
   ExplosionRadius: 3.6
   ExplosionLifetime: 0.35
   LaserDuration: 0.5
   LaserTickInterval: 0.15
+  ChainRange: 4
+  MaxChainDepth: 3
+  ChainBranchCount: 2
+  ChainDelay: 0.06
+  ChainLineVfxLifetime: 0.4
+  ChainDamageFalloff: 0.5
+  SawPierceDamageRatio: 0.5
+  SawTargetMinDistanceRatio: 0.5
+  SawSpinSpeed: 1440
   RequireAimBeforeFire: 1
   HeadTurnSpeed: 300
   FireAngleTolerance: 12
@@ -53,6 +72,7 @@ MonoBehaviour:
   HitVfxLifetime: 2
   ExplosionVfxPrefab: {fileID: 5227224920444260813, guid: 36102a3cbd4d65943bdde1d0856cb953, type: 3}
   ExplosionVfxLifetime: 0.45
+  ExplosionVfxAlpha: 0.28
   RecoilDistance: 0
   RecoilTiltAngle: 0
   RecoilKickDuration: 0.05

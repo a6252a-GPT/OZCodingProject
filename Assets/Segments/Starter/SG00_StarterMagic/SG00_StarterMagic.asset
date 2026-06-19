@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SG00_StarterMagic
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG00_StarterMagic
-  DisplayName: Magic Starter Lightning
-  Description: Magic worm starter assembled from SG00 template.
+  DisplayName: 마법형 시작 전기
+  Description: 마법형 지렁이가 시작할 때 장착하는 전기 오벨리스크 스타터 세그먼트입니다.
   StarterOnly: 1
   SharedUpgradeSegmentId: SG20_LightningObelisk
   UseLevels: 0

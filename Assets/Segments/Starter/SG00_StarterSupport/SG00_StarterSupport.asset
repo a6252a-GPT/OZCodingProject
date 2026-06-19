@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SG00_StarterSupport
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG00_StarterSupport
-  DisplayName: Support Starter Fireball
-  Description: Support worm starter assembled from SG00 template.
+  DisplayName: 지원형 시작 화염구
+  Description: 지원형 지렁이가 시작할 때 장착하는 화염구타워 스타터 세그먼트입니다.
   StarterOnly: 1
   SharedUpgradeSegmentId: SG21_FireballTower
   UseLevels: 0

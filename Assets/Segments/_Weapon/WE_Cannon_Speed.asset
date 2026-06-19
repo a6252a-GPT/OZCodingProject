@@ -12,11 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a0f8e3dff97434fb869669e78b80a7a, type: 3}
   m_Name: WE_Cannon_Speed
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponDefinition
-  EnhancementId: WE_Cannon_DamageBoost
+  EnhancementId: WE_Cannon_Speed
   DisplayName: "\uCE90\uB17C \uAC15\uD654"
   Description: "\uD0C4\uD658 \uC18D\uB3C4 \uC99D\uAC00"
   TargetSegmentId: SG01_Cannon
   BaseDamage: 0
-  ProjectileSpeed: 2
+  ProjectileSpeed: 3
   PierceCount: 0
   ExplosionRadius: 0
+  CardPrefabOverride: {fileID: 0}
+  RareCardPrefabOverride: {fileID: 0}
+  UniqueCardPrefabOverride: {fileID: 0}
+  CardIconOverride: {fileID: 0}

@@ -17,7 +17,7 @@ namespace TeamProject01.Gameplay
             Vector3 firstHitPosition = GetEnemyHitPosition(firstTarget); // 첫 명중 위치
             hitIds.Add(firstTarget.EnemyId); // 첫 대상 기록
             SegmentLightningChainVfx.Spawn(startAnchor, startPosition, firstHitPosition, AttackProfile.ChainLineVfxLifetime); // 머즐 -> 첫 대상
-            firstTarget.ApplyDamage(damage.WithHitPosition(firstHitPosition)); // 첫 대상은 전체 피해
+            SegmentHitResolver.ApplyDamageAndFeedback(firstTarget, damage, AttackProfile, firstHitPosition, startPosition, SegmentMonsterFeedbackKind.Chain); // 첫 대상 피해 + 피드백
             PlayHitVfx(firstHitPosition); // 첫 명중 VFX
             StartCoroutine(ChainLightningRoutine(firstHitPosition, 1, damage, hitIds)); // 첫 대상 위치에서 확산
         }
@@ -59,7 +59,7 @@ namespace TeamProject01.Gameplay
                 hitIds.Add(target.Id); // 중복 방지
                 Vector3 hitPosition = GetEnemyHitPosition(target.Enemy); // 명중 위치
                 SegmentLightningChainVfx.Spawn(fromPosition, hitPosition, AttackProfile.ChainLineVfxLifetime); // 몬스터 -> 몬스터
-                target.Enemy.ApplyDamage(chainDamage.WithHitPosition(hitPosition)); // 피해 적용
+                SegmentHitResolver.ApplyDamageAndFeedback(target.Enemy, chainDamage, AttackProfile, hitPosition, fromPosition, SegmentMonsterFeedbackKind.Chain); // 체인 피해 + 피드백
                 PlayHitVfx(hitPosition); // 명중 VFX
                 StartCoroutine(ChainLightningRoutine(hitPosition, depth + 1, baseDamage, hitIds)); // 다음 단계 확산
             }

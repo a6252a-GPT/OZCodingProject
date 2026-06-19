@@ -6,7 +6,7 @@ namespace TeamProject01.Gameplay
     {
         private void UpdateStraightProjectile() // 직선 이동
         {
-            transform.position += direction * (profile.ProjectileSpeed * Time.deltaTime); // 이동
+            transform.position += direction * (GetProjectileSpeed() * Time.deltaTime); // 강화 속도 이동
             if (direction.sqrMagnitude > 0.0001f)
             {
                 transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 방향

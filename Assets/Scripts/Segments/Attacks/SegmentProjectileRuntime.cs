@@ -33,7 +33,6 @@ namespace TeamProject01.Gameplay
         private int remainingSawBounces; // 남은 톱날 연쇄 수
         private int currentSawTargetId; // 현재 톱날 목표 ID
         private float sawSpinAngle; // 톱날 회전 누적 각도
-        // 건준 추가 시작 =====
         private float effectiveProjectileSpeed; // 강화 반영 속도
         private float effectiveExplosionRadius; // 강화 반영 폭발 반경
 
@@ -96,7 +95,18 @@ namespace TeamProject01.Gameplay
             currentSawTargetId = target != null ? target.EnemyId : 0; // 최초 목표 저장
             sawSpinAngle = 0f; // 톱날 회전 초기화
         }
-        // 건준 추가 끝 =====
+
+        private float GetProjectileSpeed() // 강화 반영 속도
+        {
+            float speed = effectiveProjectileSpeed > 0f ? effectiveProjectileSpeed : (profile != null ? profile.ProjectileSpeed : 0.1f); // fallback
+            return Mathf.Max(0.1f, speed); // 최소 속도
+        }
+
+        private float GetExplosionRadius() // 강화 반영 폭발 반경
+        {
+            float radius = effectiveExplosionRadius > 0f ? effectiveExplosionRadius : (profile != null ? profile.ExplosionRadius : 0.1f); // fallback
+            return Mathf.Max(0.1f, radius); // 최소 반경
+        }
 
         private void Update() // 이동 루프
         {

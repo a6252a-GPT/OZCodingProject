@@ -22,9 +22,16 @@ MonoBehaviour:
   SideConeAngle: 108
   TargetAimHeight: 0.5
   AttackSpawnHeight: 0.5
-  BaseDamage: 0.42
+  BaseDamage: 2.8
   MinAttackInterval: 2.8
   MaxAttackInterval: 4
+  ApplyMonsterFeedback: 1
+  MonsterKnockbackDistance: 0.25
+  MonsterKnockbackDuration: 0.08
+  MonsterStaggerDuration: 0.06
+  MonsterExplosionFeedbackMultiplier: 2
+  MonsterPierceFeedbackMultiplier: 0.35
+  MonsterContinuousFeedbackMultiplier: 0
   ProjectilePrefab: {fileID: 0}
   ProjectileCount: 1
   SpreadAngle: 0
@@ -32,6 +39,7 @@ MonoBehaviour:
   ProjectileFireDelay: 0.18
   UseLoadedProjectileVisuals: 0
   LoadedProjectileReloadRatio: 0.5
+  ProjectileScale: {x: 0, y: 0, z: 0}
   ProjectileSpeed: 20
   ProjectileHitRadius: 0.5
   ProjectileLifetime: 5
@@ -53,6 +61,9 @@ MonoBehaviour:
   ChainDelay: 0.06
   ChainLineVfxLifetime: 0.4
   ChainDamageFalloff: 0.5
+  SawPierceDamageRatio: 0.5
+  SawTargetMinDistanceRatio: 0.5
+  SawSpinSpeed: 1440
   RequireAimBeforeFire: 1
   HeadTurnSpeed: 420
   FireAngleTolerance: 14

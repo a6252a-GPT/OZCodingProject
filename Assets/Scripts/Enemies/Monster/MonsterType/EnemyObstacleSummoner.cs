@@ -197,14 +197,14 @@ namespace TeamProject01.Gameplay
 
         private void TryFindSummonTarget()
         {
-            ////// 전찬우추가 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가 - 등록된 컨보이 타겟이 있는지 확인한다.
+            ////// 전찬우추가-0619 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가-0619 - 등록된 컨보이 타겟이 있는지 확인한다.
             {
-                summonTarget = apiTarget; // 전찬우추가 - 조회된 컨보이 Transform을 장애물 소환 기준으로 저장한다.
-                return; // 전찬우추가 - 소환 기준을 찾았으므로 메서드를 종료한다.
+                summonTarget = apiTarget; // 전찬우추가-0619 - 조회된 컨보이 Transform을 장애물 소환 기준으로 저장한다.
+                return; // 전찬우추가-0619 - 소환 기준을 찾았으므로 메서드를 종료한다.
             }
 
-            summonTarget = null; // 전찬우추가 - 등록된 컨보이가 없으면 소환 기준을 비워둔다.
+            summonTarget = null; // 전찬우추가-0619 - 등록된 컨보이가 없으면 소환 기준을 비워둔다.
         }
 
         private bool IsTargetInDetectionRange()

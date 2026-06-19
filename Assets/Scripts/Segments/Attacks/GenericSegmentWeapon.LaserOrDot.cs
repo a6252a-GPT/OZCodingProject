@@ -24,7 +24,7 @@ namespace TeamProject01.Gameplay
                 Vector3 hitPosition = target.transform.position + Vector3.up * AttackProfile.TargetAimHeight; // 명중 위치
                 if (Vector3.Distance(transform.position, target.transform.position) <= GetUpgrade().ApplyRange(AttackProfile.SearchRange) && IsTargetInAttackArea(target)) // 레이저 지속 피해도 공격 범위 형태 유지
                 {
-                    target.ApplyDamage(damage.WithHitPosition(hitPosition)); // 지속 피해
+                    SegmentHitResolver.ApplyDamageAndFeedback(target, damage, AttackProfile, hitPosition, transform.position, SegmentMonsterFeedbackKind.Continuous); // 지속 피해 + 피드백
                     PlayHitVfx(hitPosition); // 명중 VFX
                 }
 

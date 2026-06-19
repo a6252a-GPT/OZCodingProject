@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SG00_StarterAttack
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG00_StarterAttack
-  DisplayName: Attack Starter Missile
-  Description: Attack worm starter assembled from SG00 template.
+  DisplayName: 공격형 시작 미사일
+  Description: 공격형 지렁이가 시작할 때 장착하는 미사일 스타터 세그먼트입니다.
   StarterOnly: 1
   SharedUpgradeSegmentId: SG02_Missile
   UseLevels: 0

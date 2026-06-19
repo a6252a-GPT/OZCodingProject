@@ -99,7 +99,7 @@ namespace TeamProject01.Gameplay
                 return; // 대상 없음
             }
 
-            // Convoy.ApplySelectedWormStarterSegment(bonus.SelectedWormId); //전찬우수정 - ConvoyController 원본 스타터 중복 방지
+            // Convoy.ApplySelectedWormStarterSegment(bonus.SelectedWormId); // ConvoyController 원본 스타터 중복 방지
 
             if (bonus.StartingSegmentBonus > 0)
             {

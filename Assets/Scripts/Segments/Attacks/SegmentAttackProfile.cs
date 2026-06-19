@@ -26,6 +26,15 @@ namespace TeamProject01.Gameplay
         [Min(0.05f)] public float MinAttackInterval = 3f; // 최소 공격 간격
         [Min(0.05f)] public float MaxAttackInterval = 5f; // 최대 공격 간격
 
+        [Header("Monster Feedback")]
+        public bool ApplyMonsterFeedback = true; // 몬스터 피격 반응 사용
+        [Min(0f)] public float MonsterKnockbackDistance = 0.25f; // 넉백 이동 거리
+        [Min(0.01f)] public float MonsterKnockbackDuration = 0.08f; // 넉백 지속 시간
+        [Min(0f)] public float MonsterStaggerDuration = 0.06f; // 경직 지속 시간
+        [Range(0f, 3f)] public float MonsterExplosionFeedbackMultiplier = 2f; // 폭발 피드백 배율
+        [Range(0f, 1f)] public float MonsterPierceFeedbackMultiplier = 0.35f; // 관통 피드백 배율
+        [Range(0f, 1f)] public float MonsterContinuousFeedbackMultiplier = 0f; // 지속 피해 피드백 배율
+
         [Header("Projectile")]
         public GameObject ProjectilePrefab; // 투사체 프리팹
         [Min(1)] public int ProjectileCount = 1; // 동시 발사 수

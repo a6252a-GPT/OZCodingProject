@@ -47,7 +47,7 @@ namespace TeamProject01.Gameplay
 
             if (enemy != null)
             {
-                enemy.ApplyDamage(damage.WithHitPosition(position)); // 직접 피해
+                SegmentHitResolver.ApplyDamageAndFeedback(enemy, damage, profile, position, transform.position, SegmentMonsterFeedbackKind.Direct); // 직접 피해 + 피드백
                 PlayHitVfx(position); // 명중 VFX
                 hitEnemyIds.Add(enemy.EnemyId); // 관통 중복 방지
             }
@@ -66,7 +66,7 @@ namespace TeamProject01.Gameplay
 
         private void ApplyExplosion(Vector3 position) // 폭발 처리
         {
-            ApplyExplosion(position, profile.ExplosionRadius, explosionEnemyIds, true); // 일반 폭발
+            ApplyExplosion(position, GetExplosionRadius(), explosionEnemyIds, true); // 강화 반경 폭발
         }
 
         private void ApplyExplosion(Vector3 position, float radius, List<int> hitIds, bool playVfx) // 반경 피해 처리
@@ -94,7 +94,7 @@ namespace TeamProject01.Gameplay
 
                 hitIds.Add(enemy.EnemyId); // 중복 방지
                 Vector3 hitPosition = GetEnemyHitPosition(enemy); // 명중 위치
-                enemy.ApplyDamage(explosionDamage.WithHitPosition(hitPosition)); // 범위 피해
+                SegmentHitResolver.ApplyDamageAndFeedback(enemy, explosionDamage, profile, hitPosition, position, SegmentMonsterFeedbackKind.Explosion); // 범위 피해 + 피드백
             }
         }
 
@@ -124,7 +124,7 @@ namespace TeamProject01.Gameplay
 
                 hitEnemyIds.Add(enemy.EnemyId); // 구르기 중복 방지
                 Vector3 hitPosition = GetEnemyHitPosition(enemy); // 명중 위치
-                enemy.ApplyDamage(rollDamage.WithHitPosition(hitPosition)); // 구르기 피해 적용
+                SegmentHitResolver.ApplyDamageAndFeedback(enemy, rollDamage, profile, hitPosition, position, SegmentMonsterFeedbackKind.Direct); // 구르기 충돌 피해 + 피드백
                 PlayHitVfx(hitPosition); // 명중 VFX
             }
         }

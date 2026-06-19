@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG05_Flamethrower
   DisplayName: "\uD654\uC5FC\uBC29\uC0AC\uAE30"
-  Description: Flamethrower head segment draft. Uses temporary laser tick damage
-    until radial flame DoT is implemented.
+  Description: 전방 범위의 적에게 지속 화염 피해를 주는 화염방사기 세그먼트입니다.
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

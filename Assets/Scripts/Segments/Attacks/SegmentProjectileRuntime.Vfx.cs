@@ -35,7 +35,7 @@ namespace TeamProject01.Gameplay
 
         private void PlayExplosionVfx(Vector3 position) // 폭발 VFX
         {
-            PlayExplosionVfx(position, profile.ExplosionRadius); // 기본 폭발 반경 사용
+            PlayExplosionVfx(position, GetExplosionRadius()); // 강화 반경 사용
         }
 
         private void PlayExplosionVfx(Vector3 position, float radius) // 지정 반경으로 폭발 VFX

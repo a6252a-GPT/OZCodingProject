@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG04_SawLauncher
   DisplayName: "\uD1B1\uB0A0\uBC1C\uC0AC\uAE30"
-  Description: Straight saw-blade projectile segment draft. Bounce hit behavior is
-    reserved for later work.
+  Description: 중거리~장거리 적을 노려 톱날을 발사합니다. 목표까지 지나가는 적에게 관통 피해를 주고, 명중 후 다른 적으로 연쇄됩니다.
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

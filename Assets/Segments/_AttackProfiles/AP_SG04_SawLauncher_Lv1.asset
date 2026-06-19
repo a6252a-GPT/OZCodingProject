@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: AP_SG04_SawLauncher_Lv1
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentAttackProfile
   DisplayName: SG04 Saw Launcher Lv1
-  Description: Saw-blade launcher. Targets mid-to-long candidates, pierces for 50% damage, then bounces once by default.
+  Description: Saw-blade launcher. Targets mid-to-long candidates, pierces for 50%
+    damage, then bounces once by default.
   MoveType: 6
   ImpactType: 0
   SearchRange: 24
@@ -21,9 +22,16 @@ MonoBehaviour:
   SideConeAngle: 100
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.5
-  BaseDamage: 0.3
+  BaseDamage: 8
   MinAttackInterval: 3.4
   MaxAttackInterval: 5
+  ApplyMonsterFeedback: 1
+  MonsterKnockbackDistance: 0.25
+  MonsterKnockbackDuration: 0.08
+  MonsterStaggerDuration: 0.06
+  MonsterExplosionFeedbackMultiplier: 2
+  MonsterPierceFeedbackMultiplier: 0.35
+  MonsterContinuousFeedbackMultiplier: 0
   ProjectilePrefab: {fileID: 3283879460701761766, guid: fa05ef40b88a7a4429361fc6b5a0754b, type: 3}
   ProjectileCount: 1
   SpreadAngle: 0

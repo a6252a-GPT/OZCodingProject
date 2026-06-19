@@ -77,7 +77,7 @@ namespace TeamProject01.Gameplay
             }
 
             segment.name = "ConvoyStarterSegment"; // 일반 몸통과 구분
-            // ApplyStarterBodyVisual(segment, normalizedWormId); //전찬우수정 - 스타터 전용 프리팹에 조립
+            // ApplyStarterBodyVisual(segment, normalizedWormId); // 스타터 전용 프리팹에 조립
             segments.Insert(0, segment); // 항상 맨 앞
             segmentGroundChecks.Insert(0, GetSegmentGroundCheck(segment));
             segmentRuntimes.Insert(0, GetSegmentRuntime(segment, 0, true));
@@ -135,16 +135,16 @@ namespace TeamProject01.Gameplay
             switch (NormalizeStarterWormId(wormId))
             {
                 case MetaWormIds.Attack:
-                    resourceName = "SG00_StarterAttack"; //전찬우수정 - 공격형 스타터
+                    resourceName = "SG00_StarterAttack"; // 공격형 스타터
                     break;
                 case MetaWormIds.Mobility:
-                    resourceName = "SG00_StarterMobility"; //전찬우수정 - 이속형 스타터
+                    resourceName = "SG00_StarterMobility"; // 이속형 스타터
                     break;
                 case MetaWormIds.Support:
-                    resourceName = "SG00_StarterSupport"; //전찬우수정 - 지원형 스타터
+                    resourceName = "SG00_StarterSupport"; // 지원형 스타터
                     break;
                 case MetaWormIds.Magic:
-                    resourceName = "SG00_StarterMagic"; //전찬우수정 - 마법형 스타터
+                    resourceName = "SG00_StarterMagic"; // 마법형 스타터
                     break;
                 default:
                     resourceName = "SG00_StarterCannon"; // 대포

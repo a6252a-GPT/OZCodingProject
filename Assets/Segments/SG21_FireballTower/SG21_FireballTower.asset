@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG21_FireballTower
   DisplayName: "\uD654\uC5FC\uAD6C\uD0C0\uC6CC"
-  Description: Magic fireball tower segment draft. Fires straight projectiles that
-    deal explosion area damage.
+  Description: 직선 화염구를 발사해 폭발 범위 피해를 주는 마법 세그먼트입니다.
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

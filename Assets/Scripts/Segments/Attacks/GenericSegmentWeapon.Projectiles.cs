@@ -109,7 +109,8 @@ namespace TeamProject01.Gameplay
             float step = projectileCount <= 1 ? 0f : spread / (projectileCount - 1); // 각도 간격
             float angle = startAngle + step * projectileIndex; // 이번 탄 각도
             Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * baseDirection; // 산탄 방향
-            SegmentProjectileRuntime.Spawn(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, target, AttackProfile, damage); // 공통 투사체
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
+            SegmentProjectileRuntime.Spawn(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, target, AttackProfile, damage, weaponBonus); // 공통 투사체
         }
 
         private EnemyController ResolveSequenceTarget(EnemyController initialTarget) // 순차 발사 대상
