@@ -126,6 +126,11 @@ namespace TeamProject01.Gameplay
 
         private DamageType GetDamageType() // 피해 종류
         {
+            if (AttackProfile.UseDamageTypeOverride)
+            {
+                return AttackProfile.DamageTypeOverride; // 프로필 지정 타입
+            }
+
             if (AttackProfile.MoveType == SegmentAttackMoveType.Laser)
             {
                 return DamageType.Laser; // 레이저

@@ -30,14 +30,6 @@ MonoBehaviour:
     Enhancements:
     - {fileID: 11400000, guid: 10ddbcc61162e434d9add50a856f6e9a, type: 2}
     - {fileID: 11400000, guid: ec7e1e14b4e64934a82eca92893774d5, type: 2}
-  - SegmentId: SG05_Flamethrower
-    Enhancements:
-    - {fileID: 11400000, guid: 8620ade72fb025a46ac856a09cb72c21, type: 2}
   - SegmentId: SG20_LightningObelisk
     Enhancements:
     - {fileID: 11400000, guid: 8b956271ff33f704cae44582ec7eed9a, type: 2}
-  - SegmentId: SG21_FireballTower
-    Enhancements:
-    - {fileID: 11400000, guid: 4f7eb5ccd56217f4b93a827bb51202a4, type: 2}
-    - {fileID: 11400000, guid: 572fec7463888b94994fbb2e18140f54, type: 2}
-    - {fileID: 11400000, guid: e5b1145c012f9c74cbe9a6e36c75af37, type: 2}

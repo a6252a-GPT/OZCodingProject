@@ -25,6 +25,8 @@ MonoBehaviour:
   BaseDamage: 2.8
   MinAttackInterval: 2.8
   MaxAttackInterval: 4
+  UseDamageTypeOverride: 1
+  DamageTypeOverride: 2
   ApplyMonsterFeedback: 1
   MonsterKnockbackDistance: 0.25
   MonsterKnockbackDuration: 0.08

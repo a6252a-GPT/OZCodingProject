@@ -25,6 +25,8 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float BaseDamage = 1f; // 기본 피해량
         [Min(0.05f)] public float MinAttackInterval = 3f; // 최소 공격 간격
         [Min(0.05f)] public float MaxAttackInterval = 5f; // 최대 공격 간격
+        public bool UseDamageTypeOverride; // 표시/속성 피해 타입 고정
+        public DamageType DamageTypeOverride = DamageType.Projectile; // 고정 피해 타입
 
         [Header("Monster Feedback")]
         public bool ApplyMonsterFeedback = true; // 몬스터 피격 반응 사용
