@@ -16,7 +16,7 @@ namespace TeamProject01.Gameplay
                 return false; // 목록 없음
             }
 
-            string normalizedWormId = string.IsNullOrWhiteSpace(wormId) ? MetaWormIds.Basic : wormId.Trim(); // 기본 지렁이
+            string normalizedWormId = MetaWormIds.Normalize(wormId); // 기본 지렁이
             for (int i = 0; i < Starters.Length; i++)
             {
                 StarterSegmentEntry entry = Starters[i];
@@ -40,7 +40,7 @@ namespace TeamProject01.Gameplay
         public GameObject StarterPrefab; // 직접 지정 fallback
         [TextArea(1, 3)] public string Memo; // 팀원 메모
 
-        public string NormalizedWormId => string.IsNullOrWhiteSpace(WormId) ? MetaWormIds.Basic : WormId.Trim(); // 비교 ID
+        public string NormalizedWormId => MetaWormIds.Normalize(WormId); // 비교 ID
 
         public bool TryGetPrefab(out GameObject prefab) // 프리팹 결정
         {
