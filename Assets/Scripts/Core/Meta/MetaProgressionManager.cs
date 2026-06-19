@@ -20,9 +20,19 @@ namespace TeamProject01.Gameplay
         [Header("Selection")]
         public string SelectedWormId = MetaWormIds.Basic; // 선택 지렁이
         public string SelectedMapId = MetaMapIds.Map1; // 선택 맵
-        public bool DefenseWormUnlocked; // 방어형 보유
-        public bool ArmedWormUnlocked; // 무장형 보유
-        public bool ChargeWormUnlocked; // 돌격형 보유
+        public bool AttackWormUnlocked; // 공격형 보유
+        public bool MobilityWormUnlocked; // 이속형 보유
+        public bool SupportWormUnlocked; // 지원형 보유
+        public bool MagicWormUnlocked; // 마법형 보유
+        public bool DefenseWormUnlocked; // 이전 지원형
+        public bool ArmedWormUnlocked; // 이전 공격형
+        public bool ChargeWormUnlocked; // 이전 이속형
+
+        [Header("Worm Prices")]
+        [Min(0)] public int AttackWormPrice = 200; // 공격형 가격
+        [Min(0)] public int MobilityWormPrice = 200; // 이속형 가격
+        [Min(0)] public int SupportWormPrice = 150; // 지원형 가격
+        [Min(0)] public int MagicWormPrice = 250; // 마법형 가격
 
         [Header("Upgrade Levels")]
         [Range(0, MaxUpgradeLevel)] public int GoldBonusLevel; // 골드 보너스
@@ -166,9 +176,13 @@ namespace TeamProject01.Gameplay
             Diamond = 0; // 다이아
             SelectedWormId = MetaWormIds.Basic; // 기본 지렁이
             SelectedMapId = MetaMapIds.Map1; // 기본 맵
-            DefenseWormUnlocked = false; // 방어형
-            ArmedWormUnlocked = false; // 무장형
-            ChargeWormUnlocked = false; // 돌격형
+            AttackWormUnlocked = false; // 공격형
+            MobilityWormUnlocked = false; // 이속형
+            SupportWormUnlocked = false; // 지원형
+            MagicWormUnlocked = false; // 마법형
+            DefenseWormUnlocked = false; // 이전 지원형
+            ArmedWormUnlocked = false; // 이전 공격형
+            ChargeWormUnlocked = false; // 이전 이속형
             GoldBonusLevel = 0; // 골드
             DiamondBonusLevel = 0; // 다이아
             TurnBonusLevel = 0; // 회전
@@ -361,12 +375,14 @@ namespace TeamProject01.Gameplay
             {
                 case MetaWormIds.Basic:
                     return true; // 기본 지급
-                case MetaWormIds.Defense:
-                    return DefenseWormUnlocked; // 방어형
-                case MetaWormIds.Armed:
-                    return ArmedWormUnlocked; // 무장형
-                case MetaWormIds.Charge:
-                    return ChargeWormUnlocked; // 돌격형
+                case MetaWormIds.Attack:
+                    return AttackWormUnlocked || ArmedWormUnlocked; // 공격형
+                case MetaWormIds.Mobility:
+                    return MobilityWormUnlocked || ChargeWormUnlocked; // 이속형
+                case MetaWormIds.Support:
+                    return SupportWormUnlocked || DefenseWormUnlocked; // 지원형
+                case MetaWormIds.Magic:
+                    return MagicWormUnlocked; // 마법형
                 default:
                     return false; // 미정
             }
@@ -378,12 +394,14 @@ namespace TeamProject01.Gameplay
             {
                 case MetaWormIds.Basic:
                     return 0; // 기본
-                case MetaWormIds.Defense:
-                    return 150; // 방어형
-                case MetaWormIds.Armed:
-                    return 200; // 무장형
-                case MetaWormIds.Charge:
-                    return -1; // 추가 예정
+                case MetaWormIds.Attack:
+                    return Mathf.Max(0, AttackWormPrice); // 공격형
+                case MetaWormIds.Mobility:
+                    return Mathf.Max(0, MobilityWormPrice); // 이속형
+                case MetaWormIds.Support:
+                    return Mathf.Max(0, SupportWormPrice); // 지원형
+                case MetaWormIds.Magic:
+                    return Mathf.Max(0, MagicWormPrice); // 마법형
                 default:
                     return -1; // 구매 불가
             }
@@ -393,14 +411,20 @@ namespace TeamProject01.Gameplay
         {
             switch (NormalizeWormId(wormId))
             {
-                case MetaWormIds.Defense:
-                    DefenseWormUnlocked = unlocked; // 방어형
+                case MetaWormIds.Attack:
+                    AttackWormUnlocked = unlocked; // 공격형
+                    ArmedWormUnlocked = unlocked; // 이전 값 동기화
                     break;
-                case MetaWormIds.Armed:
-                    ArmedWormUnlocked = unlocked; // 무장형
+                case MetaWormIds.Mobility:
+                    MobilityWormUnlocked = unlocked; // 이속형
+                    ChargeWormUnlocked = unlocked; // 이전 값 동기화
                     break;
-                case MetaWormIds.Charge:
-                    ChargeWormUnlocked = unlocked; // 돌격형
+                case MetaWormIds.Support:
+                    SupportWormUnlocked = unlocked; // 지원형
+                    DefenseWormUnlocked = unlocked; // 이전 값 동기화
+                    break;
+                case MetaWormIds.Magic:
+                    MagicWormUnlocked = unlocked; // 마법형
                     break;
             }
         }
@@ -421,9 +445,13 @@ namespace TeamProject01.Gameplay
                 Diamond = Diamond,
                 SelectedWormId = SelectedWormId,
                 SelectedMapId = SelectedMapId,
-                DefenseWormUnlocked = DefenseWormUnlocked,
-                ArmedWormUnlocked = ArmedWormUnlocked,
-                ChargeWormUnlocked = ChargeWormUnlocked,
+                AttackWormUnlocked = AttackWormUnlocked,
+                MobilityWormUnlocked = MobilityWormUnlocked,
+                SupportWormUnlocked = SupportWormUnlocked,
+                MagicWormUnlocked = MagicWormUnlocked,
+                DefenseWormUnlocked = SupportWormUnlocked || DefenseWormUnlocked,
+                ArmedWormUnlocked = AttackWormUnlocked || ArmedWormUnlocked,
+                ChargeWormUnlocked = MobilityWormUnlocked || ChargeWormUnlocked,
                 GoldBonusLevel = GoldBonusLevel,
                 DiamondBonusLevel = DiamondBonusLevel,
                 TurnBonusLevel = TurnBonusLevel,
@@ -440,9 +468,13 @@ namespace TeamProject01.Gameplay
             Diamond = data.Diamond; // 다이아
             SelectedWormId = data.SelectedWormId; // 지렁이
             SelectedMapId = data.SelectedMapId; // 맵
-            DefenseWormUnlocked = data.DefenseWormUnlocked; // 방어형
-            ArmedWormUnlocked = data.ArmedWormUnlocked; // 무장형
-            ChargeWormUnlocked = data.ChargeWormUnlocked; // 돌격형
+            AttackWormUnlocked = data.AttackWormUnlocked; // 공격형
+            MobilityWormUnlocked = data.MobilityWormUnlocked; // 이속형
+            SupportWormUnlocked = data.SupportWormUnlocked; // 지원형
+            MagicWormUnlocked = data.MagicWormUnlocked; // 마법형
+            DefenseWormUnlocked = data.DefenseWormUnlocked; // 이전 지원형
+            ArmedWormUnlocked = data.ArmedWormUnlocked; // 이전 공격형
+            ChargeWormUnlocked = data.ChargeWormUnlocked; // 이전 이속형
             GoldBonusLevel = data.GoldBonusLevel; // 골드
             DiamondBonusLevel = data.DiamondBonusLevel; // 다이아
             TurnBonusLevel = data.TurnBonusLevel; // 회전
@@ -456,6 +488,7 @@ namespace TeamProject01.Gameplay
         private void NormalizeState() // 전체 값 보정
         {
             Diamond = Mathf.Max(0, Diamond); // 재화 보정
+            MigrateLegacyWormUnlocks(); // 이전 저장값 반영
             SelectedWormId = NormalizeWormId(SelectedWormId); // 지렁이 보정
             SelectedMapId = NormalizeMapId(SelectedMapId); // 맵 보정
             if (!IsWormUnlocked(SelectedWormId))
@@ -507,15 +540,15 @@ namespace TeamProject01.Gameplay
             RunStartBonusData bonus = default; // 값 준비
             switch (NormalizeWormId(wormId))
             {
-                case MetaWormIds.Defense:
+                case MetaWormIds.Support:
                     bonus.NexusMaxHealthPercentBonus = 0.15f; // 체력 +15%
                     bonus.NexusRegenPerMinuteBonus = 5f; // 분당 회복 +5
                     break;
-                case MetaWormIds.Armed:
+                case MetaWormIds.Attack:
                     bonus.BaseAttackFlatBonus = 1; // 공격력 +1
                     bonus.AttackSpeedPercentBonus = 0.05f; // 공속 +5%
                     break;
-                case MetaWormIds.Charge:
+                case MetaWormIds.Mobility:
                     bonus.TurnPercentBonus = 0.10f; // 회전 +10%
                     bonus.CollisionForcePercentBonus = 0.10f; // 충돌힘 +10%
                     break;
@@ -597,7 +630,14 @@ namespace TeamProject01.Gameplay
 
         private static string NormalizeWormId(string wormId) // 지렁이 ID 보정
         {
-            return string.IsNullOrWhiteSpace(wormId) ? MetaWormIds.Basic : wormId; // 기본값
+            return MetaWormIds.Normalize(wormId); // 공용 보정
+        }
+
+        private void MigrateLegacyWormUnlocks() // 이전 해금값 이전
+        {
+            SupportWormUnlocked |= DefenseWormUnlocked; // 방어형 → 지원형
+            AttackWormUnlocked |= ArmedWormUnlocked; // 무장형 → 공격형
+            MobilityWormUnlocked |= ChargeWormUnlocked; // 돌격형 → 이속형
         }
 
         private static string NormalizeMapId(string mapId) // 맵 ID 보정
@@ -649,9 +689,13 @@ namespace TeamProject01.Gameplay
             public int Diamond; // 다이아
             public string SelectedWormId; // 지렁이
             public string SelectedMapId; // 맵
-            public bool DefenseWormUnlocked; // 방어형
-            public bool ArmedWormUnlocked; // 무장형
-            public bool ChargeWormUnlocked; // 돌격형
+            public bool AttackWormUnlocked; // 공격형
+            public bool MobilityWormUnlocked; // 이속형
+            public bool SupportWormUnlocked; // 지원형
+            public bool MagicWormUnlocked; // 마법형
+            public bool DefenseWormUnlocked; // 이전 지원형
+            public bool ArmedWormUnlocked; // 이전 공격형
+            public bool ChargeWormUnlocked; // 이전 이속형
             public int GoldBonusLevel; // 골드
             public int DiamondBonusLevel; // 다이아
             public int TurnBonusLevel; // 회전

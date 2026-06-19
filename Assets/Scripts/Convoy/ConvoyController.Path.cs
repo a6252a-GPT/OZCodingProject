@@ -8,7 +8,7 @@ namespace TeamProject01.Gameplay
         {
             path.Clear(); // 기존 경로 제거
 
-            float starterExtraDistance = EnableStarterSegment ? Mathf.Max(0f, StarterSegmentDistanceBehindHead - SegmentSpacing) : 0f; // 스타터 추가 거리
+            float starterExtraDistance = EnableStarterSegment ? Mathf.Max(0f, GetEffectiveStarterSegmentDistance() - SegmentSpacing) : 0f; // 스타터 추가 거리
             float requiredDistance = Mathf.Max((MaxSegmentCount + 4) * SegmentSpacing + starterExtraDistance, 24f); // 필요 길이
             float sampleStep = Mathf.Max(MinPathSampleDistance * 4f, 0.25f); // 초기 간격
 
@@ -45,9 +45,10 @@ namespace TeamProject01.Gameplay
                 return; // 표시 없음
             }
 
+            Vector3 targetLocalPosition = new Vector3(0f, VisualCenterHeight + knockbackVisualHeight, 0f); // 공중 연출 높이
             HeadVisual.localPosition = Vector3.Lerp(
                 HeadVisual.localPosition,
-                new Vector3(0f, VisualCenterHeight, 0f),
+                targetLocalPosition,
                 ExpLerpFactor(18f, deltaTime)); // 높이 보간
 
             Quaternion targetRotation = Quaternion.Euler(0f, 0f, -currentTurnInput * HeadVisualLean); // 기울기
@@ -78,7 +79,8 @@ namespace TeamProject01.Gameplay
 
                 if (targetForward.sqrMagnitude > 0.0001f)
                 {
-                    Quaternion targetRotation = Quaternion.LookRotation(targetForward, Vector3.up); // 목표 회전
+                    Vector3 horizontalForward = FlattenSegmentForward(targetForward, segment.forward); // 수평 회전 유지
+                    Quaternion targetRotation = Quaternion.LookRotation(horizontalForward, Vector3.up); // 목표 회전
                     segment.rotation = Quaternion.Slerp(segment.rotation, targetRotation, turnFactor); // 회전 추적
                 }
             }
@@ -102,7 +104,8 @@ namespace TeamProject01.Gameplay
 
             GetPoseBehindHead(GetSegmentDistanceBehindHead(segmentIndex), out Vector3 targetPosition, out Vector3 targetForward);
             targetPosition = SnapSegmentToGround(segmentIndex, targetPosition); // 몸통 바닥 유지
-            segment.SetPositionAndRotation(targetPosition, Quaternion.LookRotation(targetForward, Vector3.up)); // pose 적용
+            Vector3 horizontalForward = FlattenSegmentForward(targetForward, transform.forward); // 수평 방향
+            segment.SetPositionAndRotation(targetPosition, Quaternion.LookRotation(horizontalForward, Vector3.up)); // pose 적용
         }
 
         private float GetSegmentDistanceBehindHead(int segmentIndex) // 머리에서 세그먼트까지의 경로 거리
@@ -110,7 +113,7 @@ namespace TeamProject01.Gameplay
             int safeIndex = Mathf.Max(0, segmentIndex); // 음수 방지
             if (HasActiveStarterSegment)
             {
-                float starterDistance = Mathf.Max(0.1f, StarterSegmentDistanceBehindHead); // 스타터 전용 간격
+                float starterDistance = GetEffectiveStarterSegmentDistance(); // 스타터 전용 간격
                 if (safeIndex == 0)
                 {
                     return starterDistance; // 스타터는 머리에서 조금 더 떨어진다.
@@ -153,6 +156,23 @@ namespace TeamProject01.Gameplay
             float remaining = distanceBehindHead - accumulated; // 부족 거리
             forward = transform.forward; // fallback 방향
             position = previous - forward * remaining; // 외삽 위치
+        }
+
+        private static Vector3 FlattenSegmentForward(Vector3 forward, Vector3 fallback) // 세그먼트 회전 수평화
+        {
+            forward.y = 0.0f; // 공중 경사 제거
+            if (forward.sqrMagnitude > 0.0001f)
+            {
+                return forward.normalized; // 수평 방향 사용
+            }
+
+            fallback.y = 0.0f; // fallback도 수평화
+            if (fallback.sqrMagnitude > 0.0001f)
+            {
+                return fallback.normalized; // 이전 방향 유지
+            }
+
+            return Vector3.forward; // 최종 fallback
         }
 
         private void PrunePath() // 경로 제한

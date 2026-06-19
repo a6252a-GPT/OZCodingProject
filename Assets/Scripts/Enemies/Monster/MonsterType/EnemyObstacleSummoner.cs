@@ -9,10 +9,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private EnemyObstacle obstaclePrefab; //실제 장애물 Prefab 생성
         [SerializeField] private GameObject telegraphPrefab; //장애물 생선전 범위 표시 Prefab
 
-        private Transform summonTarget; //소환 타겟 대상 저장한다.
-
-        ////// 전찬우삭제 - 기존 이름 기반 PlayerConvoy 검색 필드는 MonsterInteractionApi 타겟 조회로 대체한다.
-        // [SerializeField] private string summonTargetName = "PlayerConvoy"; //PlayerConvoyRoot를 타겟으로 지정한다.
+        private Transform summonTarget; //소환 타겟 대상 저장한다.       
 
         [Min(0.1f)]
         [SerializeField] private float detectionRange = 10.0f; //대상이 이 범위 안에 들어왔을 때만 장애물을 소환한다.
@@ -71,7 +68,7 @@ namespace TeamProject01.Gameplay
 
         private void Awake()
         {
-            TryFindSummonTarget(); //장애물 소환 기준 대상이 비어있다면 이름으로 찾아서 저장한다.
+            TryFindSummonTarget(); //MonsterInteractionAPI에서 컨보이 타켓을 찾는다.
         }
 
         private void OnEnable()
@@ -101,7 +98,7 @@ namespace TeamProject01.Gameplay
 
             if (summonTarget == null) //장애물 소환 기준 대상이 없다면
             {
-                TryFindSummonTarget(); //이름으로 소환 기준 대상을 다시 찾는다.
+                TryFindSummonTarget(); //MonsterInteractionAPI에서 대상을 다시 찾는다.
             }
 
             if (summonTarget == null) //소환 기준 대상이 없다면
@@ -200,30 +197,14 @@ namespace TeamProject01.Gameplay
 
         private void TryFindSummonTarget()
         {
-            ////// 전찬우삭제 - 기존 GameObject.Find 기반 소환 기준 검색 코드는 아래에 보존한다.
-            // private void TryFindSummonTarget()
-            //         {
-            //             if (string.IsNullOrEmpty(summonTargetName)) //찾을 대상 이름이 비어 있다면
-            //             {
-            //                 return; //대상을 찾지 않고 종료한다.
-            //             }
-            // 
-            //             GameObject targetObject = GameObject.Find(summonTargetName); //씬에서 이름이 같은 GameObject를 찾는다.
-            // 
-            //             if (targetObject != null) //대상 GameObject를 찾았다면
-            //             {
-            //                 summonTarget = targetObject.transform; //찾은 GameObject의 Transform을 소환 기준 대상으로 저장한다.
-            //             }
-            //         }
-
-            ////// 전찬우추가 - 장애물 소환 기준 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가 - 등록된 컨보이 타겟이 있는지 확인한다.
+            ////// 전찬우추가-0619 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가-0619 - 등록된 컨보이 타겟이 있는지 확인한다.
             {
-                summonTarget = apiTarget; // 전찬우추가 - 조회된 컨보이 Transform을 장애물 소환 기준으로 저장한다.
-                return; // 전찬우추가 - 소환 기준을 찾았으므로 메서드를 종료한다.
+                summonTarget = apiTarget; // 전찬우추가-0619 - 조회된 컨보이 Transform을 장애물 소환 기준으로 저장한다.
+                return; // 전찬우추가-0619 - 소환 기준을 찾았으므로 메서드를 종료한다.
             }
 
-            summonTarget = null; // 전찬우추가 - 등록된 컨보이가 없으면 소환 기준을 비워둔다.
+            summonTarget = null; // 전찬우추가-0619 - 등록된 컨보이가 없으면 소환 기준을 비워둔다.
         }
 
         private bool IsTargetInDetectionRange()

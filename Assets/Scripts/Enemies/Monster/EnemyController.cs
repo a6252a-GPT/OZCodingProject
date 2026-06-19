@@ -81,7 +81,10 @@ namespace TeamProject01.Gameplay
                 return; // 더 이상 처리하지 않는다.
             }
 
+            float hpBeforeDamage = health.CurrentHp; //전찬우추가-0619 - 표시용 피격 전 체력
             health.TakeDamage(damage.Amount); // 실제 HP 감소는 EnemyHealth가 담당한다.
+            float actualDamage = Mathf.Max(0f, hpBeforeDamage - health.CurrentHp); //전찬우추가-0619 - 실제 감소 체력
+            DamageFloatingSpawner.SpawnEnemyDamage(damage, actualDamage, transform.position); //전찬우추가-0619 - 데미지 숫자 표시
 
             if (health.IsDead) // HP가 0 이하가 되었다면
             {
@@ -115,52 +118,139 @@ namespace TeamProject01.Gameplay
             Kill(); // 공통 제거
         }
 
+        ////// 전찬우수정-0619 - 태그 검색 대신 ActiveMonsters 기반으로 가까운 몬스터를 찾는다.
         public static bool TryFindNearest(Vector3 origin, float range, out EnemyController target) // 가까운 적 검색
         {
-            CleanupActiveList(); // 목록에서 null이나 죽은 몬스터를 정리한다.
+            CleanupActiveList(); //전찬우수정-0619 - 목록 정리
 
             target = null; // 찾지 못했을 때의 기본값
             float bestDistance = range * range; // 사거리 제곱
 
-            string[] tags = EnemyTags.TargetTags;  // 탐색 태그
-            bool foundRegisteredTag = false;  // 태그 등록 여부
+            ////// 전찬우삭제-0619 - 태그 기반 전체 검색은 ActiveMonsters 기반 검색으로 대체
+            // string[] tags = EnemyTags.TargetTags;  // 탐색 태그
+            // bool foundRegisteredTag = false;  // 태그 등록 여부
+            //
+            // for (int tagIndex = 0; tagIndex < tags.Length; tagIndex++) // 태그 목록을 순회한다.
+            // {
+            //     GameObject[] candidates = FindObjectsByTag(tags[tagIndex], out bool tagRegistered); /// 태그 대상
+            //     foundRegisteredTag |= tagRegistered; // 등록 확인
+            //
+            //     for (int i = 0; i < candidates.Length; i++) // 찾은 후보들을 순회한다.
+            //     {
+            //         EnemyController enemy = candidates[i].GetComponentInParent<EnemyController>(); // 몬스터 확인
+            //         TryPickNearest(enemy, origin, ref bestDistance, ref target); // 최단 갱신
+            //     }
+            // }
+            //
+            // if (!foundRegisteredTag) // 태그가 아직 Unity에 등록되지 않은 경우
+            // {
+            //     for (int i = 0; i < ActiveMonsters.Count; i++) // 등록 목록을 직접 순회한다.
+            //     {
+            //         TryPickNearest(ActiveMonsters[i], origin, ref bestDistance, ref target); // 가장 가까운 대상인지 확인한다.
+            //     }
+            // }
 
-            for (int tagIndex = 0; tagIndex < tags.Length; tagIndex++) // 태그 목록을 순회한다.
+            for (int i = 0; i < ActiveMonsters.Count; i++) //전찬우수정-0619 - 활성 몬스터 목록 순회
             {
-                GameObject[] candidates = FindObjectsByTag(tags[tagIndex], out bool tagRegistered); /// 태그 대상
-                foundRegisteredTag |= tagRegistered; // 등록 확인
-
-                for (int i = 0; i < candidates.Length; i++) // 찾은 후보들을 순회한다.
-                {
-                    EnemyController enemy = candidates[i].GetComponentInParent<EnemyController>(); // 몬스터 확인
-                    TryPickNearest(enemy, origin, ref bestDistance, ref target); // 최단 갱신
-                }
-            }
-
-            if (!foundRegisteredTag) // 태그가 아직 Unity에 등록되지 않은 경우
-            {
-                for (int i = 0; i < ActiveMonsters.Count; i++) // 등록 목록을 직접 순회한다.
-                {
-                    TryPickNearest(ActiveMonsters[i], origin, ref bestDistance, ref target); // 가장 가까운 대상인지 확인한다.
-                }
+                TryPickNearest(ActiveMonsters[i], origin, ref bestDistance, ref target); // 최단 갱신
             }
 
             return target != null; // 대상을 찾았다면 true를 반환한다.
         }
 
-        private static GameObject[] FindObjectsByTag(string tagName, out bool tagRegistered) // 태그 검색
+        ////// 전찬우수정-0619 - 조건 검색도 ActiveMonsters 기반으로 통일
+        public static bool TryFindNearest(Vector3 origin, float range, System.Func<EnemyController, bool> filter, out EnemyController target) // 조건 포함 가까운 적 검색
         {
-            try
+            CleanupActiveList(); //전찬우수정-0619 - 목록 정리
+
+            target = null; // 찾지 못했을 때의 기본값
+            float bestDistance = range * range; // 사거리 제곱
+
+            ////// 전찬우삭제-0619 - 태그 기반 조건 검색은 ActiveMonsters 기반 검색으로 대체
+            // string[] tags = EnemyTags.TargetTags; // 탐색 태그
+            // bool foundRegisteredTag = false; // 태그 등록 여부
+            //
+            // for (int tagIndex = 0; tagIndex < tags.Length; tagIndex++) // 태그 목록을 순회한다.
+            // {
+            //     GameObject[] candidates = FindObjectsByTag(tags[tagIndex], out bool tagRegistered); // 태그 대상
+            //     foundRegisteredTag |= tagRegistered; // 등록 확인
+            //
+            //     for (int i = 0; i < candidates.Length; i++) // 찾은 후보들을 순회한다.
+            //     {
+            //         EnemyController enemy = candidates[i].GetComponentInParent<EnemyController>(); // 몬스터 확인
+            //         TryPickNearest(enemy, origin, filter, ref bestDistance, ref target); // 조건을 만족하는 최단 대상 갱신
+            //     }
+            // }
+            //
+            // if (!foundRegisteredTag) // 태그가 아직 Unity에 등록되지 않은 경우
+            // {
+            //     for (int i = 0; i < ActiveMonsters.Count; i++) // 등록 목록을 직접 순회한다.
+            //     {
+            //         TryPickNearest(ActiveMonsters[i], origin, filter, ref bestDistance, ref target); // 조건을 만족하는 가장 가까운 대상인지 확인한다.
+            //     }
+            // }
+
+            for (int i = 0; i < ActiveMonsters.Count; i++) //전찬우수정-0619 - 활성 몬스터 목록 순회
             {
-                tagRegistered = true; // 등록됨
-                return GameObject.FindGameObjectsWithTag(tagName); // 해당 태그를 가진 GameObject들을 찾는다.
+                TryPickNearest(ActiveMonsters[i], origin, filter, ref bestDistance, ref target); // 조건 포함 최단 갱신
             }
-            catch (UnityException)
+
+            return target != null; // 대상을 찾았다면 true를 반환한다.
+        }
+
+        ////// 전찬우추가-0619 - 범위 안 활성 몬스터를 재사용 가능한 목록으로 수집
+        public static void CollectActiveInRange(Vector3 origin, float range, List<EnemyController> results, System.Func<EnemyController, bool> filter = null) // 범위 내 몬스터 수집
+        {
+            if (results == null) // 결과 리스트가 없다면
             {
-                tagRegistered = false; // 미등록
-                return System.Array.Empty<GameObject>();  // 태그 미등록
+                return; // 수집 불가
+            }
+
+            CleanupActiveList(); //전찬우추가-0619 - 목록 정리
+            results.Clear(); //전찬우추가-0619 - 이전 결과 제거
+
+            float rangeSqr = range * range; //전찬우추가-0619 - 사거리 제곱
+
+            for (int i = 0; i < ActiveMonsters.Count; i++) //전찬우추가-0619 - 활성 몬스터 목록 순회
+            {
+                EnemyController enemy = ActiveMonsters[i]; //전찬우추가-0619 - 후보 몬스터
+
+                if (enemy == null || enemy.dead) // 대상이 없거나 죽었다면
+                {
+                    continue; // 제외
+                }
+
+                if (filter != null && !filter(enemy)) // 추가 조건이 있고 통과하지 못했다면
+                {
+                    continue; // 제외
+                }
+
+                Vector3 offset = enemy.transform.position - origin; // 대상 거리
+                offset.y = 0f; // 평면 거리
+
+                if (offset.sqrMagnitude > rangeSqr) // 범위 밖이면
+                {
+                    continue; // 제외
+                }
+
+                results.Add(enemy); //전찬우추가-0619 - 결과 추가
             }
         }
+
+        ////// 전찬우삭제-0619 - 태그 검색 함수는 ActiveMonsters 기반 검색으로 대체되어 비활성화
+        // private static GameObject[] FindObjectsByTag(string tagName, out bool tagRegistered) // 태그 검색
+        // {
+        //     try
+        //     {
+        //         tagRegistered = true; // 등록됨
+        //         return GameObject.FindGameObjectsWithTag(tagName); // 해당 태그를 가진 GameObject들을 찾는다.
+        //     }
+        //     catch (UnityException)
+        //     {
+        //         tagRegistered = false; // 미등록
+        //         return System.Array.Empty<GameObject>();  // 태그 미등록
+        //     }
+        // }
 
         private static void TryPickNearest(EnemyController enemy, Vector3 origin, ref float bestDistance, ref EnemyController target) // 최단 대상
         {
@@ -181,6 +271,33 @@ namespace TeamProject01.Gameplay
 
             bestDistance = distance; // 최단 갱신
             target = enemy;  // 대상 갱신
+        }
+
+        ////// 전찬우추가-0619 - 기본 최단 검색에 세그먼트 공격 범위 같은 추가 필터를 적용
+        private static void TryPickNearest(EnemyController enemy, Vector3 origin, System.Func<EnemyController, bool> filter, ref float bestDistance, ref EnemyController target) // 조건 포함 최단 대상
+        {
+            if (enemy == null || enemy.dead) // 대상이 없거나 이미 죽었다면
+            {
+                return; // 대상에서 제외한다.
+            }
+
+            if (filter != null && !filter(enemy)) // 추가 조건이 있고 통과하지 못했다면
+            {
+                return; // 대상에서 제외한다.
+            }
+
+            Vector3 offset = enemy.transform.position - origin; // 대상 거리
+            offset.y = 0f; // 평면 거리
+
+            float distance = offset.sqrMagnitude; // 제곱 거리
+
+            if (distance > bestDistance) // 현재 최고 대상보다 멀다면
+            {
+                return; // 갱신하지 않는다.
+            }
+
+            bestDistance = distance; // 최단 갱신
+            target = enemy; // 대상 갱신
         }
 
         private static void CleanupActiveList() // 목록 정리

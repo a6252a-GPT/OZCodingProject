@@ -3,9 +3,35 @@ namespace TeamProject01.Gameplay
     public static class MetaWormIds // 타이틀 지렁이 ID
     {
         public const string Basic = "worm_basic"; // 기본형
-        public const string Defense = "worm_defense"; // 방어형
-        public const string Armed = "worm_armed"; // 무장형
-        public const string Charge = "worm_charge"; // 돌격형
+        public const string Attack = "worm_attack"; // 공격형
+        public const string Mobility = "worm_mobility"; // 이속형
+        public const string Support = "worm_support"; // 지원형
+        public const string Magic = "worm_magic"; // 마법형
+
+        public const string Defense = "worm_defense"; // 이전 지원형
+        public const string Armed = "worm_armed"; // 이전 공격형
+        public const string Charge = "worm_charge"; // 이전 이속형
+
+        public static string Normalize(string wormId) // 저장값 보정
+        {
+            if (string.IsNullOrWhiteSpace(wormId))
+            {
+                return Basic; // 기본값
+            }
+
+            string normalized = wormId.Trim(); // 공백 제거
+            switch (normalized)
+            {
+                case Defense:
+                    return Support; // 구 방어형
+                case Armed:
+                    return Attack; // 구 무장형
+                case Charge:
+                    return Mobility; // 구 돌격형
+                default:
+                    return normalized; // 현행 ID
+            }
+        }
     }
 
     public static class MetaMapIds // 타이틀 맵 ID

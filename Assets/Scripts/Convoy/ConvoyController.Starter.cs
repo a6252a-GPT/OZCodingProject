@@ -5,11 +5,15 @@ namespace TeamProject01.Gameplay
 {
     public sealed partial class ConvoyController
     {
+        private const string StarterSegmentResourceRoot = "StarterSegments/"; // 스타터 세그먼트 경로
+        private const string StarterBodyResourceRoot = "StarterBodies/"; // 스타터 바디 경로
+
         [Header("Starter Segment")]
         public bool EnableStarterSegment; // 선택 지렁이 기본 무기 세그먼트
         public StarterCatalogAsset StarterCatalog; // 지렁이별 시작 무기 데이터에셋
         public GameObject StarterSegmentPrefab; // 공통 fallback 시작 세그먼트
         [Min(0.1f)] public float StarterSegmentDistanceBehindHead = 1.7f; // 머리와 스타터 사이 거리
+        [Min(0.1f)] public float StarterSegmentVisualClearanceDistance = 2.7f; // 큰 바디 여유 거리
         public WormStarterSegmentEntry[] StarterSegmentsByWorm; // 지렁이별 시작 세그먼트
 
         private Transform starterSegment; // 현재 시작 세그먼트
@@ -45,6 +49,7 @@ namespace TeamProject01.Gameplay
             }
 
             string normalizedWormId = NormalizeStarterWormId(wormId); // 기본 지렁이 보정
+            ApplySelectedWormVisual(normalizedWormId); // 캐릭터 외형 동기화
             GameObject prefab = ResolveStarterSegmentPrefab(normalizedWormId); // 지렁이별 프리팹
             if (prefab == null)
             {
@@ -72,6 +77,7 @@ namespace TeamProject01.Gameplay
             }
 
             segment.name = "ConvoyStarterSegment"; // 일반 몸통과 구분
+            // ApplyStarterBodyVisual(segment, normalizedWormId); // 스타터 전용 프리팹에 조립
             segments.Insert(0, segment); // 항상 맨 앞
             segmentGroundChecks.Insert(0, GetSegmentGroundCheck(segment));
             segmentRuntimes.Insert(0, GetSegmentRuntime(segment, 0, true));
@@ -107,14 +113,127 @@ namespace TeamProject01.Gameplay
                         continue;
                     }
 
-                    if (string.Equals(entry.WormId.Trim(), wormId, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(NormalizeStarterWormId(entry.WormId), wormId, StringComparison.OrdinalIgnoreCase))
                     {
                         return entry.Prefab; // 지렁이 전용
                     }
                 }
             }
 
+            GameObject resourcePrefab = ResolveStarterSegmentResource(wormId); // 기본 내장 매핑
+            if (resourcePrefab != null)
+            {
+                return resourcePrefab; // Resources fallback
+            }
+
             return StarterSegmentPrefab; // 아직 전용 무기가 없으면 기본 대포
+        }
+
+        private GameObject ResolveStarterSegmentResource(string wormId) // 내장 스타터 프리팹
+        {
+            string resourceName;
+            switch (NormalizeStarterWormId(wormId))
+            {
+                case MetaWormIds.Attack:
+                    resourceName = "SG00_StarterAttack"; // 공격형 스타터
+                    break;
+                case MetaWormIds.Mobility:
+                    resourceName = "SG00_StarterMobility"; // 이속형 스타터
+                    break;
+                case MetaWormIds.Support:
+                    resourceName = "SG00_StarterSupport"; // 지원형 스타터
+                    break;
+                case MetaWormIds.Magic:
+                    resourceName = "SG00_StarterMagic"; // 마법형 스타터
+                    break;
+                default:
+                    resourceName = "SG00_StarterCannon"; // 대포
+                    break;
+            }
+
+            return Resources.Load<GameObject>(StarterSegmentResourceRoot + resourceName); // Resources 로드
+        }
+
+        private void ApplyStarterBodyVisual(Transform segment, string wormId) // 전용 바디 교체
+        {
+            GameObject bodyPrefab = ResolveStarterBodyResource(wormId); // 지렁이별 바디
+            if (segment == null || bodyPrefab == null)
+            {
+                return; // 교체 불가
+            }
+
+            Transform previousBody = FindStarterBodyRoot(segment); // 기존 몸통
+            Vector3 localPosition = previousBody != null ? previousBody.localPosition : Vector3.zero; // 위치 유지
+            Quaternion localRotation = previousBody != null ? previousBody.localRotation : Quaternion.identity; // 회전 유지
+            Vector3 localScale = previousBody != null ? previousBody.localScale : Vector3.one; // 크기 유지
+            int siblingIndex = previousBody != null ? previousBody.GetSiblingIndex() : 0; // 순서 유지
+            string bodyName = previousBody != null ? previousBody.name : "Body"; // 기존 이름 유지
+
+            if (previousBody != null)
+            {
+                previousBody.gameObject.SetActive(false); // 즉시 숨김
+                DestroyUnityObject(previousBody.gameObject); // 기존 제거
+            }
+
+            GameObject body = Instantiate(bodyPrefab, segment, false); // 새 바디
+            body.name = bodyName; // 기존 참조명 유지
+            body.transform.localPosition = localPosition; // 위치
+            body.transform.localRotation = localRotation; // 회전
+            body.transform.localScale = localScale; // 크기
+            body.transform.SetSiblingIndex(Mathf.Clamp(siblingIndex, 0, segment.childCount - 1)); // 순서
+        }
+
+        private GameObject ResolveStarterBodyResource(string wormId) // 내장 스타터 바디
+        {
+            string resourceName;
+            switch (NormalizeStarterWormId(wormId))
+            {
+                case MetaWormIds.Attack:
+                    resourceName = "SegmentBody_AttackWormStarter"; // 공격형
+                    break;
+                case MetaWormIds.Mobility:
+                    resourceName = "SegmentBody_MobilityWormStarter"; // 이속형
+                    break;
+                case MetaWormIds.Support:
+                    resourceName = "SegmentBody_SupportWormStarter"; // 지원형
+                    break;
+                case MetaWormIds.Magic:
+                    resourceName = "SegmentBody_MagicWormStarter"; // 마법형
+                    break;
+                default:
+                    resourceName = "SegmentBody_StarterCannon"; // 기본형
+                    break;
+            }
+
+            return Resources.Load<GameObject>(StarterBodyResourceRoot + resourceName); // Resources 로드
+        }
+
+        private static Transform FindStarterBodyRoot(Transform segment) // 바디 자식 찾기
+        {
+            if (segment == null)
+            {
+                return null; // 대상 없음
+            }
+
+            for (int i = 0; i < segment.childCount; i++)
+            {
+                Transform child = segment.GetChild(i);
+                if (child != null && string.Equals(child.name, "Body", StringComparison.OrdinalIgnoreCase))
+                {
+                    return child; // 표준 이름
+                }
+            }
+
+            for (int i = 0; i < segment.childCount; i++)
+            {
+                Transform child = segment.GetChild(i);
+                if (child != null && child.name.StartsWith("SegmentBody_", StringComparison.OrdinalIgnoreCase))
+                {
+                    return child; // 프리팹 이름
+                }
+            }
+
+            return null; // 바디 없음
         }
 
         private void RemoveStarterSegmentIfPresent() // 기존 스타터 제거
@@ -157,9 +276,14 @@ namespace TeamProject01.Gameplay
             return HasActiveStarterSegment ? 1 : 0;
         }
 
+        private float GetEffectiveStarterSegmentDistance() // 실제 스타터 간격
+        {
+            return Mathf.Max(0.1f, StarterSegmentDistanceBehindHead, StarterSegmentVisualClearanceDistance); // 겹침 방지
+        }
+
         private static string NormalizeStarterWormId(string wormId) // 지렁이 ID 보정
         {
-            return string.IsNullOrWhiteSpace(wormId) ? MetaWormIds.Basic : wormId.Trim();
+            return MetaWormIds.Normalize(wormId); // 공용 보정
         }
     }
 }
