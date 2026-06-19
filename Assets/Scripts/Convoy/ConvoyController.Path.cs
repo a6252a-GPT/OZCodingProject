@@ -8,7 +8,7 @@ namespace TeamProject01.Gameplay
         {
             path.Clear(); // 기존 경로 제거
 
-            float starterExtraDistance = EnableStarterSegment ? Mathf.Max(0f, StarterSegmentDistanceBehindHead - SegmentSpacing) : 0f; // 스타터 추가 거리
+            float starterExtraDistance = EnableStarterSegment ? Mathf.Max(0f, GetEffectiveStarterSegmentDistance() - SegmentSpacing) : 0f; // 스타터 추가 거리
             float requiredDistance = Mathf.Max((MaxSegmentCount + 4) * SegmentSpacing + starterExtraDistance, 24f); // 필요 길이
             float sampleStep = Mathf.Max(MinPathSampleDistance * 4f, 0.25f); // 초기 간격
 
@@ -110,7 +110,7 @@ namespace TeamProject01.Gameplay
             int safeIndex = Mathf.Max(0, segmentIndex); // 음수 방지
             if (HasActiveStarterSegment)
             {
-                float starterDistance = Mathf.Max(0.1f, StarterSegmentDistanceBehindHead); // 스타터 전용 간격
+                float starterDistance = GetEffectiveStarterSegmentDistance(); // 스타터 전용 간격
                 if (safeIndex == 0)
                 {
                     return starterDistance; // 스타터는 머리에서 조금 더 떨어진다.

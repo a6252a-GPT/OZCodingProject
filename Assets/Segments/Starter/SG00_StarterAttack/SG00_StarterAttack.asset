@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0869a2011a87a2b458bdf7e77b3c8a86, type: 3}
+  m_Name: SG00_StarterAttack
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
+  SegmentId: SG00_StarterAttack
+  DisplayName: Attack Starter Missile
+  Description: Attack worm starter assembled from SG00 template.
+  StarterOnly: 1
+  SharedUpgradeSegmentId: SG02_Missile
+  UseLevels: 0
+  MaxLevel: 1
+  CanAddByLevelChoice: 0
+  CanUpgradeByLevelChoice: 0
+  Levels:
+  - Level: 1
+    SegmentPrefab: {fileID: 3915507005513347476, guid: 744075fb0c74520489ffe8f0864c3981, type: 3}
+    BodyPrefab: {fileID: 1636974616139781959, guid: b7df2a04c4376914fa377ace35a5ea54, type: 3}
+    HeadPrefab: {fileID: 8506179201687367566, guid: 551f28be486c9924cbee06ba843bf739, type: 3}
+    AttackProfile: {fileID: 11400000, guid: 823accc85c304d94a989c4bfbd13da97, type: 2}
+    Memo: SG02_Missile shared upgrade

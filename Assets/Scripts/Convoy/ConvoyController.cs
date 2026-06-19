@@ -141,6 +141,7 @@ namespace TeamProject01.Gameplay
             startPosition = transform.position; // 리셋 위치
             startRotation = transform.rotation; // 리셋 회전
             EnsureHeadVisual(); // 머리 보강
+            ApplySelectedWormVisualFromCurrentLoadout(); // 선택 지렁이 외형
             EnsureHeadMonsterBlocker(); // 머리 차단 보강
             ConfigureGroundChecks(); // 바닥 체크 연결
             EnsureHeadPhysicsCollider(); // 머리 충돌 보강
@@ -171,7 +172,7 @@ namespace TeamProject01.Gameplay
             transform.position = SnapHeadToGround(transform.position); // 현재 바닥 보정
             currentForwardSpeed = BaseSpeed; // 초기 속도
             ResetPath(); // 경로 초기화
-            EnsureStarterSegmentFromCurrentLoadout(); // 선택 지렁이 기본 무기 세그먼트
+            EnsureStarterSegmentFromCurrentLoadout(); // 타이틀 선택 스타터 생성
 
             if (EnableStartingSegments)
             {

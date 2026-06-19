@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0869a2011a87a2b458bdf7e77b3c8a86, type: 3}
+  m_Name: SG00_StarterSupport
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
+  SegmentId: SG00_StarterSupport
+  DisplayName: Support Starter Fireball
+  Description: Support worm starter assembled from SG00 template.
+  StarterOnly: 1
+  SharedUpgradeSegmentId: SG21_FireballTower
+  UseLevels: 0
+  MaxLevel: 1
+  CanAddByLevelChoice: 0
+  CanUpgradeByLevelChoice: 0
+  Levels:
+  - Level: 1
+    SegmentPrefab: {fileID: 2325888777363052706, guid: c7955523b3859e44e8d8d711647c3ed6, type: 3}
+    BodyPrefab: {fileID: 6088409849997654673, guid: f84050e751effeb42a0775b82bcf5f0e, type: 3}
+    HeadPrefab: {fileID: 497066794343819471, guid: 73cf682b141ad244d8a3c47be42b3c10, type: 3}
+    AttackProfile: {fileID: 11400000, guid: ec406ca2be85eaa48be2a109a354d541, type: 2}
+    Memo: SG21_FireballTower shared upgrade

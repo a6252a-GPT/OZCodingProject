@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0869a2011a87a2b458bdf7e77b3c8a86, type: 3}
+  m_Name: SG00_StarterMobility
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
+  SegmentId: SG00_StarterMobility
+  DisplayName: Mobility Starter Saw
+  Description: Mobility worm starter assembled from SG00 template.
+  StarterOnly: 1
+  SharedUpgradeSegmentId: SG04_SawLauncher
+  UseLevels: 0
+  MaxLevel: 1
+  CanAddByLevelChoice: 0
+  CanUpgradeByLevelChoice: 0
+  Levels:
+  - Level: 1
+    SegmentPrefab: {fileID: 1765716544202809382, guid: ca3e46586e011184eb434ae01b1b9444, type: 3}
+    BodyPrefab: {fileID: 6917211151650853170, guid: 9d81eb8c342b72841bcc3bc1456f6ddb, type: 3}
+    HeadPrefab: {fileID: 4881393197802572646, guid: 509f41e6d6e1ee24c83b82f40298a5e3, type: 3}
+    AttackProfile: {fileID: 11400000, guid: 971ac0da21c03ad4aa82b4cf6b4fbc1a, type: 2}
+    Memo: SG04_SawLauncher shared upgrade

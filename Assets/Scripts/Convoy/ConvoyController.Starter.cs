@@ -13,6 +13,7 @@ namespace TeamProject01.Gameplay
         public StarterCatalogAsset StarterCatalog; // 지렁이별 시작 무기 데이터에셋
         public GameObject StarterSegmentPrefab; // 공통 fallback 시작 세그먼트
         [Min(0.1f)] public float StarterSegmentDistanceBehindHead = 1.7f; // 머리와 스타터 사이 거리
+        [Min(0.1f)] public float StarterSegmentVisualClearanceDistance = 2.7f; // 큰 바디 여유 거리
         public WormStarterSegmentEntry[] StarterSegmentsByWorm; // 지렁이별 시작 세그먼트
 
         private Transform starterSegment; // 현재 시작 세그먼트
@@ -48,6 +49,7 @@ namespace TeamProject01.Gameplay
             }
 
             string normalizedWormId = NormalizeStarterWormId(wormId); // 기본 지렁이 보정
+            ApplySelectedWormVisual(normalizedWormId); // 캐릭터 외형 동기화
             GameObject prefab = ResolveStarterSegmentPrefab(normalizedWormId); // 지렁이별 프리팹
             if (prefab == null)
             {
@@ -75,7 +77,7 @@ namespace TeamProject01.Gameplay
             }
 
             segment.name = "ConvoyStarterSegment"; // 일반 몸통과 구분
-            ApplyStarterBodyVisual(segment, normalizedWormId); // 전용 바디 표시
+            // ApplyStarterBodyVisual(segment, normalizedWormId); //전찬우수정 - 스타터 전용 프리팹에 조립
             segments.Insert(0, segment); // 항상 맨 앞
             segmentGroundChecks.Insert(0, GetSegmentGroundCheck(segment));
             segmentRuntimes.Insert(0, GetSegmentRuntime(segment, 0, true));
@@ -133,16 +135,16 @@ namespace TeamProject01.Gameplay
             switch (NormalizeStarterWormId(wormId))
             {
                 case MetaWormIds.Attack:
-                    resourceName = "SG02_Missile_Lv1"; // 미사일
+                    resourceName = "SG00_StarterAttack"; //전찬우수정 - 공격형 스타터
                     break;
                 case MetaWormIds.Mobility:
-                    resourceName = "SG04_SawLauncher_Lv1"; // 톱날
+                    resourceName = "SG00_StarterMobility"; //전찬우수정 - 이속형 스타터
                     break;
                 case MetaWormIds.Support:
-                    resourceName = "SG21_FireballTower_Lv1"; // 화염구
+                    resourceName = "SG00_StarterSupport"; //전찬우수정 - 지원형 스타터
                     break;
                 case MetaWormIds.Magic:
-                    resourceName = "SG20_LightningObelisk_Lv1"; // 전기
+                    resourceName = "SG00_StarterMagic"; //전찬우수정 - 마법형 스타터
                     break;
                 default:
                     resourceName = "SG00_StarterCannon"; // 대포
@@ -272,6 +274,11 @@ namespace TeamProject01.Gameplay
         private int GetFirstDetachableSegmentIndex() // 꼬리 절단 가능 시작점
         {
             return HasActiveStarterSegment ? 1 : 0;
+        }
+
+        private float GetEffectiveStarterSegmentDistance() // 실제 스타터 간격
+        {
+            return Mathf.Max(0.1f, StarterSegmentDistanceBehindHead, StarterSegmentVisualClearanceDistance); // 겹침 방지
         }
 
         private static string NormalizeStarterWormId(string wormId) // 지렁이 ID 보정
