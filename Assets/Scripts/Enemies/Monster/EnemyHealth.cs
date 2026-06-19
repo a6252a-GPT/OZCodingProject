@@ -44,5 +44,33 @@ namespace TeamProject01.Gameplay
                 IsDead = true; // 죽은 상태로 표시해서 이후 중복 피해나 중복 사망 처리를 막는다.
             }
         }
+
+        public void IncreaseMaxHpByPercentKeepingRatio(float increasePercent) // 현재 체력 비율을 유지하면서 최대 체력을 증가시키는 함수
+        {
+            if (IsDead) // 이미 죽은 몬스터라면
+            {
+                return; // 최대 체력을 증가시키지 않고 종료한다.
+            }
+
+            if (increasePercent <= 0f) // 증가율이 0 이하라면
+            {
+                return; // 최대 체력을 증가시키지 않고 종료한다.
+            }
+
+            if (maxHp <= 0f) // 최대 체력이 비정상 값이라면
+            {
+                return; // 계산하지 않고 종료한다.
+            }
+
+            float hpRatio = CurrentHp / maxHp; // 현재 체력이 최대 체력에서 차지하는 비율을 계산한다.
+
+            float increaseMultiplier = 1f + increasePercent; // 증가율을 배율로 바꾼다.
+
+            maxHp *= increaseMultiplier; // 최대 체력을 증가시킨다.
+
+            CurrentHp = maxHp * hpRatio; // 기존 체력 비율에 맞춰 현재 체력도 같이 증가시킨다.
+
+            CurrentHp = Mathf.Clamp(CurrentHp, 0f, maxHp); // 현재 체력이 0과 최대 체력 사이에 있도록 제한한다.
+        }
     }
 }

@@ -215,20 +215,13 @@ namespace TeamProject01.Gameplay
 
             ApplyControl(input, deltaTime); // 모드별 조향
 
-            //성원 수정
             Vector3 currentPosition = transform.position; // 이동하기 전 현재 위치를 저장한다.
-
-            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
-            // if (EnemyApi.TryConsumeKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 기존: EnemyApi에 등록된 넉백 요청 확인
-            ////// 전찬우추가 - 컨보이는 공용 상호작용 API에서 넉백 요청만 소비한다.
+            
             if (MonsterInteractionApi.TryConsumeConvoyKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 전찬우추가 - 몬스터가 요청한 컨보이 넉백이 있는지 확인한다.
             {
                 ApplyKnockback(apiKnockbackDirection, apiKnockbackDistance, apiKnockbackDuration, apiKnockbackHeight); // 전찬우추가 - 실제 이동 적용은 컨보이 컨트롤러가 책임진다.
             }
-
-            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
-            // float slowMultiplier = EnemyApi.GetSlowMultiplier(currentPosition); // 기존: 현재 위치의 슬로우 장판 속도 배율 조회
-            ////// 전찬우추가 - 슬로우 조회도 MonsterInteractionApi를 통해서만 한다.
+                       
             float slowMultiplier = MonsterInteractionApi.GetConvoySpeedMultiplier(currentPosition); // 전찬우추가 - 현재 컨보이 위치에 적용될 슬로우 배율을 가져온다.
 
             Vector3 forwardDisplacement = transform.forward * (currentForwardSpeed * slowMultiplier * deltaTime); // 기본 전진 이동량을 계산한다.
@@ -239,14 +232,11 @@ namespace TeamProject01.Gameplay
             Vector3 desiredPosition = currentPosition + forwardDisplacement + knockbackDisplacement; // 전진 이동량과 넉백 이동량을 합친다.
 
             desiredPosition = SnapHeadToGround(desiredPosition); // 이동하려는 위치를 먼저 바닥 높이에 맞춘다.
-            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi로 대체한다.
-            // desiredPosition = EnemyApi.ResolveObstaclePosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 기존: 적 장애물과 겹치지 않도록 위치 보정
-            ////// 전찬우추가 - 컨보이 위치 보정은 MonsterInteractionApi를 통해 요청한다.
+           
             desiredPosition = MonsterInteractionApi.ResolveConvoyPosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 전찬우추가 - 적 장애물과 겹치지 않도록 컨보이 위치를 보정한다.
             desiredPosition.y += knockbackVerticalOffset; // 넉백 중이면 바닥 위치에서 공중 높이만큼 띄운다.
 
-            transform.position = desiredPosition; // 최종 보정된 위치를 적용한다.
-            ////////////
+            transform.position = desiredPosition; // 최종 보정된 위치를 적용한다.      
 
             SamplePathIfNeeded(); // 경로 기록
             UpdateHeadVisual(deltaTime); // 머리 표시
