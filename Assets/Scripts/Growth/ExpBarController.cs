@@ -21,6 +21,7 @@ namespace TeamProject01.Gameplay
         // private ExpTest subscribedExpTest;
         //전찬우 추가
         private bool levelUpUiOpened; // 코어 레벨업 UI 중복 호출 방지
+        private bool wasLevelUpChoicePending; // 카드 선택 완료 감지
 
         private void Awake()
         {
@@ -151,10 +152,35 @@ namespace TeamProject01.Gameplay
 
             RefreshFromCore(stats); //전찬우 수정
 
+            CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
+            if (core == null)
+            {
+                return; // 코어 없음
+            }
+
+            bool choicePending = core.IsLevelUpChoicePending; // 카드 선택 UI 표시 중
+            if (wasLevelUpChoicePending && !choicePending)
+            {
+                levelUpUiOpened = false; // 카드 선택 완료 → 다음 레벨업 UI 허용
+            }
+
+            wasLevelUpChoicePending = choicePending; // 이전 프레임 상태 저장
+            if (choicePending)
+            {
+                return; // 카드 선택 중 (경험치는 아직 미소비)
+            }
+
             if (stats.CanLevelUp && !levelUpUiOpened) //전찬우 추가
             {
                 levelUpUiOpened = true; //전찬우 추가
-                OnLevelUpTriggered(); //전찬우 추가
+                if (core.TryBeginLevelUpChoice()) // 조건 확인 후 패널 오픈 (경험치는 선택 시 소비)
+                {
+                    OnLevelUpTriggered(); //전찬우 추가
+                }
+                else
+                {
+                    levelUpUiOpened = false; // 레벨 반영 실패 시 재시도 허용
+                }
             }
             else if (!stats.CanLevelUp) //전찬우 추가
             {

@@ -127,7 +127,11 @@ namespace TeamProject01.Gameplay
         private DamageData CreateDamageData(Vector3 position) // 피해값 생성
         {
             CoreStatData coreStats = CoreStatProvider.GetCurrentOrDefault(); // 코어 스탯
-            float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(AttackProfile.BaseDamage)); // 최종 피해
+            // 건준 추가 시작 =====
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
+            float baseDamage = AttackProfile.BaseDamage + weaponBonus.BaseDamageBonus; // 프로필 + 강화
+            // 건준 추가 끝 =====
+            float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(baseDamage)); // 최종 피해
             return DamageData.Create(damage, GetDamageType(), Segment.ChainIndex, position, gameObject); // 전달값
         }
 
@@ -195,7 +199,10 @@ namespace TeamProject01.Gameplay
             float step = projectileCount <= 1 ? 0f : spread / (projectileCount - 1); // 각도 간격
             float angle = startAngle + step * projectileIndex; // 이번 탄 각도
             Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * baseDirection; // 산탄 방향
-            SegmentProjectileRuntime.Spawn(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, target, AttackProfile, damage); // 공통 투사체
+            // 건준 추가 시작 =====
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
+            SegmentProjectileRuntime.Spawn(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, target, AttackProfile, damage, weaponBonus); // 공통 투사체
+            // 건준 추가 끝 =====
         }
 
         private EnemyController ResolveSequenceTarget(EnemyController initialTarget) // 순차 발사 대상
