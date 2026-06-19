@@ -29,7 +29,7 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
-            lifeTimer += Time.deltaTime; // 지난 시간만큼 유지 시간을 증가(날아가다없어지면 안되니까)
+            lifeTimer += Time.deltaTime; // 지난 시간만큼 유지 시간을 증가시킨다.
 
             if (lifeTimer >= lifeTime) // 유지 시간이 제한 시간을 넘었다면
             {
@@ -42,13 +42,12 @@ namespace TeamProject01.Gameplay
                 return; // 이동하지 않는다.
             }
 
-            travelTimer += Time.deltaTime; // 지난 시간만큼 비행 시간을 증가
+            travelTimer += Time.deltaTime; // 지난 시간만큼 비행 시간을 증가시킨다.
 
-            float progress = travelTimer / travelDuration; // 현재 비행 진행률을 계산
+            float progress = travelTimer / travelDuration; // 현재 비행 진행률을 계산한다.
+            progress = Mathf.Clamp01(progress); // 진행률이 0보다 작거나 1보다 커지지 않도록 제한한다.
 
-            progress = Mathf.Clamp01(progress); // 진행률이 0보다 작거나 1보다 커지지 않도록 제한
-
-            Vector3 flatPosition = Vector3.Lerp(startPosition, targetPosition, progress); // 시작 위치에서 목표 위치까지 직선 보간 위치 구한다.
+            Vector3 flatPosition = Vector3.Lerp(startPosition, targetPosition, progress); // 시작 위치에서 목표 위치까지 직선 보간 위치를 구한다.
 
             float height = Mathf.Sin(progress * Mathf.PI) * arcHeight; // 중간에서 가장 높아지는 포물선 높이를 계산한다.
 
@@ -74,9 +73,15 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        public void Configure(Transform target) // EnemyRangedAttack이 투사체 목표 초기값을 넣어주는 함수
+        public void Configure(Transform target) // 기존 호출부를 유지하기 위한 투사체 초기값 함수
         {
-            this.target = target; // 매개변수 target을 내부 target field에 저장한다.
+            Configure(target, damage); // 현재 투사체가 가진 기본 피해량으로 설정한다.
+        }
+
+        public void Configure(Transform target, int damage) // EnemyRangedAttack이 투사체 목표와 피해량을 넣어주는 함수
+        {
+            this.target = target; 
+            this.damage = Mathf.Max(0, damage);
 
             startPosition = transform.position; // 발사 순간의 위치를 시작 위치로 저장한다.
 

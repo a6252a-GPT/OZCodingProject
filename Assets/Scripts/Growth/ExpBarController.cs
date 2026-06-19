@@ -9,18 +9,15 @@ namespace TeamProject01.Gameplay
     {
         public Slider ExpSlider; // UI Slider
         public TextMeshProUGUI LevelText; // 레벨 표시 (LevelTest)
-        //전찬우 수정
         // public ExpTest ExpTestSource; // 임시 테스트
         public LevelUpUi LevelUpUi; // 레벨업 패널
         public CardUI CardUi; // 레벨업 UI 호출 (LevelUpUi 없을 때)
-        //전찬우 수정
         // public bool PreferExpTest = true; // 테스트 우선
 
         private CoreStatProvider subscribedCore;
-        //전찬우 수정
         // private ExpTest subscribedExpTest;
-        //전찬우 추가
         private bool levelUpUiOpened; // 코어 레벨업 UI 중복 호출 방지
+        private bool wasLevelUpChoicePending; // 카드 선택 완료 감지
 
         private void Awake()
         {
@@ -39,7 +36,6 @@ namespace TeamProject01.Gameplay
 
         private void OnEnable()
         {
-            //전찬우 수정
             // if (UsesExpTest())
             // {
             //     TrySubscribeExpTest();
@@ -49,17 +45,15 @@ namespace TeamProject01.Gameplay
 
             TrySubscribeCore();
             CoreStatData stats = CoreStatProvider.GetCurrentOrDefault();
-            RefreshFromCore(stats); //전찬우 수정
+            RefreshFromCore(stats); // 
         }
 
-        //전찬우 추가
         private void Start()
         {
             TrySubscribeCore(); // Awake/OnEnable 순서 보정
             RefreshFromCore(CoreStatProvider.GetCurrentOrDefault()); // 최신 코어값 재반영
         }
 
-        //전찬우 추가
         private void Update()
         {
             if (subscribedCore != null || CoreStatProvider.Active == null)
@@ -79,7 +73,6 @@ namespace TeamProject01.Gameplay
                 subscribedCore = null;
             }
 
-            //전찬우 수정
             // if (subscribedExpTest != null)
             // {
             //     subscribedExpTest.Changed -= OnExpTestChanged;
@@ -88,7 +81,6 @@ namespace TeamProject01.Gameplay
             // }
         }
 
-        //전찬우 수정
         // private bool UsesExpTest()
         // {
         //     return PreferExpTest && ResolveExpTest() != null;
@@ -134,7 +126,6 @@ namespace TeamProject01.Gameplay
             subscribedCore.StatsChanged += OnStatsChanged;
         }
 
-        //전찬우 수정
         // private void OnExpTestChanged()
         // {
         //     RefreshFromExpTest();
@@ -142,27 +133,50 @@ namespace TeamProject01.Gameplay
 
         private void OnStatsChanged(CoreStatData stats)
         {
-            //전찬우 수정
             // if (UsesExpTest())
             // {
             //     RefreshFromExpTest();
             //     return;
             // }
 
-            RefreshFromCore(stats); //전찬우 수정
+            RefreshFromCore(stats); // 
 
-            if (stats.CanLevelUp && !levelUpUiOpened) //전찬우 추가
+            CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
+            if (core == null)
             {
-                levelUpUiOpened = true; //전찬우 추가
-                OnLevelUpTriggered(); //전찬우 추가
+                return; // 코어 없음
             }
-            else if (!stats.CanLevelUp) //전찬우 추가
+
+            bool choicePending = core.IsLevelUpChoicePending; // 카드 선택 UI 표시 중
+            if (wasLevelUpChoicePending && !choicePending)
             {
-                levelUpUiOpened = false; //전찬우 추가
+                levelUpUiOpened = false; // 카드 선택 완료 → 다음 레벨업 UI 허용
+            }
+
+            wasLevelUpChoicePending = choicePending; // 이전 프레임 상태 저장
+            if (choicePending)
+            {
+                return; // 카드 선택 중 (경험치는 아직 미소비)
+            }
+
+            if (stats.CanLevelUp && !levelUpUiOpened) // 
+            {
+                levelUpUiOpened = true; // 
+                if (core.TryBeginLevelUpChoice()) // 조건 확인 후 패널 오픈 (경험치는 선택 시 소비)
+                {
+                    OnLevelUpTriggered(); // 
+                }
+                else
+                {
+                    levelUpUiOpened = false; // 레벨 반영 실패 시 재시도 허용
+                }
+            }
+            else if (!stats.CanLevelUp) // 
+            {
+                levelUpUiOpened = false; // 
             }
         }
 
-        //전찬우 수정
         // private void RefreshFromExpTest()
         // {
         //     TrySubscribeExpTest();
@@ -176,7 +190,6 @@ namespace TeamProject01.Gameplay
         //     SetLevelDisplay(expTest.Level);
         // }
 
-        //전찬우 추가
         private void RefreshFromCore(CoreStatData stats)
         {
             SetFillRatio(stats.ExperienceRatio); // 코어 경험치 비율
