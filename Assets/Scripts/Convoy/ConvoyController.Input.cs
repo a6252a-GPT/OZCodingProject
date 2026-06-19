@@ -82,6 +82,11 @@ namespace TeamProject01.Gameplay
 
         private void ApplyControl(WormInput input, float deltaTime) // 조작 적용
         {
+            if (TryApplyAutoOrbitControl(deltaTime))
+            {
+                return; // 자동궤도 조향
+            }
+
             switch (ControlMode)
             {
                 case ConvoyControlMode.WasdDirection:

@@ -18,6 +18,7 @@ namespace TeamProject01.Gameplay
         public Button WasdDirectionButton; // 2번 버튼
         public Button MousePointerButton; // 3번 버튼
         public Button WasdManualForwardButton; // 4번 버튼
+        public Button AutoOrbitButton; // 자동궤도 버튼
         public Color ButtonNormalColor = new Color(0.1f, 0.12f, 0.13f, 0.88f); // 기본 배경
         public Color ButtonSelectedColor = new Color(0.72f, 0.94f, 1f, 0.95f); // 선택 배경
         public Color ButtonNormalTextColor = new Color(0.93f, 0.96f, 0.96f, 1f); // 기본 글자
@@ -52,6 +53,8 @@ namespace TeamProject01.Gameplay
             BindModeButton(WasdDirectionButton, ConvoyControlMode.WasdDirection); // 2번
             BindModeButton(MousePointerButton, ConvoyControlMode.MousePointer); // 3번
             BindModeButton(WasdManualForwardButton, ConvoyControlMode.WasdManualForward); // 4번
+            EnsureAutoOrbitButton(); // 자동궤도 버튼 보강
+            BindAutoOrbitButton(AutoOrbitButton); // 자동궤도
             buttonsWired = true; // 연결 완료
         }
 
@@ -73,6 +76,24 @@ namespace TeamProject01.Gameplay
             });
         }
 
+        private void BindAutoOrbitButton(Button button) // 자동궤도 바인딩
+        {
+            if (button == null)
+            {
+                return; // 버튼 없음
+            }
+
+            button.onClick.RemoveAllListeners(); // 중복 제거
+            button.onClick.AddListener(() =>
+            {
+                if (Controller != null)
+                {
+                    Controller.ToggleAutoOrbit(); // 자동궤도 토글
+                    RefreshAll(); // 선택 표시
+                }
+            });
+        }
+
         private void RefreshAll() // 전체 갱신
         {
             if (Controller == null)
@@ -88,12 +109,70 @@ namespace TeamProject01.Gameplay
             SetText(ExperienceText, $"경험치 {stats.CurrentExperience}/{stats.ExperienceToNextLevel}"); // 경험치
             SetText(GoldText, $"골드 {stats.Gold}"); // 골드
             SetText(ModeText, Controller.CurrentControlModeLabel); // 모드명
-            SetText(HelpText, "1~4 전환  Space 추가  Backspace 제거  R 리셋  Q/E 카메라"); // 도움말
+            SetText(HelpText, "1~4 전환  자동궤도 WASD취소  Space 추가  Backspace 제거  R 리셋  Q/E 카메라"); // 도움말
 
-            RefreshButton(RelativeTurnButton, Controller.CurrentControlMode == ConvoyControlMode.RelativeTurn); // 1번 상태
-            RefreshButton(WasdDirectionButton, Controller.CurrentControlMode == ConvoyControlMode.WasdDirection); // 2번 상태
-            RefreshButton(MousePointerButton, Controller.CurrentControlMode == ConvoyControlMode.MousePointer); // 3번 상태
-            RefreshButton(WasdManualForwardButton, Controller.CurrentControlMode == ConvoyControlMode.WasdManualForward); // 4번 상태
+            bool autoOrbit = Controller.IsAutoOrbitActive; // 자동궤도 상태
+            RefreshButton(RelativeTurnButton, !autoOrbit && Controller.CurrentControlMode == ConvoyControlMode.RelativeTurn); // 1번 상태
+            RefreshButton(WasdDirectionButton, !autoOrbit && Controller.CurrentControlMode == ConvoyControlMode.WasdDirection); // 2번 상태
+            RefreshButton(MousePointerButton, !autoOrbit && Controller.CurrentControlMode == ConvoyControlMode.MousePointer); // 3번 상태
+            RefreshButton(WasdManualForwardButton, !autoOrbit && Controller.CurrentControlMode == ConvoyControlMode.WasdManualForward); // 4번 상태
+            RefreshButton(AutoOrbitButton, autoOrbit); // 자동궤도 상태
+        }
+
+        private void EnsureAutoOrbitButton() // 자동궤도 버튼 자동 생성
+        {
+            if (AutoOrbitButton != null)
+            {
+                SetButtonLabel(AutoOrbitButton, "자동궤도"); // 라벨 보장
+                return; // 이미 있음
+            }
+
+            Button template = WasdManualForwardButton != null
+                ? WasdManualForwardButton
+                : (MousePointerButton != null ? MousePointerButton : RelativeTurnButton); // 복제 기준
+            if (template == null || template.transform.parent == null)
+            {
+                return; // 복제 불가
+            }
+
+            GameObject instance = Instantiate(template.gameObject, template.transform.parent); // 런타임 복제
+            instance.name = "AutoOrbitButton"; // 식별명
+            instance.transform.SetSiblingIndex(template.transform.GetSiblingIndex() + 1); // 기존 버튼 뒤
+            AutoOrbitButton = instance.GetComponent<Button>(); // 버튼 참조
+            PositionAutoOrbitButton(template, AutoOrbitButton); // 수동 배치 보정
+            SetButtonLabel(AutoOrbitButton, "자동궤도"); // 라벨 설정
+        }
+
+        private static void PositionAutoOrbitButton(Button template, Button button) // 버튼 위치 보정
+        {
+            if (template == null || button == null)
+            {
+                return; // 대상 없음
+            }
+
+            RectTransform templateRect = template.GetComponent<RectTransform>(); // 기준
+            RectTransform rect = button.GetComponent<RectTransform>(); // 대상
+            if (templateRect == null || rect == null)
+            {
+                return; // Rect 없음
+            }
+
+            float width = templateRect.rect.width > 1f ? templateRect.rect.width : 110f; // 폭
+            rect.anchoredPosition = templateRect.anchoredPosition + new Vector2(width + 8f, 0f); // 오른쪽 배치
+        }
+
+        private static void SetButtonLabel(Button button, string label) // 버튼 글자
+        {
+            if (button == null)
+            {
+                return; // 버튼 없음
+            }
+
+            Text text = button.GetComponentInChildren<Text>(true); // 라벨
+            if (text != null)
+            {
+                text.text = label; // 표시
+            }
         }
 
         private void RefreshButton(Button button, bool selected) // 버튼 표시

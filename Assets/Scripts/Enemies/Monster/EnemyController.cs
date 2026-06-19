@@ -81,7 +81,10 @@ namespace TeamProject01.Gameplay
                 return; // 더 이상 처리하지 않는다.
             }
 
+            float hpBeforeDamage = health.CurrentHp; //전찬우추가 - 표시용 피격 전 체력
             health.TakeDamage(damage.Amount); // 실제 HP 감소는 EnemyHealth가 담당한다.
+            float actualDamage = Mathf.Max(0f, hpBeforeDamage - health.CurrentHp); //전찬우추가 - 실제 감소 체력
+            DamageFloatingSpawner.SpawnEnemyDamage(damage, actualDamage, transform.position); //전찬우추가 - 데미지 숫자 표시
 
             if (health.IsDead) // HP가 0 이하가 되었다면
             {

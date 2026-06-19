@@ -7,7 +7,8 @@ namespace TeamProject01.Gameplay
         ArcProjectile = 2, // 곡사 투사체
         HomingProjectile = 3, // 추적 투사체
         Laser = 4, // 레이저
-        ChainLightning = 5 // 즉시 체인 번개
+        ChainLightning = 5, // 즉시 체인 번개
+        SawBounceProjectile = 6 // 톱날 관통 연쇄 투사체
     }
 
     public enum SegmentAttackImpactType // 명중 처리 방식

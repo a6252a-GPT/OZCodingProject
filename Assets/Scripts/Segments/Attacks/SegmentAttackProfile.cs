@@ -34,6 +34,7 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float ProjectileFireDelay = 0.18f; // 순차 발사 지연
         public bool UseLoadedProjectileVisuals; // 장전 미사일 표시 사용
         [Range(0f, 1f)] public float LoadedProjectileReloadRatio = 0.5f; // 쿨타임 중 복구 시점
+        public Vector3 ProjectileScale = Vector3.zero; // 0 이하면 프리팹 기본 크기 유지
         [Min(0.1f)] public float ProjectileSpeed = 20f; // 투사체 속도
         [Min(0.05f)] public float ProjectileHitRadius = 0.5f; // 명중 반경
         [Min(0.1f)] public float ProjectileLifetime = 5f; // 생존 시간
@@ -67,6 +68,11 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float ChainDelay = 0.06f; // 다음 몬스터로 번개가 넘어가는 지연 시간
         [Min(0.03f)] public float ChainLineVfxLifetime = 0.4f; // 전기줄 시각 효과 제거 시간
         [Range(0f, 1f)] public float ChainDamageFalloff = 0.5f; // 체인 단계별 피해 감소율
+
+        [Header("Saw Bounce")]
+        [Range(0f, 1f)] public float SawPierceDamageRatio = 0.5f; // 목표까지 지나가는 적에게 주는 피해 비율
+        [Range(0f, 1f)] public float SawTargetMinDistanceRatio = 0.5f; // 후보 중 중거리 이상을 고르는 기준
+        [Min(0f)] public float SawSpinSpeed = 1440f; // 비행 중 초당 회전 각도
         [Header("Aim")]
         public bool RequireAimBeforeFire = true; // 조준 후 발사
         [Min(1f)] public float HeadTurnSpeed = 540f; // 머리 회전 속도

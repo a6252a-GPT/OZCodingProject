@@ -133,7 +133,7 @@ namespace TeamProject01.Gameplay
         public float CurrentTurnVelocity => currentTurnVelocity; // HUD 회전
         public float CurrentTurnInput => currentTurnInput; // 머리 기울기
         public ConvoyControlMode CurrentControlMode => ControlMode; // HUD 모드
-        public string CurrentControlModeLabel => GetControlModeLabel(ControlMode); // HUD 모드명
+        public string CurrentControlModeLabel => IsAutoOrbitActive ? GetAutoOrbitModeLabel() : GetControlModeLabel(ControlMode); // HUD 모드명
         public event Action<int> SegmentCountChanged; // 세그먼트 수 변경
 
         private void Awake() // 참조 준비
@@ -211,6 +211,11 @@ namespace TeamProject01.Gameplay
             if (input.RemoveSegment)
             {
                 RemoveSegment(); // 테스트 제거
+            }
+
+            if (IsAutoOrbitActive && HasAutoOrbitCancelInput(input))
+            {
+                CancelAutoOrbit(); // 수동 조작 복귀
             }
 
             ApplyControl(input, deltaTime); // 모드별 조향
@@ -560,6 +565,7 @@ namespace TeamProject01.Gameplay
 
         public void ResetWorm() // 위치 리셋
         {
+            CancelAutoOrbit(); // 자동궤도 해제
             transform.SetPositionAndRotation(startPosition, startRotation); // 시작 pose
             transform.position = SnapHeadToGround(transform.position); // 머리 바닥 보정
             currentTurnVelocity = 0f; // 회전 초기화
@@ -585,6 +591,11 @@ namespace TeamProject01.Gameplay
 
         public void SetControlMode(ConvoyControlMode mode) // 모드 변경
         {
+            if (IsAutoOrbitActive)
+            {
+                CancelAutoOrbit(); // 모드 버튼 입력은 수동 전환
+            }
+
             if (ControlMode == mode)
             {
                 return; // 같은 모드
@@ -654,6 +665,7 @@ namespace TeamProject01.Gameplay
         private void NotifySegmentCountChanged() // 길이 변경 알림
         {
             SegmentCountChanged?.Invoke(segments.Count); // 현재 길이 전달
+            OnSegmentCountChangedForAutoOrbit(); // 자동궤도 반지름 갱신
         }
 
         private float GetEffectiveTurnSpeed() // 성장 반영 회전력
