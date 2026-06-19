@@ -33,7 +33,7 @@ namespace TeamProject01.Gameplay
         public static RunStartBonusData Create(string wormId, string mapId) // 기본 생성
         {
             RunStartBonusData data = default; // 값 준비
-            data.SelectedWormId = string.IsNullOrWhiteSpace(wormId) ? MetaWormIds.Basic : wormId; // 지렁이 보정
+            data.SelectedWormId = MetaWormIds.Normalize(wormId); // 지렁이 보정
             data.SelectedMapId = string.IsNullOrWhiteSpace(mapId) ? MetaMapIds.Map1 : mapId; // 맵 보정
             return data; // 결과 반환
         }

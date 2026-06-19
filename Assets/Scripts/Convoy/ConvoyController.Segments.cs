@@ -297,7 +297,7 @@ namespace TeamProject01.Gameplay
             return GetCurrentSegmentLevelInternal(targetId, definition); // 현재값
         }
 
-        ////// 전찬우추가 - 코어/레벨 UI가 해당 세그먼트가 실제로 붙어 있는지 확인하는 조회 API
+        // 코어/레벨 UI가 해당 세그먼트가 실제로 붙어 있는지 확인하는 조회 API
         public int CountAttachedSegments(string segmentId)
         {
             string targetId = NormalizeSegmentId(segmentId); // 비교 ID 보정

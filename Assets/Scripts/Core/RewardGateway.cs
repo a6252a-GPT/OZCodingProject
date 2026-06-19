@@ -48,18 +48,17 @@ namespace TeamProject01.Gameplay
 
             if (Active == null)
             {
-                //전찬우 수정
                 // Debug.LogWarning("[RewardGateway] 보상 입구 없음: GameSystems에 RewardGateway 필요"); // 입구 누락
                 // return false; // 직접 전달 금지
 
-                if (CoreStatProvider.TryApplyReward(reward)) //전찬우 추가
+                if (CoreStatProvider.TryApplyReward(reward))
                 {
-                    Debug.LogWarning("[RewardGateway] 보상 입구 없음: CoreStatProvider로 직접 보상 적용", CoreStatProvider.Active); //전찬우 추가
-                    return true; //전찬우 추가
+                    Debug.LogWarning("[RewardGateway] 보상 입구 없음: CoreStatProvider로 직접 보상 적용", CoreStatProvider.Active);
+                    return true;
                 }
 
-                Debug.LogWarning("[RewardGateway] 보상 입구 없음: GameSystems에 RewardGateway 또는 CoreStatProvider 필요"); //전찬우 추가
-                return false; //전찬우 추가
+                Debug.LogWarning("[RewardGateway] 보상 입구 없음: GameSystems에 RewardGateway 또는 CoreStatProvider 필요");
+                return false;
             }
 
             return Active.ReceiveReward(reward); // 보상 입구 경유

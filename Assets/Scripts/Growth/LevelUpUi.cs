@@ -1,3 +1,4 @@
+using System.Collections;
 using DG.Tweening;
 using TeamProject01.Gameplay;
 using UnityEngine;
@@ -12,12 +13,14 @@ public class LevelUpUi : MonoBehaviour
     [SerializeField] private RectTransform levelUpText;
     [Header("디버그")]
     [SerializeField] private bool logCoreStats = true; // 코어 경험치 로그 출력 여부
-    [SerializeField] private float logInterval = 1f; // 로그 출력 간격(초)
 
     private bool isOpen;
     private float previousTimeScale = 1f;
     private CoreStatProvider subscribedCore; // 구독 중인 코어
-    private float logTimer; // 주기 로그 타이머
+    private int lastLoggedExp = -1; // 마지막 로그 경험치
+    private int lastLoggedLevel = -1; // 마지막 로그 레벨
+    private CoreStatData pendingLogStats; // 디바운스 대기값
+    private Coroutine debouncedLogRoutine; // 경험치 변경 묶음 로그
 
     private void Reset()
     {
@@ -54,25 +57,12 @@ public class LevelUpUi : MonoBehaviour
             subscribedCore.StatsChanged -= OnCoreStatsChanged; // 이벤트 해제
             subscribedCore = null; // 참조 제거
         }
-    }
 
-    private void Update()
-    {
-        if (!logCoreStats)
+        if (debouncedLogRoutine != null)
         {
-            return; // 로그 비활성
+            StopCoroutine(debouncedLogRoutine); // 대기 중 로그 취소
+            debouncedLogRoutine = null;
         }
-
-        TrySubscribeCore(); // 늦게 생성된 코어 연결
-
-        logTimer += Time.unscaledDeltaTime; // 일시정지 중에도 간격 측정
-        if (logTimer < logInterval)
-        {
-            return; // 아직 출력 주기 전
-        }
-
-        logTimer = 0f; // 타이머 리셋
-        LogCoreStats(); // 주기적으로 현재 경험치 출력
     }
 
     private void TrySubscribeCore()
@@ -93,12 +83,40 @@ public class LevelUpUi : MonoBehaviour
             return; // 로그 비활성
         }
 
-        LogCoreStats(stats); // 경험치/레벨 변경 시 즉시 출력
+        pendingLogStats = stats; // 최신값 저장
+        if (debouncedLogRoutine != null)
+        {
+            StopCoroutine(debouncedLogRoutine); // 같은 프레임/연속 변경은 1번만
+        }
+
+        debouncedLogRoutine = StartCoroutine(LogCoreStatsDebounced()); // 경험치 획득 시 1회 출력
+    }
+
+    private IEnumerator LogCoreStatsDebounced()
+    {
+        yield return null; // 같은 프레임 변경 묶기
+        debouncedLogRoutine = null;
+
+        if (!logCoreStats)
+        {
+            yield break;
+        }
+
+        if (pendingLogStats.CurrentExperience == lastLoggedExp && pendingLogStats.Level == lastLoggedLevel)
+        {
+            yield break; // 변화 없음
+        }
+
+        lastLoggedExp = pendingLogStats.CurrentExperience;
+        lastLoggedLevel = pendingLogStats.Level;
+        LogCoreStats(pendingLogStats); // 경험치/레벨 변경 1회 출력
     }
 
     private void LogCoreStats()
     {
         CoreStatData stats = CoreStatProvider.GetCurrentOrDefault(); // 코어 없으면 기본값
+        lastLoggedExp = stats.CurrentExperience; // 중복 로그 방지용 저장
+        lastLoggedLevel = stats.Level; // 중복 로그 방지용 저장
         LogCoreStats(stats); // 공통 로그 출력
     }
 

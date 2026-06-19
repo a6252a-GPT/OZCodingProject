@@ -12,6 +12,8 @@ namespace TeamProject01.Gameplay
         private const string CurrentCoreTestScenePath = "Assets/Scenes/Dev/CoreTest_StageScene.unity"; // 최신 코어 테스트 씬
         private const string LegacyCoreTestScenePath = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 이전 코어 테스트 씬
 
+        private Button runtimeMagicWormButton; // 런타임 마법형 버튼
+
         public MetaProgressionManager Meta; // 메타 데이터
         public string TargetStageScenePath = CurrentCoreTestScenePath; // 현재 코어 테스트 대상
         [Min(0)] public int HighestReachedWave; // 최고 도달 웨이브
@@ -66,6 +68,7 @@ namespace TeamProject01.Gameplay
                 Meta.SelectedMapChanged += OnSelectedMapChanged; // 맵 갱신
             }
 
+            EnsureWormSelectionButtons(); // 지렁이 버튼 보강
             ShowMainMenu(); // 기본 화면
             RefreshAll(); // 즉시 갱신
         }
@@ -116,19 +119,39 @@ namespace TeamProject01.Gameplay
             SelectOrPurchaseWorm(MetaWormIds.Basic); // 기본형
         }
 
-        public void SelectDefenseWorm() // 방어형 선택/구매
+        public void SelectAttackWorm() // 공격형 선택/구매
         {
-            SelectOrPurchaseWorm(MetaWormIds.Defense); // 방어형
+            SelectOrPurchaseWorm(MetaWormIds.Attack); // 공격형
         }
 
-        public void SelectArmedWorm() // 무장형 선택/구매
+        public void SelectMobilityWorm() // 이속형 선택/구매
         {
-            SelectOrPurchaseWorm(MetaWormIds.Armed); // 무장형
+            SelectOrPurchaseWorm(MetaWormIds.Mobility); // 이속형
         }
 
-        public void SelectChargeWorm() // 돌격형 선택
+        public void SelectSupportWorm() // 지원형 선택/구매
         {
-            SetStatus("돌격형 지렁이는 업데이트 예정입니다."); // 미구현
+            SelectOrPurchaseWorm(MetaWormIds.Support); // 지원형
+        }
+
+        public void SelectMagicWorm() // 마법형 선택/구매
+        {
+            SelectOrPurchaseWorm(MetaWormIds.Magic); // 마법형
+        }
+
+        public void SelectDefenseWorm() // 이전 버튼 호환
+        {
+            SelectSupportWorm(); // 지원형
+        }
+
+        public void SelectArmedWorm() // 이전 버튼 호환
+        {
+            SelectAttackWorm(); // 공격형
+        }
+
+        public void SelectChargeWorm() // 이전 버튼 호환
+        {
+            SelectMobilityWorm(); // 이속형
         }
 
         public void StartMap1() // 맵 1 시작
@@ -433,6 +456,7 @@ namespace TeamProject01.Gameplay
                 return; // 대상 없음
             }
 
+            EnsureWormSelectionButtons(); // 런타임 버튼 유지
             SetText(DiamondText, Meta.Diamond.ToString()); // 다이아
             SetText(HighestWaveText, HighestReachedWave.ToString()); // 기록
             SetText(SelectedWormNameText, GetWormDisplayName(Meta.SelectedWormId)); // 이름
@@ -514,6 +538,136 @@ namespace TeamProject01.Gameplay
             SetText(StatusText, message); // 표시
         }
 
+        private void EnsureWormSelectionButtons() // 지렁이 버튼 보강
+        {
+            if (WormSelectPanel == null)
+            {
+                return; // 패널 없음
+            }
+
+            SetWormButtonLabel("BasicWormButton", "기본형\n대포"); // 기본형
+            SetWormButtonLabel("DefenseWormButton", "지원형\n화염구"); // 기존 방어형
+            SetWormButtonLabel("ArmedWormButton", "공격형\n미사일"); // 기존 무장형
+            SetWormButtonLabel("ChargeWormButton", "이속형\n톱날"); // 기존 돌격형
+
+            if (runtimeMagicWormButton != null)
+            {
+                SetWormButtonLabel("MagicWormButton", "마법형\n전기지직"); // 라벨 유지
+                return; // 이미 있음
+            }
+
+            Transform existingMagic = FindWormButtonTransform("MagicWormButton"); // 기존 버튼
+            if (existingMagic != null)
+            {
+                runtimeMagicWormButton = existingMagic.GetComponent<Button>(); // 참조 저장
+                SetWormButtonLabel("MagicWormButton", "마법형\n전기지직"); // 라벨
+                return; // 이미 있음
+            }
+
+            Transform source = FindWormButtonTransform("ChargeWormButton") ?? FindWormButtonTransform("ArmedWormButton"); // 복제 기준
+            if (source == null)
+            {
+                return; // 기준 없음
+            }
+
+            runtimeMagicWormButton = CreateRuntimeWormButton(source, "MagicWormButton", "마법형\n전기지직"); // 마법형
+        }
+
+        private Button CreateRuntimeWormButton(Transform source, string objectName, string label) // 런타임 버튼 생성
+        {
+            RectTransform sourceRect = source as RectTransform; // 기준 Rect
+            Transform parent = source.parent != null ? source.parent : WormSelectPanel.transform; // 부모
+            GameObject buttonObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button)); // 버튼 오브젝트
+            RectTransform rect = buttonObject.GetComponent<RectTransform>(); // Rect
+            rect.SetParent(parent, false); // 같은 그룹
+            CopyRectTransform(sourceRect, rect); // 배치 복사
+            rect.anchoredPosition += new Vector2(0f, -64f); // 레이아웃 없을 때 아래 배치
+            rect.SetSiblingIndex(Mathf.Min(source.GetSiblingIndex() + 1, parent.childCount - 1)); // 순서
+
+            Image sourceImage = source.GetComponent<Image>(); // 기준 이미지
+            Image image = buttonObject.GetComponent<Image>(); // 버튼 이미지
+            if (sourceImage != null)
+            {
+                image.sprite = sourceImage.sprite; // 스프라이트
+                image.type = sourceImage.type; // 타입
+                image.color = sourceImage.color; // 색
+                image.material = sourceImage.material; // 재질
+                image.raycastTarget = sourceImage.raycastTarget; // 입력
+            }
+
+            Button sourceButton = source.GetComponent<Button>(); // 기준 버튼
+            Button button = buttonObject.GetComponent<Button>(); // 새 버튼
+            button.targetGraphic = image; // 대상 그래픽
+            if (sourceButton != null)
+            {
+                button.transition = sourceButton.transition; // 전환
+                button.colors = sourceButton.colors; // 색상
+                button.spriteState = sourceButton.spriteState; // 스프라이트 상태
+                button.navigation = sourceButton.navigation; // 네비게이션
+            }
+
+            Text sourceText = source.GetComponentInChildren<Text>(true); // 기준 텍스트
+            if (sourceText != null)
+            {
+                Text labelText = Instantiate(sourceText.gameObject, buttonObject.transform, false).GetComponent<Text>(); // 텍스트 복제
+                labelText.text = label; // 라벨
+            }
+
+            button.onClick.AddListener(SelectMagicWorm); // 마법형 선택
+            return button; // 결과
+        }
+
+        private void SetWormButtonLabel(string objectName, string label) // 버튼 라벨 변경
+        {
+            Transform button = FindWormButtonTransform(objectName); // 버튼 찾기
+            if (button == null)
+            {
+                return; // 없음
+            }
+
+            Text text = button.GetComponentInChildren<Text>(true); // 라벨
+            if (text != null)
+            {
+                text.text = label; // 표시
+            }
+        }
+
+        private Transform FindWormButtonTransform(string objectName) // 버튼 찾기
+        {
+            if (WormSelectPanel == null || string.IsNullOrWhiteSpace(objectName))
+            {
+                return null; // 대상 없음
+            }
+
+            Transform[] children = WormSelectPanel.GetComponentsInChildren<Transform>(true); // 하위 검색
+            for (int i = 0; i < children.Length; i++)
+            {
+                Transform child = children[i]; // 후보
+                if (child != null && child.name == objectName)
+                {
+                    return child; // 찾음
+                }
+            }
+
+            return null; // 없음
+        }
+
+        private static void CopyRectTransform(RectTransform source, RectTransform target) // Rect 복사
+        {
+            if (source == null || target == null)
+            {
+                return; // 대상 없음
+            }
+
+            target.anchorMin = source.anchorMin; // 앵커
+            target.anchorMax = source.anchorMax; // 앵커
+            target.pivot = source.pivot; // 피벗
+            target.sizeDelta = source.sizeDelta; // 크기
+            target.anchoredPosition = source.anchoredPosition; // 위치
+            target.localRotation = source.localRotation; // 회전
+            target.localScale = source.localScale; // 크기
+        }
+
         private static void SetActive(GameObject target, bool active) // 활성화
         {
             if (target != null)
@@ -537,14 +691,16 @@ namespace TeamProject01.Gameplay
 
         private static string GetWormDisplayName(string wormId) // 지렁이 이름
         {
-            switch (wormId)
+            switch (NormalizeWormId(wormId))
             {
-                case MetaWormIds.Defense:
-                    return "방어형 지렁이";
-                case MetaWormIds.Armed:
-                    return "무장형 지렁이";
-                case MetaWormIds.Charge:
-                    return "돌격형 지렁이";
+                case MetaWormIds.Attack:
+                    return "공격형 지렁이";
+                case MetaWormIds.Mobility:
+                    return "이속형 지렁이";
+                case MetaWormIds.Support:
+                    return "지원형 지렁이";
+                case MetaWormIds.Magic:
+                    return "마법형 지렁이";
                 default:
                     return "기본형 지렁이";
             }
@@ -552,32 +708,41 @@ namespace TeamProject01.Gameplay
 
         private static string GetWormBonusText(string wormId) // 지렁이 효과
         {
-            switch (wormId)
+            switch (NormalizeWormId(wormId))
             {
-                case MetaWormIds.Defense:
-                    return "넥서스 최대 체력 +15%\n넥서스 분당 회복 +5";
-                case MetaWormIds.Armed:
-                    return "기본 공격력 +1\n기본 공격속도 +5%";
-                case MetaWormIds.Charge:
-                    return "회전력 +10%\n충돌힘 +10%";
+                case MetaWormIds.Attack:
+                    return "시작 무기: 미사일\n기본 공격력 +1 / 공격속도 +5%";
+                case MetaWormIds.Mobility:
+                    return "시작 무기: 톱날발사기\n회전력 +10% / 충돌힘 +10%";
+                case MetaWormIds.Support:
+                    return "시작 무기: 화염구\n넥서스 체력 +15% / 회복 +5";
+                case MetaWormIds.Magic:
+                    return "시작 무기: 전기지직\n추가 보너스 없음";
                 default:
-                    return "추가 보너스 없음";
+                    return "시작 무기: 대포\n추가 보너스 없음";
             }
         }
 
         private static Color GetWormPreviewColor(string wormId) // 프리뷰 색
         {
-            switch (wormId)
+            switch (NormalizeWormId(wormId))
             {
-                case MetaWormIds.Defense:
-                    return new Color(0.35f, 0.75f, 1f, 1f); // 방어형
-                case MetaWormIds.Armed:
-                    return new Color(1f, 0.48f, 0.36f, 1f); // 무장형
-                case MetaWormIds.Charge:
-                    return new Color(1f, 0.86f, 0.28f, 1f); // 돌격형
+                case MetaWormIds.Attack:
+                    return new Color(1f, 0.48f, 0.36f, 1f); // 공격형
+                case MetaWormIds.Mobility:
+                    return new Color(1f, 0.86f, 0.28f, 1f); // 이속형
+                case MetaWormIds.Support:
+                    return new Color(0.35f, 0.75f, 1f, 1f); // 지원형
+                case MetaWormIds.Magic:
+                    return new Color(0.62f, 0.48f, 1f, 1f); // 마법형
                 default:
                     return new Color(0.48f, 0.9f, 0.56f, 1f); // 기본형
             }
+        }
+
+        private static string NormalizeWormId(string wormId) // 지렁이 ID 보정
+        {
+            return MetaWormIds.Normalize(wormId); // 공용 보정
         }
 
         private static string NormalizeMapId(string mapId) // 맵 ID 보정

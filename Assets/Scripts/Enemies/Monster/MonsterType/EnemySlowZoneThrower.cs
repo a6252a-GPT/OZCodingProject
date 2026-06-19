@@ -6,9 +6,6 @@ namespace TeamProject01.Gameplay
     {
         private Transform target; // 투척 대상 위치를 저장한다.
 
-        ////// 전찬우삭제 - 기존 이름 기반 PlayerConvoy 검색 필드는 MonsterInteractionApi 타겟 조회로 대체한다.
-        // [SerializeField] private string targetName = "PlayerConvoy"; // target이 비어 있으면 이 이름으로 찾는다.
-
         [SerializeField] private Transform firePoint; // 투사체가 발사될 위치
 
         [SerializeField] private EnemySlowZoneProjectile projectilePrefab; // 발사할 슬로우 투사체 Prefab
@@ -24,7 +21,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private Transform telegraphRoot; // 생성된 범위 표시를 정리할 부모 Transform
 
         [Min(0.1f)]
-        [SerializeField] private float attackRange = 10.0f; // 투척 사거리
+        [SerializeField] private float throwRange = 10.0f; // 투척 사거리
 
         [Min(0.0f)]
         [SerializeField] private float forwardImpactDistance = 4.5f; // 소환 기준 대상 앞쪽으로 얼마나 떨어진 곳에 장판을 소환할지
@@ -32,7 +29,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float sideRandomRange = 2.5f; //소환 기준 대상 앞쪽 위치에서 좌우로 생성 랜덤 범위
 
         [Min(0.1f)]
-        [SerializeField] private float attackDelay = 3.0f; // 투척 간격
+        [SerializeField] private float throwDelay = 3.0f; // 투척 간격
 
         [Min(0.1f)]
         [SerializeField] private float slowZoneRadius = 3.0f; // 생성될 슬로우 장판 반경
@@ -49,11 +46,11 @@ namespace TeamProject01.Gameplay
         [Min(0.0f)]
         [SerializeField] private float slowZoneGroundHeight = 0.04f; // 슬로우 장판 높이
 
-        public float AttackRange //외부에서 사거리를 읽을 수 있게 열어둔 property
+        public float ThrowRange  //외부에서 사거리를 읽을 수 있게 열어둔 property
         {
             get
             {
-                return attackRange; //사거리를 반환한다.
+                return throwRange; //사거리를 반환한다.
             }
         }
 
@@ -61,15 +58,15 @@ namespace TeamProject01.Gameplay
 
         private void Awake()
         {
-            TryFindTarget(); // target이 비어 있다면 이름으로 찾는다.
-            attackTimer = attackDelay; // 생성 직후 바로 던지지 않도록 첫 공격 대기 시간을 설정한다.
+            TryFindTarget(); //MonsterInteractionAPI에서 컨보이 타겟을 찾는다.
+            attackTimer = throwDelay; // 생성 직후 바로 던지지 않도록 첫 공격 대기 시간을 설정한다.
         }
 
         private void Update()
         {
             if (target == null) // 대상이 없다면
             {
-                TryFindTarget(); // 다시 찾아본다.
+                TryFindTarget(); // MonsterInteractionAPI에서 다시 찾아본다.
             }
 
             if (target == null) // 그래도 대상이 없다면
@@ -102,48 +99,32 @@ namespace TeamProject01.Gameplay
             Vector3 offset = target.position - transform.position; // 몬스터에서 대상까지의 방향과 거리
             offset.y = 0.0f; //높이를 제거한다.
 
-            if (offset.sqrMagnitude > attackRange * attackRange) // 대상이 사거리 밖이라면
+            if (offset.sqrMagnitude > throwRange * throwRange) // 대상이 사거리 밖이라면
             {
                 return; // 공격하지 않는다.
             }
 
             Shoot(); // 투사체 발사
-            attackTimer = attackDelay; // 다음 공격 대기 시간 설정
+            attackTimer = throwDelay; // 다음 공격 대기 시간 설정
         }
 
         private void TryFindTarget()
         {
-            ////// 전찬우삭제 - 기존 GameObject.Find 기반 타겟 검색 코드는 아래에 보존한다.
-            // private void TryFindTarget()
-            //         {
-            //             if (string.IsNullOrEmpty(targetName)) // 찾을 이름이 비어 있다면
-            //             {
-            //                 return; // 찾지 않는다.
-            //             }
-            // 
-            //             GameObject targetObject = GameObject.Find(targetName); // 씬에서 이름이 같은 GameObject를 찾는다.
-            // 
-            //             if (targetObject != null) // 찾았다면
-            //             {
-            //                 target = targetObject.transform; // Transform을 저장한다.
-            //             }
-            //         }
-
-            ////// 전찬우추가 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가 - 등록된 컨보이 타겟이 있는지 확인한다.
+            ////// 전찬우추가-0619 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가-0619 - 등록된 컨보이 타겟이 있는지 확인한다.
             {
-                target = apiTarget; // 전찬우추가 - 조회된 컨보이 Transform을 슬로우 투척 대상으로 저장한다.
-                return; // 전찬우추가 - 타겟을 찾았으므로 메서드를 종료한다.
+                target = apiTarget; // 전찬우추가-0619 - 조회된 컨보이 Transform을 슬로우 투척 대상으로 저장한다.
+                return; // 전찬우추가-0619 - 타겟을 찾았으므로 메서드를 종료한다.
             }
 
-            target = null; // 전찬우추가 - 등록된 컨보이가 없으면 투척 대상을 비워둔다.
+            target = null; // 전찬우추가-0619 - 등록된 컨보이가 없으면 투척 대상을 비워둔다.
         }
 
-        public bool IsTargetInAttackRange()
+        public bool IsTargetInThrowRange()
         {
             if (target == null) //대상이 없다면
             {
-                TryFindTarget(); //이름으로 찾아본다.
+                TryFindTarget(); //MonsterInteractionAPI에서 컨보이 타겟을 다시 찾아본다.
             }
 
             if (target == null) //대상이 없다면
@@ -154,7 +135,7 @@ namespace TeamProject01.Gameplay
             Vector3 offset = target.position - transform.position; //몬스터에서 대상까지 거리 벡터
             offset.y = 0.0f; //높이는 제거한다.
 
-            return offset.sqrMagnitude <= attackRange * attackRange; //대상이 투척 사거리 안에 있는지 반환한다.
+            return offset.sqrMagnitude <= throwRange * throwRange; //대상이 투척 사거리 안에 있는지 반환한다.
         }
 
         private Vector3 PickImpactPosition()

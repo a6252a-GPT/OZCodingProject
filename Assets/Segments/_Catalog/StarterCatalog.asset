@@ -16,4 +16,20 @@ MonoBehaviour:
   - WormId: worm_basic
     StarterDefinition: {fileID: 11400000, guid: 0272680e250261f40b787294e7dc286c, type: 2}
     StarterPrefab: {fileID: 1038346915152058676, guid: 794390654abf338439524985f164a609, type: 3}
-    Memo: "\uAE30\uBCF8 \uC9C0\uB801\uC774 \uC2DC\uC791 \uCE90\uB17C"
+    Memo: Basic starter cannon
+  - WormId: worm_attack
+    StarterDefinition: {fileID: 11400000, guid: 4199ddef0982eeb4d9b06e15b40999fa, type: 2}
+    StarterPrefab: {fileID: 3915507005513347476, guid: 744075fb0c74520489ffe8f0864c3981, type: 3}
+    Memo: Attack Starter Missile
+  - WormId: worm_mobility
+    StarterDefinition: {fileID: 11400000, guid: 994c437d7507c824e9a39488c7dcce63, type: 2}
+    StarterPrefab: {fileID: 1765716544202809382, guid: ca3e46586e011184eb434ae01b1b9444, type: 3}
+    Memo: Mobility Starter Saw
+  - WormId: worm_support
+    StarterDefinition: {fileID: 11400000, guid: 5463b0916bdcd284f9658bf4e8f11a34, type: 2}
+    StarterPrefab: {fileID: 2325888777363052706, guid: c7955523b3859e44e8d8d711647c3ed6, type: 3}
+    Memo: Support Starter Fireball
+  - WormId: worm_magic
+    StarterDefinition: {fileID: 11400000, guid: 693f8aa096d89dc4b9e4861e8cb8e31a, type: 2}
+    StarterPrefab: {fileID: 907956036146838665, guid: 265cc178e260534479ca57e3f4676d17, type: 3}
+    Memo: Magic Starter Lightning
