@@ -17,6 +17,24 @@ namespace TeamProject01.Gameplay
         [Min(0)] public int PierceCount; // 관통 수 보너스
         [Min(0f)] public float ExplosionRadius; // 폭발 반경 보너스
 
+        [Header("추후 — 카드 UI (비우면 CardUI addSegmentCards + 색상 틴트)")]
+        public GameObject CardPrefabOverride; // 이 강화 전용 카드 프리팹 (텍스트·이미지 레이아웃)
+        public GameObject RareCardPrefabOverride; // 레어 전용 프리팹
+        public GameObject UniqueCardPrefabOverride; // 유니크 전용 프리팹
+        public Sprite CardIconOverride; // 카드 아이콘 (프리팹 Image/Icon 에 주입, 선택)
+
+        public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹 + 색상 틴트 여부
+        {
+            public CardSpawnResolve(GameObject prefab, bool applyFallbackVisual)
+            {
+                Prefab = prefab;
+                ApplyFallbackVisual = applyFallbackVisual;
+            }
+
+            public GameObject Prefab { get; } // Instantiate 대상
+            public bool ApplyFallbackVisual { get; } // true = 기본 껍데기 + 등급 색 틴트
+        }
+
         public string NormalizedId => string.IsNullOrWhiteSpace(EnhancementId) ? string.Empty : EnhancementId.Trim(); // 비교 ID
         public string NormalizedTargetSegmentId => string.IsNullOrWhiteSpace(TargetSegmentId) ? string.Empty : TargetSegmentId.Trim(); // 대상 ID
         public bool HasId => !string.IsNullOrWhiteSpace(EnhancementId); // ID 존재
@@ -30,6 +48,48 @@ namespace TeamProject01.Gameplay
             pierceCount = Mathf.Max(0, pierceCount + PierceCount); // 관통 합산
             explosionRadius = Mathf.Max(0.1f, explosionRadius + ExplosionRadius); // 폭발 반경 합산
         }
+
+        public CardSpawnResolve ResolveCardSpawn(StatUpgrade.StatCardTier tier, GameObject defaultTemplate, SegmentAddCard templatePresentation) // 등급·에셋·템플릿 → Instantiate 대상
+        {
+            if (defaultTemplate == null)
+            {
+                return new CardSpawnResolve(null, false); // 템플릿 없음
+            }
+
+            switch (tier)
+            {
+                case StatUpgrade.StatCardTier.Unique:
+                    if (UniqueCardPrefabOverride != null)
+                    {
+                        return new CardSpawnResolve(UniqueCardPrefabOverride, false); // 유니크 전용
+                    }
+
+                    break;
+                case StatUpgrade.StatCardTier.Rare:
+                    if (RareCardPrefabOverride != null)
+                    {
+                        return new CardSpawnResolve(RareCardPrefabOverride, false); // 레어 전용
+                    }
+
+                    break;
+            }
+
+            if (CardPrefabOverride != null)
+            {
+                return new CardSpawnResolve(CardPrefabOverride, false); // 강화별 공통 프리팹
+            }
+
+            if (templatePresentation != null)
+            {
+                GameObject templateTierPrefab = templatePresentation.ResolveSpawnPrefabForTier(tier, defaultTemplate); // addSegmentCards 템플릿 등급 프리팹
+                if (templateTierPrefab != null && templateTierPrefab != defaultTemplate)
+                {
+                    return new CardSpawnResolve(templateTierPrefab, false); // 슬롯 템플릿 등급 교체
+                }
+            }
+
+            return new CardSpawnResolve(defaultTemplate, true); // 기본 껍데기 + 색상 틴트
+        }
     }
 
     [Serializable]
@@ -42,17 +102,18 @@ namespace TeamProject01.Gameplay
 
         public bool HasAny => BaseDamageBonus > 0f || ProjectileSpeedBonus > 0f || PierceCountBonus > 0 || ExplosionRadiusBonus > 0f; // 보너스 존재 여부
 
-        public void AddDefinition(WeaponDefinition definition) // 강화 1종 누적
+        public void AddDefinition(WeaponDefinition definition, float bonusMultiplier = 1f) // 강화 1종 누적
         {
             if (definition == null)
             {
                 return; // null 무시
             }
 
-            BaseDamageBonus += definition.BaseDamage; // 카드 피해 누적
-            ProjectileSpeedBonus += definition.ProjectileSpeed; // 카드 속도 누적
-            PierceCountBonus += definition.PierceCount; // 카드 관통 누적
-            ExplosionRadiusBonus += definition.ExplosionRadius; // 카드 폭발 반경 누적
+            float scale = Mathf.Max(0f, bonusMultiplier); // 레어 2배 / 유니크 3배
+            BaseDamageBonus += definition.BaseDamage * scale; // 카드 피해 누적
+            ProjectileSpeedBonus += definition.ProjectileSpeed * scale; // 카드 속도 누적
+            PierceCountBonus += Mathf.RoundToInt(definition.PierceCount * scale); // 카드 관통 누적
+            ExplosionRadiusBonus += definition.ExplosionRadius * scale; // 카드 폭발 반경 누적
         }
     }
 }

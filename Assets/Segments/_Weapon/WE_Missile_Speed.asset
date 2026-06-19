@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponDefinition
   EnhancementId: WE_Missile_ExplosionBoost
   DisplayName: "\uBBF8\uC0AC\uC77C \uAC15\uD654"
-  Description: "\uBBF8\uC0AC\uC77C \uC18D\uB3C4 \uC99D\uAC00"
+  Description: "\uD0C4\uD658 \uC18D\uB3C4 \uC99D\uAC00"
   TargetSegmentId: SG02_Missile
   BaseDamage: 0
   ProjectileSpeed: 1

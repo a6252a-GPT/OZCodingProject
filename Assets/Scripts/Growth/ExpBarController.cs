@@ -158,7 +158,7 @@ namespace TeamProject01.Gameplay
                 return; // 코어 없음
             }
 
-            bool choicePending = core.IsLevelUpChoicePending; // 레벨 선반영 후 카드 대기 중
+            bool choicePending = core.IsLevelUpChoicePending; // 카드 선택 UI 표시 중
             if (wasLevelUpChoicePending && !choicePending)
             {
                 levelUpUiOpened = false; // 카드 선택 완료 → 다음 레벨업 UI 허용
@@ -167,13 +167,13 @@ namespace TeamProject01.Gameplay
             wasLevelUpChoicePending = choicePending; // 이전 프레임 상태 저장
             if (choicePending)
             {
-                return; // 레벨 선반영 후 카드 선택 중
+                return; // 카드 선택 중 (경험치는 아직 미소비)
             }
 
             if (stats.CanLevelUp && !levelUpUiOpened) //전찬우 추가
             {
                 levelUpUiOpened = true; //전찬우 추가
-                if (core.TryBeginLevelUpChoice()) // 레벨 먼저 반영 후 패널 오픈
+                if (core.TryBeginLevelUpChoice()) // 조건 확인 후 패널 오픈 (경험치는 선택 시 소비)
                 {
                     OnLevelUpTriggered(); //전찬우 추가
                 }

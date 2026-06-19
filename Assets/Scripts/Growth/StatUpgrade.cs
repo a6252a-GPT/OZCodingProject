@@ -30,6 +30,11 @@ public class StatUpgrade : MonoBehaviour
     [SerializeField] private Color rareCardColor = Color.yellow; // 레어 카드 색 (2배)
     [SerializeField] private Color uniqueCardColor = Color.green; // 유니크 카드 색 (3배)
 
+    [Header("추후 — 등급별 프리팹 교체 (비우면 CardUI statUpgradeCards + 색상 틴트)")]
+    [SerializeField] private GameObject normalCardPrefab; // 일반 전용 프리팹 (비우면 statUpgradeCards 풀 프리팹)
+    [SerializeField] private GameObject rareCardPrefab; // 레어 전용 프리팹
+    [SerializeField] private GameObject uniqueCardPrefab; // 유니크 전용 프리팹
+
     private float upgradeMultiplier = 1f; // 생성 시 1, 2, 3
     private StatCardTier currentTier = StatCardTier.Normal; // 현재 등급
 
@@ -37,29 +42,118 @@ public class StatUpgrade : MonoBehaviour
     public bool IsRareUpgrade => currentTier == StatCardTier.Rare; // 레어 카드 여부
     public bool IsUniqueUpgrade => currentTier == StatCardTier.Unique; // 유니크 카드 여부
 
-    public void RollSpawnVariant(float rareChancePercent, float uniqueChancePercent) // 생성 시 등급·배율·색상 결정
+    public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹 + 색상 틴트 여부
+    {
+        public CardSpawnResolve(GameObject prefab, bool applyFallbackVisual)
+        {
+            Prefab = prefab;
+            ApplyFallbackVisual = applyFallbackVisual;
+        }
+
+        public GameObject Prefab { get; } // Instantiate 대상
+        public bool ApplyFallbackVisual { get; } // true = 기본 껍데기 + 등급 색 틴트
+    }
+
+    public void RollSpawnVariant(float rareChancePercent, float uniqueChancePercent) // 생성 시 등급·배율·색상 결정 (기존 호출 호환)
+    {
+        ApplySpawnTier(RollTier(rareChancePercent, uniqueChancePercent), applyFallbackVisual: true); // 색상 틴트 방식
+    }
+
+    // ===== 등급별 프리팹 교체 — CardUI.SpawnStatUpgradeCards 에서 사용 =====
+
+    public static float GetMultiplierForTier(StatCardTier tier) // 등급 → 보너스 배율
+    {
+        return tier switch
+        {
+            StatCardTier.Unique => 3f,
+            StatCardTier.Rare => 2f,
+            _ => 1f
+        };
+    }
+
+    public static StatCardTier RollTier(float rareChancePercent, float uniqueChancePercent) // 등급 난수
     {
         float uniqueChance = Mathf.Clamp(uniqueChancePercent, 0f, 100f) * 0.01f; // 유니크 확률(0~1)
         float rareChance = Mathf.Clamp(rareChancePercent, 0f, 100f) * 0.01f; // 레어 확률(0~1)
         float roll = Random.value; // 0~1 난수
 
-        if (roll < uniqueChance) // 유니크 구간
+        if (roll < uniqueChance)
         {
-            currentTier = StatCardTier.Unique; // 유니크 등급 저장
-            upgradeMultiplier = 3f; // Inspector 수치 3배
-        }
-        else if (roll < uniqueChance + rareChance) // 레어 구간
-        {
-            currentTier = StatCardTier.Rare; // 레어 등급 저장
-            upgradeMultiplier = 2f; // Inspector 수치 2배
-        }
-        else // 일반 구간
-        {
-            currentTier = StatCardTier.Normal; // 일반 등급 저장
-            upgradeMultiplier = 1f; // Inspector 수치 그대로
+            return StatCardTier.Unique; // 유니크
         }
 
-        ApplyCardVisual(); // 등급에 맞는 색상 적용
+        if (roll < uniqueChance + rareChance)
+        {
+            return StatCardTier.Rare; // 레어
+        }
+
+        return StatCardTier.Normal; // 일반
+    }
+
+    public CardSpawnResolve ResolveCardSpawn(StatCardTier tier, GameObject defaultPrefab) // 등급 → Instantiate 대상
+    {
+        if (defaultPrefab == null)
+        {
+            return new CardSpawnResolve(null, false); // 템플릿 없음
+        }
+
+        switch (tier)
+        {
+            case StatCardTier.Unique:
+                if (uniqueCardPrefab != null)
+                {
+                    return new CardSpawnResolve(uniqueCardPrefab, false); // 유니크 전용
+                }
+
+                break;
+            case StatCardTier.Rare:
+                if (rareCardPrefab != null)
+                {
+                    return new CardSpawnResolve(rareCardPrefab, false); // 레어 전용
+                }
+
+                break;
+            case StatCardTier.Normal:
+                if (normalCardPrefab != null)
+                {
+                    return new CardSpawnResolve(normalCardPrefab, false); // 일반 전용
+                }
+
+                break;
+        }
+
+        return new CardSpawnResolve(defaultPrefab, true); // 기본 껍데기 + 색상 틴트
+    }
+
+    public GameObject ResolveSpawnPrefabForTier(StatCardTier tier, GameObject defaultPrefab) // 등급별 Instantiate 대상
+    {
+        return ResolveCardSpawn(tier, defaultPrefab).Prefab ?? defaultPrefab;
+    }
+
+    public void CopyStatValuesFrom(StatUpgrade source) // 등급 프리팹 교체 시 보너스 수치 복사
+    {
+        if (source == null || ReferenceEquals(source, this))
+        {
+            return; // 복사 대상 없음
+        }
+
+        levelDelta = source.levelDelta;
+        damageMultiplierBonus = source.damageMultiplierBonus;
+        attackSpeedMultiplierBonus = source.attackSpeedMultiplierBonus;
+        turnSpeedBonus = source.turnSpeedBonus;
+        collisionForceBonus = source.collisionForceBonus;
+        rejoinRangeBonus = source.rejoinRangeBonus;
+    }
+
+    public void ApplySpawnTier(StatCardTier tier, bool applyFallbackVisual) // 생성 후 등급·배율 반영 (추후)
+    {
+        currentTier = tier; // 등급 저장
+        upgradeMultiplier = GetMultiplierForTier(tier); // 스탯 배율
+
+        if (applyFallbackVisual)
+        {
+            ApplyCardVisual(); // 색상 틴트
+        }
     }
 
     public GrowthStatData CreateGrowthStatData() // 코어로 보낼 성장값 생성

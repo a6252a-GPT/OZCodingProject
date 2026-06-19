@@ -1237,6 +1237,7 @@ MonoBehaviour:
   hoverScale: 1.09
   levelUpPanelCanvasGroup: {fileID: 481091737}
   levelUpUi: {fileID: 481091736}
+  useSegmentSelectWeaponEnhanceFlow: 0
 --- !u!114 &481091736
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1253,7 +1254,6 @@ MonoBehaviour:
   panelCanvasGroup: {fileID: 481091737}
   levelUpText: {fileID: 817696234}
   logCoreStats: 1
-  logInterval: 1
 --- !u!225 &481091737
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -3371,7 +3371,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.CoreStatProvider
   CurrentLevel: 1
   FlatDamageBonus: 0
-  DamageMultiplier: 10
+  DamageMultiplier: 100
   AttackSpeedMultiplier: 1
   TurnSpeedBonus: 0
   CollisionForceBonus: 0
@@ -4375,7 +4375,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1551203564
 Transform:
   m_ObjectHideFlags: 0

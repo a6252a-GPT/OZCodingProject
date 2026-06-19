@@ -20,4 +20,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7492b4fcc052422a9318029690c0a526, type: 2}
   - {fileID: 11400000, guid: 04b6c07338255534581b41e57cee7964, type: 2}
   - {fileID: 11400000, guid: edfb9734a2ac96243815cb162c228957, type: 2}
-  AdditionalCategories: []
+  AdditionalSegments:
+  - SegmentId: 
+    Enhancements: []
+  - SegmentId: 
+    Enhancements: []
+  - SegmentId: 
+    Enhancements: []
