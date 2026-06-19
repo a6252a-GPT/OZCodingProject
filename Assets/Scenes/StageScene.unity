@@ -2214,6 +2214,7 @@ MonoBehaviour:
   - {fileID: 1511448857506858134, guid: a07c2db2c65b556429e27d4e3eeac86c, type: 3}
   - {fileID: 1511448857506858134, guid: ea0d40b0a429b164ea58817dc21f486b, type: 3}
   - {fileID: 1511448857506858134, guid: 34155b9013e604f48890dfdf542819f4, type: 3}
+  weaponCatalogAsset: {fileID: 11400000, guid: 3c4d5e6f7890abcdef1234567890abcd, type: 2}
   doubleUpgradeChancePercent: 30
   cardSlots:
   - {fileID: 548097293}
@@ -2893,6 +2894,7 @@ MonoBehaviour:
   ExtraExperiencePerLevel: 5
   Convoy: {fileID: 0}
   SegmentCatalogAsset: {fileID: 11400000, guid: bf871c57c4a7aff49b7e7f24dc632e0e, type: 2}
+  WeaponCatalogAsset: {fileID: 11400000, guid: 3c4d5e6f7890abcdef1234567890abcd, type: 2}
   SegmentCatalog: []
 --- !u!4 &1033872595
 Transform:

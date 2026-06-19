@@ -118,7 +118,11 @@ namespace TeamProject01.Gameplay
         private DamageData CreateDamageData(Vector3 position) // 피해값 생성
         {
             CoreStatData coreStats = CoreStatProvider.GetCurrentOrDefault(); // 코어 스탯
-            float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(AttackProfile.BaseDamage)); // 최종 피해
+            // 건준 추가 시작 =====
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
+            float baseDamage = AttackProfile.BaseDamage + weaponBonus.BaseDamageBonus; // 프로필 + 강화
+            // 건준 추가 끝 =====
+            float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(baseDamage)); // 최종 피해
             return DamageData.Create(damage, GetDamageType(), Segment.ChainIndex, position, gameObject); // 전달값
         }
 

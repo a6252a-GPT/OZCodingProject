@@ -3,10 +3,8 @@
 namespace TeamProject01.Gameplay
 {
     public sealed class EnemySuicideCharger : MonoBehaviour // 플레이어 컨보이를 향해 돌진한 뒤 자폭하는 몬스터
-    {
-        [Header("Target")]
-        ////// 전찬우삭제 - 기존 이름 기반 PlayerConvoy 검색 필드는 MonsterInteractionApi 타겟 조회로 대체한다.
-        // [SerializeField] private string targetName = "PlayerConvoy"; // 추적할 PlayerConvoy 오브젝트 이름
+    {         
+
         private Transform target; // 추적 대상 Transform
 
         [Header("Movement")]
@@ -108,24 +106,6 @@ namespace TeamProject01.Gameplay
 
         private void TryFindTarget()
         {
-            ////// 전찬우삭제 - 기존 GameObject.Find 기반 타겟 검색 코드는 아래에 보존한다.
-            // private void TryFindTarget()
-            //         {
-            //             if (string.IsNullOrEmpty(targetName)) // 찾을 이름이 비어 있다면
-            //             {
-            //                 return; // 찾지 않는다.
-            //             }
-            // 
-            //             GameObject targetObject = GameObject.Find(targetName); // 씬에서 이름이 같은 GameObject를 찾는다.
-            // 
-            //             if (targetObject == null) // 찾지 못했다면
-            //             {
-            //                 return; // 종료한다.
-            //             }
-            // 
-            //             target = targetObject.transform; // 찾은 대상 Transform을 저장한다.
-            //         }
-
             ////// 전찬우추가 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
             if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가 - 등록된 컨보이 타겟이 있는지 확인한다.
             {
@@ -213,9 +193,7 @@ namespace TeamProject01.Gameplay
             {
                 return; // 넉백하지 않는다.
             }
-
-            ////// 전찬우삭제 - EnemyApi 직접 호출은 MonsterInteractionApi 요청으로 대체한다.
-            // EnemyApi.RequestKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // 기존: EnemyApi에 폭발 넉백 요청
+                       
             ////// 전찬우추가 - 몬스터는 컨보이를 직접 움직이지 않고 넉백 요청만 등록한다.
             MonsterInteractionApi.RequestConvoyKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // 전찬우추가 - 폭발 범위 안의 컨보이에게 넉백을 요청한다.
         }
