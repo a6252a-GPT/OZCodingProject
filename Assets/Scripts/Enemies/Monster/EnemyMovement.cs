@@ -17,6 +17,12 @@ namespace TeamProject01.Gameplay
         [Min(0f)]
         [SerializeField] private float groundHeight = 0.72f; // 바닥 위에 몬스터를 올려둘 높이 오프셋
 
+        //컨보이 밀렸을 떄 뒤로 밀려나게 할때 사용할 변수(끼임현상 방지)
+        private float knockbackSpeed = 3.0f; //컨보이에 부딪쳤을 떄 몬스터가 밀려나는 속도
+        private float knockbackDuration = 0.15f; //컨보이와 부딪쳤을 때 밀려나는 시간
+        private Vector3 knockbackDirection; //현재 몬스터가 밀려나는 방향
+        private float knockbackTimer; //밀리 상태 시간
+
         public bool IsInStopRange { get; private set; } // 현재 Nexus가 멈춤 거리 안에 있는지 외부에서 읽는 값
 
         private EnemyMeleeAttack meleeAttack; // 같은 GameObject에 붙은 근거리 공격 Script Component 참조
@@ -24,6 +30,7 @@ namespace TeamProject01.Gameplay
 
         private EnemySlowZoneThrower slowZoneThrower; // 같은 GameObject에 붙은 슬로우 장판 투척 공격 Script Component 참조
         private EnemyObstacleSummoner obstacleSummoner; // 같은 GameObject에 붙은 장애물 소환 Script Component 참조
+        private EnemyBuffReceiver buffReceiver; // 같은 GameObject에 붙은 버프 상태 Script Component 참조
 
         private void Awake()
         {
@@ -31,6 +38,7 @@ namespace TeamProject01.Gameplay
             rangedAttack = GetComponent<EnemyRangedAttack>(); // 같은 GameObject에 붙은 EnemyRangedAttack Script Component를 찾는다.
             slowZoneThrower = GetComponent<EnemySlowZoneThrower>(); // 같은 GameObject에 붙은 EnemySlowZoneThrower Script Component를 찾는다.
             obstacleSummoner = GetComponent<EnemyObstacleSummoner>(); // 같은 GameObject에 붙은 EnemyObstacleSummoner Script Component를 찾는다.
+            buffReceiver = GetComponent<EnemyBuffReceiver>(); // 같은 GameObject에 붙은 EnemyBuffReceiver Script Component를 찾는다.
 
             if (nexus == null) //Nexus가 연결되지 않았다면
             {
@@ -41,6 +49,20 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
+
+            if (knockbackTimer > 0.0f) //밀리는 시간이 유지되고 있다면
+            {
+                knockbackTimer -= Time.deltaTime;//밀리는 시간을 감소한다.
+
+                Vector3 knockbackPosition = transform.position + knockbackDirection * (knockbackSpeed * Time.deltaTime); //밀려날 위치를 계산한다.
+                knockbackPosition = GroundService.ProjectToGround(knockbackPosition, groundHeight); //바닥 높이에 맞춘다.
+
+                Vector3 resolvedKnockbackPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, knockbackPosition, bodyRadius); //밀리는 중에 컨보이와 겹치지 않게 한다.
+                transform.position = resolvedKnockbackPosition; //보정 위치를 적용한다.
+
+                return;
+            }
+
             if (nexus == null) //이동 목표가 없으면
             {
                 return; //종료한다.
@@ -51,15 +73,13 @@ namespace TeamProject01.Gameplay
 
             float stopDistance = GetStopDistance(); // 공격 Script의 AttackRange 또는 예비 정지 거리를 가져온다.
             bool isNexusInStopRange = offset.sqrMagnitude <= stopDistance * stopDistance; // Nexus가 공격 사거리 안에 있는지 확인한다.
-            bool isSlowTargetInRange = slowZoneThrower != null && slowZoneThrower.IsTargetInAttackRange(); // PlayerConvoy가 슬로우 투척 사거리 안에 있는지 확인한다.
+            bool isSlowTargetInRange = slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
             bool isObstacleSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; // 장애물 소환 과정이 진행 중인지 확인한다.
 
             if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning) // Nexus 공격 가능 거리거나, PlayerConvoy 투척 가능 거리거나, 장애물 소환 중이라면
             {
                 IsInStopRange = isNexusInStopRange; // 이 값은 Nexus 공격 사거리 여부만 저장한다.
-
-                ////// 전찬우삭제 - 몬스터가 SegmentBlocker를 직접 호출하지 않도록 MonsterInteractionApi로 대체한다.
-                // Vector3 resolvedPosition = SegmentBlocker.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 기존: 정지 중 세그먼트 겹침 보정
+               
                 ////// 전찬우추가 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
                 Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
@@ -67,17 +87,31 @@ namespace TeamProject01.Gameplay
                 return; // 공격, 투척, 소환 중이면 Nexus 쪽으로 더 이동하지 않는다.
             }
 
-            IsInStopRange = false; // Nexus 공격 사거리 밖이라면 false로 저장한다.
+            IsInStopRange = false;
 
-            Vector3 direction = offset.normalized; // Nexus 방향 벡터를 길이 1짜리 방향으로 만든다.
+            Vector3 direction = offset.normalized;
 
-            Vector3 desiredPosition = transform.position + direction * (moveSpeed * Time.deltaTime); // 이번 프레임에 이동하고 싶은 목표 위치를 계산한다.
+            float moveSpeedBuffMultiplier = 1.0f; // 기본 이동속도 버프 배율
+
+            if (buffReceiver != null) // 버프 상태 Script Component가 있다면
+            {
+                moveSpeedBuffMultiplier = buffReceiver.GetMoveSpeedMultiplier(); // 현재 이동속도 버프 배율을 가져온다.
+            }
+
+            Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * Time.deltaTime); // 버프 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
-            ////// 전찬우삭제 - 몬스터가 SegmentBlocker를 직접 호출하지 않도록 MonsterInteractionApi로 대체한다.
-            // Vector3 position = SegmentBlocker.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 기존: 이동 중 세그먼트 겹침 보정
             ////// 전찬우추가 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
             Vector3 position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
+
+            Vector3 pushOffset = position - desiredPosition; // 원래 이동하려던 위치에서 얼마나 밀려났는지 계산한다.
+
+            if (pushOffset.sqrMagnitude > 0.0001f) // 세그먼트 때문에 위치가 보정되었다면
+            {
+                knockbackDirection = pushOffset.normalized; // 밀려난 방향을 저장한다.
+                knockbackTimer = knockbackDuration; // 짧은 시간 동안 밀림 상태로 만든다.
+            }
+
             transform.position = position; // 최종 보정된 위치를 몬스터 Transform에 적용한다.
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 몬스터가 이동 방향을 바라보게 회전시킨다.
         }
@@ -103,5 +137,6 @@ namespace TeamProject01.Gameplay
             this.moveSpeed = moveSpeed; // 이동 속도를 저장한다.
             this.groundHeight = groundHeight; // 바닥 높이 오프셋을 저장한다.
         }
+   
     }
 }

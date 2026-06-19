@@ -1802,7 +1802,7 @@ RectTransform:
   m_Father: {fileID: 1140286004}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -2290,7 +2290,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &885175668
 Transform:
   m_ObjectHideFlags: 0
@@ -2570,19 +2570,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySpawner
   nexus: {fileID: 0}
-  monsterRoot: {fileID: 0}
+  monsterRoot: {fileID: 1212607051}
   spawnArea: {fileID: 0}
   spawnEntries:
   - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-    weight: 60
+    weight: 50
   - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-    weight: 60
+    weight: 50
   - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
     weight: 50
   - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
     weight: 50
   - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
-    weight: 0
+    weight: 50
+  - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
+    weight: 50
+  - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+    weight: 50
   spawnInterval: 1
   spawnCount: 1
   maxActiveMonsters: 20
