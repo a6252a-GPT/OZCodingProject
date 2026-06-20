@@ -12,9 +12,13 @@ namespace TeamProject01.Gameplay
         public string TargetSegmentId; // 적용 대상 세그먼트 ID (예: SG01_Cannon)
 
         [Header("Attack Stat Bonuses")]
+        [Header("공격력 보너스")]
         [Min(0f)] public float BaseDamage; // 기본 피해량 보너스
+        [Header("투사체 속도 보너스")]
         [Min(0f)] public float ProjectileSpeed; // 투사체 속도 보너스
+        [Header("관통 수 보너스")]
         [Min(0)] public int PierceCount; // 관통 수 보너스
+        [Header("폭발 반경 보너스")]
         [Min(0f)] public float ExplosionRadius; // 폭발 반경 보너스
 
         [Header("추후 — 카드 UI (비우면 CardUI addSegmentCards + 색상 틴트)")]

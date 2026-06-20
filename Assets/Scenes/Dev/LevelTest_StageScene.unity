@@ -1872,7 +1872,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &510229025
 Transform:
   m_ObjectHideFlags: 0
@@ -5793,6 +5793,8 @@ MonoBehaviour:
   - {fileID: 1511448857506858134, guid: a07c2db2c65b556429e27d4e3eeac86c, type: 3}
   - {fileID: 1511448857506858134, guid: ea0d40b0a429b164ea58817dc21f486b, type: 3}
   - {fileID: 1511448857506858134, guid: 34155b9013e604f48890dfdf542819f4, type: 3}
+  segmentAddActionCardPrefab: {fileID: 0}
+  segmentLevelUpActionCardPrefab: {fileID: 0}
   weaponCatalogAsset: {fileID: 11400000, guid: 3c4d5e6f7890abcdef1234567890abcd, type: 2}
   rareCardChancePercent: 30
   uniqueCardChancePercent: 10
@@ -5805,9 +5807,16 @@ MonoBehaviour:
   cardsToSpawn: 3
   startYOffset: -80
   hoverScale: 1.09
+  selectionCloseHoldSeconds: 0.15
+  selectionSelectUpSeconds: 0.15
+  selectionSelectDownSeconds: 0.1
+  selectionPanelCloseFadeSeconds: 0.15
   levelUpPanelCanvasGroup: {fileID: 1463195185}
   levelUpUi: {fileID: 1463195184}
-  useSegmentSelectWeaponEnhanceFlow: 0
+  useSegmentSelectWeaponEnhanceFlow: 1
+  weaponEnhanceSegmentBaseWeight: 100
+  weaponEnhanceSegmentWeightPerOwned: 50
+  logPlayerSegmentCounts: 1
 --- !u!114 &1463195184
 MonoBehaviour:
   m_ObjectHideFlags: 0
