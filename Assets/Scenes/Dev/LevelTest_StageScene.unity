@@ -4057,7 +4057,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySpawner
   nexus: {fileID: 0}
-  monsterRoot: {fileID: 0}
+  monsterRoot: {fileID: 2142108414}
   spawnArea: {fileID: 0}
   spawnEntries:
   - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
