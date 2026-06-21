@@ -49,10 +49,14 @@ namespace TeamProject01.Gameplay
                 return; // 이미 연결
             }
 
-            BindModeButton(RelativeTurnButton, ConvoyControlMode.RelativeTurn); // 1번
-            BindModeButton(WasdDirectionButton, ConvoyControlMode.WasdDirection); // 2번
-            BindModeButton(MousePointerButton, ConvoyControlMode.MousePointer); // 3번
-            BindModeButton(WasdManualForwardButton, ConvoyControlMode.WasdManualForward); // 4번
+            SetButtonLabel(RelativeTurnButton, "좌우턴"); // 숫자키는 액션 HUD 전용
+            SetButtonLabel(WasdDirectionButton, "WASD"); // 숫자 제거
+            SetButtonLabel(MousePointerButton, "마우스"); // 숫자 제거
+            SetButtonLabel(WasdManualForwardButton, "수동WASD"); // 숫자 제거
+            BindModeButton(RelativeTurnButton, ConvoyControlMode.RelativeTurn); // 버튼 전환
+            BindModeButton(WasdDirectionButton, ConvoyControlMode.WasdDirection); // 버튼 전환
+            BindModeButton(MousePointerButton, ConvoyControlMode.MousePointer); // 버튼 전환
+            BindModeButton(WasdManualForwardButton, ConvoyControlMode.WasdManualForward); // 버튼 전환
             ResolveAutoOrbitButton(); // 씬 배치 버튼 연결
             BindAutoOrbitButton(AutoOrbitButton); // 자동궤도
             buttonsWired = true; // 연결 완료
@@ -109,7 +113,7 @@ namespace TeamProject01.Gameplay
             SetText(ExperienceText, $"경험치 {stats.CurrentExperience}/{stats.ExperienceToNextLevel}"); // 경험치
             SetText(GoldText, $"골드 {stats.Gold}"); // 골드
             SetText(ModeText, Controller.CurrentControlModeLabel); // 모드명
-            SetText(HelpText, "1~4 전환\nSpace 세그먼트 추가\nBackspace 세그먼트 제거\nR 리셋\nQ/E 카메라각도조절"); // 도움말
+            SetText(HelpText, "하단 버튼 조작모드 전환\n1~5 액션 HUD\nSpace 세그먼트 추가\nBackspace 세그먼트 제거\nR 리셋\nQ/E 카메라각도조절"); // 도움말
 
             bool autoOrbit = Controller.IsAutoOrbitActive; // 자동궤도 상태
             RefreshButton(RelativeTurnButton, !autoOrbit && Controller.CurrentControlMode == ConvoyControlMode.RelativeTurn); // 1번 상태

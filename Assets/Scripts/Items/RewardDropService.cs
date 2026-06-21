@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
@@ -15,14 +16,20 @@ namespace TeamProject01.Gameplay
         public Transform DropRoot;
         [Min(0f)] public float DropSpreadRadius = 0.42f;
         [Min(0f)] public float GroundHeightOffset = 0.02f;
+        [Header("Pooling")]
+        [Min(0)] public int InitialPoolSizePerKind = 16;
+        public bool AllowPoolExpansion = true;
 
         private static WorldRewardPickup cachedExperiencePrefab;
         private static WorldRewardPickup cachedGoldPrefab;
         private static int dropSerial;
+        private readonly Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>> pickupPools = new Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>>();
+        private Transform poolRoot;
 
         private void Awake()
         {
             Active = this;
+            PrewarmPools();
         }
 
         private void OnDestroy()
@@ -54,12 +61,12 @@ namespace TeamProject01.Gameplay
             Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
             if (reward.Experience > 0)
             {
-                SpawnPickup(ResolveExperiencePrefab(), RewardPickupKind.Experience, reward.Experience, reward.EnemyId, basePosition, basePosition + GetDropOffset(0), DropRoot, GroundHeightOffset);
+                SpawnPickupFromPool(ResolveExperiencePrefab(), RewardPickupKind.Experience, reward.Experience, reward.EnemyId, basePosition, basePosition + GetDropOffset(0), DropRoot, GroundHeightOffset);
             }
 
             if (reward.Gold > 0)
             {
-                SpawnPickup(ResolveGoldPrefab(), RewardPickupKind.Gold, reward.Gold, reward.EnemyId, basePosition, basePosition + GetDropOffset(1), DropRoot, GroundHeightOffset);
+                SpawnPickupFromPool(ResolveGoldPrefab(), RewardPickupKind.Gold, reward.Gold, reward.EnemyId, basePosition, basePosition + GetDropOffset(1), DropRoot, GroundHeightOffset);
             }
         }
 
@@ -131,6 +138,124 @@ namespace TeamProject01.Gameplay
         {
             GameObject prefab = Resources.Load<GameObject>(resourcePath);
             return prefab != null ? prefab.GetComponent<WorldRewardPickup>() : null;
+        }
+
+        private void PrewarmPools()
+        {
+            int count = Mathf.Max(0, InitialPoolSizePerKind);
+            PrewarmPool(ResolveExperiencePrefab(), count);
+            PrewarmPool(ResolveGoldPrefab(), count);
+        }
+
+        private void PrewarmPool(WorldRewardPickup prefab, int count)
+        {
+            if (prefab == null || count <= 0)
+            {
+                return;
+            }
+
+            Queue<WorldRewardPickup> pool = GetPool(prefab);
+            for (int i = pool.Count; i < count; i++)
+            {
+                WorldRewardPickup pickup = CreatePooledPickup(prefab);
+                if (pickup != null)
+                {
+                    pool.Enqueue(pickup);
+                }
+            }
+        }
+
+        private void SpawnPickupFromPool(WorldRewardPickup prefab, RewardPickupKind kind, int amount, int enemyId, Vector3 spawnPosition, Vector3 landingPosition, Transform parent, float groundHeightOffset)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            WorldRewardPickup pickup = prefab != null
+                ? GetPickupFromPool(prefab, parent)
+                : CreateFallbackPickup(kind, spawnPosition, parent, groundHeightOffset);
+
+            if (pickup == null)
+            {
+                return;
+            }
+
+            pickup.name = $"{kind}RewardPickup_{++dropSerial:000}";
+            pickup.transform.SetParent(parent, true);
+            pickup.AttachPoolOwner(prefab != null ? this : null, prefab);
+            pickup.Configure(kind, amount, enemyId, landingPosition, spawnPosition);
+            if (!pickup.gameObject.activeSelf)
+            {
+                pickup.gameObject.SetActive(true);
+            }
+        }
+
+        private WorldRewardPickup GetPickupFromPool(WorldRewardPickup prefab, Transform parent)
+        {
+            Queue<WorldRewardPickup> pool = GetPool(prefab);
+            while (pool.Count > 0)
+            {
+                WorldRewardPickup pickup = pool.Dequeue();
+                if (pickup != null)
+                {
+                    pickup.transform.SetParent(parent, true);
+                    return pickup;
+                }
+            }
+
+            return AllowPoolExpansion ? CreatePooledPickup(prefab) : null;
+        }
+
+        private WorldRewardPickup CreatePooledPickup(WorldRewardPickup prefab)
+        {
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            WorldRewardPickup pickup = Instantiate(prefab, GetPoolRoot());
+            pickup.AttachPoolOwner(this, prefab);
+            pickup.gameObject.SetActive(false);
+            return pickup;
+        }
+
+        private Queue<WorldRewardPickup> GetPool(WorldRewardPickup prefab)
+        {
+            if (!pickupPools.TryGetValue(prefab, out Queue<WorldRewardPickup> pool))
+            {
+                pool = new Queue<WorldRewardPickup>();
+                pickupPools.Add(prefab, pool);
+            }
+
+            return pool;
+        }
+
+        private Transform GetPoolRoot()
+        {
+            if (poolRoot != null)
+            {
+                return poolRoot;
+            }
+
+            GameObject root = new GameObject("RewardPickupPool");
+            root.transform.SetParent(transform, false);
+            poolRoot = root.transform;
+            return poolRoot;
+        }
+
+        internal bool ReleasePickup(WorldRewardPickup pickup, WorldRewardPickup sourcePrefab)
+        {
+            if (pickup == null || sourcePrefab == null)
+            {
+                return false;
+            }
+
+            pickup.ResetForPool();
+            pickup.gameObject.SetActive(false);
+            pickup.transform.SetParent(GetPoolRoot(), false);
+            GetPool(sourcePrefab).Enqueue(pickup);
+            return true;
         }
 
         private static void SpawnPickup(WorldRewardPickup prefab, RewardPickupKind kind, int amount, int enemyId, Vector3 spawnPosition, Vector3 landingPosition, Transform parent, float groundHeightOffset)

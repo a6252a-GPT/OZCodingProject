@@ -146,6 +146,28 @@ namespace TeamProject01.Gameplay
             return true; // 적용 성공
         }
 
+        public bool CanSpendGold(int amount) // 골드 소비 가능 확인
+        {
+            return amount <= 0 || CurrentGold >= amount; // 0 이하면 무료 처리
+        }
+
+        public bool TrySpendGold(int amount) // 골드 소비
+        {
+            if (amount <= 0)
+            {
+                return true; // 무료
+            }
+
+            if (CurrentGold < amount)
+            {
+                return false; // 골드 부족
+            }
+
+            CurrentGold = Mathf.Max(0, CurrentGold - amount); // 차감
+            StatsChanged?.Invoke(CurrentStats); // HUD 갱신
+            return true; // 소비 성공
+        }
+
         public void ResetStats() // 성장값 초기화
         {
             CurrentLevel = 1; // 기본 레벨
@@ -165,6 +187,21 @@ namespace TeamProject01.Gameplay
             StatsChanged?.Invoke(CurrentStats); // 변경 알림
         }
 
+        public void DebugAddLevel(int amount) // CoreTest 디버그 레벨 증가
+        {
+            int delta = Mathf.Max(1, amount); // 최소 1레벨
+            CurrentLevel = Mathf.Max(1, CurrentLevel + delta); // 레벨 증가
+            CurrentExperience = 0; // 디버그 레벨업 후 자동 카드 재오픈 방지
+            pendingLevelUpChoiceCommitted = false; // 선택 대기 해제
+            StatsChanged?.Invoke(CurrentStats); // HUD 갱신
+        }
+
+        public void DebugAddGold(int amount) // CoreTest 디버그 골드 지급
+        {
+            CurrentGold = Mathf.Max(0, CurrentGold + Mathf.Max(0, amount)); // 골드 증가
+            StatsChanged?.Invoke(CurrentStats); // HUD 갱신
+        }
+
         public static CoreStatData GetCurrentOrDefault() // 공통 조회
         {
             return Active != null ? Active.CurrentStats : CoreStatData.Default; // 없으면 기본값
@@ -174,6 +211,11 @@ namespace TeamProject01.Gameplay
         {
             stats = GetCurrentOrDefault(); // 현재값 또는 기본값
             return Active != null; // 실제 코어 존재 여부
+        }
+
+        public static bool TrySpendCurrentGold(int amount) // 공통 골드 소비 입구
+        {
+            return Active != null && Active.TrySpendGold(amount); // 현재 코어에서 차감
         }
 
         public static bool TryApplyGrowth(GrowthStatData growth) // 공통 성장 입구

@@ -41,14 +41,7 @@ namespace TeamProject01.Gameplay
                 input.RemoveSegment = keyboard.backspaceKey.wasPressedThisFrame; // 테스트 제거
                 input.Reset = keyboard.rKey.wasPressedThisFrame; // 리셋
 
-                if (keyboard.digit1Key.wasPressedThisFrame)
-                    SetControlMode(ConvoyControlMode.RelativeTurn); // 1번 모드
-                if (keyboard.digit2Key.wasPressedThisFrame)
-                    SetControlMode(ConvoyControlMode.WasdDirection); // 2번 모드
-                if (keyboard.digit3Key.wasPressedThisFrame)
-                    SetControlMode(ConvoyControlMode.MousePointer); // 3번 모드
-                if (keyboard.digit4Key.wasPressedThisFrame)
-                    SetControlMode(ConvoyControlMode.WasdManualForward); // 4번 모드
+                // 숫자키 1~5는 골드 액션 HUD 스킬 사용에 배정한다.
             }
 
             Gamepad gamepad = Gamepad.current; // 게임패드

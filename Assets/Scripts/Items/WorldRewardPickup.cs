@@ -41,6 +41,8 @@ namespace TeamProject01.Gameplay
         private Vector3 dropStartPosition;
         private Vector3 dropLandingPosition;
         private MaterialPropertyBlock visualPropertyBlock;
+        private RewardDropService poolOwner;
+        private WorldRewardPickup poolSourcePrefab;
 
         public static int ActiveCount => ActivePickups.Count; // 디버그용 활성 수
 
@@ -127,6 +129,49 @@ namespace TeamProject01.Gameplay
             return hasCandidate;
         }
 
+        public static void CollectActiveInRange(Vector3 center, float radius, List<WorldRewardPickup> results, System.Func<WorldRewardPickup, bool> filter = null)
+        {
+            if (results == null)
+            {
+                return;
+            }
+
+            results.Clear();
+
+            if (radius <= 0f)
+            {
+                return;
+            }
+
+            float radiusSqr = radius * radius;
+            for (int i = ActivePickups.Count - 1; i >= 0; i--)
+            {
+                WorldRewardPickup pickup = ActivePickups[i];
+                if (pickup == null)
+                {
+                    ActivePickups.RemoveAt(i);
+                    continue;
+                }
+
+                if (!pickup.isActiveAndEnabled || pickup.collected || pickup.Amount <= 0)
+                {
+                    continue;
+                }
+
+                if (filter != null && !filter(pickup))
+                {
+                    continue;
+                }
+
+                Vector3 offset = pickup.transform.position - center;
+                offset.y = 0f;
+                if (offset.sqrMagnitude <= radiusSqr)
+                {
+                    results.Add(pickup);
+                }
+            }
+        }
+
         private bool TryAttract(Vector3 center, float radius, float pullStrength, float maxSpeed, float collectDistance, float deltaTime)
         {
             if (collected || Amount <= 0 || isDropping)
@@ -192,7 +237,30 @@ namespace TeamProject01.Gameplay
             collected = true;
             SetVfxRootActive(IdleVfxRoot, false);
             SetVfxRootActive(CollectVfxRoot, true);
+            if (poolOwner != null && poolOwner.ReleasePickup(this, poolSourcePrefab))
+            {
+                return;
+            }
+
             Destroy(gameObject);
+        }
+
+        internal void AttachPoolOwner(RewardDropService owner, WorldRewardPickup sourcePrefab)
+        {
+            poolOwner = owner;
+            poolSourcePrefab = sourcePrefab;
+        }
+
+        internal void ResetForPool()
+        {
+            collected = false;
+            attractedThisFrame = false;
+            isDropping = false;
+            dropTimer = 0f;
+            velocity = Vector3.zero;
+            SetVfxRootActive(IdleVfxRoot, false);
+            SetVfxRootActive(CollectVfxRoot, false);
+            SetVfxRootActive(MagnetTrailVfxRoot, false);
         }
 
         private void UpdateVisualMotion()
