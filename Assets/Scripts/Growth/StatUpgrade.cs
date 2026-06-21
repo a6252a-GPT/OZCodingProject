@@ -30,10 +30,10 @@ public class StatUpgrade : MonoBehaviour
     [SerializeField] private Color rareCardColor = Color.yellow; // 레어 카드 색 (2배)
     [SerializeField] private Color uniqueCardColor = Color.green; // 유니크 카드 색 (3배)
 
-    [Header("추후 — 등급별 프리팹 교체 (비우면 CardUI statUpgradeCards + 색상 틴트)")]
+    [Header("추후 — 등급별 프리팹 교체 (현재 미사용, 비워두면 색상 틴트 방식)")]
     [SerializeField] private GameObject normalCardPrefab; // 일반 전용 프리팹 (비우면 statUpgradeCards 풀 프리팹)
-    [SerializeField] private GameObject rareCardPrefab; // 레어 전용 프리팹
-    [SerializeField] private GameObject uniqueCardPrefab; // 유니크 전용 프리팹
+    [SerializeField] private GameObject rareCardPrefab; // 레어 전용 프리팹 (추후 CardUI 연동)
+    [SerializeField] private GameObject uniqueCardPrefab; // 유니크 전용 프리팹 (추후 CardUI 연동)
 
     private float upgradeMultiplier = 1f; // 생성 시 1, 2, 3
     private StatCardTier currentTier = StatCardTier.Normal; // 현재 등급
@@ -44,32 +44,49 @@ public class StatUpgrade : MonoBehaviour
 
     public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹 + 색상 틴트 여부
     {
+        public readonly GameObject Prefab;
+        public readonly bool ApplyFallbackVisual;
+
         public CardSpawnResolve(GameObject prefab, bool applyFallbackVisual)
         {
             Prefab = prefab;
             ApplyFallbackVisual = applyFallbackVisual;
         }
-
-        public GameObject Prefab { get; } // Instantiate 대상
-        public bool ApplyFallbackVisual { get; } // true = 기본 껍데기 + 등급 색 틴트
     }
 
-    public void RollSpawnVariant(float rareChancePercent, float uniqueChancePercent) // 생성 시 등급·배율·색상 결정 (기존 호출 호환)
+    public CardSpawnResolve ResolveCardSpawn(StatCardTier tier, GameObject defaultPrefab) // 등급별 Instantiate 대상
+    {
+        GameObject resolvedPrefab = ResolveSpawnPrefabForTier(tier, defaultPrefab); // 등급별 프리팹
+        if (resolvedPrefab == null)
+        {
+            resolvedPrefab = defaultPrefab; // fallback
+        }
+
+        bool applyFallbackVisual = resolvedPrefab == defaultPrefab || resolvedPrefab == null; // 기본 껍데기면 색 틴트
+        return new CardSpawnResolve(resolvedPrefab, applyFallbackVisual);
+    }
+
+    public void CopyStatValuesFrom(StatUpgrade source) // 등급 프리팹 → 풀 프리팹 수치 복사
+    {
+        if (source == null)
+        {
+            return; // 복사 대상 없음
+        }
+
+        levelDelta = source.levelDelta;
+        damageMultiplierBonus = source.damageMultiplierBonus;
+        attackSpeedMultiplierBonus = source.attackSpeedMultiplierBonus;
+        turnSpeedBonus = source.turnSpeedBonus;
+        collisionForceBonus = source.collisionForceBonus;
+        rejoinRangeBonus = source.rejoinRangeBonus;
+    }
+
+    public void RollSpawnVariant(float rareChancePercent, float uniqueChancePercent) // 생성 시 등급·배율·색상 결정 (현재 사용)
     {
         ApplySpawnTier(RollTier(rareChancePercent, uniqueChancePercent), applyFallbackVisual: true); // 색상 틴트 방식
     }
 
-    // ===== 등급별 프리팹 교체 — CardUI.SpawnStatUpgradeCards 에서 사용 =====
-
-    public static float GetMultiplierForTier(StatCardTier tier) // 등급 → 보너스 배율
-    {
-        return tier switch
-        {
-            StatCardTier.Unique => 3f,
-            StatCardTier.Rare => 2f,
-            _ => 1f
-        };
-    }
+    // ===== 추후 프리팹 교체용 — CardUI.CreateSpawnedCard 에서 연동 예정 =====
 
     public static StatCardTier RollTier(float rareChancePercent, float uniqueChancePercent) // 등급 난수
     {
@@ -90,65 +107,45 @@ public class StatUpgrade : MonoBehaviour
         return StatCardTier.Normal; // 일반
     }
 
-    public CardSpawnResolve ResolveCardSpawn(StatCardTier tier, GameObject defaultPrefab) // 등급 → Instantiate 대상
+    public GameObject ResolveSpawnPrefabForTier(StatCardTier tier, GameObject defaultPrefab) // 등급별 Instantiate 대상 (추후)
     {
-        if (defaultPrefab == null)
-        {
-            return new CardSpawnResolve(null, false); // 템플릿 없음
-        }
-
         switch (tier)
         {
+            case StatCardTier.Normal:
+                if (normalCardPrefab != null)
+                {
+                    return normalCardPrefab; // 일반 전용 프리팹
+                }
+
+                break;
             case StatCardTier.Unique:
                 if (uniqueCardPrefab != null)
                 {
-                    return new CardSpawnResolve(uniqueCardPrefab, false); // 유니크 전용
+                    return uniqueCardPrefab; // 유니크 전용 프리팹
                 }
 
                 break;
             case StatCardTier.Rare:
                 if (rareCardPrefab != null)
                 {
-                    return new CardSpawnResolve(rareCardPrefab, false); // 레어 전용
-                }
-
-                break;
-            case StatCardTier.Normal:
-                if (normalCardPrefab != null)
-                {
-                    return new CardSpawnResolve(normalCardPrefab, false); // 일반 전용
+                    return rareCardPrefab; // 레어 전용 프리팹
                 }
 
                 break;
         }
 
-        return new CardSpawnResolve(defaultPrefab, true); // 기본 껍데기 + 색상 틴트
-    }
-
-    public GameObject ResolveSpawnPrefabForTier(StatCardTier tier, GameObject defaultPrefab) // 등급별 Instantiate 대상
-    {
-        return ResolveCardSpawn(tier, defaultPrefab).Prefab ?? defaultPrefab;
-    }
-
-    public void CopyStatValuesFrom(StatUpgrade source) // 등급 프리팹 교체 시 보너스 수치 복사
-    {
-        if (source == null || ReferenceEquals(source, this))
-        {
-            return; // 복사 대상 없음
-        }
-
-        levelDelta = source.levelDelta;
-        damageMultiplierBonus = source.damageMultiplierBonus;
-        attackSpeedMultiplierBonus = source.attackSpeedMultiplierBonus;
-        turnSpeedBonus = source.turnSpeedBonus;
-        collisionForceBonus = source.collisionForceBonus;
-        rejoinRangeBonus = source.rejoinRangeBonus;
+        return defaultPrefab != null ? defaultPrefab : gameObject; // 일반 또는 대체 없음
     }
 
     public void ApplySpawnTier(StatCardTier tier, bool applyFallbackVisual) // 생성 후 등급·배율 반영 (추후)
     {
         currentTier = tier; // 등급 저장
-        upgradeMultiplier = GetMultiplierForTier(tier); // 스탯 배율
+        upgradeMultiplier = tier switch // 스탯 배율
+        {
+            StatCardTier.Unique => 3f,
+            StatCardTier.Rare => 2f,
+            _ => 1f
+        };
 
         if (applyFallbackVisual)
         {

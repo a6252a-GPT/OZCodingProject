@@ -2,6 +2,7 @@
 using System.Text;
 using DG.Tweening;
 using TeamProject01.Gameplay;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -72,6 +73,25 @@ public class CardUI : MonoBehaviour
     [Header("디버그 세그먼트 갯수 표기")]
     [SerializeField] private bool logPlayerSegmentCounts = true; // 세그먼트 추가/레벨업 후 현재 구성 출력
 
+    // 건춘추가 - 0621 ======
+    [Header("세그먼트 무기 스탯 UI (TMP)")]
+    [Tooltip("켜면 아래 Stat Text에 선택한 세그먼트 기본+강화 합산 스탯 표시")]
+    [SerializeField] private bool showSegmentWeaponStatUi = true; // 스탯 UI 갱신
+    [SerializeField] private TextMeshProUGUI segmentWeaponStatText; // 스탯 표시용 TMP 1개
+    [SerializeField] private SegmentWeaponStatViewTarget segmentWeaponStatViewTarget = SegmentWeaponStatViewTarget.Cannon; // Inspector에서 볼 세그먼트
+
+    private enum SegmentWeaponStatViewTarget // 스탯 UI 표시 대상
+    {
+        Cannon = 0, // SG01_Cannon
+        Missile = 1, // SG02_Missile
+        Trebuchet = 2, // SG03_Trebuchet
+        SawLauncher = 3, // SG04_SawLauncher
+        Flamethrower = 4, // SG05_Flamethrower
+        LightningObelisk = 5, // SG20_LightningObelisk
+        FireballTower = 6 // SG21_FireballTower
+    }
+    // 건춘추가 - 0621 ======
+
     private readonly List<SpawnedCardEntry> spawnedCards = new List<SpawnedCardEntry>(); // 생성된 카드 목록
     private bool spawnedForCurrentOpen; // 이번 패널 오픈에서 생성 완료 여부
     private bool isProcessingSelection; // 선택 처리 중
@@ -105,12 +125,23 @@ public class CardUI : MonoBehaviour
     {
         LogWeaponEnhancementInitialOnce(); // 시작 시 무기 강화 초기값 1회 출력
         TrySubscribeSegmentCountDebug(); // [임시] 세그먼트 추가/제거 시 디버그
+        RefreshSegmentWeaponStatUi(); // 건춘추가 - 0621 ====== 세그먼트 스탯 TMP 초기 표시
     }
 
     private void OnDestroy()
     {
         UnsubscribeSegmentCountDebug(); // [임시] 구독 해제
     }
+
+    // 건춘추가 - 0621 ======
+    private void OnValidate() // Inspector에서 세그먼트 변경 시 플레이 중 미리보기
+    {
+        if (Application.isPlaying)
+        {
+            RefreshSegmentWeaponStatUi();
+        }
+    }
+    // 건춘추가 - 0621 ======
 
     private void Update()
     {
@@ -673,10 +704,10 @@ public class CardUI : MonoBehaviour
         entry.LevelDelta = Mathf.Max(1, levelDelta); // 소비 레벨
         entry.CanSelect = definition != null && definition.HasAnyStatBonus; // 선택 가능
         entry.SegmentAddCard?.ConfigureWeaponEnhancement(definition, entry.LevelDelta); // 카드 문구·아이콘
-        entry.SegmentAddCard?.ApplyWeaponEnhancementTier(tier, applyFallbackVisual); // 등급·배율·색상(기본 껍데기일 때)
-        entry.WeaponEnhancementBonusMultiplier = entry.SegmentAddCard != null
-            ? entry.SegmentAddCard.WeaponEnhancementBonusMultiplier
-            : 1f; // 적용 시 보너스 배율
+        entry.SegmentAddCard?.ApplyWeaponEnhancementTier(tier, applyFallbackVisual); // 등급·색상(기본 껍데기일 때)
+        // 건준수정 - 0621 ======
+        entry.WeaponEnhancementTier = tier; // 적용 시 등급별 수치
+        // 건준수정 - 0621 ======
 
         if (definition != null && !definition.HasAnyStatBonus)
         {
@@ -1154,6 +1185,176 @@ public class CardUI : MonoBehaviour
         Debug.Log($"[CardUI] 무기 강화 | 세그먼트: {segmentId} | 카드: {cardName}\n  현재 → {FormatWeaponStatCumulativeBonus(bonus)}");
     }
 
+    // 건춘추가 - 0621 ======
+    private void RefreshSegmentWeaponStatUi() // 선택 세그먼트 스탯 TMP 갱신
+    {
+        if (!showSegmentWeaponStatUi || segmentWeaponStatText == null)
+        {
+            return; // UI 비활성 또는 TMP 없음
+        }
+
+        CoreStatProvider core = CoreStatProvider.Active;
+        string segmentId = ResolveSegmentWeaponStatViewId(segmentWeaponStatViewTarget);
+        segmentWeaponStatText.text = core != null
+            ? BuildSegmentWeaponStatUiText(core, segmentId)
+            : "Core 없음";
+    }
+
+    private static string ResolveSegmentWeaponStatViewId(SegmentWeaponStatViewTarget target) // 열거형 → SegmentId
+    {
+        switch (target)
+        {
+            case SegmentWeaponStatViewTarget.Missile:
+                return "SG02_Missile";
+            case SegmentWeaponStatViewTarget.Trebuchet:
+                return "SG03_Trebuchet";
+            case SegmentWeaponStatViewTarget.SawLauncher:
+                return "SG04_SawLauncher";
+            case SegmentWeaponStatViewTarget.Flamethrower:
+                return "SG05_Flamethrower";
+            case SegmentWeaponStatViewTarget.LightningObelisk:
+                return "SG20_LightningObelisk";
+            case SegmentWeaponStatViewTarget.FireballTower:
+                return "SG21_FireballTower";
+            default:
+                return "SG01_Cannon";
+        }
+    }
+
+    private static string BuildSegmentWeaponStatUiText(CoreStatProvider core, string segmentId) // 세그먼트 1개 블록
+    {
+        if (core == null || string.IsNullOrWhiteSpace(segmentId))
+        {
+            return string.Empty;
+        }
+
+        string title = ResolveSegmentStatDisplayTitle(core, segmentId);
+        int level = 1;
+        if (core.TryGetSegmentModelLevelInfo(segmentId, out int currentLevel, out _))
+        {
+            level = currentLevel;
+        }
+
+        WeaponStatBonusData bonus = core.GetWeaponStatBonus(segmentId);
+        if (!TryGetSegmentAttackProfile(core, segmentId, out SegmentAttackProfile profile))
+        {
+            return bonus.HasAny
+                ? $"[{title} Lv{level}]\n(프로필 없음)\n{FormatWeaponStatCumulativeBonus(bonus)}"
+                : $"[{title} Lv{level}]\n프로필 없음";
+        }
+
+        StringBuilder sb = new StringBuilder(384);
+        sb.Append('[').Append(title).Append(" Lv").Append(level).Append(']').AppendLine();
+
+        AppendStatLineFloat(sb, "공격력", profile.BaseDamage, bonus.ResolveBaseDamage(profile.BaseDamage), bonus.BaseDamageBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.BaseDamagePercentMultiplier));
+        AppendStatLineFloat(sb, "투사체속도", profile.ProjectileSpeed, bonus.ResolveProjectileSpeed(profile.ProjectileSpeed), bonus.ProjectileSpeedBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.ProjectileSpeedPercentMultiplier));
+        AppendStatLineFloat(sb, "사거리", profile.SearchRange, bonus.ResolveSearchRange(profile.SearchRange), bonus.SearchRangeBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.SearchRangePercentMultiplier));
+
+        float minCooldown = bonus.ResolveMinAttackInterval(profile.MinAttackInterval);
+        float maxCooldown = bonus.ResolveMaxAttackInterval(profile.MaxAttackInterval);
+        sb.Append("쿨타임: ").Append(minCooldown.ToString("0.##")).Append('~').Append(maxCooldown.ToString("0.##")).Append('초');
+        float minRed = WeaponStatBonusData.ToReductionDisplayRate(bonus.MinAttackIntervalReductionMultiplier);
+        float maxRed = WeaponStatBonusData.ToReductionDisplayRate(bonus.MaxAttackIntervalReductionMultiplier);
+        if (minRed > 0.0001f || maxRed > 0.0001f)
+        {
+            sb.Append(" (쿨-").Append((minRed * 100f).ToString("0.#"));
+            if (Mathf.Abs(minRed - maxRed) > 0.0001f)
+            {
+                sb.Append('~').Append((maxRed * 100f).ToString("0.#"));
+            }
+
+            sb.Append("%)");
+        }
+
+        sb.AppendLine();
+
+        AppendStatLineInt(sb, "발사수", profile.ProjectileCount, bonus.ResolveProjectileCount(profile.ProjectileCount), bonus.ProjectileCountBonus);
+        AppendStatLineInt(sb, "관통", profile.PierceCount, bonus.ResolvePierceCount(profile.PierceCount), bonus.PierceCountBonus);
+        AppendStatLineFloat(sb, "폭발반경", profile.ExplosionRadius, bonus.ResolveExplosionRadius(profile.ExplosionRadius), bonus.ExplosionRadiusBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.ExplosionRadiusPercentMultiplier));
+        AppendStatLineInt(sb, "연쇄단계", profile.MaxChainDepth, bonus.ResolveMaxChainDepth(profile.MaxChainDepth), bonus.MaxChainDepthBonus);
+        AppendStatLineFloat(sb, "연쇄거리", profile.ChainRange, bonus.ResolveChainRange(profile.ChainRange), bonus.ChainRangeBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.ChainRangePercentMultiplier));
+        AppendStatLineFloat(sb, "체인감쇠율", profile.ChainDamageFalloff, bonus.ResolveChainDamageFalloff(profile.ChainDamageFalloff), bonus.ChainDamageFalloffBonus);
+        AppendStatLineFloat(sb, "부채꼴각", profile.SideConeAngle, bonus.ResolveSideConeAngle(profile.SideConeAngle), bonus.SideConeAngleBonus);
+        AppendStatLineFloat(sb, "레이저지속", profile.LaserDuration, bonus.ResolveLaserDuration(profile.LaserDuration), bonus.LaserDurationBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.LaserDurationPercentMultiplier));
+
+        float tickInterval = bonus.ResolveLaserTickInterval(profile.LaserTickInterval);
+        sb.Append("레이저틱: ").Append(tickInterval.ToString("0.##")).Append('초');
+        if (WeaponStatBonusData.ToReductionDisplayRate(bonus.LaserTickIntervalReductionMultiplier) > 0.0001f)
+        {
+            sb.Append(" (틱-").Append((WeaponStatBonusData.ToReductionDisplayRate(bonus.LaserTickIntervalReductionMultiplier) * 100f).ToString("0.#")).Append("%)");
+        }
+
+        sb.AppendLine();
+
+        AppendStatLineFloat(sb, "굴러거리", profile.LandingRollDistance, bonus.ResolveLandingRollDistance(profile.LandingRollDistance), bonus.LandingRollDistanceBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.LandingRollDistancePercentMultiplier));
+        AppendStatLineFloat(sb, "굴러시간", profile.LandingRollDuration, bonus.ResolveLandingRollDuration(profile.LandingRollDuration), bonus.LandingRollDurationBonus, WeaponStatBonusData.ToPercentDisplayRate(bonus.LandingRollDurationPercentMultiplier));
+        AppendStatLineFloat(sb, "관통피해비율", profile.SawPierceDamageRatio, bonus.ResolveSawPierceDamageRatio(profile.SawPierceDamageRatio), bonus.SawPierceDamageRatioBonus);
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string ResolveSegmentStatDisplayTitle(CoreStatProvider core, string segmentId)
+    {
+        if (core != null && core.TryFindSegmentEntry(segmentId, out SegmentCatalogEntry catalogEntry))
+        {
+            if (!string.IsNullOrWhiteSpace(catalogEntry.DisplayName))
+            {
+                return catalogEntry.DisplayName.Trim();
+            }
+        }
+
+        return segmentId;
+    }
+
+    private static void AppendStatLineFloat(StringBuilder sb, string label, float baseValue, float effectiveValue, float flatBonus, float percentBonus = 0f)
+    {
+        sb.Append(label).Append(": ").Append(effectiveValue.ToString("0.##"));
+        bool hasFlat = Mathf.Abs(flatBonus) > 0.0001f;
+        bool hasPercent = percentBonus > 0.0001f;
+        if (hasFlat || hasPercent)
+        {
+            sb.Append(" (");
+            if (hasFlat)
+            {
+                sb.Append('+').Append(flatBonus.ToString("0.##"));
+            }
+
+            if (hasFlat && hasPercent)
+            {
+                sb.Append(", ");
+            }
+
+            if (hasPercent)
+            {
+                sb.Append('+').Append((percentBonus * 100f).ToString("0.#")).Append('%');
+            }
+
+            sb.Append(')');
+        }
+        else if (Mathf.Abs(effectiveValue - baseValue) > 0.0001f)
+        {
+            sb.Append(" (기본 ").Append(baseValue.ToString("0.##")).Append(')');
+        }
+
+        sb.AppendLine();
+    }
+
+    private static void AppendStatLineInt(StringBuilder sb, string label, int baseValue, int effectiveValue, int bonusDelta)
+    {
+        sb.Append(label).Append(": ").Append(effectiveValue);
+        if (bonusDelta != 0)
+        {
+            sb.Append(" (+").Append(bonusDelta).Append(')');
+        }
+        else if (effectiveValue != baseValue)
+        {
+            sb.Append(" (기본 ").Append(baseValue).Append(')');
+        }
+
+        sb.AppendLine();
+    }
+    // 건춘추가 - 0621 ======
+
     // =============== 세그먼트 구성 디버그 ===============
     private ConvoyController segmentDebugSubscribedConvoy; // 구독 중인 컨보이
 
@@ -1184,6 +1385,7 @@ public class CardUI : MonoBehaviour
     private void HandleConvoySegmentCountChangedForDebug(int segmentCount) // 세그먼트 수 변경 시
     {
         LogPlayerSegmentCountsDebug($"전체 세그먼트 : {segmentCount} / 각 세그먼트 : "); // CoreTest·카드 UI 공통
+        RefreshSegmentWeaponStatUi(); // 건춘추가 - 0621 ====== 레벨업·추가 후 스탯 UI 갱신
     }
 
     private void LogPlayerSegmentCountsDebug(string reason) // ConvoySegments 현재 구성 출력
@@ -1694,10 +1896,11 @@ public class CardUI : MonoBehaviour
                     selectedEntry.SegmentId,
                     selectedEntry.LevelDelta,
                     definition,
-                    selectedEntry.WeaponEnhancementBonusMultiplier); // 강화 적용 (레어/유니크 배율)
+                    selectedEntry.WeaponEnhancementTier); // 강화 적용 (등급별 수치)
             if (applied)
             {
                 LogWeaponEnhancementIncrease(selectedEntry.SegmentId, definition, core); // 누적 보너스 출력
+                RefreshSegmentWeaponStatUi(); // 건춘추가 - 0621 ====== 강화 후 스탯 UI 갱신
             }
             else if (core == null)
             {
@@ -1730,6 +1933,10 @@ public class CardUI : MonoBehaviour
                 if (!applied)
                 {
                     Debug.LogWarning("[CardUI] 세그먼트 레벨업 적용 실패: 만렙/경험치/장착 상태 확인 필요", selectedEntry.Root); // 실패 로그
+                }
+                else
+                {
+                    RefreshSegmentWeaponStatUi(); // 건춘추가 - 0621 ====== 레벨업 후 스탯 UI 갱신
                 }
 
                 return applied; // 적용 결과
@@ -1861,7 +2068,9 @@ public class CardUI : MonoBehaviour
         public int LevelDelta = 1;
         // 2단계 무기 강화 선택 데이터
         public WeaponDefinition WeaponDefinition;
-        public float WeaponEnhancementBonusMultiplier = 1f; // 레어 2배 / 유니크 3배
+        // 건준수정 - 0621 ======
+        public StatUpgrade.StatCardTier WeaponEnhancementTier = StatUpgrade.StatCardTier.Normal; // 레어/유니크 등급별 수치
+        // 건준수정 - 0621 ======
         // 없음/불가 카드 클릭 차단
         public bool CanSelect = true;
     }
