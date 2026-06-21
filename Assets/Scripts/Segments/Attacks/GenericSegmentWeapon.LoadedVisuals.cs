@@ -29,6 +29,16 @@ namespace TeamProject01.Gameplay
             }
 
             float progress = fireTimer <= 0f ? 1f : 1f - Mathf.Clamp01(fireTimer / fireIntervalDuration); // 쿨타임 진행률
+            int count = AttackProfile != null ? Mathf.Max(1, AttackProfile.ProjectileCount) : loadedProjectileVisuals.Count; // 표시 수
+            if (LoadedProjectileVisualController.HasRegrowVisual(loadedProjectileVisuals, count))
+            {
+                float reloadStart = Mathf.Clamp01(AttackProfile.LoadedProjectileReloadRatio);
+                float reloadProgress = reloadStart >= 1f ? 1f : Mathf.InverseLerp(reloadStart, 1f, progress);
+                LoadedProjectileVisualController.SetReloadProgress(loadedProjectileVisuals, count, reloadProgress); // 쿨타임에 맞춰 0.01배에서 1배까지 성장
+                loadedProjectilesRestored = reloadProgress >= 1f;
+                return;
+            }
+
             if (progress >= AttackProfile.LoadedProjectileReloadRatio)
             {
                 RestoreLoadedProjectileVisuals(); // 50% 시점 복구

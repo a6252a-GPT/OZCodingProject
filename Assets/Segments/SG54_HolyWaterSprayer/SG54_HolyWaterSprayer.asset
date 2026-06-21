@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0869a2011a87a2b458bdf7e77b3c8a86, type: 3}
+  m_Name: SG54_HolyWaterSprayer
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
+  SegmentId: SG54_HolyWaterSprayer
+  DisplayName: "\uC131\uC218\uBC1C\uC0AC\uAE30"
+  Description: "화염방사기와 같은 전방 분사 방식으로 성수 구체를 발사하는 지원 세그먼트입니다. 현재는 후속 연결용 디버프 데이터만 발생시킵니다."
+  StarterOnly: 0
+  SharedUpgradeSegmentId: 
+  UseLevels: 1
+  MaxLevel: 1
+  CanAddByLevelChoice: 1
+  CanUpgradeByLevelChoice: 0
+  Levels:
+  - Level: 1
+    SegmentPrefab: {fileID: 7526638656747601217, guid: 4b12c4f3d0dcefa4784590a4d0a9a26c, type: 3}
+    BodyPrefab: {fileID: 2894136110198890850, guid: 87dcfb70d87b2264d83db394c1d4c959, type: 3}
+    HeadPrefab: {fileID: 5606047459754514579, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
+    AttackProfile: {fileID: 0}
+    Memo: "SP_SG54_HolyWaterSprayer_Lv1 프로필 사용. 화염방사기식 성수 구체를 발사하고, 실제 몬스터 디버프 적용 전까지 후속 연결용 데이터만 발생시킴."

@@ -24,6 +24,7 @@ namespace TeamProject01.Gameplay
 
         private EnemyHealth health; // 체력 처리를 담당하는 EnemyHealth Script Component 참조
         private EnemyReward reward; // 보상 처리를 담당하는 EnemyReward Script Component 참조
+        public bool IsDead => dead; // 외부 타겟 유효성 확인
 
         public static int ActiveCount // 현재 활성 몬스터 수
         {
@@ -81,10 +82,13 @@ namespace TeamProject01.Gameplay
                 return; // 더 이상 처리하지 않는다.
             }
 
+            EnemySupportDebuffState supportDebuff = GetComponent<EnemySupportDebuffState>(); // 전찬우추가-0621 - 지원형 디버프 확인
+            DamageData resolvedDamage = supportDebuff != null ? supportDebuff.ApplyIncomingDamageBonus(damage) : damage; // 전찬우추가-0621 - 받는 피해 증가 적용
+
             float hpBeforeDamage = health.CurrentHp; //전찬우추가-0619 - 표시용 피격 전 체력
-            health.TakeDamage(damage.Amount); // 실제 HP 감소는 EnemyHealth가 담당한다.
+            health.TakeDamage(resolvedDamage.Amount); // 실제 HP 감소는 EnemyHealth가 담당한다.
             float actualDamage = Mathf.Max(0f, hpBeforeDamage - health.CurrentHp); //전찬우추가-0619 - 실제 감소 체력
-            DamageFloatingSpawner.SpawnEnemyDamage(damage, actualDamage, transform.position); //전찬우추가-0619 - 데미지 숫자 표시
+            DamageFloatingSpawner.SpawnEnemyDamage(resolvedDamage, actualDamage, transform.position); //전찬우추가-0619 - 데미지 숫자 표시
 
             if (health.IsDead) // HP가 0 이하가 되었다면
             {

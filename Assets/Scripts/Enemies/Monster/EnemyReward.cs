@@ -13,7 +13,8 @@ namespace TeamProject01.Gameplay
         public void GiveReward(int enemyId, Vector3 position) // 처치 보상 지급
         {
             RewardData reward = RewardData.Create(experienceReward, goldReward, enemyId, position); // 보상 데이터 생성
-            RewardGateway.SubmitReward(reward); // 코어 보상 입구 전달
+            RewardDropService.SpawnReward(reward, position); // 전찬우수정-0621 추가: 보상을 즉시 지급하지 않고 월드 경험치/골드 아이템으로 드랍
+            // RewardGateway.SubmitReward(reward); // 전찬우수정-0621 삭제: 몬스터 사망 즉시 코어로 보상 지급하던 기존 방식 제거
         }
     }
 }

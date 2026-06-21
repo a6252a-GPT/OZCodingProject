@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0869a2011a87a2b458bdf7e77b3c8a86, type: 3}
+  m_Name: SG53_WarBanner
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
+  SegmentId: SG53_WarBanner
+  DisplayName: "\uC804\uC7C1\uAE43\uBC1C"
+  Description: "\uC55E\uB4A4 3\uCE78 \uC544\uAD70 \uC138\uADF8\uBA3C\uD2B8\uC758
+    \uCD5C\uC885 \uACF5\uACA9\uC18D\uB3C4\uB97C 5\uCD08\uAC04 30% \uC99D\uAC00\uC2DC\uD0A4\uB294
+    \uC9C0\uC6D0 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
+  StarterOnly: 0
+  SharedUpgradeSegmentId: 
+  UseLevels: 1
+  MaxLevel: 1
+  CanAddByLevelChoice: 1
+  CanUpgradeByLevelChoice: 0
+  Levels:
+  - Level: 1
+    SegmentPrefab: {fileID: 2646082044289442763, guid: 3a71abea8bbe4f04aa820ddbc8ccb8f1, type: 3}
+    BodyPrefab: {fileID: 2894136110198890850, guid: 87dcfb70d87b2264d83db394c1d4c959, type: 3}
+    HeadPrefab: {fileID: 411686866172217121, guid: e470e5354d059da4380a04168460b805, type: 3}
+    AttackProfile: {fileID: 0}
+    Memo: "SP_SG53_WarBanner_Lv1 프로필 사용. 발동 중 앞뒤 3칸 아군 세그먼트의 최종 공격속도를 30% 증가시켜 쿨타임을 감소시킴."
