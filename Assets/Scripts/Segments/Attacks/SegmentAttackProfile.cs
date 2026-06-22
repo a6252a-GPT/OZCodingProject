@@ -23,8 +23,7 @@ namespace TeamProject01.Gameplay
 
         [Header("Attack")]
         [Min(0f)] public float BaseDamage = 1f; // 기본 피해량
-        [Min(0.05f)] public float MinAttackInterval = 3f; // 최소 공격 간격
-        [Min(0.05f)] public float MaxAttackInterval = 5f; // 최대 공격 간격
+        [Min(0.05f)] public float Cooldown = 4f; // 공통 쿨타임
         public bool UseDamageTypeOverride; // 표시/속성 피해 타입 고정
         public DamageType DamageTypeOverride = DamageType.Projectile; // 고정 피해 타입
 
@@ -51,6 +50,11 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)] public float ProjectileLifetime = 5f; // 생존 시간
         [Min(0)] public int PierceCount = 3; // 관통 가능 수
         [Min(0f)] public float ArcHeight = 3f; // 곡사 높이
+
+        [Header("Flame Sphere")]
+        public bool UseFlameMuzzleInfluence; // 화염 구체가 총구 이동을 약하게 따라갈지 여부
+        [Range(0f, 1f)] public float FlameMuzzleInfluenceStrength = 0.3f; // 0이면 완전 직선 이동
+        [Min(0f)] public float FlameMuzzleInfluenceRange = 0f; // 0이면 속도*수명 기준 자동 범위
 
         // 투석기 돌처럼 곡사 착지 후 잠깐 굴러가는 투사체에서만 사용
         [Header("Arc Landing Roll")]
@@ -88,10 +92,14 @@ namespace TeamProject01.Gameplay
         public bool RequireAimBeforeFire = true; // 조준 후 발사
         [Min(1f)] public float HeadTurnSpeed = 540f; // 머리 회전 속도
         [Min(0f)] public float FireAngleTolerance = 8f; // 발사 허용 각도
+        public bool ContinueAimingDuringProjectileSequence; // 발사 중에도 타겟 재탐색/조준
+        [Range(0.01f, 1f)] public float FiringHeadTurnSpeedMultiplier = 1f; // 발사 중 머리 회전 배율
+        public bool UseMuzzleDirectionDuringProjectileSequence; // 발사 중 투사체 방향을 현재 포구 기준으로 사용
 
         [Header("VFX Slots")]
         public GameObject MuzzleVfxPrefab; // 발사 VFX
         [Min(0f)] public float MuzzleVfxLifetime = 1.5f; // 발사 VFX 제거 시간
+        public Vector3 MuzzleVfxScale = Vector3.one; // 발사 VFX 크기/길이 보정
         public GameObject HitVfxPrefab; // 명중 VFX
         [Min(0f)] public float HitVfxLifetime = 2f; // 명중 VFX 제거 시간
         public GameObject ExplosionVfxPrefab; // 폭발 VFX

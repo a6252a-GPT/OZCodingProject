@@ -78,6 +78,12 @@ namespace TeamProject01.Gameplay
 
         public static bool IsPositionInSideCones(Transform reference, Vector3 fallbackRight, Vector3 worldPosition, float sideConeAngle) // 좌우 부채꼴
         {
+            return IsPositionInSideCone(reference, fallbackRight, worldPosition, sideConeAngle, 1)
+                || IsPositionInSideCone(reference, fallbackRight, worldPosition, sideConeAngle, -1); // 좌우 중 하나
+        }
+
+        public static bool IsPositionInSideCone(Transform reference, Vector3 fallbackRight, Vector3 worldPosition, float sideConeAngle, int sideSign) // 한쪽 부채꼴
+        {
             if (reference == null)
             {
                 return true; // 기준 없음
@@ -91,10 +97,10 @@ namespace TeamProject01.Gameplay
             }
 
             Vector3 right = GetHorizontalDirection(reference.right, fallbackRight, Vector3.right); // 오른쪽 중심
+            Vector3 coneDirection = sideSign >= 0 ? right : -right; // 원하는 쪽 중심
             Vector3 targetDirection = toTarget.normalized; // 목표 방향
             float halfAngle = Mathf.Clamp(sideConeAngle, 1f, 180f) * 0.5f; // 한쪽 반각
-            return Vector3.Angle(right, targetDirection) <= halfAngle
-                || Vector3.Angle(-right, targetDirection) <= halfAngle; // 좌우 중 하나
+            return Vector3.Angle(coneDirection, targetDirection) <= halfAngle;
         }
 
         public static float GetHorizontalDistance(Vector3 from, Vector3 to) // 수평 거리

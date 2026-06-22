@@ -4,6 +4,8 @@ namespace TeamProject01.Gameplay
 {
     public abstract class SegmentWeaponBehaviour : MonoBehaviour // 세그먼트 무기 공통
     {
+        private const float CooldownRandomRatio = 0.1f; // cooldown jitter ratio
+
         public string SegmentId; // 세그먼트 강화 조회 ID
 
         public ConvoySegmentRuntime Segment { get; private set; } // 소유 세그먼트
@@ -23,6 +25,12 @@ namespace TeamProject01.Gameplay
         protected SegmentUpgradeData GetUpgrade() // 코어에 누적된 세그먼트 강화값
         {
             return CoreStatProvider.GetSegmentUpgradeOrDefault(GetEffectiveSegmentId()); // ID 기준 조회
+        }
+
+        protected static float GetRandomizedCooldown(float cooldown)
+        {
+            float safeCooldown = Mathf.Max(0f, cooldown);
+            return safeCooldown > 0f ? safeCooldown * Random.Range(1f - CooldownRandomRatio, 1f + CooldownRandomRatio) : 0f;
         }
 
         protected string GetEffectiveSegmentId() // 강화 ID 결정

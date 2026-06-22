@@ -13,8 +13,10 @@ MonoBehaviour:
   m_Name: SG00_StarterMagic
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG00_StarterMagic
-  DisplayName: 마법형 시작 전기
-  Description: 마법형 지렁이가 시작할 때 장착하는 전기 오벨리스크 스타터 세그먼트입니다.
+  DisplayName: "\uB9C8\uBC95\uD615 \uC2DC\uC791 \uC804\uAE30"
+  Description: "\uB9C8\uBC95\uD615 \uC9C0\uB801\uC774\uAC00 \uC2DC\uC791\uD560 \uB54C
+    \uC7A5\uCC29\uD558\uB294 \uC804\uAE30 \uC624\uBCA8\uB9AC\uC2A4\uD06C \uC2A4\uD0C0\uD130
+    \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
   StarterOnly: 1
   SharedUpgradeSegmentId: SG20_LightningObelisk
   UseLevels: 0
@@ -24,7 +26,7 @@ MonoBehaviour:
   Levels:
   - Level: 1
     SegmentPrefab: {fileID: 907956036146838665, guid: 265cc178e260534479ca57e3f4676d17, type: 3}
-    BodyPrefab: {fileID: 2448197398968343652, guid: 1a43d2cdf4247a649a8f250217510abe, type: 3}
+    BodyPrefab: {fileID: 2148103711033173953, guid: 860225745922ead43827e6d3ce0d4cc0, type: 3}
     HeadPrefab: {fileID: 9096743896839812948, guid: dbbc8d5d40109774085d6cc3ef916eec, type: 3}
     AttackProfile: {fileID: 11400000, guid: 29c6d4b5c5861cb41a6c967648f7502b, type: 2}
     Memo: SG20_LightningObelisk shared upgrade

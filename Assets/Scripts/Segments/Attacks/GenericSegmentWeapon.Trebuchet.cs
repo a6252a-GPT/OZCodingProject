@@ -52,7 +52,7 @@ namespace TeamProject01.Gameplay
                         queuedThrowSwayMuzzle = muzzle; // 발사 순간 포구 저장
                     }
 
-                    FireSingleProjectile(target, spawnPosition, damage, i, count, spread); // 투사체 생성
+                    FireSingleProjectile(target, spawnPosition, damage, i, count, spread, muzzle); // 투사체 생성
                     HideLoadedProjectileVisual(i); // 숟가락 위 돌 숨김
                 }
 

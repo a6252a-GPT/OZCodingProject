@@ -26,8 +26,12 @@ namespace TeamProject01.Gameplay
         public GameObject UpgradePanel; // 업그레이드
         public GameObject SettingsPanel; // 설정
 
+        [Header("Shared UI")]
+        public GameObject TitleLogoObject; // 타이틀 로고
+
         [Header("Preview")]
         public Image SelectedWormPreview; // 지렁이 프리뷰
+        public TitleWormPortraitPreview WormPortraitPreview; // 3D 초상화
         public Text SelectedWormNameText; // 지렁이 이름
         public Text SelectedWormBonusText; // 지렁이 보너스
 
@@ -45,10 +49,11 @@ namespace TeamProject01.Gameplay
         public Image SelectedMapPreview; // 맵 프리뷰
 
         [Header("Debug")]
-        [Min(0)] public int DebugDiamondAmount = 500; // 테스트 지급 다이아
+        [Min(0)] public int DebugDiamondAmount = 1000; // 테스트 지급 다이아
         [Min(0)] public int DebugReachedWave = 20; // 테스트 웨이브
         [Min(0)] public int DebugEarnedDiamond; // 테스트 직접 지급값
         public bool DebugRunClear; // 테스트 클리어 여부
+        private string previewWormId; // 현재 미리보기 지렁이
 
         private void Awake() // 초기 참조
         {
@@ -57,6 +62,9 @@ namespace TeamProject01.Gameplay
             {
                 Meta = FindFirstObjectByType<MetaProgressionManager>(); // 씬 메타 검색
             }
+
+            ResolvePreviewReferences(); // 프리뷰 참조
+            ResolveTitleLogoReference(); // 로고 참조
         }
 
         private void OnEnable() // 표시 시작
@@ -69,6 +77,8 @@ namespace TeamProject01.Gameplay
             }
 
             EnsureWormSelectionButtons(); // 지렁이 버튼 보강
+            ResolvePreviewReferences(); // 프리뷰 참조
+            ResolveTitleLogoReference(); // 로고 참조
             ShowMainMenu(); // 기본 화면
             RefreshAll(); // 즉시 갱신
         }
@@ -99,7 +109,9 @@ namespace TeamProject01.Gameplay
         public void ShowWormSelect() // 지렁이 선택 표시
         {
             ShowOnly(WormSelectPanel); // 지렁이 선택
+            PreviewWorm(Meta != null ? Meta.SelectedWormId : MetaWormIds.Basic); // 현재 선택 프리뷰
             RefreshAll(); // 표시 갱신
+            ApplyWormSelectTextColor(); // 지렁이 선택 글자색
         }
 
         public void ShowUpgrade() // 업그레이드 표시
@@ -116,26 +128,31 @@ namespace TeamProject01.Gameplay
 
         public void SelectBasicWorm() // 기본형 선택
         {
+            PreviewWorm(MetaWormIds.Basic); // 먼저 미리보기
             SelectOrPurchaseWorm(MetaWormIds.Basic); // 기본형
         }
 
         public void SelectAttackWorm() // 공격형 선택/구매
         {
+            PreviewWorm(MetaWormIds.Attack); // 먼저 미리보기
             SelectOrPurchaseWorm(MetaWormIds.Attack); // 공격형
         }
 
         public void SelectMobilityWorm() // 이속형 선택/구매
         {
+            PreviewWorm(MetaWormIds.Mobility); // 먼저 미리보기
             SelectOrPurchaseWorm(MetaWormIds.Mobility); // 이속형
         }
 
         public void SelectSupportWorm() // 지원형 선택/구매
         {
+            PreviewWorm(MetaWormIds.Support); // 먼저 미리보기
             SelectOrPurchaseWorm(MetaWormIds.Support); // 지원형
         }
 
         public void SelectMagicWorm() // 마법형 선택/구매
         {
+            PreviewWorm(MetaWormIds.Magic); // 먼저 미리보기
             SelectOrPurchaseWorm(MetaWormIds.Magic); // 마법형
         }
 
@@ -442,11 +459,13 @@ namespace TeamProject01.Gameplay
 
         private void ShowOnly(GameObject target) // 패널 전환
         {
+            ResolveTitleLogoReference(); // 로고 찾기
             SetActive(MainMenuPanel, target == MainMenuPanel); // 메인
             SetActive(MapSelectPanel, target == MapSelectPanel); // 맵
             SetActive(WormSelectPanel, target == WormSelectPanel); // 지렁이
             SetActive(UpgradePanel, target == UpgradePanel); // 업그레이드
             SetActive(SettingsPanel, target == SettingsPanel); // 설정
+            SetActive(TitleLogoObject, target != WormSelectPanel); // 지렁이 선택에서는 숨김
         }
 
         private void RefreshAll() // 전체 표시 갱신
@@ -457,16 +476,27 @@ namespace TeamProject01.Gameplay
             }
 
             EnsureWormSelectionButtons(); // 런타임 버튼 유지
+            ResolvePreviewReferences(); // 프리뷰 참조
+            string displayWormId = string.IsNullOrWhiteSpace(previewWormId) ? Meta.SelectedWormId : previewWormId; // 표시 대상
             SetText(DiamondText, Meta.Diamond.ToString()); // 다이아
             SetText(HighestWaveText, HighestReachedWave.ToString()); // 기록
-            SetText(SelectedWormNameText, GetWormDisplayName(Meta.SelectedWormId)); // 이름
-            SetText(SelectedWormBonusText, GetWormBonusText(Meta.SelectedWormId)); // 효과
+            SetText(SelectedWormNameText, GetWormDisplayName(displayWormId)); // 이름
+            SetText(SelectedWormBonusText, GetWormBonusText(displayWormId)); // 효과
             SetText(UpgradeSummaryText, BuildUpgradeSummary()); // 강화 요약
             RefreshMapPreview(); // 맵 표시
+            if (WormPortraitPreview != null)
+            {
+                WormPortraitPreview.PreviewWorm(displayWormId); // 3D 초상화
+            }
 
             if (SelectedWormPreview != null)
             {
-                SelectedWormPreview.color = GetWormPreviewColor(Meta.SelectedWormId); // 프리뷰 색
+                SelectedWormPreview.color = GetWormPreviewColor(displayWormId); // 프리뷰 색
+            }
+
+            if (WormSelectPanel != null && WormSelectPanel.activeInHierarchy)
+            {
+                ApplyWormSelectTextColor(); // 런타임 생성 버튼 보정
             }
         }
 
@@ -524,6 +554,7 @@ namespace TeamProject01.Gameplay
 
         private void OnSelectedWormChanged(string wormId) // 지렁이 이벤트
         {
+            previewWormId = NormalizeWormId(wormId); // 선택값을 미리보기로
             RefreshAll(); // 갱신
         }
 
@@ -545,14 +576,14 @@ namespace TeamProject01.Gameplay
                 return; // 패널 없음
             }
 
-            SetWormButtonLabel("BasicWormButton", "기본형\n대포"); // 기본형
-            SetWormButtonLabel("DefenseWormButton", "지원형\n화염구"); // 기존 방어형
-            SetWormButtonLabel("ArmedWormButton", "공격형\n미사일"); // 기존 무장형
-            SetWormButtonLabel("ChargeWormButton", "이속형\n톱날"); // 기존 돌격형
+            SetWormButtonLabel("BasicWormButton", "기본형 지렁이\n시작 무기: 대포"); // 기본형
+            SetWormButtonLabel("DefenseWormButton", "지원형 지렁이\n시작 무기: 화염구 / 150 다이아"); // 기존 방어형
+            SetWormButtonLabel("ArmedWormButton", "공격형 지렁이\n시작 무기: 미사일 / 200 다이아"); // 기존 무장형
+            SetWormButtonLabel("ChargeWormButton", "이속형 지렁이\n시작 무기: 톱날 / 200 다이아"); // 기존 돌격형
 
             if (runtimeMagicWormButton != null)
             {
-                SetWormButtonLabel("MagicWormButton", "마법형\n전기지직"); // 라벨 유지
+                SetWormButtonLabel("MagicWormButton", "마법형 지렁이\n시작 무기: 전기지직 / 250 다이아"); // 라벨 유지
                 return; // 이미 있음
             }
 
@@ -560,7 +591,7 @@ namespace TeamProject01.Gameplay
             if (existingMagic != null)
             {
                 runtimeMagicWormButton = existingMagic.GetComponent<Button>(); // 참조 저장
-                SetWormButtonLabel("MagicWormButton", "마법형\n전기지직"); // 라벨
+                SetWormButtonLabel("MagicWormButton", "마법형 지렁이\n시작 무기: 전기지직 / 250 다이아"); // 라벨
                 return; // 이미 있음
             }
 
@@ -570,7 +601,40 @@ namespace TeamProject01.Gameplay
                 return; // 기준 없음
             }
 
-            runtimeMagicWormButton = CreateRuntimeWormButton(source, "MagicWormButton", "마법형\n전기지직"); // 마법형
+            runtimeMagicWormButton = CreateRuntimeWormButton(source, "MagicWormButton", "마법형 지렁이\n시작 무기: 전기지직 / 250 다이아"); // 마법형
+        }
+
+        private void PreviewWorm(string wormId) // 지렁이 미리보기
+        {
+            previewWormId = NormalizeWormId(wormId); // 표시 ID
+            ResolvePreviewReferences(); // 프리뷰 참조
+            if (WormPortraitPreview != null)
+            {
+                WormPortraitPreview.PreviewWorm(previewWormId); // 3D 모델 교체
+            }
+
+            SetText(SelectedWormNameText, GetWormDisplayName(previewWormId)); // 이름 즉시 표시
+            SetText(SelectedWormBonusText, GetWormBonusText(previewWormId)); // 보너스 즉시 표시
+            if (SelectedWormPreview != null)
+            {
+                SelectedWormPreview.color = GetWormPreviewColor(previewWormId); // 색 프리뷰
+            }
+        }
+
+        private void ResolvePreviewReferences() // 프리뷰 참조 찾기
+        {
+            if (WormPortraitPreview == null)
+            {
+                WormPortraitPreview = FindFirstObjectByType<TitleWormPortraitPreview>(); // 씬 검색
+            }
+        }
+
+        private void ResolveTitleLogoReference() // 로고 참조 찾기
+        {
+            if (TitleLogoObject == null)
+            {
+                TitleLogoObject = GameObject.Find("TitleLogo"); // 씬 검색
+            }
         }
 
         private Button CreateRuntimeWormButton(Transform source, string objectName, string label) // 런타임 버튼 생성
@@ -681,6 +745,23 @@ namespace TeamProject01.Gameplay
             if (target != null)
             {
                 target.text = value; // 값 반영
+            }
+        }
+
+        private void ApplyWormSelectTextColor() // 지렁이 선택 글자색 보정
+        {
+            if (WormSelectPanel == null)
+            {
+                return; // 대상 없음
+            }
+
+            Text[] texts = WormSelectPanel.GetComponentsInChildren<Text>(true); // 선택 화면 텍스트
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i] != null)
+                {
+                    texts[i].color = Color.white; // 임시 흰색
+                }
             }
         }
 

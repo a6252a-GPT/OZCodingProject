@@ -30,5 +30,12 @@ namespace TeamProject01.Gameplay
             data.HitPosition = hitPosition; // 위치 교체
             return data; // 결과 반환
         }
+
+        public DamageData WithAmount(float amount) // 피해량 갱신
+        {
+            DamageData data = this; // 기존 복사
+            data.Amount = Mathf.Max(0f, amount); // 피해량 보정
+            return data; // 결과 반환
+        }
     }
 }

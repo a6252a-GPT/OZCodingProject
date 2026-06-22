@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0869a2011a87a2b458bdf7e77b3c8a86, type: 3}
+  m_Name: SG52_FrostBell
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
+  SegmentId: SG52_FrostBell
+  DisplayName: "\uC5BC\uC74C\uC885"
+  Description: "10\uCD08\uB9C8\uB2E4 5\uCD08 \uB3D9\uC548 \uC8FC\uBCC0 \uBC94\uC704
+    \uC548\uC758 \uC801\uC5D0\uAC8C 5\uCD08 \uB3D9\uACB0\uC744 \uC801\uC6A9\uD558\uB294
+    \uC9C0\uC6D0 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
+  StarterOnly: 0
+  SharedUpgradeSegmentId: 
+  UseLevels: 1
+  MaxLevel: 1
+  CanAddByLevelChoice: 1
+  CanUpgradeByLevelChoice: 0
+  Levels:
+  - Level: 1
+    SegmentPrefab: {fileID: 646820949840857281, guid: 0f3157dc85ef1344ca2347b8f7464ba3, type: 3}
+    BodyPrefab: {fileID: 2894136110198890850, guid: 87dcfb70d87b2264d83db394c1d4c959, type: 3}
+    HeadPrefab: {fileID: 8053481153783883370, guid: a6c3d4bf1115b0847a923793658c7752, type: 3}
+    AttackProfile: {fileID: 0}
+    Memo: "SP_SG52_FrostBell_Lv1 프로필 사용. 10초마다 5초 동안 주변 범위 적에게 동결을 적용함."
