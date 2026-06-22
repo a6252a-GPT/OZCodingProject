@@ -2,264 +2,479 @@
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemySpawner : MonoBehaviour // 몬스터 스포너
+    public sealed class EnemySpawner : MonoBehaviour // 몬스터 스폰 전체 관리자
     {
+        private enum SpawnDirection // 스폰 방향 구분
+        {
+            Front, // 앞쪽 게이트
+            Back, // 뒤쪽 게이트
+            Left, // 왼쪽 게이트
+            Right // 오른쪽 게이트
+        }
+
         [System.Serializable]
-        private sealed class EnemySpawnEntry // 스폰 가능한 몬스터 Prefab과 확률 가중치를 묶은 데이터
+        private sealed class MonsterSpawnEntry // 한 번 소환할 몬스터 종류와 개수
         {
             [SerializeField] private EnemyController prefab; // 생성할 몬스터 Prefab
 
             [Min(0)]
-            [SerializeField] private int weight = 1; // 이 Prefab이 뽑힐 확률 가중치
+            [SerializeField] private int count = 1; // 한 번 소환할 때 이 몬스터를 몇 마리 만들지
 
-            public EnemyController Prefab // 외부에서 Prefab을 읽기 위한 property
+            public EnemyController Prefab
             {
                 get
                 {
-                    return prefab; // 생성할 몬스터 Prefab을 반환한다.
+                    return prefab;
                 }
             }
 
-            public int Weight // 외부에서 Weight를 읽기 위한 property
+            public int Count
             {
                 get
                 {
-                    return weight; // 확률 가중치를 반환한다.
+                    return count;
                 }
             }
         }
 
+        [System.Serializable]
+        private sealed class StageSpawnRule // 누적형 단계별 스폰 규칙
+        {
+            [SerializeField] private string stageName = "Stage 1"; // Inspector에서 구분하기 위한 이름
+
+            [Min(0.0f)]
+            [SerializeField] private float startTime = 0.0f; // 게임 시작 후 몇 초부터 이 규칙이 켜질지
+
+            [Min(0.1f)]
+            [SerializeField] private float spawnInterval = 8.0f; // 이 규칙이 켜진 뒤 몇 초마다 군단을 반복 소환할지
+
+            [Min(1)]
+            [SerializeField] private int spawnGroupCount = 1; // 한 번 소환할 때 몇 개의 게이트에서 군단을 만들지
+
+            [Min(1)]
+            [SerializeField] private int frontRowCount = 3; // 이 단계에서 한 줄에 최대 몇 마리까지 배치할지
+
+            [SerializeField] private MonsterSpawnEntry[] monsterEntries; // 이 규칙으로 한 번 소환할 몬스터 조합
+
+            public string StageName
+            {
+                get
+                {
+                    return stageName;
+                }
+            }
+
+            public float StartTime
+            {
+                get
+                {
+                    return startTime;
+                }
+            }
+
+            public float SpawnInterval
+            {
+                get
+                {
+                    return spawnInterval;
+                }
+            }
+
+            public int SpawnGroupCount
+            {
+                get
+                {
+                    return spawnGroupCount;
+                }
+            }
+
+            public int FrontRowCount
+            {
+                get
+                {
+                    return frontRowCount;
+                }
+            }
+
+            public MonsterSpawnEntry[] MonsterEntries
+            {
+                get
+                {
+                    return monsterEntries;
+                }
+            }
+        }
+
+        private Transform nexus; // Nexus Transform, Inspector에는 노출하지 않고 자동 탐색한다.
+
         [Header("Reference")]
-        [SerializeField] private Transform nexus; // 이동 목표
-        [SerializeField] private Transform monsterRoot; // 생성 부모
-        [SerializeField] private Transform spawnArea; // 스폰 범위로 사용할 Ground Transform
+        [SerializeField] private Transform monsterRoot; // 생성된 몬스터를 정리할 부모 Transform
 
-        [Header("Spawn List")]
-        [SerializeField] private EnemySpawnEntry[] spawnEntries; // 스폰 가능한 몬스터 Prefab 목록
+        [Header("Spawn Gates")]
+        [SerializeField] private Transform[] frontGates; // 앞쪽 스폰 게이트 목록
+        [SerializeField] private Transform[] backGates; // 뒤쪽 스폰 게이트 목록
+        [SerializeField] private Transform[] leftGates; // 왼쪽 스폰 게이트 목록
+        [SerializeField] private Transform[] rightGates; // 오른쪽 스폰 게이트 목록
 
-        [Header("Spawn Timing")]
+        [Header("Group Formation Setting")]
+        [Min(0.0f)]
+        [SerializeField] private float groupForwardOffset = 3.0f; // 게이트 앞쪽으로 군단 중심을 얼마나 밀지
+
         [Min(0.1f)]
-        [SerializeField] private float spawnInterval = 5f; // 스폰 간격
+        [SerializeField] private float columnSpacing = 1.5f; // 몬스터 좌우 간격
 
-        [Range(1, 50)]
-        [SerializeField] private int spawnCount = 15; // 한 번에 생성할 몬스터 수
+        [Min(0.1f)]
+        [SerializeField] private float rowSpacing = 1.5f; // 몬스터 앞뒤 간격
+
+        [Min(0.0f)]
+        [SerializeField] private float spawnGroundHeight = 0.72f; // 스폰 위치를 바닥 위로 올릴 높이
 
         [Range(1, 300)]
         [SerializeField] private int maxActiveMonsters = 120; // 씬에 유지할 최대 몬스터 수
 
-        [Header("Spawn Area")]
-        [Min(0f)]
-        [SerializeField] private float spawnEdgePadding = 2f; // Ground 진짜 끝에서 안쪽으로 띄울 여백
+        [Min(0.0f)]
+        [SerializeField] private float firstSpawnDelay = 1.0f; // 각 규칙이 켜진 뒤 첫 스폰까지 대기 시간
 
-        [Min(0.1f)]
-        [SerializeField] private float spawnEdgeBandWidth = 5f; // 가장자리 안쪽 스폰 가능 띠 두께
+        [Header("Stage Rules")]
+        [SerializeField] private StageSpawnRule[] stageRules; // 누적형 단계별 스폰 규칙 목록
 
-        [Min(0f)]
-        [SerializeField] private float spawnGroundHeight = 0.72f; // 스폰 위치를 바닥 위로 올릴 높이 오프셋
-
-        private float spawnTimer; // 다음 스폰까지 남은 시간
+        private float elapsedGameTime; // 스폰 시스템이 켜진 뒤 지난 시간
+        private float[] stageSpawnTimers; // Stage Rule별 다음 스폰까지 남은 시간
         private int spawnSerial; // 생성된 몬스터 이름 번호
 
         private void Awake()
         {
-            if (nexus == null) // 스폰 기준 위치가 연결되지 않았다면
+            if (nexus == null) // Nexus가 연결되어 있지 않다면
             {
-                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 넥서스 검색
-                nexus = nexusObject != null ? nexusObject.transform : null; // 목표 연결
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 씬에서 Nexus_Core를 찾는다.
+                nexus = nexusObject != null ? nexusObject.transform : null; // 찾았다면 Transform을 저장한다.
             }
 
-            if (monsterRoot == null) // 생성 부모가 연결되지 않았다면
+            if (monsterRoot == null) // 몬스터 정리 부모가 없다면
             {
-                monsterRoot = transform; // 자기 자신을 fallback 부모로 사용한다.
-            }
-        }
-
-        private void OnEnable() // 시작 예약
-        {
-            spawnTimer = 1f; // 첫 묶음 빠르게
-        }
-
-        private void Update()  // 스폰 루프
-        {
-            if (nexus == null) // 스폰 기준 위치가 없다면
-            {
-                return; // 스폰하지 않고 종료한다.
-            }
-
-            spawnTimer -= Time.deltaTime; // 지난 시간만큼 스폰 대기 시간을 줄인다.
-
-            if (spawnTimer > 0f) // 아직 다음 스폰 시간이 남았다면
-            {
-                return; // 이번 프레임에는 스폰하지 않는다.
-            }
-
-            SpawnWave(); // 묶음 스폰
-            spawnTimer = spawnInterval; // 다음 스폰 시간을 다시 설정한다.
-        }
-
-        private void SpawnWave() // 묶음 스폰
-        {
-            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount);  // 남은 슬롯
-            int count = Mathf.Min(spawnCount, capacity);  // 실제 생성 수
-
-            for (int i = 0; i < count; i++) // 생성할 수만큼 반복한다.
-            {
-                SpawnMonster(); // 몬스터 하나를 생성한다.
+                monsterRoot = transform; // 자기 자신을 부모로 사용한다.
             }
         }
 
-        private void SpawnMonster()// 몬스터 생성
+        private void OnEnable()
         {
-            EnemyController prefab = PickMonsterPrefab(); // 스폰 목록에서 생성할 몬스터 Prefab을 하나 고른다.
+            elapsedGameTime = 0.0f; // 게임 진행 시간을 초기화한다.
+            ResetStageSpawnTimers(); // Stage별 스폰 타이머를 초기화한다.
+        }
 
-            if (prefab == null) // 생성할 Prefab이 없다면
+        private void Update()
+        {
+            if (nexus == null) // Nexus가 없다면
             {
-                return; // 생성하지 않고 종료한다.
+                return; // 스폰하지 않는다.
             }
 
-            Transform root = monsterRoot != null ? monsterRoot : transform; // 몬스터를 넣을 부모 Transform을 선택한다.
-            Vector3 spawnPosition = PickSpawnPosition(); // 몬스터가 생성될 위치를 계산한다.
+            if (stageRules == null || stageRules.Length == 0) // 단계 규칙이 없다면
+            {
+                return; // 스폰하지 않는다.
+            }
 
-            EnemyController monster = Instantiate(prefab, spawnPosition, Quaternion.identity, root); // 선택된 Prefab을 생성한다.
+            EnsureStageSpawnTimers(); // Stage Rule 개수와 타이머 배열 개수를 맞춘다.
+
+            elapsedGameTime += Time.deltaTime; // 전체 진행 시간을 증가시킨다.
+
+            UpdateActiveStageRules(); // 시작 시간이 지난 Stage Rule들을 누적 실행한다.
+        }
+
+        private void ResetStageSpawnTimers() // Stage별 첫 스폰 타이머 초기화
+        {
+            if (stageRules == null) // Stage Rules가 없다면
+            {
+                stageSpawnTimers = null; // 타이머도 비운다.
+                return;
+            }
+
+            stageSpawnTimers = new float[stageRules.Length]; // Stage Rule 개수만큼 타이머를 만든다.
+
+            for (int i = 0; i < stageSpawnTimers.Length; i++) // 모든 타이머를 순회한다.
+            {
+                stageSpawnTimers[i] = firstSpawnDelay; // 각 Stage Rule이 켜진 뒤 첫 스폰까지의 시간을 저장한다.
+            }
+        }
+
+        private void EnsureStageSpawnTimers() // Stage Rules 개수와 타이머 배열 개수 맞추기
+        {
+            if (stageRules == null) // Stage Rules가 없다면
+            {
+                stageSpawnTimers = null; // 타이머도 비운다.
+                return;
+            }
+
+            if (stageSpawnTimers != null && stageSpawnTimers.Length == stageRules.Length) // 개수가 이미 맞다면
+            {
+                return; // 다시 만들지 않는다.
+            }
+
+            ResetStageSpawnTimers(); // 개수가 다르면 다시 만든다.
+        }
+
+        private void UpdateActiveStageRules() // 시작 시간이 지난 모든 Stage Rule을 처리한다.
+        {
+            for (int i = 0; i < stageRules.Length; i++) // 모든 Stage Rule을 순회한다.
+            {
+                StageSpawnRule rule = stageRules[i]; // 현재 Stage Rule
+
+                if (rule == null) // 비어 있다면
+                {
+                    continue; // 건너뛴다.
+                }
+
+                if (elapsedGameTime < rule.StartTime) // 아직 이 규칙이 켜질 시간이 아니라면
+                {
+                    continue; // 실행하지 않는다.
+                }
+
+                stageSpawnTimers[i] -= Time.deltaTime; // 이 Stage Rule의 스폰 대기 시간을 줄인다.
+
+                if (stageSpawnTimers[i] > 0.0f) // 아직 스폰 시간이 남았다면
+                {
+                    continue; // 이번 프레임에는 이 규칙으로 스폰하지 않는다.
+                }
+
+                SpawnStageGroups(rule); // 이 Stage Rule에 맞는 군단을 생성한다.
+                stageSpawnTimers[i] = Mathf.Max(0.1f, rule.SpawnInterval); // 다음 반복 스폰 시간을 설정한다.
+            }
+        }
+
+        private void SpawnStageGroups(StageSpawnRule rule) // 현재 Stage Rule의 군단 스폰
+        {
+            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 남은 생성 가능 몬스터 수
+
+            if (capacity <= 0) // 생성 가능 수가 없다면
+            {
+                return; // 스폰하지 않는다.
+            }
+
+            int groupCount = Mathf.Max(1, rule.SpawnGroupCount); // 한 번에 만들 군단 수
+
+            for (int i = 0; i < groupCount; i++) // 군단 수만큼 반복한다.
+            {
+                if (capacity <= 0) // 더 이상 생성할 수 없다면
+                {
+                    return; // 종료한다.
+                }
+
+                Transform gate = PickRandomGateFromAllDirections(); // Front, Back, Left, Right 중 랜덤 게이트를 고른다.
+
+                if (gate == null) // 사용할 게이트가 없다면
+                {
+                    return; // 스폰할 위치가 없으므로 종료한다.
+                }
+
+                SpawnGroupAtGate(rule, gate, ref capacity); // 선택한 게이트에서 군단을 생성한다.
+            }
+        }
+
+        private void SpawnGroupAtGate(StageSpawnRule rule, Transform gate, ref int capacity) // 특정 게이트에서 군단 생성
+        {
+            MonsterSpawnEntry[] entries = rule.MonsterEntries; // 현재 규칙의 몬스터 조합
+
+            if (entries == null || entries.Length == 0) // 몬스터 조합이 없다면
+            {
+                return; // 생성하지 않는다.
+            }
+
+            int totalMonsterCount = GetTotalMonsterCount(entries); // 이 군단에서 생성할 전체 몬스터 수를 계산한다.
+
+            if (totalMonsterCount <= 0) // 생성할 몬스터가 없다면
+            {
+                return; // 종료한다.
+            }
+
+            int frontRowCount = Mathf.Max(1, rule.FrontRowCount); // 한 줄에 세울 최대 몬스터 수
+
+            Vector3 groupCenter = gate.position + gate.forward * groupForwardOffset; // 게이트 앞쪽으로 민 군단 앞줄 중심 위치
+            groupCenter = GroundService.ProjectToGround(groupCenter, spawnGroundHeight); // 바닥 높이에 맞춘다.
+
+            int formationIndex = 0; // 오와열 배치 순서
+
+            for (int entryIndex = 0; entryIndex < entries.Length; entryIndex++) // 몬스터 조합을 순회한다.
+            {
+                MonsterSpawnEntry entry = entries[entryIndex]; // 현재 조합 항목
+
+                if (entry == null || entry.Prefab == null || entry.Count <= 0) // 유효하지 않다면
+                {
+                    continue; // 건너뛴다.
+                }
+
+                for (int countIndex = 0; countIndex < entry.Count; countIndex++) // 설정된 개수만큼 생성한다.
+                {
+                    if (capacity <= 0) // 최대 몬스터 수에 도달했다면
+                    {
+                        return; // 생성 중지
+                    }
+
+                    Vector3 formationOffset = GetFormationOffset(formationIndex, totalMonsterCount, frontRowCount, gate); // 오와열 위치 오프셋을 계산한다.
+                    Vector3 spawnPosition = groupCenter + formationOffset; // 최종 생성 위치를 계산한다.
+                    spawnPosition = GroundService.ProjectToGround(spawnPosition, spawnGroundHeight); // 바닥 높이에 맞춘다.
+
+                    SpawnMonster(entry.Prefab, spawnPosition, gate.rotation); // 몬스터 하나 생성
+
+                    formationIndex++; // 다음 오와열 위치로 이동한다.
+                    capacity--; // 남은 생성 가능 수 감소
+                }
+            }
+        }
+
+        private int GetTotalMonsterCount(MonsterSpawnEntry[] entries) // 한 군단에 생성될 총 몬스터 수 계산
+        {
+            int totalCount = 0; // 총 몬스터 수
+
+            if (entries == null) // 조합이 없다면
+            {
+                return 0; // 0 반환
+            }
+
+            for (int i = 0; i < entries.Length; i++) // 조합을 순회한다.
+            {
+                MonsterSpawnEntry entry = entries[i]; // 현재 항목
+
+                if (entry == null || entry.Prefab == null || entry.Count <= 0) // 유효하지 않다면
+                {
+                    continue; // 제외한다.
+                }
+
+                totalCount += entry.Count; // 생성 개수를 더한다.
+            }
+
+            return totalCount; // 총 몬스터 수를 반환한다.
+        }
+
+        private Vector3 GetFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Transform gate) // 오와열 배치 오프셋 계산
+        {
+            int rowIndex = unitIndex / frontRowCount; // 몇 번째 줄인지 계산한다.
+            int columnIndex = unitIndex % frontRowCount; // 해당 줄에서 몇 번째 칸인지 계산한다.
+
+            int rowStartIndex = rowIndex * frontRowCount; // 현재 줄의 시작 인덱스
+            int remainingCount = totalMonsterCount - rowStartIndex; // 현재 줄부터 남은 몬스터 수
+            int rowCount = Mathf.Min(frontRowCount, Mathf.Max(0, remainingCount)); // 현재 줄에 실제로 배치될 몬스터 수
+
+            if (rowCount <= 0) // 안전장치
+            {
+                rowCount = frontRowCount; // 기본 줄 개수 사용
+            }
+
+            float centeredColumn = columnIndex - (rowCount - 1) * 0.5f; // 현재 줄 가운데를 기준으로 좌우 위치를 계산한다.
+            float sideOffset = centeredColumn * columnSpacing; // 좌우 간격 적용
+            float backOffset = rowIndex * rowSpacing; // 줄 번호에 따른 뒤쪽 간격 적용
+
+            Vector3 right = gate.right; // 게이트 기준 오른쪽 방향
+            right.y = 0.0f; // 높이 제거
+
+            if (right.sqrMagnitude <= 0.0001f) // 오른쪽 방향 계산이 불가능하다면
+            {
+                right = Vector3.right; // 월드 오른쪽 방향 사용
+            }
+
+            right.Normalize(); // 길이 1로 만든다.
+
+            Vector3 forward = gate.forward; // 게이트 기준 앞 방향
+            forward.y = 0.0f; // 높이 제거
+
+            if (forward.sqrMagnitude <= 0.0001f) // 앞 방향 계산이 불가능하다면
+            {
+                forward = Vector3.forward; // 월드 앞 방향 사용
+            }
+
+            forward.Normalize(); // 길이 1로 만든다.
+
+            return right * sideOffset - forward * backOffset; // 앞줄 기준으로 뒤쪽 줄을 추가한 오와열 위치를 반환한다.
+        }
+
+        private void SpawnMonster(EnemyController prefab, Vector3 spawnPosition, Quaternion gateRotation) // 몬스터 하나 생성
+        {
+            Transform root = monsterRoot != null ? monsterRoot : transform; // 몬스터 부모 선택
+            EnemyController monster = Instantiate(prefab, spawnPosition, gateRotation, root); // 몬스터 생성
 
             monster.name = $"{prefab.name}_{++spawnSerial:000}"; // 생성된 몬스터 이름에 번호를 붙인다.
         }
 
-        private EnemyController PickMonsterPrefab() // 스폰 목록에서 확률 가중치에 따라 Prefab을 선택하는 함수
+        private Transform PickRandomGateFromAllDirections() // 모든 방향 중 랜덤 게이트 선택
         {
-            if (spawnEntries == null || spawnEntries.Length == 0) // 스폰 목록이 없거나 비어 있다면
+            for (int i = 0; i < 20; i++) // 여러 번 시도한다.
             {
-                return null; // 생성할 Prefab이 없다고 반환한다.
-            }
+                SpawnDirection direction = (SpawnDirection)Random.Range(0, 4); // 4방향 중 하나 선택
+                Transform gate = PickRandomGate(direction); // 해당 방향 게이트 선택
 
-            int totalWeight = 0; // 전체 가중치 합계
-
-            for (int i = 0; i < spawnEntries.Length; i++) // 스폰 목록을 순회한다.
-            {
-                EnemySpawnEntry entry = spawnEntries[i]; // 현재 스폰 항목을 가져온다.
-
-                if (entry == null || entry.Prefab == null || entry.Weight <= 0) // 항목이 비어 있거나 Prefab이 없거나 가중치가 0 이하라면
+                if (gate != null) // 게이트가 있다면
                 {
-                    continue; // 이 항목은 확률 계산에서 제외한다.
+                    return gate; // 반환
                 }
-
-                totalWeight += entry.Weight; // 유효한 항목의 가중치를 합산한다.
             }
 
-            if (totalWeight <= 0) // 유효한 가중치가 없다면
-            {
-                return null; // 생성할 Prefab이 없다고 반환한다.
-            }
-
-            int randomValue = Random.Range(0, totalWeight); // 0부터 전체 가중치 직전까지 랜덤 값을 뽑는다.
-
-            for (int i = 0; i < spawnEntries.Length; i++) // 다시 스폰 목록을 순회한다.
-            {
-                EnemySpawnEntry entry = spawnEntries[i]; // 현재 스폰 항목을 가져온다.
-
-                if (entry == null || entry.Prefab == null || entry.Weight <= 0) // 유효하지 않은 항목이라면
-                {
-                    continue; // 선택 대상에서 제외한다.
-                }
-
-                if (randomValue < entry.Weight) // 랜덤 값이 현재 항목의 가중치 범위 안에 들어왔다면
-                {
-                    return entry.Prefab; // 이 Prefab을 선택한다.
-                }
-
-                randomValue -= entry.Weight; // 현재 항목의 가중치만큼 랜덤 값을 줄이고 다음 항목을 확인한다.
-            }
-
-            return null; // 안전용 fallback, 정상 상황에서는 거의 도달하지 않는다.
+            return null; // 사용할 수 있는 게이트가 없다.
         }
 
-        private Vector3 PickSpawnPosition() // Ground 가장자리 안쪽 띠 영역에서 스폰 위치를 선택하는 함수
+        private Transform PickRandomGate(SpawnDirection direction) // 방향별 게이트 배열에서 하나 선택
         {
-            Bounds bounds = GetSpawnAreaBounds(); // Ground 크기를 기준으로 스폰 범위를 가져온다.
-
-            float paddingX = Mathf.Min(spawnEdgePadding, Mathf.Max(0f, bounds.extents.x - 0.1f)); // X축 여백이 Ground 크기를 넘지 않게 보정한다.
-            float paddingZ = Mathf.Min(spawnEdgePadding, Mathf.Max(0f, bounds.extents.z - 0.1f)); // Z축 여백이 Ground 크기를 넘지 않게 보정한다.
-
-            float minX = bounds.min.x + paddingX; // Ground 왼쪽 끝에서 여백만큼 안쪽 위치
-            float maxX = bounds.max.x - paddingX; // Ground 오른쪽 끝에서 여백만큼 안쪽 위치
-            float minZ = bounds.min.z + paddingZ; // Ground 아래쪽 끝에서 여백만큼 안쪽 위치
-            float maxZ = bounds.max.z - paddingZ; // Ground 위쪽 끝에서 여백만큼 안쪽 위치
-
-            float bandWidth = Mathf.Max(0.1f, spawnEdgeBandWidth); // 가장자리 스폰 띠 두께가 너무 작아지지 않게 보정한다.
-
-            int side = Random.Range(0, 4); // 0 왼쪽, 1 오른쪽, 2 아래쪽, 3 위쪽 중 하나를 고른다.
-
-            float x; // 최종 X 위치
-            float z; // 최종 Z 위치
-
-            if (side == 0) // 왼쪽 가장자리 띠
+            if (direction == SpawnDirection.Front)
             {
-                float bandMaxX = Mathf.Min(minX + bandWidth, maxX); // 왼쪽 안쪽 띠의 최대 X 위치
-                x = RandomRangeSafe(minX, bandMaxX); // 왼쪽 안쪽 띠에서 X를 뽑는다.
-                z = RandomRangeSafe(minZ, maxZ); // Z는 Ground 높이 범위 안에서 뽑는다.
-            }
-            else if (side == 1) // 오른쪽 가장자리 띠
-            {
-                float bandMinX = Mathf.Max(maxX - bandWidth, minX); // 오른쪽 안쪽 띠의 최소 X 위치
-                x = RandomRangeSafe(bandMinX, maxX); // 오른쪽 안쪽 띠에서 X를 뽑는다.
-                z = RandomRangeSafe(minZ, maxZ); // Z는 Ground 높이 범위 안에서 뽑는다.
-            }
-            else if (side == 2) // 아래쪽 가장자리 띠
-            {
-                x = RandomRangeSafe(minX, maxX); // X는 Ground 너비 범위 안에서 뽑는다.
-                float bandMaxZ = Mathf.Min(minZ + bandWidth, maxZ); // 아래쪽 안쪽 띠의 최대 Z 위치
-                z = RandomRangeSafe(minZ, bandMaxZ); // 아래쪽 안쪽 띠에서 Z를 뽑는다.
-            }
-            else // 위쪽 가장자리 띠
-            {
-                x = RandomRangeSafe(minX, maxX); // X는 Ground 너비 범위 안에서 뽑는다.
-                float bandMinZ = Mathf.Max(maxZ - bandWidth, minZ); // 위쪽 안쪽 띠의 최소 Z 위치
-                z = RandomRangeSafe(bandMinZ, maxZ); // 위쪽 안쪽 띠에서 Z를 뽑는다.
+                return PickValidGate(frontGates);
             }
 
-            Vector3 position = new Vector3(x, 0f, z); // Ground 가장자리 안쪽에서 뽑은 스폰 위치를 만든다.
+            if (direction == SpawnDirection.Back)
+            {
+                return PickValidGate(backGates);
+            }
 
-            return GroundService.ProjectToGround(position, spawnGroundHeight); // 바닥 기준 높이에 맞춰 보정한 위치를 반환한다.
+            if (direction == SpawnDirection.Left)
+            {
+                return PickValidGate(leftGates);
+            }
+
+            if (direction == SpawnDirection.Right)
+            {
+                return PickValidGate(rightGates);
+            }
+
+            return null;
         }
 
-        private Bounds GetSpawnAreaBounds() // 스폰 범위 Bounds를 가져오는 함수
+        private Transform PickValidGate(Transform[] gates) // 비어 있지 않은 게이트 중 하나 선택
         {
-            if (spawnArea != null) // 스폰 범위 Ground가 연결되어 있다면
+            if (gates == null || gates.Length == 0) // 배열이 없다면
             {
-                Collider areaCollider = spawnArea.GetComponent<Collider>(); // Ground에 Collider가 있는지 확인한다.
+                return null; // 선택 불가
+            }
 
-                if (areaCollider != null) // Collider가 있다면
+            int validCount = 0; // 실제 연결된 게이트 개수
+
+            for (int i = 0; i < gates.Length; i++) // 배열을 순회한다.
+            {
+                if (gates[i] != null) // 연결된 게이트라면
                 {
-                    return areaCollider.bounds; // Collider의 실제 월드 크기를 스폰 범위로 사용한다.
-                }
-
-                Renderer areaRenderer = spawnArea.GetComponent<Renderer>(); // Collider가 없다면 Renderer가 있는지 확인한다.
-
-                if (areaRenderer != null) // Renderer가 있다면
-                {
-                    return areaRenderer.bounds; // Renderer의 실제 월드 크기를 스폰 범위로 사용한다.
+                    validCount++; // 유효 개수 증가
                 }
             }
 
-            Vector3 center = nexus != null ? nexus.position : Vector3.zero; // Ground 연결이 없을 때 사용할 기준 위치
-            return new Bounds(center, new Vector3(50f, 1f, 50f)); // 임시 사각형 범위를 반환한다.
-        }
-
-        private float RandomRangeSafe(float min, float max) // 최소값과 최대값이 뒤집혀도 안전하게 랜덤 값을 반환하는 함수
-        {
-            if (min > max) // 최소값이 최대값보다 크다면
+            if (validCount <= 0) // 유효한 게이트가 없다면
             {
-                float temp = min; // 임시 변수에 min을 저장한다.
-                min = max; // max를 min에 넣는다.
-                max = temp; // 기존 min을 max에 넣는다.
+                return null; // 선택 불가
             }
 
-            if (Mathf.Approximately(min, max)) // 두 값이 거의 같다면
+            int randomIndex = Random.Range(0, validCount); // 유효 게이트 중 랜덤 순번 선택
+
+            for (int i = 0; i < gates.Length; i++) // 다시 배열을 순회한다.
             {
-                return min; // 랜덤 범위가 없으므로 그 값을 그대로 반환한다.
+                if (gates[i] == null) // 비어 있다면
+                {
+                    continue; // 건너뛴다.
+                }
+
+                if (randomIndex == 0) // 선택된 순번이라면
+                {
+                    return gates[i]; // 이 게이트 반환
+                }
+
+                randomIndex--; // 다음 유효 게이트로 이동
             }
 
-            return Random.Range(min, max); // 정상 범위에서 랜덤 값을 반환한다.
+            return null; // 안전용 fallback
         }
     }
 }

@@ -16,6 +16,7 @@ public class LevelUpUi : MonoBehaviour
 
     private bool isOpen;
     private float previousTimeScale = 1f;
+    private float closeFadeDuration = 0.25f; // Close() 기본 페이드
     private CoreStatProvider subscribedCore; // 구독 중인 코어
     private int lastLoggedExp = -1; // 마지막 로그 경험치
     private int lastLoggedLevel = -1; // 마지막 로그 레벨
@@ -171,13 +172,20 @@ public class LevelUpUi : MonoBehaviour
 
     public void Close()
     {
+        Close(closeFadeDuration);
+    }
+
+    public void Close(float fadeDuration) // CardUI 선택 후 닫기 — 페이드 시간 지정
+    {
         if (panelCanvasGroup == null)
         {
             CloseInstant();
             return;
         }
 
-        panelCanvasGroup.DOFade(0.0f, 0.25f).SetUpdate(true).OnComplete(CloseInstant);
+        float duration = Mathf.Max(0.01f, fadeDuration);
+        panelCanvasGroup.DOKill();
+        panelCanvasGroup.DOFade(0.0f, duration).SetUpdate(true).OnComplete(CloseInstant);
     }
 
     private void PlayTitleTween()

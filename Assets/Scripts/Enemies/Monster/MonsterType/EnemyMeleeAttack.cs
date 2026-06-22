@@ -4,7 +4,7 @@ namespace TeamProject01.Gameplay
 {
     public sealed class EnemyMeleeAttack : MonoBehaviour //근거리 몬스터
     {
-        [SerializeField] private Transform nexus; // 공격 타겟이 되는 Nexus Transform
+        private Transform nexus; // 공격 타겟이 되는 Nexus Transform
 
         [Min(0)]
         [SerializeField] private int attackDamage = 1; // 피해량
