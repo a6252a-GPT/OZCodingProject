@@ -131,7 +131,7 @@ namespace TeamProject01.Gameplay
             WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
             float baseDamage = AttackProfile.BaseDamage + weaponBonus.BaseDamageBonus; // 프로필 + 강화
             float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(baseDamage)); // 최종 피해
-            damage *= SupportSegmentRuntimeBuffs.GetFinalDamageMultiplier(Segment.ChainIndex); // 전찬우추가-0621 - 지원형 최종 피해 버프
+            damage *= SupportSegmentRuntimeBuffs.GetFinalDamageMultiplier(Segment.ChainIndex); // 지원형 최종 피해 버프
             return DamageData.Create(damage, GetDamageType(), Segment.ChainIndex, position, gameObject); // 전달값
         }
 
@@ -157,7 +157,10 @@ namespace TeamProject01.Gameplay
 
         private void ResetCooldown() // 쿨타임 재설정
         {
-            float baseInterval = Mathf.Max(0.05f, GetRandomizedCooldown(AttackProfile.Cooldown)); // 기본 쿨타임
+            //전찬우 수정-0622
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화 쿨감
+            float cooldown = weaponBonus.ResolveCooldown(AttackProfile.Cooldown); // 기준 쿨타임
+            float baseInterval = Mathf.Max(0.05f, GetRandomizedCooldown(cooldown)); // 기준 쿨타임 ±10%
             float coreInterval = CoreStatProvider.GetCurrentOrDefault().ApplyFireInterval(baseInterval); // 코어 공속
             fireTimer = GetUpgrade().ApplyFireInterval(coreInterval); // 세그먼트 공속
             fireIntervalDuration = fireTimer; // 진행률 계산 기준
@@ -171,7 +174,7 @@ namespace TeamProject01.Gameplay
                 return 1f;
             }
 
-            return SupportSegmentRuntimeBuffs.GetFinalAttackSpeedMultiplier(Segment.ChainIndex); // 전찬우추가-0621 - 쿨타임 감소 배율
+            return SupportSegmentRuntimeBuffs.GetFinalAttackSpeedMultiplier(Segment.ChainIndex); // 지원형 쿨타임 감소 배율
         }
     }
 }

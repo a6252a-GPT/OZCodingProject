@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace TeamProject01.Gameplay
 {
@@ -83,19 +84,19 @@ namespace TeamProject01.Gameplay
         [Header("")]
         [Min(0)] public int ProjectileCountUnique = 0; // 유니크
 
-        [Header("공격 쿨타임 최소 간격 감소")]
-        [Range(0f, 1f)] public float MinAttackInterval = 0f; // 일반 (0.1=최소 쿨 10% 감소)
+        //전찬우 수정-0622
+        [Header("공격 기준 쿨타임 감소")]
+        [FormerlySerializedAs("MinAttackInterval")]
+        [FormerlySerializedAs("MaxAttackInterval")]
+        [Range(0f, 1f)] public float CooldownReduction = 0f; // 일반 (0.1=기준 쿨 10% 감소)
         [Header("")]
-        [Range(0f, 1f)] public float MinAttackIntervalRare = 0f; // 레어
+        [FormerlySerializedAs("MinAttackIntervalRare")]
+        [FormerlySerializedAs("MaxAttackIntervalRare")]
+        [Range(0f, 1f)] public float CooldownReductionRare = 0f; // 레어
         [Header("")]
-        [Range(0f, 1f)] public float MinAttackIntervalUnique = 0f; // 유니크
-
-        [Header("공격 쿨타임 최대 간격 감소")]
-        [Range(0f, 1f)] public float MaxAttackInterval = 0f; // 일반 (0.1=최대 쿨 10% 감소)
-        [Header("")]
-        [Range(0f, 1f)] public float MaxAttackIntervalRare = 0f; // 레어
-        [Header("")]
-        [Range(0f, 1f)] public float MaxAttackIntervalUnique = 0f; // 유니크
+        [FormerlySerializedAs("MinAttackIntervalUnique")]
+        [FormerlySerializedAs("MaxAttackIntervalUnique")]
+        [Range(0f, 1f)] public float CooldownReductionUnique = 0f; // 유니크
 
         [Header("좌우 각각의 부채꼴 각도 증가")]
         [Min(0f)] public float SideConeAngle = 0f; // 일반 (보너스 각도, 0=효과 없음)
@@ -182,8 +183,7 @@ namespace TeamProject01.Gameplay
             || HasTieredFloat(ChainRange, ChainRangeRare, ChainRangeUnique)
             || HasTieredFloat(ChainDamageFalloff, ChainDamageFalloffRare, ChainDamageFalloffUnique)
             || HasTieredInt(ProjectileCount, ProjectileCountRare, ProjectileCountUnique)
-            || HasTieredFloat(MinAttackInterval, MinAttackIntervalRare, MinAttackIntervalUnique)
-            || HasTieredFloat(MaxAttackInterval, MaxAttackIntervalRare, MaxAttackIntervalUnique)
+            || HasTieredFloat(CooldownReduction, CooldownReductionRare, CooldownReductionUnique)
             || HasTieredFloat(SideConeAngle, SideConeAngleRare, SideConeAngleUnique)
             || HasTieredFloat(LaserDuration, LaserDurationRare, LaserDurationUnique)
             || HasTieredFloat(LaserTickInterval, LaserTickIntervalRare, LaserTickIntervalUnique)
@@ -240,9 +240,8 @@ namespace TeamProject01.Gameplay
 
         public int GetProjectileCount(StatUpgrade.StatCardTier tier) => ResolveTieredInt(ProjectileCount, ProjectileCountRare, ProjectileCountUnique, tier);
 
-        public float GetMinAttackInterval(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(MinAttackInterval, MinAttackIntervalRare, MinAttackIntervalUnique, tier);
-
-        public float GetMaxAttackInterval(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(MaxAttackInterval, MaxAttackIntervalRare, MaxAttackIntervalUnique, tier);
+        //전찬우 수정-0622
+        public float GetCooldownReduction(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(CooldownReduction, CooldownReductionRare, CooldownReductionUnique, tier);
 
         public float GetSideConeAngle(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(SideConeAngle, SideConeAngleRare, SideConeAngleUnique, tier);
 
@@ -393,8 +392,8 @@ namespace TeamProject01.Gameplay
         public float ChainRangePercentMultiplier; // 누적 연쇄 거리 % 곱연산
         public float ChainDamageFalloffBonus; // 누적 체인 피해 유지 비율 보너스 (기본 + 보너스)
         public int ProjectileCountBonus; // 누적 발사 수 보너스
-        public float MinAttackIntervalReductionMultiplier; // 누적 최소 쿨 % 감소 곱연산 (0.9=10% 감소)
-        public float MaxAttackIntervalReductionMultiplier; // 누적 최대 쿨 % 감소 곱연산
+        //전찬우 수정-0622
+        public float CooldownReductionMultiplier; // 누적 기준 쿨 % 감소 곱연산 (0.9=10% 감소)
         public float SideConeAngleBonus; // 누적 부채꼴 각도 보너스
         public float LaserDurationBonus; // 누적 레이저 지속 시간 고정 보너스
         public float LaserDurationPercentMultiplier; // 누적 레이저 지속 % 곱연산
@@ -421,8 +420,7 @@ namespace TeamProject01.Gameplay
             || HasPercentMultiplier(ChainRangePercentMultiplier)
             || ChainDamageFalloffBonus > 0f
             || ProjectileCountBonus > 0
-            || HasReductionMultiplier(MinAttackIntervalReductionMultiplier)
-            || HasReductionMultiplier(MaxAttackIntervalReductionMultiplier)
+            || HasReductionMultiplier(CooldownReductionMultiplier)
             || SideConeAngleBonus > 0f
             || LaserDurationBonus > 0f
             || HasPercentMultiplier(LaserDurationPercentMultiplier)
@@ -454,8 +452,7 @@ namespace TeamProject01.Gameplay
             ApplyPercentMultiplier(ref ChainRangePercentMultiplier, definition.GetChainRangePercent(tier));
             ChainDamageFalloffBonus += definition.GetChainDamageFalloff(tier);
             ProjectileCountBonus += definition.GetProjectileCount(tier);
-            ApplyReductionMultiplier(ref MinAttackIntervalReductionMultiplier, definition.GetMinAttackInterval(tier));
-            ApplyReductionMultiplier(ref MaxAttackIntervalReductionMultiplier, definition.GetMaxAttackInterval(tier));
+            ApplyReductionMultiplier(ref CooldownReductionMultiplier, definition.GetCooldownReduction(tier));
             SideConeAngleBonus += definition.GetSideConeAngle(tier);
             LaserDurationBonus += definition.GetLaserDuration(tier);
             ApplyPercentMultiplier(ref LaserDurationPercentMultiplier, definition.GetLaserDurationPercent(tier));
@@ -525,9 +522,8 @@ namespace TeamProject01.Gameplay
 
         public int ResolveProjectileCount(int profileValue) => Mathf.Max(1, profileValue + ProjectileCountBonus);
 
-        public float ResolveMinAttackInterval(float profileValue) => Mathf.Max(0.05f, profileValue * GetReductionMultiplier(MinAttackIntervalReductionMultiplier));
-
-        public float ResolveMaxAttackInterval(float profileValue) => Mathf.Max(0.05f, profileValue * GetReductionMultiplier(MaxAttackIntervalReductionMultiplier));
+        //전찬우 수정-0622
+        public float ResolveCooldown(float profileValue) => Mathf.Max(0.05f, profileValue * GetReductionMultiplier(CooldownReductionMultiplier));
 
         public float ResolveSideConeAngle(float profileValue) => Mathf.Clamp(profileValue + SideConeAngleBonus, 1f, 180f);
 
