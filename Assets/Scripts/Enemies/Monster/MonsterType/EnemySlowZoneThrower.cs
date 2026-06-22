@@ -181,9 +181,15 @@ namespace TeamProject01.Gameplay
                 spawnRotation = Quaternion.LookRotation(offset.normalized, Vector3.up); // 투사체가 착탄 방향을 바라보게 한다.
             }
 
-            EnemySlowZoneProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, projectileRoot); // 투사체 생성
+            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monsters를 찾고, 없으면 현재 몬스터의 부모를 사용한다.
 
-            projectile.Configure(targetPosition, slowZonePrefab, areaTelegraphPrefab, slowZoneRoot, telegraphRoot, 
+            Transform finalProjectileRoot = projectileRoot != null ? projectileRoot : runtimeRoot; // 투사체 부모를 정한다.
+            Transform finalSlowZoneRoot = slowZoneRoot != null ? slowZoneRoot : runtimeRoot; // 슬로우 장판 부모를 정한다.
+            Transform finalTelegraphRoot = telegraphRoot != null ? telegraphRoot : runtimeRoot; // 예고 표시 부모를 정한다.
+
+            EnemySlowZoneProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, finalProjectileRoot); // 투사체를 Monsters 밑에 생성한다.
+
+            projectile.Configure(targetPosition, slowZonePrefab, areaTelegraphPrefab, finalSlowZoneRoot, finalTelegraphRoot,
                                  slowZoneRadius, slowZoneLifeTime, speedMultiplier, telegraphGroundHeight, slowZoneGroundHeight); // 투사체에 착탄 위치와 장판 정보를 전달한다.
         }        
     }

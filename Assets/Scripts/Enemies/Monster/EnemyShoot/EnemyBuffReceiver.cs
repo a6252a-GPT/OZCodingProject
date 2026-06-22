@@ -6,10 +6,10 @@ namespace TeamProject01.Gameplay
     {        
         private EnemyBuffType activeBuffType = EnemyBuffType.None; //현재 몬스터 적용 버프는 없음
 
-        [Min(1.0f)]
+        
         private float activeBuffMultiplier = 1.0f; //현재 적용 중인 버프 배율
 
-        [Min(0.0f)]
+        
         private float remainingBuffTime; //현재 버프 유지 시간
 
         public EnemyBuffType ActiveBuffType//현재 버프 종류를 읽기 위한 property
