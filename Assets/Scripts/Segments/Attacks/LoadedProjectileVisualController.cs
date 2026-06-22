@@ -31,7 +31,22 @@ namespace TeamProject01.Gameplay
                 Transform visual = visuals[i]; // 장전탄
                 if (visual != null)
                 {
-                    visual.gameObject.SetActive(i < visibleCount); // 필요한 수만 표시
+                    if (i < visibleCount)
+                    {
+                        LoadedProjectileRegrowVisual regrow = visual.GetComponent<LoadedProjectileRegrowVisual>();
+                        if (regrow != null)
+                        {
+                            regrow.ShowImmediate();
+                        }
+                        else
+                        {
+                            visual.gameObject.SetActive(true); // 필요한 수만 표시
+                        }
+                    }
+                    else
+                    {
+                        visual.gameObject.SetActive(false); // 필요한 수 아님
+                    }
                 }
             }
         }
@@ -46,7 +61,68 @@ namespace TeamProject01.Gameplay
             Transform visual = visuals[projectileIndex]; // 대상
             if (visual != null)
             {
-                visual.gameObject.SetActive(false); // 발사됨
+                LoadedProjectileRegrowVisual regrow = visual.GetComponent<LoadedProjectileRegrowVisual>();
+                if (regrow != null)
+                {
+                    regrow.HideImmediate(); // 발사 직후 0.01배 상태
+                }
+                else
+                {
+                    visual.gameObject.SetActive(false); // 발사됨
+                }
+            }
+        }
+
+        public static bool HasRegrowVisual(List<Transform> visuals, int visibleCount) // 서서히 재생성되는 장전 표시 여부
+        {
+            if (visuals == null)
+            {
+                return false;
+            }
+
+            int count = Mathf.Min(visibleCount, visuals.Count);
+            for (int i = 0; i < count; i++)
+            {
+                Transform visual = visuals[i];
+                if (visual != null && visual.GetComponent<LoadedProjectileRegrowVisual>() != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static void SetReloadProgress(List<Transform> visuals, int visibleCount, float progress) // 쿨타임 기반 재생성 진행
+        {
+            if (visuals == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < visuals.Count; i++)
+            {
+                Transform visual = visuals[i];
+                if (visual == null)
+                {
+                    continue;
+                }
+
+                if (i >= visibleCount)
+                {
+                    visual.gameObject.SetActive(false);
+                    continue;
+                }
+
+                LoadedProjectileRegrowVisual regrow = visual.GetComponent<LoadedProjectileRegrowVisual>();
+                if (regrow != null)
+                {
+                    regrow.SetReloadProgress(progress);
+                }
+                else if (progress >= 1f)
+                {
+                    visual.gameObject.SetActive(true);
+                }
             }
         }
 

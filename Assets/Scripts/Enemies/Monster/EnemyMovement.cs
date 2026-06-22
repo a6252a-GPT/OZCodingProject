@@ -38,6 +38,7 @@ namespace TeamProject01.Gameplay
         private EnemySlowZoneThrower slowZoneThrower; // 같은 GameObject에 붙은 슬로우 장판 투척 공격 Script Component 참조
         private EnemyObstacleSummoner obstacleSummoner; // 같은 GameObject에 붙은 장애물 소환 Script Component 참조
         private EnemyBuffReceiver buffReceiver; // 같은 GameObject에 붙은 버프 상태 Script Component 참조
+        private EnemySupportDebuffState supportDebuff; // 전찬우추가-0621 - 지원형 디버프 상태
 
         private EnemyPortalTotemCaster portalTotemCaster; // 같은 GameObject에 붙은 포탈 토템 소환 Script Component 참조
 
@@ -50,6 +51,7 @@ namespace TeamProject01.Gameplay
             slowZoneThrower = GetComponent<EnemySlowZoneThrower>(); // 같은 GameObject에 붙은 EnemySlowZoneThrower Script Component를 찾는다.
             obstacleSummoner = GetComponent<EnemyObstacleSummoner>(); // 같은 GameObject에 붙은 EnemyObstacleSummoner Script Component를 찾는다.
             buffReceiver = GetComponent<EnemyBuffReceiver>(); // 같은 GameObject에 붙은 EnemyBuffReceiver Script Component를 찾는다.
+            supportDebuff = GetComponent<EnemySupportDebuffState>(); // 전찬우추가-0621 - 지원형 디버프 상태를 찾는다.
 
             portalTotemCaster = GetComponent<EnemyPortalTotemCaster>(); // 같은 GameObject에 붙은 EnemyPortalTotemCaster Script Component를 찾는다.
 
@@ -62,6 +64,15 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
+
+            if (IsFrozenBySupport()) // 전찬우추가-0621 - 얼음종 동결 중 이동 정지
+            {
+                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 정지 중 위치 보정
+                transform.position = resolvedPosition; // 보정 위치 적용
+
+                return;
+            }
+
             if (knockbackTimer > 0.0f) //밀리는 시간이 유지되고 있다면
             {
                 knockbackTimer -= Time.deltaTime;//밀리는 시간을 감소한다.
@@ -272,5 +283,17 @@ namespace TeamProject01.Gameplay
             this.moveSpeed = moveSpeed; // 이동 속도를 저장한다.
             this.groundHeight = groundHeight; // 바닥 높이 오프셋을 저장한다.
         }
+
+
+        private bool IsFrozenBySupport() // 전찬우추가-0621 - 지원형 동결 여부
+        {
+            if (supportDebuff == null)
+            {
+                supportDebuff = GetComponent<EnemySupportDebuffState>(); // 런타임에 붙은 디버프 상태 재확인
+            }
+
+            return supportDebuff != null && supportDebuff.IsFrozen;
+        }
+   
     }
 }

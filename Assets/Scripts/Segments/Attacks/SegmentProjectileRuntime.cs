@@ -7,6 +7,8 @@ namespace TeamProject01.Gameplay
     {
         private readonly List<int> hitEnemyIds = new List<int>(8); // 관통 중복 방지
         private readonly List<int> explosionEnemyIds = new List<int>(16); // 폭발 중복 방지
+        private readonly List<int> flameTickEnemyIds = new List<int>(16); // 화염 틱 중복 방지
+        private static Material expandingFlameDebugMaterial; // SG05 1차 디버그 표시 재질
 
         private SegmentAttackProfile profile; // 공격 데이터
         private EnemyController target; // 목표
@@ -35,8 +37,14 @@ namespace TeamProject01.Gameplay
         private float sawSpinAngle; // 톱날 회전 누적 각도
         private float effectiveProjectileSpeed; // 강화 반영 속도
         private float effectiveExplosionRadius; // 강화 반영 폭발 반경
+        private float flameSphereTimer; // 화염 구체 진행 시간
+        private float flameSphereTickTimer; // 다음 화염 틱까지 남은 시간
+        private float flameSphereDuration; // 화염 구체 전체 지속 시간
+        private Transform flameInfluenceAnchor; // 화염 구체가 약하게 따라갈 총구
+        private Vector3 lastFlameInfluenceAnchorPosition; // 직전 총구 위치
+        private bool hasLastFlameInfluenceAnchorPosition; // 총구 위치 초기화 여부
 
-        public static SegmentProjectileRuntime Spawn(Transform root, GameObject prefab, Vector3 position, Vector3 direction, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus = default) // 생성 (weaponBonus=카드 강화 누적값)
+        public static SegmentProjectileRuntime Spawn(Transform root, GameObject prefab, Vector3 position, Vector3 direction, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus = default, Transform flameInfluenceAnchor = null) // 생성 (weaponBonus=카드 강화 누적값)
         {
             GameObject instance;
             if (prefab != null)
@@ -60,15 +68,22 @@ namespace TeamProject01.Gameplay
                 runtime = instance.AddComponent<SegmentProjectileRuntime>(); // 자동 보강
             }
 
-            runtime.Configure(direction, target, profile, damage, weaponBonus); // 값 주입
+            runtime.Configure(direction, target, profile, damage, weaponBonus, flameInfluenceAnchor); // 값 주입
             return runtime;
         }
 
-        private void Configure(Vector3 fireDirection, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus) // 값 주입 (프로필+강화 합산)
+        private void Configure(Vector3 fireDirection, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus, Transform flameInfluenceAnchor) // 값 주입 (프로필+강화 합산)
         {
             this.profile = profile; // 프로필
             this.target = target; // 목표
             this.damage = damage; // 피해
+            this.flameInfluenceAnchor = profile != null
+                && profile.MoveType == SegmentAttackMoveType.ExpandingFlameSphere
+                && profile.UseFlameMuzzleInfluence
+                ? flameInfluenceAnchor
+                : null;
+            hasLastFlameInfluenceAnchorPosition = this.flameInfluenceAnchor != null;
+            lastFlameInfluenceAnchorPosition = hasLastFlameInfluenceAnchorPosition ? this.flameInfluenceAnchor.position : Vector3.zero;
             direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : transform.forward; // 방향
             ApplyProjectileScale(); // 프로필 크기 적용
             lifeTimer = profile != null ? Mathf.Max(0.1f, profile.ProjectileLifetime) : 0.1f; // 수명
@@ -94,6 +109,10 @@ namespace TeamProject01.Gameplay
             remainingSawBounces = profile != null ? Mathf.Max(0, profile.MaxChainDepth) : 0; // 톱날 연쇄 초기화
             currentSawTargetId = target != null ? target.EnemyId : 0; // 최초 목표 저장
             sawSpinAngle = 0f; // 톱날 회전 초기화
+            flameSphereTimer = 0f; // 화염 구체 시간 초기화
+            flameSphereTickTimer = 0f; // 첫 프레임부터 피해 판정
+            flameSphereDuration = profile != null ? Mathf.Max(0.05f, profile.ProjectileLifetime) : 0.05f; // 전체 지속 시간
+            SetupExpandingFlameSphereVisual(); // 화염 디버그 구체 표시
         }
 
         private float GetProjectileSpeed() // 강화 반영 속도
@@ -139,6 +158,9 @@ namespace TeamProject01.Gameplay
                     break;
                 case SegmentAttackMoveType.SawBounceProjectile:
                     UpdateSawBounceProjectile(); // 톱날 관통 연쇄
+                    break;
+                case SegmentAttackMoveType.ExpandingFlameSphere:
+                    UpdateExpandingFlameSphere(); // 전진 확장 화염 구체
                     break;
                 default:
                     UpdateStraightProjectile(); // 직선/관통

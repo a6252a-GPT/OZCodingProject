@@ -8,7 +8,8 @@ namespace TeamProject01.Gameplay
         HomingProjectile = 3, // 추적 투사체
         Laser = 4, // 레이저
         ChainLightning = 5, // 즉시 체인 번개
-        SawBounceProjectile = 6 // 톱날 관통 연쇄 투사체
+        SawBounceProjectile = 6, // 톱날 관통 연쇄 투사체
+        ExpandingFlameSphere = 7 // 전진하며 커지는 화염 판정 구체
     }
 
     public enum SegmentAttackImpactType // 명중 처리 방식

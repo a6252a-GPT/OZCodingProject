@@ -20,10 +20,10 @@ namespace TeamProject01.Gameplay
             return muzzle != null ? muzzle.forward : transform.forward; // 현재 방향
         }
 
-        private bool AimHeadAtTarget(EnemyController target, float deltaTime) // 머리 조준
+        private bool AimHeadAtTarget(EnemyController target, float deltaTime, float turnSpeedMultiplier = 1f) // 머리 조준
         {
             Transform pivot = ResolveHeadYawPivot(); // 회전축
-            if (pivot == null || target == null)
+            if (pivot == null || !IsTargetUsable(target))
             {
                 return true; // 회전축 없음
             }
@@ -35,7 +35,7 @@ namespace TeamProject01.Gameplay
             }
 
             float signedAngle = Vector3.SignedAngle(currentDirection, targetDirection, Vector3.up); // 목표 각도
-            float maxStep = AttackProfile.HeadTurnSpeed * deltaTime; // 회전량
+            float maxStep = AttackProfile.HeadTurnSpeed * Mathf.Clamp(turnSpeedMultiplier, 0.01f, 1f) * deltaTime; // 회전량
             float step = Mathf.Clamp(signedAngle, -maxStep, maxStep); // 과회전 방지
             pivot.Rotate(Vector3.up, step, Space.World); // 회전
 
@@ -178,6 +178,143 @@ namespace TeamProject01.Gameplay
             }
 
             return MuzzleVfxSocket;
+        }
+
+
+        private bool ShouldUseSustainedMuzzleVfx()
+        {
+            return AttackProfile != null
+                && AttackProfile.MoveType == SegmentAttackMoveType.ExpandingFlameSphere
+                && AttackProfile.MuzzleVfxPrefab != null;
+        }
+
+        private bool IsSustainedMuzzleVfxActive()
+        {
+            return sustainedMuzzleVfxInstance != null;
+        }
+
+        private void StartSustainedMuzzleVfx(Transform muzzle)
+        {
+            if (!ShouldUseSustainedMuzzleVfx() || sustainedMuzzleVfxInstance != null)
+            {
+                return;
+            }
+
+            Transform socket = ResolveMuzzleVfxSocket(muzzle);
+            sustainedMuzzleVfxInstance = socket != null
+                ? Instantiate(AttackProfile.MuzzleVfxPrefab, socket)
+                : Instantiate(AttackProfile.MuzzleVfxPrefab);
+            sustainedMuzzleVfxInstance.name = AttackProfile.MuzzleVfxPrefab.name + "_MuzzleRuntime";
+            sustainedMuzzleVfxParticles = sustainedMuzzleVfxInstance.GetComponentsInChildren<ParticleSystem>(true);
+            ConfigureSustainedMuzzleVfxParticles();
+            UpdateSustainedMuzzleVfx(muzzle);
+        }
+
+        private void ConfigureSustainedMuzzleVfxParticles()
+        {
+            if (sustainedMuzzleVfxParticles == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < sustainedMuzzleVfxParticles.Length; i++)
+            {
+                ParticleSystem particle = sustainedMuzzleVfxParticles[i];
+                if (particle == null)
+                {
+                    continue;
+                }
+
+                ParticleSystem.MainModule main = particle.main;
+                main.playOnAwake = true;
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                main.simulationSpace = ParticleSystemSimulationSpace.World;
+                if (!particle.isPlaying)
+                {
+                    particle.Play(true);
+                }
+            }
+        }
+
+        private void UpdateSustainedMuzzleVfx(Transform muzzle)
+        {
+            if (sustainedMuzzleVfxInstance == null)
+            {
+                return;
+            }
+
+            Transform vfxTransform = sustainedMuzzleVfxInstance.transform;
+            Transform socket = ResolveMuzzleVfxSocket(muzzle);
+            if (socket != null)
+            {
+                if (vfxTransform.parent != socket)
+                {
+                    vfxTransform.SetParent(socket, false);
+                }
+
+                vfxTransform.localPosition = Vector3.zero;
+                vfxTransform.localRotation = GetFlamethrowerVfxLocalRotation();
+                vfxTransform.localScale = GetMuzzleVfxScale();
+                return;
+            }
+
+            Transform fallback = muzzle != null ? muzzle : transform;
+            vfxTransform.position = GetMuzzleVfxPosition(muzzle);
+            vfxTransform.rotation = fallback.rotation * GetFlamethrowerVfxLocalRotation();
+            vfxTransform.localScale = GetMuzzleVfxScale();
+        }
+
+        private Vector3 GetMuzzleVfxPosition(Transform muzzle)
+        {
+            Transform socket = ResolveMuzzleVfxSocket(muzzle);
+            if (socket != null)
+            {
+                return socket.position;
+            }
+
+            return muzzle != null ? muzzle.position : transform.position + Vector3.up * AttackProfile.AttackSpawnHeight;
+        }
+
+        private static Quaternion GetFlamethrowerVfxLocalRotation()
+        {
+            return Quaternion.Euler(0f, 90f, 0f);
+        }
+
+        private Vector3 GetMuzzleVfxScale()
+        {
+            if (AttackProfile == null)
+            {
+                return Vector3.one;
+            }
+
+            Vector3 scale = AttackProfile.MuzzleVfxScale;
+            return scale.x > 0f && scale.y > 0f && scale.z > 0f ? scale : Vector3.one;
+        }
+
+        private void StopSustainedMuzzleVfx(bool immediate)
+        {
+            if (sustainedMuzzleVfxInstance == null)
+            {
+                return;
+            }
+
+            if (sustainedMuzzleVfxParticles != null)
+            {
+                for (int i = 0; i < sustainedMuzzleVfxParticles.Length; i++)
+                {
+                    ParticleSystem particle = sustainedMuzzleVfxParticles[i];
+                    if (particle != null)
+                    {
+                        particle.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                    }
+                }
+            }
+
+            float profileLifetime = AttackProfile != null ? AttackProfile.MuzzleVfxLifetime : 0.1f;
+            float tailLifetime = immediate ? 0f : Mathf.Max(0.1f, profileLifetime);
+            Destroy(sustainedMuzzleVfxInstance, tailLifetime);
+            sustainedMuzzleVfxInstance = null;
+            sustainedMuzzleVfxParticles = null;
         }
 
 

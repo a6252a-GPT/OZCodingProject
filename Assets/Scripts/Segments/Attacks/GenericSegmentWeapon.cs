@@ -20,6 +20,10 @@ namespace TeamProject01.Gameplay
         private bool wasWeaponActive; // 이전 작동 상태
         private bool hasInitializedLoadedVisuals; // 초기 장전 표시 완료
         private EnemyController lockedSawTarget; // 톱날 조준 고정 대상
+        private EnemyController projectileSequenceTarget; // 순차 발사 중 현재 조준 대상
+        private int projectileSequencePreferredSide; // 순차 발사 중 우선 탐색할 좌/우 콘
+        private GameObject sustainedMuzzleVfxInstance;
+        private ParticleSystem[] sustainedMuzzleVfxParticles;
         private Coroutine laserRoutine; // 레이저 지속 피해
         private Coroutine projectileSequenceRoutine; // 순차 투사체 발사
         // 투석기처럼 발사 전에 별도 무기 모션을 재생하는 컴포넌트
@@ -62,6 +66,9 @@ namespace TeamProject01.Gameplay
                 StopCoroutine(projectileSequenceRoutine); // 분리 시 발사 중지
                 projectileSequenceRoutine = null;
                 isFiringProjectileSequence = false;
+                projectileSequenceTarget = null;
+                projectileSequencePreferredSide = 0;
+                StopSustainedMuzzleVfx(true);
             }
 
             if (!active)
@@ -69,6 +76,7 @@ namespace TeamProject01.Gameplay
                 ClearSawTargetLock(); // 비활성 시 톱날 대상 해제
                 StopTrebuchetFireMotion(); // 분리/비활성 시 숟가락 모션 복구
                 ResetFireRecoilPose(); // 분리/비활성 시 반동 중간 pose 복구
+                StopSustainedMuzzleVfx(true);
             }
         }
 
@@ -77,13 +85,15 @@ namespace TeamProject01.Gameplay
             if (!CanUseWeapon())
             {
                 ClearSawTargetLock(); // 사용 불가 시 대상 해제
+                StopSustainedMuzzleVfx(true);
                 return; // 발사 불가
             }
 
-            fireTimer -= deltaTime; // 쿨타임 감소
+            fireTimer -= deltaTime * GetSupportAttackSpeedMultiplier(); // 쿨타임 감소
             UpdateLoadedProjectileReloadVisuals(); // 재장전 표시 복구
             if (isFiringProjectileSequence)
             {
+                UpdateProjectileSequenceAim(deltaTime); // 채널링 중 느린 재조준
                 return; // 순차 발사 진행 중
             }
 
@@ -121,6 +131,7 @@ namespace TeamProject01.Gameplay
             WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
             float baseDamage = AttackProfile.BaseDamage + weaponBonus.BaseDamageBonus; // 프로필 + 강화
             float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(baseDamage)); // 최종 피해
+            damage *= SupportSegmentRuntimeBuffs.GetFinalDamageMultiplier(Segment.ChainIndex); // 전찬우추가-0621 - 지원형 최종 피해 버프
             return DamageData.Create(damage, GetDamageType(), Segment.ChainIndex, position, gameObject); // 전달값
         }
 
@@ -146,13 +157,21 @@ namespace TeamProject01.Gameplay
 
         private void ResetCooldown() // 쿨타임 재설정
         {
-            float min = Mathf.Min(AttackProfile.MinAttackInterval, AttackProfile.MaxAttackInterval); // 최소
-            float max = Mathf.Max(AttackProfile.MinAttackInterval, AttackProfile.MaxAttackInterval); // 최대
-            float baseInterval = Random.Range(min, max); // 기본 쿨타임
+            float baseInterval = Mathf.Max(0.05f, GetRandomizedCooldown(AttackProfile.Cooldown)); // 기본 쿨타임
             float coreInterval = CoreStatProvider.GetCurrentOrDefault().ApplyFireInterval(baseInterval); // 코어 공속
             fireTimer = GetUpgrade().ApplyFireInterval(coreInterval); // 세그먼트 공속
             fireIntervalDuration = fireTimer; // 진행률 계산 기준
             loadedProjectilesRestored = !ShouldUseLoadedProjectileVisuals(); // 장전 표시 복구 대기
+        }
+
+        private float GetSupportAttackSpeedMultiplier() // 지원형 공격속도 버프
+        {
+            if (Segment == null)
+            {
+                return 1f;
+            }
+
+            return SupportSegmentRuntimeBuffs.GetFinalAttackSpeedMultiplier(Segment.ChainIndex); // 전찬우추가-0621 - 쿨타임 감소 배율
         }
     }
 }
