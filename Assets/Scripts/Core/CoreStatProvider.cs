@@ -30,7 +30,9 @@ namespace TeamProject01.Gameplay
         [Min(0)] public int ExtraExperiencePerLevel = 5; // 레벨당 증가량
         public ConvoyController Convoy; // 세그먼트 추가 입구
         public SegmentCatalogAsset SegmentCatalogAsset; // 새 세그먼트 데이터에셋 목록
+        // 건춘 추가 시작 =======
         public WeaponCatalogAsset WeaponCatalogAsset; // CardUI 무기 강화 카드 목록 조회용 카탈로그
+        // 건춘 추가 끝 =====
         public SegmentCatalogEntry[] SegmentCatalog = Array.Empty<SegmentCatalogEntry>(); // 사용 가능한 세그먼트 목록
 
         public event Action<CoreStatData> StatsChanged; // 성장값 변경 알림
@@ -41,6 +43,7 @@ namespace TeamProject01.Gameplay
         public CoreStatData CurrentStats => new CoreStatData(CurrentLevel, FlatDamageBonus, DamageMultiplier, AttackSpeedMultiplier, TurnSpeedBonus, RejoinRangeBonus, CollisionForceBonus, CurrentExperience, ExperienceToNextLevel, TotalExperience, CurrentGold); // 현재값
 
         private readonly List<SegmentUpgradeData> segmentUpgrades = new List<SegmentUpgradeData>(); // 세그먼트별 강화 누적
+        // 건춘 추가 시작 =======
         private readonly List<WeaponStatBonusEntry> weaponStatBonuses = new List<WeaponStatBonusEntry>(); // 세그먼트 ID별 무기 강화 보너스 누적 저장
         private int levelUpCardCycleIndex; // 레벨업 카드 순환 (0=스탯, 1=무기강화, 2=세그먼트)
 
@@ -84,6 +87,7 @@ namespace TeamProject01.Gameplay
         }
 
         private bool pendingLevelUpChoiceCommitted; // 레벨업 카드 UI 표시 중 (경험치 미소비)
+        // 건춘 추가 끝 =====
 
         private void Awake() // 등록
         {
@@ -111,7 +115,9 @@ namespace TeamProject01.Gameplay
                 return false; // 적용 조건 미충족
             }
 
+            // 건춘 추가 시작 =======
             ApplyLevelDeltaIfNeeded(growth.LevelDelta); // 카드 선택 시 플레이어 레벨·경험치 소비
+            // 건춘 추가 끝 =====
             DamageMultiplier = Mathf.Max(0f, DamageMultiplier + growth.DamageMultiplierBonus); // 공격력 누적
             AttackSpeedMultiplier = Mathf.Max(0.01f, AttackSpeedMultiplier + growth.AttackSpeedMultiplierBonus); // 공격속도 누적
             TurnSpeedBonus += growth.TurnSpeedBonus; // 회전력 누적
@@ -159,9 +165,11 @@ namespace TeamProject01.Gameplay
             TotalExperience = 0; // 누적 경험치 초기화
             CurrentGold = 0; // 골드 초기화
             segmentUpgrades.Clear(); // 세그먼트 강화 초기화
+            // 건춘 추가 시작 =======
             weaponStatBonuses.Clear(); // 무기 강화 보너스 초기화
             levelUpCardCycleIndex = 0; // 레벨업 카드 순환 초기화
             pendingLevelUpChoiceCommitted = false; // 레벨업 카드 UI 상태 초기화
+            // 건춘 추가 끝 =====
             StatsChanged?.Invoke(CurrentStats); // 변경 알림
         }
 
@@ -225,7 +233,7 @@ namespace TeamProject01.Gameplay
             return results.Count > 0; // 후보 존재
         }
 
-        // 세그먼트 ADD 카드용 후보 수집: 추가 가능 또는 레벨업 가능이면 후보에 노출
+        ////// 전찬우추가 - 세그먼트 ADD 카드용 후보 수집: 추가 가능 또는 레벨업 가능이면 후보에 노출
         public bool TryGetSegmentChoiceCandidates(List<SegmentCatalogEntry> results)
         {
             if (results == null)
@@ -254,7 +262,7 @@ namespace TeamProject01.Gameplay
             return results.Count > 0; // 후보 존재
         }
 
-
+        // 건춘 추가 시작 =======
         // 무기 강화 1단계 - Segment Catalog 풀 전체를 후보로 반환
         public bool TryGetWeaponEnhanceChoiceCandidates(List<SegmentCatalogEntry> results)
         {
@@ -283,8 +291,9 @@ namespace TeamProject01.Gameplay
 
             return results.Count > 0; // 후보 존재
         }
+        // 건춘 추가 끝 =====
 
-        // 현재 세그먼트 모델 레벨/최대 레벨 조회
+        ////// 전찬우추가 - 현재 세그먼트 모델 레벨/최대 레벨 조회
         public bool TryGetSegmentModelLevelInfo(string segmentId, out int currentLevel, out int maxLevel)
         {
             currentLevel = 1; // 기본 현재 레벨
@@ -300,7 +309,7 @@ namespace TeamProject01.Gameplay
             return true; // 조회 성공
         }
 
-        // 해당 세그먼트가 현재 붙어 있고 모델 레벨업 가능한지 확인
+        ////// 전찬우추가 - 해당 세그먼트가 현재 붙어 있고 모델 레벨업 가능한지 확인
         public bool CanLevelUpSegmentModel(string segmentId)
         {
             EnsureConvoyReference(); // 컨보이 보강
@@ -335,17 +344,18 @@ namespace TeamProject01.Gameplay
             return definition.TryGetLevel(currentLevel + 1, out _); // 다음 레벨 프리팹 존재 여부
         }
 
-        // 카드 2차 선택에서 세그먼트 추가를 코어 경유로 적용
+        ////// 전찬우추가 - 카드 2차 선택에서 세그먼트 추가를 코어 경유로 적용
         public bool TryApplySegmentAddChoice(string segmentId, int levelDelta, int count = 1)
         {
             GrowthStatData growth = GrowthStatData.CreateAddSegment(levelDelta, segmentId, count); // 추가 성장 데이터
             return ApplyGrowth(growth); // 기존 성장 적용 흐름 사용
         }
 
-        // 카드 2차 선택에서 해당 세그먼트 모델 레벨업을 코어 경유로 적용
+        ////// 전찬우추가 - 카드 2차 선택에서 해당 세그먼트 모델 레벨업을 코어 경유로 적용
         public bool TryApplySegmentLevelUpChoice(string segmentId, int levelDelta)
         {
             EnsureConvoyReference(); // 컨보이 보강
+            // 건춘 추가 시작 =======
             if (Convoy == null || !CanConsumeLevelDeltaForChoice(levelDelta) || !CanLevelUpSegmentModel(segmentId))
             {
                 return false; // 경험치 부족 또는 레벨업 불가
@@ -363,12 +373,15 @@ namespace TeamProject01.Gameplay
             }
 
             ApplyLevelDeltaIfNeeded(levelDelta); // 카드 선택 시 플레이어 레벨·경험치 소비
+            // 건춘 추가 끝 =====
             StatsChanged?.Invoke(CurrentStats); // UI 갱신
             return true; // 적용 성공
         }
 
+        // 건춘 추가 시작 =======
         // 무기 강화 2단계 - 선택한 WeaponDefinition 보너스를 코어에 누적
-        public bool TryApplyWeaponEnhancementChoice(string segmentId, int levelDelta, WeaponDefinition definition, float bonusMultiplier = 1f)
+        // 건준수정 - 0621 ======
+        public bool TryApplyWeaponEnhancementChoice(string segmentId, int levelDelta, WeaponDefinition definition, StatUpgrade.StatCardTier tier = StatUpgrade.StatCardTier.Normal)
         {
             if (definition == null)
             {
@@ -404,7 +417,8 @@ namespace TeamProject01.Gameplay
 
             int index = FindWeaponStatBonusIndex(normalizedSegmentId); // 기존 누적 검색
             WeaponStatBonusData bonus = index >= 0 ? weaponStatBonuses[index].Bonus : default; // 현재 누적값
-            bonus.AddDefinition(definition, bonusMultiplier); // WeaponDefinition 보너스 합산 (레어/유니크 배율)
+            bonus.AddDefinition(definition, tier); // WeaponDefinition 보너스 합산 (등급별 수치)
+            // 건준수정 - 0621 ======
             if (index >= 0)
             {
                 weaponStatBonuses[index] = new WeaponStatBonusEntry(normalizedSegmentId, bonus); // 기존 항목 갱신
@@ -434,6 +448,7 @@ namespace TeamProject01.Gameplay
         {
             return Active != null ? Active.GetWeaponStatBonus(segmentId) : default; // 코어 없으면 기본값
         }
+        // 건춘 추가 끝 =====
 
         public bool TryFindSegmentEntry(string segmentId, out SegmentCatalogEntry entry) // ID로 세그먼트 찾기
         {
@@ -572,6 +587,7 @@ namespace TeamProject01.Gameplay
             return true; // 적용 성공
         }
 
+        // 건춘 추가 시작 =======
         private bool CanConsumeLevelDeltaForChoice(int levelDelta) // 카드 선택 시 경험치로 레벨업 가능한지
         {
             return levelDelta <= 0 || CanApplyLevelDelta(levelDelta); // 0 이하면 소비 없음, 아니면 경험치 검사
@@ -586,6 +602,7 @@ namespace TeamProject01.Gameplay
 
             ApplyLevelDeltaUnchecked(levelDelta); // 경험치 차감 + CurrentLevel 증가
         }
+        // 건춘 추가 끝 =====
 
         private void ApplyLevelDeltaUnchecked(int levelDelta) // 레벨 증가 반영
         {
@@ -669,6 +686,7 @@ namespace TeamProject01.Gameplay
             return -1; // 없음
         }
 
+        // 건춘 추가 시작 =======
         private int FindWeaponStatBonusIndex(string segmentId) // weaponStatBonuses 리스트에서 세그먼트 ID 검색
         {
             if (string.IsNullOrWhiteSpace(segmentId))
@@ -699,6 +717,7 @@ namespace TeamProject01.Gameplay
                 Bonus = bonus; // 누적 보너스 스냅샷
             }
         }
+        // 건춘 추가 끝 =====
 
         private bool TryGetAddableSegmentPrefab(string segmentId, out GameObject prefab) // 추가용 ID → 프리팹
         {
@@ -712,7 +731,7 @@ namespace TeamProject01.Gameplay
             return prefab != null; // 최종 확인
         }
 
-        // 카탈로그 데이터에셋에서 세그먼트 정의 찾기
+        ////// 전찬우추가 - 카탈로그 데이터에셋에서 세그먼트 정의 찾기
         private bool TryFindSegmentDefinition(string segmentId, out SegmentDefinition definition)
         {
             definition = null; // 기본값

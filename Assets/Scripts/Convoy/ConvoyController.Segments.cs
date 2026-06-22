@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
@@ -319,6 +320,63 @@ namespace TeamProject01.Gameplay
 
             return count; // 결과 반환
         }
+
+        // ===== 안건준 추가 0620 =====
+        // CardUI 디버그 — 세그먼트 개수 조회용
+
+        // 붙어 있는 세그먼트 전체 개수  — CardUI "전체 세그먼트 숫자" 출력용
+        public int GetAttachedSegmentTotalCount()
+        {
+            SyncSegmentRuntimes(true); // 현재 체인 런타임 보정
+            int total = 0; // 전체 개수
+            for (int i = 0; i < segmentRuntimes.Count; i++)
+            {
+                ConvoySegmentRuntime runtime = segmentRuntimes[i]; // 현재 런타임
+                if (runtime != null && runtime.IsAttached && runtime.Weapon != null)
+                {
+                    total++; // 세그먼트 집계
+                }
+            }
+
+            return total; // 결과
+        }
+
+        // 세그먼트 ID별 개수 수집 
+        public void CollectAttachedSegmentCounts(Dictionary<string, int> countsBySegmentId)
+        {
+            if (countsBySegmentId == null)
+            {
+                return; // null Dictionary 방지
+            }
+
+            countsBySegmentId.Clear(); // 이전 결과 제거
+            SyncSegmentRuntimes(true); // 현재 체인 런타임 보정
+            for (int i = 0; i < segmentRuntimes.Count; i++)
+            {
+                ConvoySegmentRuntime runtime = segmentRuntimes[i]; // 현재 런타임
+                if (runtime == null || !runtime.IsAttached || runtime.Weapon == null)
+                {
+                    continue; // 분리됐거나 무기 없는 세그먼트 제외
+                }
+
+                string segmentId = runtime.Weapon.EffectiveSegmentId; 
+                if (string.IsNullOrWhiteSpace(segmentId))
+                {
+                    continue; // ID 없으면 집계 불가
+                }
+
+                string normalizedId = segmentId.Trim(); // 비교·딕셔너리 키
+                if (countsBySegmentId.TryGetValue(normalizedId, out int currentCount))
+                {
+                    countsBySegmentId[normalizedId] = currentCount + 1; // 같은 ID 누적
+                }
+                else
+                {
+                    countsBySegmentId[normalizedId] = 1; // 첫 등장
+                }
+            }
+        }
+        // ===== 안건준 추가 0620 끝 =====
 
         private int GetCurrentSegmentLevelInternal(string segmentId, SegmentDefinition definition) // 내부 레벨 조회
         {

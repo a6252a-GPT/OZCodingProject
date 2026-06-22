@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6a0f8e3dff97434fb869669e78b80a7a, type: 3}
-  m_Name: WE_Missile_ExplosionRadius
+  m_Name: WE_Flamethrower_SearchRange
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponDefinition
-  EnhancementId: WE_Missile_ExplosionRadius
-  DisplayName: "\uBBF8\uC0AC\uC77C \uAC15\uD654"
-  Description: "\uBC94\uC704 \uC99D\uAC00"
-  TargetSegmentId: SG02_Missile
+  EnhancementId: WE_Flamethrower_Damage
+  DisplayName: "\uD654\uC5FC\uBC29\uC0AC \uAC15\uD654"
+  Description: "\uD654\uC5FC \uBC94\uC704 \uC99D\uAC00"
+  TargetSegmentId: SG05_Flamethrower
   BaseDamage: 0
   BaseDamageUsePercent: 0
   BaseDamageRare: 0
@@ -31,11 +31,11 @@ MonoBehaviour:
   ProjectileSpeedUsePercentRare: 0
   ProjectileSpeedUnique: 0
   ProjectileSpeedUsePercentUnique: 0
-  SearchRange: 0
+  SearchRange: 0.5
   SearchRangeUsePercent: 0
-  SearchRangeRare: 0
+  SearchRangeRare: 1
   SearchRangeUsePercentRare: 0
-  SearchRangeUnique: 0
+  SearchRangeUnique: 2
   SearchRangeUsePercentUnique: 0
   MaxChainDepth: 0
   MaxChainDepthRare: 0
@@ -58,9 +58,9 @@ MonoBehaviour:
   MaxAttackInterval: 0
   MaxAttackIntervalRare: 0
   MaxAttackIntervalUnique: 0
-  SideConeAngle: 0
-  SideConeAngleRare: 0
-  SideConeAngleUnique: 0
+  SideConeAngle: 5
+  SideConeAngleRare: 10
+  SideConeAngleUnique: 20
   LaserDuration: 0
   LaserDurationUsePercent: 0
   LaserDurationRare: 0
@@ -85,11 +85,11 @@ MonoBehaviour:
   PierceCount: 0
   PierceCountRare: 0
   PierceCountUnique: 0
-  ExplosionRadius: 0.2
+  ExplosionRadius: 0
   ExplosionRadiusUsePercent: 0
-  ExplosionRadiusRare: 0.4
+  ExplosionRadiusRare: 0
   ExplosionRadiusUsePercentRare: 0
-  ExplosionRadiusUnique: 0.6
+  ExplosionRadiusUnique: 0
   ExplosionRadiusUsePercentUnique: 0
   CardPrefabOverride: {fileID: 0}
   RareCardPrefabOverride: {fileID: 0}

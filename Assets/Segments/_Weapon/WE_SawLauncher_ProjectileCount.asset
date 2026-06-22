@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6a0f8e3dff97434fb869669e78b80a7a, type: 3}
-  m_Name: WE_Missile_ExplosionRadius
+  m_Name: WE_SawLauncher_ProjectileCount
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponDefinition
-  EnhancementId: WE_Missile_ExplosionRadius
-  DisplayName: "\uBBF8\uC0AC\uC77C \uAC15\uD654"
-  Description: "\uBC94\uC704 \uC99D\uAC00"
-  TargetSegmentId: SG02_Missile
+  EnhancementId: WE_Saw_Speed
+  DisplayName: "\uD1B1\uB0A0 \uAC15\uD654"
+  Description: "\uD1B1\uB0A0 \uBC1C\uC0AC\uC218 \uC99D\uAC00"
+  TargetSegmentId: SG04_SawLauncher
   BaseDamage: 0
   BaseDamageUsePercent: 0
   BaseDamageRare: 0
@@ -49,9 +49,9 @@ MonoBehaviour:
   ChainDamageFalloff: 0
   ChainDamageFalloffRare: 0
   ChainDamageFalloffUnique: 0
-  ProjectileCount: 0
-  ProjectileCountRare: 0
-  ProjectileCountUnique: 0
+  ProjectileCount: 1
+  ProjectileCountRare: 1
+  ProjectileCountUnique: 2
   MinAttackInterval: 0
   MinAttackIntervalRare: 0
   MinAttackIntervalUnique: 0
@@ -85,11 +85,11 @@ MonoBehaviour:
   PierceCount: 0
   PierceCountRare: 0
   PierceCountUnique: 0
-  ExplosionRadius: 0.2
+  ExplosionRadius: 0
   ExplosionRadiusUsePercent: 0
-  ExplosionRadiusRare: 0.4
+  ExplosionRadiusRare: 0
   ExplosionRadiusUsePercentRare: 0
-  ExplosionRadiusUnique: 0.6
+  ExplosionRadiusUnique: 0
   ExplosionRadiusUsePercentUnique: 0
   CardPrefabOverride: {fileID: 0}
   RareCardPrefabOverride: {fileID: 0}
