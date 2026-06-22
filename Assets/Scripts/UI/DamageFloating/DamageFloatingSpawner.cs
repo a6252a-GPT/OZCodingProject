@@ -10,6 +10,9 @@ namespace TeamProject01.Gameplay
     {
         private const string FontResourcesPath = "UI/Fonts/DamageFloating"; // 테스트 폰트 경로
         private const string SourceFontResourcesPath = "UI/Fonts/DamageFloatingSource"; // 원본 TTF 경로
+        private const string ExcludedFontNameFragment = "Tium";
+        private const string RequiredFloatingCharacters = "골드경험치0123456789+- .";
+        private const string SampleDisplayText = "골드 123";
 
         [SerializeField] private DamageFloatingPopup popupPrefab; // 선택 프리팹
         [SerializeField] private int initialPoolSize = 24; // 초기 풀
@@ -18,6 +21,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private int activeFontIndex; // 현재 폰트
 
         private static DamageFloatingSpawner instance; // singleton
+        private static readonly HashSet<int> warmedFontIds = new HashSet<int>();
+        private static readonly HashSet<string> warnedMissingFontKeys = new HashSet<string>();
         private readonly Queue<DamageFloatingPopup> pool = new Queue<DamageFloatingPopup>(); // 팝업 풀
 
         private void Awake() // 풀 준비
@@ -41,6 +46,16 @@ namespace TeamProject01.Gameplay
             }
 
             Instance.SpawnDamage(damage, actualDamage, fallbackPosition); // 표시 요청
+        }
+
+        public static void SpawnRewardGain(RewardPickupKind kind, int amount, Vector3 fallbackPosition) // 보상 획득 표시
+        {
+            if (amount <= 0)
+            {
+                return; // 표시할 보상 없음
+            }
+
+            Instance.SpawnReward(kind, amount, fallbackPosition); // 표시 요청
         }
 
         public static string CycleFontAndSpawnSample() // 테스트 폰트 순환
@@ -83,14 +98,23 @@ namespace TeamProject01.Gameplay
         {
             DamageFloatingPopup popup = GetPopup(); // 풀에서 확보
             Vector3 position = ResolveHitPosition(damage, fallbackPosition) + Vector3.up * 0.85f; // 표시 위치
-            popup.Initialize(FormatDamage(actualDamage), ResolveColor(damage.Type), position, ResolveFontSize(damage.Type), GetActiveFont(), ReleasePopup); // 팝업 시작
+            string displayText = FormatDamage(actualDamage); // 표시 숫자
+            popup.Initialize(displayText, ResolveColor(damage.Type), position, ResolveFontSize(damage.Type), GetActiveFontForText(displayText), ReleasePopup); // 팝업 시작
+        }
+
+        private void SpawnReward(RewardPickupKind kind, int amount, Vector3 fallbackPosition) // 보상 숫자 생성
+        {
+            DamageFloatingPopup popup = GetPopup(); // 풀에서 확보
+            Vector3 position = ResolvePlayerRewardPosition(fallbackPosition); // 플레이어 머리 위
+            string displayText = FormatReward(kind, amount); // 한글 보상 문구
+            popup.Initialize(displayText, ResolveRewardColor(kind), position, 2.55f, GetActiveFontForText(displayText), ReleasePopup); // 팝업 시작
         }
 
         private void SpawnSample() // 폰트 확인용 샘플
         {
             DamageFloatingPopup popup = GetPopup(); // 풀에서 확보
             Vector3 position = ResolveSamplePosition(); // 샘플 위치
-            popup.Initialize("123", new Color(1f, 0.9f, 0.25f, 1f), position, 2.9f, GetActiveFont(), ReleasePopup); // 샘플 표시
+            popup.Initialize(SampleDisplayText, new Color(1f, 0.9f, 0.25f, 1f), position, 2.9f, GetActiveFontForText(SampleDisplayText), ReleasePopup); // 샘플 표시
         }
 
         private void PrewarmPool() // 풀 예열
@@ -148,7 +172,15 @@ namespace TeamProject01.Gameplay
         {
             if (fontCatalog != null && fontCatalog.Length > 0)
             {
+                fontCatalog = FilterFontCatalog(fontCatalog); // 한글 미지원 후보 제외
+                if (fontCatalog == null || fontCatalog.Length == 0)
+                {
+                    activeFontIndex = 0;
+                    return; // 사용할 후보 없음
+                }
+
                 activeFontIndex = Mathf.Clamp(activeFontIndex, 0, fontCatalog.Length - 1); // 범위 보정
+                WarmFontCatalog(); // 한글/숫자 글리프 준비
                 return; // 이미 있음
             }
 
@@ -156,9 +188,13 @@ namespace TeamProject01.Gameplay
             if (loaded != null && loaded.Length > 0)
             {
                 Array.Sort(loaded, CompareFontNames); // 순서 고정
-                fontCatalog = loaded; // 후보 등록
-                activeFontIndex = Mathf.Clamp(activeFontIndex, 0, fontCatalog.Length - 1); // 범위 보정
-                return; // TMP 에셋 우선
+                fontCatalog = FilterFontCatalog(loaded); // 한글 미지원 후보 제외
+                if (fontCatalog != null && fontCatalog.Length > 0)
+                {
+                    activeFontIndex = Mathf.Clamp(activeFontIndex, 0, fontCatalog.Length - 1); // 범위 보정
+                    WarmFontCatalog(); // 한글/숫자 글리프 준비
+                    return; // TMP 에셋 우선
+                }
             }
 
             Font[] sourceFonts = Resources.LoadAll<Font>(SourceFontResourcesPath); // 원본 TTF 로드
@@ -173,6 +209,11 @@ namespace TeamProject01.Gameplay
                         continue; // 누락 방지
                     }
 
+                    if (IsExcludedFloatingFont(sourceFonts[i].name))
+                    {
+                        continue; // 한글 미지원 후보 제외
+                    }
+
                     TMP_FontAsset generated = TMP_FontAsset.CreateFontAsset(sourceFonts[i]); // 런타임 TMP 생성
                     generated.name = sourceFonts[i].name + " Runtime SDF"; // 표시명
                     generated.atlasPopulationMode = AtlasPopulationMode.Dynamic; // 동적 글리프
@@ -184,6 +225,7 @@ namespace TeamProject01.Gameplay
                 {
                     fontCatalog = generatedFonts.ToArray(); // 런타임 후보 적용
                     activeFontIndex = Mathf.Clamp(activeFontIndex, 0, fontCatalog.Length - 1); // 범위 보정
+                    WarmFontCatalog(); // 한글/숫자 글리프 준비
                 }
             }
         }
@@ -205,10 +247,84 @@ namespace TeamProject01.Gameplay
             if (fontCatalog != null && fontCatalog.Length > 0)
             {
                 activeFontIndex = Mathf.Clamp(activeFontIndex, 0, fontCatalog.Length - 1); // 범위 보정
+                WarmFont(fontCatalog[activeFontIndex], RequiredFloatingCharacters); // 현재 폰트 글리프 보장
                 return fontCatalog[activeFontIndex]; // 현재 폰트
             }
 
             return TMP_Settings.defaultFontAsset; // fallback
+        }
+
+        private TMP_FontAsset GetActiveFontForText(string displayText) // 표시 문자열용 폰트
+        {
+            TMP_FontAsset font = GetActiveFont(); // 현재 폰트
+            WarmFont(font, displayText); // 실제 표시 문자열 글리프 보장
+            return font;
+        }
+
+        private void WarmFontCatalog() // 모든 후보 폰트 글리프 준비
+        {
+            if (fontCatalog == null)
+            {
+                return; // 후보 없음
+            }
+
+            for (int i = 0; i < fontCatalog.Length; i++)
+            {
+                WarmFont(fontCatalog[i], RequiredFloatingCharacters); // 보상 한글/숫자 준비
+            }
+        }
+
+        private static void WarmFont(TMP_FontAsset font, string requiredCharacters) // TMP 글리프 준비
+        {
+            if (font == null || string.IsNullOrEmpty(requiredCharacters))
+            {
+                return; // 준비 대상 없음
+            }
+
+            int fontId = font.GetInstanceID();
+            if (warmedFontIds.Contains(fontId))
+            {
+                return; // 이미 기본 글리프 준비됨
+            }
+
+            warmedFontIds.Add(fontId);
+            bool success = font.TryAddCharacters(requiredCharacters, out string missingCharacters);
+            if (!success && !string.IsNullOrEmpty(missingCharacters))
+            {
+                string warningKey = $"{fontId}:{missingCharacters}";
+                if (warnedMissingFontKeys.Add(warningKey))
+                {
+                    Debug.LogWarning($"[DamageFloatingSpawner] 폰트 '{font.name}'에 일부 플로팅 글리프가 없습니다: {missingCharacters}");
+                }
+            }
+        }
+
+        private static TMP_FontAsset[] FilterFontCatalog(TMP_FontAsset[] source) // 한글 미지원 폰트 제외
+        {
+            if (source == null || source.Length == 0)
+            {
+                return Array.Empty<TMP_FontAsset>(); // 후보 없음
+            }
+
+            List<TMP_FontAsset> filtered = new List<TMP_FontAsset>(source.Length);
+            for (int i = 0; i < source.Length; i++)
+            {
+                TMP_FontAsset font = source[i];
+                if (font == null || IsExcludedFloatingFont(font.name))
+                {
+                    continue; // 누락/제외 폰트
+                }
+
+                filtered.Add(font);
+            }
+
+            return filtered.ToArray();
+        }
+
+        private static bool IsExcludedFloatingFont(string fontName) // 플로팅에서 제외할 폰트
+        {
+            return !string.IsNullOrEmpty(fontName)
+                && fontName.IndexOf(ExcludedFontNameFragment, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private string GetActiveFontName() // 표시명
@@ -257,6 +373,22 @@ namespace TeamProject01.Gameplay
             return Vector3.up * 2f; // 최후 fallback
         }
 
+        private static Vector3 ResolvePlayerRewardPosition(Vector3 fallbackPosition) // 보상 표시 위치
+        {
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
+            {
+                return convoyTarget.position + Vector3.up * 2.35f; // 플레이어 머리 위
+            }
+
+            ConvoyController convoy = FindFirstObjectByType<ConvoyController>(); // fallback 컨보이
+            if (convoy != null)
+            {
+                return convoy.transform.position + Vector3.up * 2.35f; // 플레이어 위치 위
+            }
+
+            return fallbackPosition + Vector3.up * 1.5f; // 최후 fallback
+        }
+
         private static string FormatDamage(float damage) // 데미지 문자열
         {
             float rounded = Mathf.Round(damage); // 정수 후보
@@ -266,6 +398,12 @@ namespace TeamProject01.Gameplay
             }
 
             return Mathf.Max(1, Mathf.RoundToInt(damage)).ToString(); // 정수 표시
+        }
+
+        private static string FormatReward(RewardPickupKind kind, int amount) // 보상 문자열
+        {
+            string label = kind == RewardPickupKind.Gold ? "골드" : "경험치"; // 표시 이름
+            return $"{label} {Mathf.Max(0, amount)}"; // 요청 표기
         }
 
         private static Color ResolveColor(DamageType type) // 타입별 색
@@ -283,6 +421,13 @@ namespace TeamProject01.Gameplay
                 default:
                     return Color.white; // 기본
             }
+        }
+
+        private static Color ResolveRewardColor(RewardPickupKind kind) // 보상별 색
+        {
+            return kind == RewardPickupKind.Gold
+                ? new Color(1f, 0.82f, 0.16f, 1f) // 골드
+                : new Color(0.35f, 1f, 0.42f, 1f); // 경험치
         }
 
         private static float ResolveFontSize(DamageType type) // 타입별 크기
@@ -306,24 +451,24 @@ namespace TeamProject01.Gameplay
 
         private static int GetFontSortOrder(string fontName) // 4종 폰트 순서
         {
-            if (fontName.Contains("Tium"))
-            {
-                return 0; // Tium
-            }
-
             if (fontName.Contains("Pretendard"))
             {
-                return 1; // Pretendard
+                return 0; // Pretendard
             }
 
             if (fontName.Contains("Gwangyang"))
             {
-                return 2; // Gwangyang
+                return 1; // Gwangyang
             }
 
             if (fontName.Contains("Elice"))
             {
-                return 3; // Elice
+                return 2; // Elice
+            }
+
+            if (fontName.Contains("Tium"))
+            {
+                return 1000; // excluded fallback
             }
 
             return 100; // 기타

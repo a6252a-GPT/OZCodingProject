@@ -3,8 +3,7 @@
 namespace TeamProject01.Gameplay
 {
     public sealed class EnemySuicideCharger : MonoBehaviour // 플레이어 컨보이를 향해 돌진한 뒤 자폭하는 몬스터
-    {         
-
+    {
         private Transform target; // 추적 대상 Transform
 
         [Header("Movement")]
@@ -41,7 +40,6 @@ namespace TeamProject01.Gameplay
 
         [Header("Telegraph")]
         [SerializeField] private GameObject areaTelegraphPrefab; // 폭발 범위 표시 Prefab
-        [SerializeField] private Transform telegraphRoot; // 범위 표시를 정리할 부모 Transform
 
         [Min(0.0f)]
         [SerializeField] private float telegraphGroundHeight = 0.03f; // 범위 표시를 바닥보다 살짝 위에 둘 높이
@@ -106,14 +104,13 @@ namespace TeamProject01.Gameplay
 
         private void TryFindTarget()
         {
-            ////// 전찬우추가-0619 - 컨보이 타겟은 MonsterInteractionApi에서만 조회한다.
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 전찬우추가-0619 - 등록된 컨보이 타겟이 있는지 확인한다.
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform apiTarget)) // 등록된 컨보이 타겟이 있는지 확인한다.
             {
-                target = apiTarget; // 전찬우추가-0619 - 조회된 컨보이 Transform을 자폭 몬스터의 추적 대상으로 저장한다.
-                return; // 전찬우추가-0619 - 타겟을 찾았으므로 메서드를 종료한다.
+                target = apiTarget; // 조회된 컨보이 Transform을 자폭 몬스터의 추적 대상으로 저장한다.
+                return; // 타겟을 찾았으므로 메서드를 종료한다.
             }
 
-            target = null; // 전찬우추가-0619 - 등록된 컨보이가 없으면 추적 대상을 비워둔다.
+            target = null; // 등록된 컨보이가 없으면 추적 대상을 비워둔다.
         }
 
         private void ChaseTarget()
@@ -161,7 +158,7 @@ namespace TeamProject01.Gameplay
 
             SetBodyChargeColor(progress); // 몸 색을 점점 빨간색으로 바꾼다.
 
-            UpdateTelegraph(progress); // 범위 표시 크기와 투명도를 갱신한다..
+            UpdateTelegraph(progress); // 범위 표시 크기와 투명도를 갱신한다.
 
             if (progress >= 1.0f) // 자폭 준비 시간이 끝났다면
             {
@@ -193,9 +190,8 @@ namespace TeamProject01.Gameplay
             {
                 return; // 넉백하지 않는다.
             }
-                       
-            ////// 전찬우추가-0619 - 몬스터는 컨보이를 직접 움직이지 않고 넉백 요청만 등록한다.
-            MonsterInteractionApi.RequestConvoyKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // 전찬우추가-0619 - 폭발 범위 안의 컨보이에게 넉백을 요청한다.
+
+            MonsterInteractionApi.RequestConvoyKnockback(transform.position, explosionRadius, knockbackDistance, knockbackDuration, knockbackHeight); // 폭발 범위 안의 컨보이에게 넉백을 요청한다.
         }
 
         private void CacheBodyRenderers()
@@ -264,7 +260,7 @@ namespace TeamProject01.Gameplay
                 bodyPropertyBlock.SetColor(bodyColorPropertyId, currentColor); // 색만 덮어쓴다.
                 bodyRenderers[i].SetPropertyBlock(bodyPropertyBlock); // Renderer에 적용한다.
             }
-        }        
+        }
 
         private void ClearBodyColorOverride()
         {
@@ -292,7 +288,10 @@ namespace TeamProject01.Gameplay
             }
 
             Vector3 telegraphPosition = GroundService.ProjectToGround(transform.position, telegraphGroundHeight); // 현재 몬스터 위치를 바닥 기준으로 보정한다.
-            currentTelegraph = Instantiate(areaTelegraphPrefab, telegraphPosition, Quaternion.identity, telegraphRoot); // 범위 표시를 생성한다.
+
+            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monsters를 찾고, 없으면 현재 몬스터의 부모를 사용한다.
+
+            currentTelegraph = Instantiate(areaTelegraphPrefab, telegraphPosition, Quaternion.identity, runtimeRoot); // 범위 표시를 Monsters 밑에 생성한다.
 
             float diameter = explosionRadius * 2.0f; // 반경을 지름으로 바꾼다.
             currentTelegraph.transform.localScale = new Vector3(diameter, currentTelegraph.transform.localScale.y, diameter); // 범위 표시 크기를 폭발 반경에 맞춘다.

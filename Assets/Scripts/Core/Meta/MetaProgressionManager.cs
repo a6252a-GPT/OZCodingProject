@@ -8,9 +8,10 @@ namespace TeamProject01.Gameplay
         public static MetaProgressionManager Active { get; private set; } // 현재 메타
         public const int MaxUpgradeLevel = 5; // 최대 강화 단계
         private const int SaveVersion = 1; // 저장 버전
+        private const int DefaultStartingDiamond = 1000; // 기본 시작 다이아
 
         [Header("Currency")]
-        [Min(0)] public int Diamond; // 보유 다이아
+        [Min(0)] public int Diamond = DefaultStartingDiamond; // 보유 다이아
 
         [Header("Save")]
         public bool LoadOnAwake = true; // 시작 시 로드
@@ -173,7 +174,7 @@ namespace TeamProject01.Gameplay
 
         public void ResetProgress() // 진행도 초기화
         {
-            Diamond = 0; // 다이아
+            Diamond = DefaultStartingDiamond; // 다이아
             SelectedWormId = MetaWormIds.Basic; // 기본 지렁이
             SelectedMapId = MetaMapIds.Map1; // 기본 맵
             AttackWormUnlocked = false; // 공격형

@@ -23,8 +23,7 @@ MonoBehaviour:
   TargetAimHeight: 0.05
   AttackSpawnHeight: 0.65
   BaseDamage: 10
-  MinAttackInterval: 4.6
-  MaxAttackInterval: 6.2
+  Cooldown: 5.4
   ApplyMonsterFeedback: 1
   MonsterKnockbackDistance: 0.25
   MonsterKnockbackDuration: 0.08

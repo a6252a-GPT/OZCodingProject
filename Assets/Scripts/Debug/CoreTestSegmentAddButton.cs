@@ -95,7 +95,7 @@ namespace TeamProject01.Gameplay
                 return; // 표시 대상 없음
             }
 
-            Label.text = $"{GetDisplayName()}추가"; // 요청한 임시 버튼 표기
+            Label.text = $"{GetDisplayName()} 추가"; // 요청한 임시 버튼 표기
         }
 
         private string GetDisplayName() // 버튼/로그 표시명 결정

@@ -76,7 +76,7 @@ namespace TeamProject01.Gameplay
             {
                 Vector3 dropPosition = GetDropPosition(); // 구슬이 생성될 위치를 계산한다.
 
-                Instantiate(growthOrbPrefab, dropPosition, Quaternion.identity); // 성장 구슬 Prefab을 생성한다.
+                Instantiate(growthOrbPrefab, dropPosition, Quaternion.identity, MonsterRuntimeRoot.GetRootOrFallback(transform.parent)); // 성장 구슬 Prefab을 Monsters 밑에 생성한다.
             }
         }
 

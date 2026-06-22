@@ -60,7 +60,7 @@ namespace TeamProject01.Gameplay
         // 원형/양옆 부채꼴 공격 범위 조건 확인
         private bool IsTargetInAttackArea(EnemyController target)
         {
-            if (target == null)
+            if (!IsTargetUsable(target))
             {
                 return false; // 대상 없음
             }
@@ -85,10 +85,69 @@ namespace TeamProject01.Gameplay
             return SegmentTargetQuery.IsPositionInSideCones(reference, transform.right, worldPosition, AttackProfile.SideConeAngle); // 공용 부채꼴 판정
         }
 
+        private bool IsPositionInSideCone(Vector3 worldPosition, int sideSign) // 세그먼트 바디 기준 한쪽 부채꼴 확인
+        {
+            Transform reference = Segment != null ? Segment.transform : transform; // 세그먼트 바디 기준
+            return SegmentTargetQuery.IsPositionInSideCone(reference, transform.right, worldPosition, AttackProfile.SideConeAngle, sideSign); // 한쪽 부채꼴
+        }
+
+        private bool TryFindTargetInSideCone(int sideSign, out EnemyController target) // 한쪽 콘 안에서 가까운 대상 탐색
+        {
+            target = null;
+            if (AttackProfile == null || AttackProfile.AttackAreaMode != SegmentAttackAreaMode.SideCones)
+            {
+                return false; // 좌우 콘 무기가 아니면 사용 안 함
+            }
+
+            int normalizedSide = NormalizeSideSign(sideSign);
+            float range = GetUpgrade().ApplyRange(AttackProfile.SearchRange); // 강화 사거리
+            return EnemyController.TryFindNearest(
+                transform.position,
+                range,
+                enemy => IsTargetUsable(enemy) && IsPositionInSideCone(enemy.transform.position, normalizedSide),
+                out target); // 지정 방향 우선 탐색
+        }
+
+        private int GetTargetSideSign(EnemyController target) // 대상이 좌/우 어느 콘에 있는지 계산
+        {
+            if (!IsTargetUsable(target))
+            {
+                return NormalizeSideSign(projectileSequencePreferredSide); // 기존 선호값 유지
+            }
+
+            Transform reference = Segment != null ? Segment.transform : transform; // 세그먼트 바디 기준
+            Vector3 toTarget = target.transform.position - reference.position;
+            toTarget.y = 0f;
+            Vector3 right = reference.right;
+            right.y = 0f;
+            if (right.sqrMagnitude <= 0.0001f)
+            {
+                right = transform.right;
+                right.y = 0f;
+            }
+
+            if (toTarget.sqrMagnitude <= 0.0001f || right.sqrMagnitude <= 0.0001f)
+            {
+                return NormalizeSideSign(projectileSequencePreferredSide); // 판단 불가 시 기존값
+            }
+
+            return Vector3.Dot(toTarget.normalized, right.normalized) >= 0f ? 1 : -1; // 오른쪽/왼쪽
+        }
+
+        private static int NormalizeSideSign(int sideSign) // 좌우 값 보정
+        {
+            return sideSign >= 0 ? 1 : -1;
+        }
+
         private Vector3 GetEnemyHitPosition(EnemyController enemy) // 몬스터 중심 위치
         {
             float aimHeight = AttackProfile != null ? AttackProfile.TargetAimHeight : 0.45f; // 조준 높이
             return SegmentTargetQuery.GetEnemyHitPosition(enemy, transform.position, aimHeight); // 공용 중심 계산
+        }
+
+        private static bool IsTargetUsable(EnemyController target) // 살아있는 타겟인지 확인
+        {
+            return target != null && !target.IsDead && target.isActiveAndEnabled; // 사망/비활성 제외
         }
 
         private float GetSawTargetMinDistanceRatio() // 톱날 중장거리 후보 기준
