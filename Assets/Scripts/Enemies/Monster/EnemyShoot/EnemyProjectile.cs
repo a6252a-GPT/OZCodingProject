@@ -4,10 +4,10 @@ namespace TeamProject01.Gameplay
 {
     public sealed class EnemyProjectile : MonoBehaviour // 원거리 투사체
     {
-        [SerializeField] private Transform target; // 투사체가 날아갈 목표
+        private Transform target; // 투사체가 날아갈 목표
 
         [Min(0)]
-        [SerializeField] private int damage = 1; // 피해량
+        [SerializeField] private int damage = 1; // 이 투사체 Prefab이 가진 기본 피해량
 
         [Min(0.1f)]
         [SerializeField] private float moveSpeed = 8f; // 투사체 이동 속도
@@ -26,6 +26,7 @@ namespace TeamProject01.Gameplay
         private float travelDuration; // 시작 위치에서 목표 위치까지 도착하는 데 걸릴 시간
 
         private bool isConfigured; // Configure가 호출되었는지 확인하는 값
+        private int finalDamage; // 버프 배율까지 적용된 최종 피해량
 
         private void Update()
         {
@@ -66,22 +67,24 @@ namespace TeamProject01.Gameplay
             {
                 if (target != null) // 목표가 아직 존재한다면
                 {
-                    NexusController.TryApplyDamage(target, damage); // Nexus에 피해를 요청한다.
+                    NexusController.TryApplyDamage(target, finalDamage); // 최종 피해량으로 Nexus에 피해를 준다.
                 }
 
                 Destroy(gameObject); // 도착 후 투사체를 제거한다.
             }
         }
 
-        public void Configure(Transform target) // 기존 호출부를 유지하기 위한 투사체 초기값 함수
+        public void Configure(Transform target) // EnemyRangedAttack이 투사체 목표만 넣어주는 함수
         {
-            Configure(target, damage); // 현재 투사체가 가진 기본 피해량으로 설정한다.
+            Configure(target, 1.0f); // 공격력 버프 배율 없이 기본 피해량으로 설정한다.
         }
 
-        public void Configure(Transform target, int damage) // EnemyRangedAttack이 투사체 목표와 피해량을 넣어주는 함수
+        public void Configure(Transform target, float attackPowerMultiplier) // 목표와 공격력 버프 배율을 넣어주는 함수
         {
-            this.target = target; 
-            this.damage = Mathf.Max(0, damage);
+            this.target = target; // 매개변수 target을 내부 target field에 저장한다.
+
+            attackPowerMultiplier = Mathf.Max(0.0f, attackPowerMultiplier); // 공격력 배율이 음수가 되지 않게 제한한다.
+            finalDamage = Mathf.Max(0, Mathf.RoundToInt(damage * attackPowerMultiplier)); // Prefab 기본 damage에 공격력 버프 배율을 적용한다.
 
             startPosition = transform.position; // 발사 순간의 위치를 시작 위치로 저장한다.
 
@@ -105,6 +108,11 @@ namespace TeamProject01.Gameplay
             lifeTimer = 0f; // 유지 시간을 0으로 초기화한다.
             travelTimer = 0f; // 비행 시간을 0으로 초기화한다.
             isConfigured = true; // 투사체 설정이 끝났다고 표시한다.
+        }
+
+        public void Configure(Transform target, int unusedDamage) // 기존 호출부 호환용 함수
+        {
+            Configure(target, 1.0f); // B 방식에서는 외부 damage를 쓰지 않고 Prefab이 가진 damage 값을 사용한다.
         }
     }
 }

@@ -6,13 +6,13 @@ namespace TeamProject01.Gameplay
     {
         private const float FallbackStopRadius = 1.6f; // 공격 Script가 없을 때만 사용할 예비 정지 거리
 
-        [SerializeField] private Transform nexus; // 이동 목표
+        private Transform nexus; // 이동 목표
 
         [Min(0.1f)]
         [SerializeField] private float moveSpeed = 1.25f; // 몬스터 이동 속도
 
-        [Min(0.05f)]
-        [SerializeField] private float bodyRadius = 0.46f; // 몬스터가 이동할 때 세그먼트와 겹치거나 밀고 들어가는 것을 보정한다.
+        [Min(0.45f)]
+        [SerializeField] private float bodyRadius = 0.6f; // 몬스터가 이동할 때 세그먼트와 겹치거나 밀고 들어가는 것을 보정한다.
 
         [Min(0f)]
         [SerializeField] private float groundHeight = 0.72f; // 바닥 위에 몬스터를 올려둘 높이 오프셋
@@ -26,7 +26,11 @@ namespace TeamProject01.Gameplay
         private float knockbackTimer; //밀리 상태 시간
         private float staggerTimer; // 전찬우추가-6019(몬스터피드백관련) - 경직 남은 시간
 
+        private EnemyPortalTotem assignedPortalTotem; // 현재 몬스터가 이동할 입구 토템
+
         public bool IsInStopRange { get; private set; } // 현재 Nexus가 멈춤 거리 안에 있는지 외부에서 읽는 값
+
+        private EnemyController enemyController; // 같은 GameObject에 붙은 EnemyController Script Component 참조
 
         private EnemyMeleeAttack meleeAttack; // 같은 GameObject에 붙은 근거리 공격 Script Component 참조
         private EnemyRangedAttack rangedAttack; // 같은 GameObject에 붙은 원거리 공격 Script Component 참조
@@ -35,13 +39,19 @@ namespace TeamProject01.Gameplay
         private EnemyObstacleSummoner obstacleSummoner; // 같은 GameObject에 붙은 장애물 소환 Script Component 참조
         private EnemyBuffReceiver buffReceiver; // 같은 GameObject에 붙은 버프 상태 Script Component 참조
 
+        private EnemyPortalTotemCaster portalTotemCaster; // 같은 GameObject에 붙은 포탈 토템 소환 Script Component 참조
+
         private void Awake()
         {
+            enemyController = GetComponent<EnemyController>(); // 같은 GameObject에 붙은 EnemyController Script Component를 찾는다.
+
             meleeAttack = GetComponent<EnemyMeleeAttack>(); // 같은 GameObject에 붙은 EnemyMeleeAttack Script Component를 찾는다.
             rangedAttack = GetComponent<EnemyRangedAttack>(); // 같은 GameObject에 붙은 EnemyRangedAttack Script Component를 찾는다.
             slowZoneThrower = GetComponent<EnemySlowZoneThrower>(); // 같은 GameObject에 붙은 EnemySlowZoneThrower Script Component를 찾는다.
             obstacleSummoner = GetComponent<EnemyObstacleSummoner>(); // 같은 GameObject에 붙은 EnemyObstacleSummoner Script Component를 찾는다.
             buffReceiver = GetComponent<EnemyBuffReceiver>(); // 같은 GameObject에 붙은 EnemyBuffReceiver Script Component를 찾는다.
+
+            portalTotemCaster = GetComponent<EnemyPortalTotemCaster>(); // 같은 GameObject에 붙은 EnemyPortalTotemCaster Script Component를 찾는다.
 
             if (nexus == null) //Nexus가 연결되지 않았다면
             {
@@ -52,7 +62,6 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
-
             if (knockbackTimer > 0.0f) //밀리는 시간이 유지되고 있다면
             {
                 knockbackTimer -= Time.deltaTime;//밀리는 시간을 감소한다.
@@ -81,18 +90,57 @@ namespace TeamProject01.Gameplay
                 return; //종료한다.
             }
 
+            if (portalTotemCaster != null && portalTotemCaster.IsChanneling) // 토템 소환 몬스터가 집결 과정을 진행 중이라면
+            {
+                IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
+
+                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 채널링 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                transform.position = resolvedPosition; // 보정된 위치를 적용한다.
+
+                return; // 토템을 유지하는 동안 이동하지 않는다.
+            }
+
+            UpdateAssignedPortalTotem(); // 현재 이동할 입구 토템을 찾거나 기존 토템 상태를 확인한다.
+
+            bool isMovingToPortalTotem = assignedPortalTotem != null; // 현재 입구 토템으로 이동 중인지 확인한다.
+
             Vector3 offset = nexus.position - transform.position; // 현재 몬스터 위치에서 Nexus까지의 방향과 거리 벡터를 구한다.
+
+            if (isMovingToPortalTotem) // 이동할 입구 토템이 있다면
+            {
+                offset = assignedPortalTotem.transform.position - transform.position; // Nexus 대신 입구 토템까지의 방향과 거리 벡터를 사용한다.
+            }
+
             offset.y = 0f; //높이 차이는 제거한다.
 
             float stopDistance = GetStopDistance(); // 공격 Script의 AttackRange 또는 예비 정지 거리를 가져온다.
-            bool isNexusInStopRange = offset.sqrMagnitude <= stopDistance * stopDistance; // Nexus가 공격 사거리 안에 있는지 확인한다.
-            bool isSlowTargetInRange = slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
+
+            if (isMovingToPortalTotem) // 입구 토템으로 이동 중이라면
+            {
+                stopDistance = assignedPortalTotem.EntryRadius; // 입구 토템의 순간이동 판정 범위를 멈춤 거리로 사용한다.
+            }
+
+            bool isTargetInStopRange = offset.sqrMagnitude <= stopDistance * stopDistance; // 현재 이동 목표가 멈춤 거리 안에 있는지 확인한다.
+
+            bool isNexusInStopRange = !isMovingToPortalTotem && isTargetInStopRange; // Nexus가 공격 사거리 안에 있는지 확인한다.
+
+            bool isSlowTargetInRange = !isMovingToPortalTotem && slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
             bool isObstacleSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; // 장애물 소환 과정이 진행 중인지 확인한다.
+
+            if (isMovingToPortalTotem && isTargetInStopRange) // 입구 토템의 Entry Radius 안에 도착했다면
+            {
+                IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
+
+                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 토템 주변에서 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                transform.position = resolvedPosition; // 보정된 위치를 적용한다.
+
+                return; // 순간이동할 때까지 입구 토템 주변에서 정지한다.
+            }
 
             if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning) // Nexus 공격 가능 거리거나, PlayerConvoy 투척 가능 거리거나, 장애물 소환 중이라면
             {
                 IsInStopRange = isNexusInStopRange; // 이 값은 Nexus 공격 사거리 여부만 저장한다.
-               
+
                 ////// 전찬우추가-0619 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
                 Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-0619 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
@@ -129,6 +177,34 @@ namespace TeamProject01.Gameplay
 
             transform.position = position; // 최종 보정된 위치를 몬스터 Transform에 적용한다.
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 몬스터가 이동 방향을 바라보게 회전시킨다.
+        }
+
+        private void UpdateAssignedPortalTotem() // 몬스터가 이동할 입구 토템을 확인하는 함수
+        {
+            if (assignedPortalTotem != null) // 이미 이동 목표로 저장한 입구 토템이 있다면
+            {
+                if (!assignedPortalTotem.IsActive || !assignedPortalTotem.IsEntry) // 토템이 비활성화되었거나 입구 토템이 아니라면
+                {
+                    assignedPortalTotem = null; // 기존 입구 토템 목표를 제거한다.
+                }
+            }
+
+            if (assignedPortalTotem != null) // 기존 입구 토템이 아직 유효하다면
+            {
+                return; // 같은 입구 토템을 계속 이동 목표로 사용한다.
+            }
+
+            if (enemyController != null && enemyController.Grade == EnemyGrade.Boss) // Boss 등급 몬스터라면
+            {
+                return; // 입구 토템을 이동 목표로 사용하지 않는다.
+            }
+
+            EnemyPortalTotem targetTotem; // Registry에서 찾은 입구 토템을 저장할 변수
+
+            if (EnemyPortalTotemRegistry.TryGetAttractTarget(transform.position, out targetTotem)) // 현재 몬스터가 입구 토템 유도 범위 안에 있다면
+            {
+                assignedPortalTotem = targetTotem; // 찾은 입구 토템을 이동 목표로 저장한다.
+            }
         }
 
         private float GetStopDistance() // 몬스터가 이동을 멈출 거리를 결정하는 함수
@@ -196,6 +272,5 @@ namespace TeamProject01.Gameplay
             this.moveSpeed = moveSpeed; // 이동 속도를 저장한다.
             this.groundHeight = groundHeight; // 바닥 높이 오프셋을 저장한다.
         }
-   
     }
 }

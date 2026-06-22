@@ -103,8 +103,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b6cc1fd0ee44f45a982a7426429c08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyImpactDebugVisual
+  damage: 2
   lifeTime: 0.7
   startScaleMultiplier: 0.1
   endScaleMultiplier: 1.1
   blinkInterval: 0.08
-  targetRenderer: {fileID: 0}
