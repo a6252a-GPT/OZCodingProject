@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using DG.Tweening;
 using TeamProject01.Gameplay;
@@ -80,6 +81,28 @@ public class CardUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI segmentWeaponStatText; // 스탯 표시용 TMP 1개
     [SerializeField] private SegmentWeaponStatViewTarget segmentWeaponStatViewTarget = SegmentWeaponStatViewTarget.Cannon; // 초기 표시 세그먼트
 
+    // 안건준 추가 - 0622 ======
+    [Header("자동 카드 선택 (자동궤도 모드 연동)")]
+    [Tooltip("켜면 자동궤도(AutoOrbit) 중 카드 선택지가 열릴 때 자동으로 1장을 선택합니다")]
+    [SerializeField] private bool autoSelectInAutoOrbit = true; // 자동궤도 중 자동선택 활성화
+    [Tooltip("카드가 펼쳐진 뒤 자동선택까지 대기 시간(초)")]
+    [Min(0f)]
+    [SerializeField] private float autoSelectDelay = 1f; // 자동선택 대기 시간
+    private Coroutine autoSelectRoutine; // 자동선택 코루틴 참조
+    // 안건준 추가 - 0622 ======
+
+    // 안건준 추가 - 0622 ======
+    [Header("세그먼트 리스트 호버 UI")]
+    [Tooltip("카드 패널이 열릴 때 함께 활성화되는 트리거 바 (Hierarchy의 Segment List Popup)")]
+    [SerializeField] private GameObject segmentListPopup; // 호버 트리거
+    [Tooltip("Popup 호버 시 표시되는 세그먼트 목록 (Hierarchy의 Segment List)")]
+    [SerializeField] private GameObject segmentList; // 호버 시 표시
+    [Tooltip("Segment List 안 Scroll View 텍스트 — 장착 세그먼트 이름 : 개수 표시")]
+    [SerializeField] private TextMeshProUGUI segmentListText; // 장착 세그먼트 이름:개수 TMP
+    [Tooltip("Segment List > Viewport > Content RectTransform — 스크롤 높이 자동 조정용")]
+    [SerializeField] private RectTransform segmentListContent; // 스크롤 Content RT
+    // 안건준 추가 - 0622 ======
+
     //전찬우 수정-0622
     private enum SegmentWeaponStatViewTarget // 스탯 UI 표시 대상
     {
@@ -150,6 +173,7 @@ public class CardUI : MonoBehaviour
     private LevelUpCardPhase currentSpawnPhase = LevelUpCardPhase.StatUpgrade; // 이번 레벨업 카드 종류
     private string selectedSegmentWeaponStatId; // 카드 선택으로 갱신되는 디버그 표시 대상
     private CoreStatProvider segmentWeaponStatSubscribedCore; // 스탯 변경 구독 대상
+    private Coroutine hideSegmentListCoroutine; // 안건준 추가 - 0622 — 코루틴 참조 (혹시 중복 방지용)
 
     private enum LevelUpCardPhase
     {
@@ -172,6 +196,7 @@ public class CardUI : MonoBehaviour
     private void Awake()
     {
         ResolveManagerReferences(); // 참조 보강
+        SetupSegmentListHoverUi(); // 안건준 추가 - 0622 — 호버 브릿지 연결 + 기본 비활성
     }
 
     private void Start()
@@ -207,6 +232,8 @@ public class CardUI : MonoBehaviour
         {
             SpawnLevelUpCards(); // 순환 순서에 맞는 카드 생성
             spawnedForCurrentOpen = true;
+            ShowSegmentListPopupOnPanelOpen(); // 안건준 추가 - 0622 — 트리거 바만 표시
+            TryStartAutoSelect(); // 안건준 추가 - 0622 : 자동모드면 자동선택 코루틴 시작
             return;
         }
 
@@ -216,6 +243,8 @@ public class CardUI : MonoBehaviour
             spawnedForCurrentOpen = false;
             isProcessingSelection = false;
             currentSpawnPhase = LevelUpCardPhase.StatUpgrade; // 다음 오픈 시 재계산
+            HideSegmentListUi(); // 안건준 추가 - 0622 — 팝업·리스트 모두 숨김
+            StopAutoSelect(); // 안건준 추가 - 0622 : 패널 닫힐 때 자동선택 코루틴 정리
             if (CoreStatProvider.Active != null && CoreStatProvider.Active.IsLevelUpChoicePending)
             {
                 CoreStatProvider.Active.CancelLevelUpChoice(); // 선택 없이 닫힘 → 경험치 유지
@@ -225,7 +254,23 @@ public class CardUI : MonoBehaviour
 
     public void PlayLevelUpTween()
     {
-        ResolveLevelUpUi()?.Open(); // 레벨업 패널 열기
+        // 안건준 추가 - 0622 : 자동궤도 모드이고 자동선택이 켜져 있으면 일시정지 없이 열기
+        if (autoSelectInAutoOrbit && IsAutoOrbitActive())
+        {
+            ResolveLevelUpUi()?.OpenWithoutPause();
+        }
+        else
+        {
+            ResolveLevelUpUi()?.Open();
+        }
+    }
+
+    // 안건준 추가 - 0622 : 현재 자동궤도 모드 여부 확인
+    private bool IsAutoOrbitActive()
+    {
+        TeamProject01.Gameplay.ConvoyController convoy =
+            FindFirstObjectByType<TeamProject01.Gameplay.ConvoyController>();
+        return convoy != null && convoy.IsAutoOrbitActive;
     }
 
     private void NotifySpawnedCardClicked(SpawnedCardEntry entry)
@@ -1847,6 +1892,7 @@ public class CardUI : MonoBehaviour
     {
         LogPlayerSegmentCountsDebug($"전체 세그먼트 : {segmentCount} / 각 세그먼트 : "); // CoreTest·카드 UI 공통
         RefreshSegmentWeaponStatUi(); // 건춘추가 - 0621 ====== 레벨업·추가 후 스탯 UI 갱신
+        RefreshSegmentListText(); // 안건준 추가 - 0622 — 세그먼트 변경 시 리스트 텍스트 갱신
     }
 
     private void LogPlayerSegmentCountsDebug(string reason) // ConvoySegments 현재 구성 출력
@@ -2344,6 +2390,7 @@ public class CardUI : MonoBehaviour
         {
             SpawnSegmentActionCards(catalogEntry, levelDelta, canAdd, canLevelUp); // 2차 카드 생성
             isProcessingSelection = false; // 다시 클릭 허용
+            TryStartAutoSelectSegmentAction(canAdd, canLevelUp); // 안건준 추가 - 0622 : 자동모드면 추가/레벨업 자동선택
         });
     }
 
@@ -2452,18 +2499,26 @@ public class CardUI : MonoBehaviour
         sequence.AppendInterval(Mathf.Max(0f, selectionCloseHoldSeconds));
         sequence.OnComplete(() =>
         {
-            CoreStatProvider.Active?.CompleteLevelUpChoice(); // 순환 진행 + 선택 UI 종료
-            CloseLevelUpPanelAfterSelection(); // 패널 닫기 + 일시정지 해제
-            isProcessingSelection = false; // 다음 입력 허용
+            // 안건준 수정 - 0622 : 패널이 완전히 닫힌 후 CompleteLevelUpChoice 호출 — 연속 레벨업 대응
+            CloseLevelUpPanelAfterSelection(() =>
+            {
+                // 패널이 같은 프레임에 재오픈될 경우 Update()가 닫힘을 감지 못하므로 여기서 직접 정리
+                StopAutoSelect();           // 이전 자동선택 코루틴 정리
+                ClearSpawnedCards();        // 이전 카드 오브젝트 파괴
+                spawnedForCurrentOpen = false; // 다음 오픈 시 새 카드 생성 허용
+                isProcessingSelection = false; // 입력 잠금 해제
+
+                CoreStatProvider.Active?.CompleteLevelUpChoice(); // 순환 진행 + StatsChanged → 다음 레벨업 트리거
+            });
         });
     }
 
-    private void CloseLevelUpPanelAfterSelection() // 선택 완료 후 오버레이·일시정지 해제
+    private void CloseLevelUpPanelAfterSelection(System.Action onClosed = null) // 선택 완료 후 오버레이·일시정지 해제
     {
         LevelUpUi ui = ResolveLevelUpUi();
         if (ui != null)
         {
-            ui.Close(selectionPanelCloseFadeSeconds); // 페이드 후 ResumeGame
+            ui.Close(selectionPanelCloseFadeSeconds, onClosed); // 페이드 완료 후 onClosed 실행
             return;
         }
 
@@ -2481,6 +2536,8 @@ public class CardUI : MonoBehaviour
                     {
                         Time.timeScale = 1f; // LevelUpUi 없을 때 일시정지 해제
                     }
+
+                    onClosed?.Invoke(); // 닫힌 후 콜백
                 });
             return;
         }
@@ -2489,6 +2546,8 @@ public class CardUI : MonoBehaviour
         {
             Time.timeScale = 1f; // fallback
         }
+
+        onClosed?.Invoke(); // 즉시 호출
     }
 
     private void ClearSpawnedCards()
@@ -2513,6 +2572,267 @@ public class CardUI : MonoBehaviour
 
         return FindFirstObjectByType<LevelUpUi>();
     }
+
+    // 안건준 추가 - 0622 ======
+    private void SetupSegmentListHoverUi() // 호버 브릿지 부착 및 초기 비활성
+    {
+        HideSegmentListUi();
+
+        if (segmentListPopup == null)
+        {
+            return;
+        }
+
+        EnsureUiRaycastTarget(segmentListPopup); // Image Raycast Target 보장
+
+        SegmentListHoverBridge popupBridge = segmentListPopup.GetComponent<SegmentListHoverBridge>();
+        if (popupBridge == null)
+        {
+            popupBridge = segmentListPopup.AddComponent<SegmentListHoverBridge>();
+        }
+
+        popupBridge.Initialize(this);
+
+        // 안건준 수정 - 0622 — Segment List(+스크롤바 영역)에도 브릿지 추가: 리스트 위에서 스크롤 가능
+        if (segmentList != null)
+        {
+            EnsureUiRaycastTarget(segmentList);
+            SegmentListHoverBridge listBridge = segmentList.GetComponent<SegmentListHoverBridge>();
+            if (listBridge == null)
+            {
+                listBridge = segmentList.AddComponent<SegmentListHoverBridge>();
+            }
+
+            listBridge.Initialize(this);
+        }
+    }
+
+    private static void EnsureUiRaycastTarget(GameObject uiRoot) // 호버 감지용 Raycast
+    {
+        if (uiRoot == null || !uiRoot.TryGetComponent(out Graphic graphic))
+        {
+            return;
+        }
+
+        graphic.raycastTarget = true;
+    }
+
+    private void ShowSegmentListPopupOnPanelOpen() // 카드 패널 열릴 때 트리거 바 표시
+    {
+        if (segmentListPopup != null)
+        {
+            segmentListPopup.SetActive(true);
+        }
+
+        SetSegmentListVisible(false); // 리스트는 호버 전까지 숨김
+    }
+
+    private void HideSegmentListUi() // 패널 닫힐 때 전부 숨김
+    {
+        if (hideSegmentListCoroutine != null)
+        {
+            StopCoroutine(hideSegmentListCoroutine);
+            hideSegmentListCoroutine = null;
+        }
+
+        SetSegmentListVisible(false);
+
+        if (segmentListPopup != null)
+        {
+            segmentListPopup.SetActive(false);
+        }
+    }
+
+    private void ShowSegmentListOnHover() // Popup/List 호버 시 목록 표시
+    {
+        if (hideSegmentListCoroutine != null)
+        {
+            StopCoroutine(hideSegmentListCoroutine);
+            hideSegmentListCoroutine = null;
+        }
+
+        RefreshSegmentListText(); // 호버 시 최신 세그먼트 목록 갱신
+        SetSegmentListVisible(true);
+    }
+
+    private void RequestHideSegmentListOnHoverExit() // Popup 또는 List에서 마우스가 나갔을 때
+    {
+        if (hideSegmentListCoroutine != null)
+        {
+            StopCoroutine(hideSegmentListCoroutine);
+        }
+
+        // 안건준 수정 - 0622 — 1프레임 대기 후 둘 다 벗어났는지 확인 (Popup→List 이동 시 깜빡임 방지)
+        hideSegmentListCoroutine = StartCoroutine(HideSegmentListDelayed());
+    }
+
+    private IEnumerator HideSegmentListDelayed() // 1프레임 대기 후 호버 상태 재확인
+    {
+        yield return null; // 이동 중 false positive 방지
+
+        // Popup 또는 List 위에 있으면 유지, 둘 다 아니면 숨김
+        bool stillHovered = IsPointerOverSegmentUiArea();
+        if (!stillHovered)
+        {
+            SetSegmentListVisible(false);
+        }
+
+        hideSegmentListCoroutine = null;
+    }
+
+    private bool IsPointerOverSegmentUiArea() // Popup 또는 Segment List 영역 위에 포인터 있는지
+    {
+        if (EventSystem.current == null)
+        {
+            return false;
+        }
+
+        Vector2 screenPos;
+        if (UnityEngine.InputSystem.Mouse.current != null)
+        {
+            screenPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            screenPos = Input.mousePosition;
+        }
+
+        PointerEventData pointerData = new PointerEventData(EventSystem.current) { position = screenPos };
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerData, results);
+
+        for (int i = 0; i < results.Count; i++)
+        {
+            Transform hit = results[i].gameObject.transform;
+
+            if (segmentListPopup != null && segmentListPopup.activeInHierarchy
+                && (hit == segmentListPopup.transform || hit.IsChildOf(segmentListPopup.transform)))
+            {
+                return true; // Popup 위
+            }
+
+            if (segmentList != null && segmentList.activeInHierarchy
+                && (hit == segmentList.transform || hit.IsChildOf(segmentList.transform)))
+            {
+                return true; // List 또는 스크롤바 위
+            }
+        }
+
+        return false;
+    }
+
+    private void SetSegmentListVisible(bool visible) // Segment List 활성/비활성
+    {
+        if (segmentList != null)
+        {
+            segmentList.SetActive(visible);
+        }
+    }
+
+    private void RefreshSegmentListText() // 장착 세그먼트 이름:개수 텍스트 갱신
+    {
+        if (segmentListText == null)
+        {
+            return; // 텍스트 미연결
+        }
+
+        CoreStatProvider core = CoreStatProvider.Active;
+        ConvoyController convoy = core != null ? core.Convoy : null;
+        if (convoy == null)
+        {
+            segmentListText.text = string.Empty; // 컨보이 없으면 빈 텍스트
+            return;
+        }
+
+        Dictionary<string, int> countsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+        convoy.CollectAttachedSegmentCounts(countsBySegmentId); // 현재 장착 세그먼트 ID별 개수
+
+        Dictionary<string, string> idToDisplayName = BuildSegmentDisplayNameMap(); // ID → 표시명
+
+        List<string> sortedIds = new List<string>(countsBySegmentId.Keys);
+        sortedIds.Sort(System.StringComparer.OrdinalIgnoreCase); // 알파벳 순 정렬
+
+        StringBuilder builder = new StringBuilder(256);
+        for (int i = 0; i < sortedIds.Count; i++)
+        {
+            string segId = sortedIds[i];
+            string displayName = idToDisplayName.TryGetValue(segId, out string found) ? found : segId; // 표시명 없으면 ID 그대로
+            builder.Append(displayName);
+            builder.Append(" : ");
+            builder.Append(countsBySegmentId[segId]); // 개수
+            if (i < sortedIds.Count - 1)
+            {
+                builder.AppendLine(); // 줄바꿈
+            }
+        }
+
+        segmentListText.text = builder.ToString();
+        ResizeSegmentListContent(); // 안건준 추가 - 0622 — 텍스트 높이에 맞게 Content 크기 조정
+    }
+
+    // 안건준 추가 - 0622
+    private void ResizeSegmentListContent() // Content RT 높이를 TMP 필요 높이로 설정 (스크롤 활성화)
+    {
+        if (segmentListContent == null || segmentListText == null)
+        {
+            return; // 참조 미연결
+        }
+
+        segmentListText.ForceMeshUpdate(); // TMP 레이아웃 즉시 계산
+        float needed = segmentListText.preferredHeight + 20f; // 텍스트 필요 높이 + 여유
+        Vector2 sd = segmentListContent.sizeDelta;
+        segmentListContent.sizeDelta = new Vector2(sd.x, Mathf.Max(needed, 50f)); // 최소 50px 보장
+    }
+
+    private Dictionary<string, string> BuildSegmentDisplayNameMap() // 카탈로그에서 ID→DisplayName 맵 빌드
+    {
+        Dictionary<string, string> map = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+        CoreStatProvider core = CoreStatProvider.Active;
+        if (core == null)
+        {
+            return map;
+        }
+
+        List<SegmentCatalogEntry> entries = new List<SegmentCatalogEntry>();
+        core.TryGetWeaponEnhanceChoiceCandidates(entries); // 카탈로그 전체 항목 (ID 있는 것)
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            string id = entries[i].NormalizedId;
+            if (string.IsNullOrWhiteSpace(id) || map.ContainsKey(id))
+            {
+                continue;
+            }
+
+            string name = !string.IsNullOrWhiteSpace(entries[i].DisplayName)
+                ? entries[i].DisplayName
+                : id; // DisplayName 없으면 ID 표시
+            map[id] = name;
+        }
+
+        return map;
+    }
+
+    internal void NotifySegmentListHoverEnter() // 브릿지 → 호버 진입
+    {
+        if (!IsLevelUpPanelOpen())
+        {
+            return;
+        }
+
+        ShowSegmentListOnHover();
+    }
+
+    internal void NotifySegmentListHoverExit() // 브릿지 → 호버 이탈
+    {
+        if (!IsLevelUpPanelOpen())
+        {
+            return;
+        }
+
+        RequestHideSegmentListOnHoverExit();
+    }
+    // 안건준 추가 - 0622 ======
 
     private sealed class SpawnedCardEntry
     {
@@ -2563,4 +2883,203 @@ public class CardUI : MonoBehaviour
             manager?.NotifySpawnedCardPointerExit(entry);
         }
     }
+
+    // 안건준 추가 - 0622
+    private sealed class SegmentListHoverBridge : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        private CardUI manager;
+
+        public void Initialize(CardUI owner)
+        {
+            manager = owner;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            manager?.NotifySegmentListHoverEnter();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            manager?.NotifySegmentListHoverExit();
+        }
+    }
+
+    // 안건준 추가 - 0622 ======
+    // 자동모드 카드 자동선택 ─────────────────────────────────────────────────
+
+    private void TryStartAutoSelect()
+    {
+        if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
+        {
+            return; // 자동모드가 아니거나 기능 꺼짐
+        }
+
+        StopAutoSelect();
+        autoSelectRoutine = StartCoroutine(AutoSelectRoutine());
+    }
+
+    // 안건준 추가 - 0622 : 세그먼트 추가/레벨업 2차 카드 자동선택
+    private void TryStartAutoSelectSegmentAction(bool canAdd, bool canLevelUp)
+    {
+        if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
+        {
+            return;
+        }
+
+        StopAutoSelect();
+        autoSelectRoutine = StartCoroutine(AutoSelectSegmentActionRoutine(canAdd, canLevelUp));
+    }
+
+    private void StopAutoSelect()
+    {
+        if (autoSelectRoutine != null)
+        {
+            StopCoroutine(autoSelectRoutine);
+            autoSelectRoutine = null;
+        }
+    }
+
+    private IEnumerator AutoSelectRoutine()
+    {
+        // 안건준 추가 - 0622 : WaitForSecondsRealtime — timeScale = 0 상태에서도 작동
+        float waitTime = 0.4f + autoSelectDelay;
+        yield return new WaitForSecondsRealtime(waitTime);
+
+        if (isProcessingSelection || spawnedCards == null || spawnedCards.Count == 0)
+        {
+            autoSelectRoutine = null;
+            yield break;
+        }
+
+        List<SpawnedCardEntry> selectable = new List<SpawnedCardEntry>();
+        for (int i = 0; i < spawnedCards.Count; i++)
+        {
+            SpawnedCardEntry card = spawnedCards[i];
+            if (card != null && card.CanSelect && card.IsClickable)
+            {
+                selectable.Add(card);
+            }
+        }
+
+        if (selectable.Count == 0)
+        {
+            autoSelectRoutine = null;
+            yield break;
+        }
+
+        // 안건준 수정 - 0622 : 랜덤 → 최고 등급 우선 선택
+        SpawnedCardEntry picked = PickHighestTierCard(selectable);
+
+        NotifySpawnedCardPointerEnter(picked);
+        yield return new WaitForSecondsRealtime(0.2f);
+
+        NotifySpawnedCardClicked(picked);
+        autoSelectRoutine = null;
+    }
+
+    // 안건준 추가 - 0622 : 추가/레벨업 2차 카드 자동선택 — 선택 불가 카드 제외 후 랜덤
+    private IEnumerator AutoSelectSegmentActionRoutine(bool canAdd, bool canLevelUp)
+    {
+        // 카드 등장 연출 대기
+        yield return new WaitForSecondsRealtime(0.4f + autoSelectDelay);
+
+        if (isProcessingSelection || spawnedCards == null || spawnedCards.Count == 0)
+        {
+            autoSelectRoutine = null;
+            yield break;
+        }
+
+        // 선택 가능한 카드만 수집 (CanSelect 기준 — 레벨업 불가면 LevelUpAction이 CanSelect=false)
+        List<SpawnedCardEntry> selectable = new List<SpawnedCardEntry>();
+        for (int i = 0; i < spawnedCards.Count; i++)
+        {
+            SpawnedCardEntry card = spawnedCards[i];
+            if (card == null || !card.IsClickable)
+            {
+                continue;
+            }
+
+            // 추가만 가능한 경우 AddAction만 허용
+            // 레벨업만 가능한 경우 LevelUpAction만 허용
+            // 둘 다 가능한 경우 둘 다 허용
+            bool isAdd = card.SegmentRole == SegmentCardRole.AddAction;
+            bool isLevelUp = card.SegmentRole == SegmentCardRole.LevelUpAction;
+
+            if (isAdd && canAdd)
+            {
+                selectable.Add(card);
+            }
+            else if (isLevelUp && canLevelUp)
+            {
+                selectable.Add(card);
+            }
+            else if (!isAdd && !isLevelUp && card.CanSelect)
+            {
+                selectable.Add(card); // 기타 선택 가능 카드 fallback
+            }
+        }
+
+        if (selectable.Count == 0)
+        {
+            autoSelectRoutine = null;
+            yield break;
+        }
+
+        // 안건준 수정 - 0622 : 랜덤 → 최고 등급 우선 선택
+        SpawnedCardEntry picked = PickHighestTierCard(selectable);
+
+        NotifySpawnedCardPointerEnter(picked);
+        yield return new WaitForSecondsRealtime(0.2f);
+
+        NotifySpawnedCardClicked(picked);
+        autoSelectRoutine = null;
+    }
+
+    // 안건준 추가 - 0622 : 카드 등급(티어) 반환 — 스탯/무기강화는 실제 등급, 세그먼트 계열은 Normal
+    private StatUpgrade.StatCardTier GetCardTier(SpawnedCardEntry entry)
+    {
+        if (entry == null)
+        {
+            return StatUpgrade.StatCardTier.Normal;
+        }
+
+        if (entry.StatUpgrade != null)
+        {
+            return entry.StatUpgrade.CurrentTier; // 스탯 카드 등급
+        }
+
+        if (entry.SegmentRole == SegmentCardRole.EnhanceChoice)
+        {
+            return entry.WeaponEnhancementTier; // 무기 강화 카드 등급
+        }
+
+        return StatUpgrade.StatCardTier.Normal; // 세그먼트 추가/레벨업 등 등급 없는 카드
+    }
+
+    // 안건준 추가 - 0622 : 후보 목록에서 가장 높은 등급의 카드를 반환 — 동급이면 랜덤
+    private SpawnedCardEntry PickHighestTierCard(List<SpawnedCardEntry> candidates)
+    {
+        StatUpgrade.StatCardTier best = StatUpgrade.StatCardTier.Normal;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            StatUpgrade.StatCardTier t = GetCardTier(candidates[i]);
+            if (t > best)
+            {
+                best = t;
+            }
+        }
+
+        List<SpawnedCardEntry> topTier = new List<SpawnedCardEntry>();
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (GetCardTier(candidates[i]) == best)
+            {
+                topTier.Add(candidates[i]);
+            }
+        }
+
+        return topTier[UnityEngine.Random.Range(0, topTier.Count)];
+    }
+    // 안건준 추가 - 0622 ======
 }

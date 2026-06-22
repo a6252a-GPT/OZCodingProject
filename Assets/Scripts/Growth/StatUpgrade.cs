@@ -1,3 +1,4 @@
+// 안건준 추가 - 0622
 using TeamProject01.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +24,8 @@ public class StatUpgrade : MonoBehaviour
     [SerializeField] private float collisionForceBonus; // 충돌힘 보너스
     [Header("재결합 범위 보너스")]
     [SerializeField] private float rejoinRangeBonus; // 재결합 범위 보너스
+    [Header("넥서스 체력 보너스")]
+    [SerializeField] private float nexusHealthBonus; // 넥서스 체력 보너스
 
     [Header("카드 등급 표시")]
     [SerializeField] private Image cardHighlightImage; // 비우면 자식 Image 탐색
@@ -79,6 +82,7 @@ public class StatUpgrade : MonoBehaviour
         turnSpeedBonus = source.turnSpeedBonus;
         collisionForceBonus = source.collisionForceBonus;
         rejoinRangeBonus = source.rejoinRangeBonus;
+        nexusHealthBonus = source.nexusHealthBonus; // 안건준 수정 - 0622 — 넥서스 체력 보너스도 등급 프리팹에서 복사
     }
 
     public void RollSpawnVariant(float rareChancePercent, float uniqueChancePercent) // 생성 시 등급·배율·색상 결정 (현재 사용)
@@ -167,12 +171,55 @@ public class StatUpgrade : MonoBehaviour
     public bool TryApplyToCore() // 코어에 성장값 적용
     {
         GrowthStatData growth = CreateGrowthStatData(); // 적용할 데이터 준비
-        if (!growth.HasAnyValue) // 레벨/보너스 없음
+        int resolvedNexusBonus = GetResolvedNexusHealthBonus(); // 안건준 추가 - 0622 — 등급 배율 적용된 넥서스 최대 체력 보너스
+        bool hasNexusBonus = resolvedNexusBonus > 0; // 안건준 추가 - 0622 — 넥서스 체력 카드 여부
+
+        if (!growth.HasAnyValue && !hasNexusBonus) // 안건준 수정 - 0622 — 넥서스 체력만 있어도 적용 가능
         {
             return false; // 적용 실패
         }
 
-        return CoreStatProvider.TryApplyGrowth(growth); // 경험치 소비 + 스탯 반영
+        if (growth.HasAnyValue) // 안건준 수정 - 0622 — 컨보이 스탯/레벨 소비
+        {
+            if (!CoreStatProvider.TryApplyGrowth(growth)) // 경험치 소비 + 스탯 반영
+            {
+                return false;
+            }
+        }
+        else if (levelDelta > 0) // 안건준 추가 - 0622 — 넥서스 체력만 있는 카드는 레벨만 소비
+        {
+            GrowthStatData levelOnly = GrowthStatData.CreateConvoyUpgrade(levelDelta, 0f, 0f, 0f, 0f, 0f); // 레벨 delta만 전달
+            if (!CoreStatProvider.TryApplyGrowth(levelOnly))
+            {
+                return false; // 레벨업 조건 미충족
+            }
+        }
+
+        if (hasNexusBonus) // 안건준 추가 - 0622 — 코어 적용 성공 후 넥서스 최대 체력 반영
+        {
+            TryApplyNexusHealthBonus(resolvedNexusBonus);
+        }
+
+        return true; // 안건준 수정 - 0622 — 넥서스/컨보이 적용 완료
+    }
+
+    // 안건준 추가 - 0622
+    private int GetResolvedNexusHealthBonus() // 등급 배율(1/2/3배) 적용 후 정수 보너스
+    {
+        return Mathf.RoundToInt(nexusHealthBonus * upgradeMultiplier);
+    }
+
+    // 안건준 추가 - 0622
+    private void TryApplyNexusHealthBonus(int amount) // NexusController에 최대 체력 보너스 전달
+    {
+        NexusController nexus = NexusController.Active; // 씬에 등록된 넥서스
+        if (nexus == null)
+        {
+            Debug.LogWarning("[StatUpgrade] NexusController.Active 없음 — 최대 체력 보너스 미적용", this);
+            return;
+        }
+
+        nexus.IncreaseMaxHealth(amount); // 최대 체력만 증가
     }
 
     private void ApplyCardVisual() // 등급에 따라 카드 색 변경
