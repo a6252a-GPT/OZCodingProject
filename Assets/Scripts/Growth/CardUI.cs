@@ -14,15 +14,17 @@ public class CardUI : MonoBehaviour
     [SerializeField] private GameObject[] statUpgradeCards = System.Array.Empty<GameObject>(); // 스탯 강화 카드 프리팹
 
     [Header("Add Segment")]
-    [SerializeField] private GameObject[] addSegmentCards = System.Array.Empty<GameObject>(); // 세그먼트 추가 카드
+    // 안건준 수정 - 0623 : 세그먼트 카드 공통 기본 프리팹 (SegmentUpgradeCard 드래그)
+    [Header("세그먼트 카드 공통 기본 프리팹")]
+    [SerializeField] private GameObject segmentCardBasePrefab; // 세그먼트 카드 공통 프리팹 (SegmentUpgradeCard)
+    // 안건준 추가 - 0623 : 세그먼트 카드 아이콘 크기 조절 (0=원본, -100=절반, +100=두배)
+    [Header("세그먼트 카드 아이콘 크기 조절")]
+    [Range(-100f, 100f)][SerializeField] private float segmentCardIconSizeOffset = 0f; // 세그먼트 아이콘 크기
 
-    [Header("세그먼트 추가 / 레벨업 액션 카드 (추후 프리팹 교체)")]
-    [Tooltip("비우면 addSegmentCards 기본 프리팹 — 2차 선택 '세그먼트 추가' 카드만 교체")]
-    [SerializeField] private GameObject segmentAddActionCardPrefab; // 세그먼트 추가 2차 카드 UI
-    [Tooltip("비우면 addSegmentCards 기본 프리팹 — 2차 선택 '세그먼트 레벨업' 카드만 교체")]
-    [SerializeField] private GameObject segmentLevelUpActionCardPrefab; // 세그먼트 레벨업 2차 카드 UI
+    // 안건준 추가 - 0623 : 카드 등급별 VFX 이팩트 (같은 오브젝트의 CardEffect 컴포넌트)
+    [SerializeField] private CardEffect cardEffect; // 카드 등급 이팩트 컴포넌트
 
-    [Header("Weapon Enhancement")]
+    [Header("세그먼트 강화 카탈로그")]
     [SerializeField] private WeaponCatalogAsset weaponCatalogAsset; // 무기 강화 2단계 카탈로그
 
     [Header("레어 카드 등장 확률")]
@@ -197,6 +199,16 @@ public class CardUI : MonoBehaviour
     {
         ResolveManagerReferences(); // 참조 보강
         SetupSegmentListHoverUi(); // 안건준 추가 - 0622 — 호버 브릿지 연결 + 기본 비활성
+
+        // 안건준 추가 - 0623 : 같은 오브젝트에 CardEffect가 있으면 자동 연결
+        if (cardEffect == null)
+        {
+            cardEffect = GetComponent<CardEffect>();
+            if (cardEffect != null)
+            {
+                Debug.Log("[CardUI] CardEffect 자동 연결 완료", this);
+            }
+        }
     }
 
     private void Start()
@@ -400,7 +412,7 @@ public class CardUI : MonoBehaviour
         StatUpgrade.StatCardTier tier = StatUpgrade.RollTier(rareCardChancePercent, uniqueCardChancePercent); // 등급 선정
         StatUpgrade.CardSpawnResolve resolve = templateStat != null
             ? templateStat.ResolveCardSpawn(tier, sourcePrefab)
-            : new StatUpgrade.CardSpawnResolve(sourcePrefab, true); // StatUpgrade 없으면 기본
+            : new StatUpgrade.CardSpawnResolve(sourcePrefab); // StatUpgrade 없으면 기본
         GameObject spawnPrefab = resolve.Prefab != null ? resolve.Prefab : sourcePrefab; // fallback
         SpawnedCardEntry entry = CreateSpawnedCard(spawnPrefab, slot, sourcePrefab, skipStatUpgradeRoll: true); // 생성
         if (entry == null)
@@ -415,7 +427,7 @@ public class CardUI : MonoBehaviour
                 entry.StatUpgrade.CopyStatValuesFrom(templateStat); // 등급 프리팹 → 풀 프리팹 수치 복사
             }
 
-            entry.StatUpgrade.ApplySpawnTier(tier, resolve.ApplyFallbackVisual); // 등급·배율·색상(기본 껍데기일 때)
+            entry.StatUpgrade.ApplySpawnTier(tier); // 등급·배율 반영
         }
 
         return entry;
@@ -695,6 +707,16 @@ public class CardUI : MonoBehaviour
         entry.LevelDelta = entry.SegmentAddCard != null ? entry.SegmentAddCard.LevelDelta : 1; // 소비 레벨
         entry.CanSelect = catalogEntry.HasId; // 카탈로그 풀 — 세그먼트 추가와 동일하게 선택
         entry.SegmentAddCard?.ConfigureCandidate(catalogEntry); // 세그먼트 추가와 동일 UI
+        // 안건준 추가 - 0623 : 커스텀 프리팹 Card_Text / DescText + 현재 레벨 아이콘 주입
+        if (entry.Root != null)
+        {
+            string segId = catalogEntry.NormalizedId;
+            int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
+            Sprite icon = GetSegmentIconSprite(segId, currentLevel);
+            string title = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName;
+            string desc = string.IsNullOrWhiteSpace(catalogEntry.Description) ? $"{catalogEntry.NormalizedId} 선택" : catalogEntry.Description;
+            ApplyCardTextsDirectly(entry.Root, title, desc, icon, GetSegmentIconSizeOffset(segId));
+        }
     }
 
     // 세그먼트 추가/레벨업 2차 선택 카드 2장 생성
@@ -796,8 +818,7 @@ public class CardUI : MonoBehaviour
         WeaponDefinition definition,
         string targetSegmentId,
         int levelDelta,
-        StatUpgrade.StatCardTier tier,
-        bool applyFallbackVisual)
+        StatUpgrade.StatCardTier tier)
     {
         entry.SegmentRole = SegmentCardRole.EnhanceChoice; // 2단계 강화 카드
         entry.WeaponDefinition = definition; // 선택 강화
@@ -805,10 +826,26 @@ public class CardUI : MonoBehaviour
         entry.LevelDelta = Mathf.Max(1, levelDelta); // 소비 레벨
         entry.CanSelect = definition != null && definition.HasAnyStatBonus; // 선택 가능
         entry.SegmentAddCard?.ConfigureWeaponEnhancement(definition, entry.LevelDelta); // 카드 문구·아이콘
-        entry.SegmentAddCard?.ApplyWeaponEnhancementTier(tier, applyFallbackVisual); // 등급·색상(기본 껍데기일 때)
+        entry.SegmentAddCard?.ApplyWeaponEnhancementTier(tier); // 등급 저장
         // 건준수정 - 0621 ======
         entry.WeaponEnhancementTier = tier; // 적용 시 등급별 수치
         // 건준수정 - 0621 ======
+
+        // 안건준 추가 - 0623 : SegmentAddCard 텍스트 주입 후 실제 텍스트가 바뀌었는지 확인 — Card_Text / DescText / Image 직접 fallback
+        if (definition != null && entry.Root != null)
+        {
+            // 현재 세그먼트 레벨 조회 → 레벨에 맞는 아이콘 선택
+            int segLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(definition.TargetSegmentId) ?? 1;
+            Sprite iconSprite = definition.GetIconSpriteForLevel(segLevel);
+
+            if (iconSprite == null)
+            {
+                Debug.LogWarning($"[CardUI] '{definition.name}' 레벨 {segLevel} 아이콘 없음. " +
+                    $"CardIconSpritesPerLevel 또는 CardIconSprite 를 Inspector 에서 할당하세요. (TargetSegmentId={definition.TargetSegmentId})", definition);
+            }
+
+            ApplyCardTextsDirectly(entry.Root, definition.DisplayName, definition.Description, iconSprite, definition.CardIconSizeOffset);
+        }
 
         if (definition != null && !definition.HasAnyStatBonus)
         {
@@ -847,7 +884,7 @@ public class CardUI : MonoBehaviour
             return null; // 생성 실패
         }
 
-        ConfigureWeaponEnhancementEntry(entry, definition, resolvedTargetSegmentId, levelDelta, tier, resolve.ApplyFallbackVisual); // 문구·등급
+        ConfigureWeaponEnhancementEntry(entry, definition, resolvedTargetSegmentId, levelDelta, tier); // 문구·등급
         return entry;
     }
 
@@ -954,44 +991,16 @@ public class CardUI : MonoBehaviour
         return Mathf.Max(120f, (maxX - minX) * 0.25f); // 3슬롯 폭의 1/4 지점에 2장 배치
     }
 
-    // 세그먼트 카드 템플릿 선택
+    // 세그먼트 카드 템플릿 선택 (안건준 수정 - 0623 : segmentCardBasePrefab 사용)
     private GameObject GetSegmentCardTemplate(int index)
     {
-        if (addSegmentCards == null || addSegmentCards.Length == 0)
-        {
-            return null; // 템플릿 없음
-        }
-
-        int safeIndex = Mathf.Clamp(index, 0, addSegmentCards.Length - 1); // 배열 범위 보정
-        return addSegmentCards[safeIndex] != null ? addSegmentCards[safeIndex] : addSegmentCards[0]; // null이면 첫 카드 fallback
+        return segmentCardBasePrefab; // SegmentUpgradeCard 공통 프리팹
     }
 
     private GameObject ResolveSegmentActionCardPrefab(SegmentCardRole role, GameObject defaultTemplate) // 2차 액션 카드 — CardUI 교체 프리팹
     {
-        if (defaultTemplate == null)
-        {
-            return null; // 기본 템플릿 없음
-        }
-
-        switch (role)
-        {
-            case SegmentCardRole.AddAction:
-                if (segmentAddActionCardPrefab != null)
-                {
-                    return segmentAddActionCardPrefab; // 세그먼트 추가 전용 UI
-                }
-
-                break;
-            case SegmentCardRole.LevelUpAction:
-                if (segmentLevelUpActionCardPrefab != null)
-                {
-                    return segmentLevelUpActionCardPrefab; // 세그먼트 레벨업 전용 UI
-                }
-
-                break;
-        }
-
-        return defaultTemplate; // 비워두면 addSegmentCards 기본
+        // 안건준 수정 - 0623 : segmentCardBasePrefab → defaultTemplate 순으로 fallback
+        return segmentCardBasePrefab != null ? segmentCardBasePrefab : defaultTemplate;
     }
 
     // A 모드 1단계 — 보유 세그먼트 개수에 비례한 가중치로 후보 선택 (중복 없음)
@@ -1115,6 +1124,17 @@ public class CardUI : MonoBehaviour
         entry.LevelDelta = entry.SegmentAddCard != null ? entry.SegmentAddCard.LevelDelta : 1; // 소비 레벨
         entry.CanSelect = true; // 후보 선택 가능
         entry.SegmentAddCard?.ConfigureCandidate(catalogEntry); // 카드 문구 세팅
+
+        // 안건준 추가 - 0623 : 현재 세그먼트 레벨에 맞는 아이콘 적용
+        if (entry.Root != null)
+        {
+            string segId = catalogEntry.NormalizedId;
+            int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
+            Sprite icon = GetSegmentIconSprite(segId, currentLevel);
+            string title = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName;
+            string desc = string.IsNullOrWhiteSpace(catalogEntry.Description) ? $"{catalogEntry.NormalizedId} 선택" : catalogEntry.Description;
+            ApplyCardTextsDirectly(entry.Root, title, desc, icon, GetSegmentIconSizeOffset(segId));
+        }
     }
 
     // 후보 부족 시 없음 카드 데이터 주입
@@ -1130,28 +1150,34 @@ public class CardUI : MonoBehaviour
     // 추가/레벨업 액션 카드 데이터 주입
     private void ConfigureSegmentActionEntry(SpawnedCardEntry entry, SegmentCatalogEntry catalogEntry, int levelDelta, SegmentCardRole role, bool selectable)
     {
-        string displayName = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? catalogEntry.NormalizedId : catalogEntry.DisplayName; // 표시명
-        string title = role switch // 액션 제목
-        {
-            SegmentCardRole.AddAction => "세그먼트 추가",
-            SegmentCardRole.LevelUpAction => "세그먼트 레벨업",
-            _ => string.Empty
-        };
-        string description = BuildSegmentActionDescription(catalogEntry.NormalizedId, displayName, role, selectable); // 액션 설명
+        string segId = catalogEntry.NormalizedId; // 대상 ID
+        string displayName = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName; // 표시명
+        // 안건준 수정 - 0623 : Card_Text = 세그먼트 이름만
+        string title = displayName;
+        string description = BuildSegmentActionDescription(segId, displayName, role, selectable); // 액션 설명
         entry.SegmentRole = role; // 액션 역할
         entry.SegmentCatalogEntry = catalogEntry; // 대상 후보 저장
-        entry.SegmentId = catalogEntry.NormalizedId; // 대상 ID
+        entry.SegmentId = segId; // 대상 ID
         entry.LevelDelta = Mathf.Max(1, levelDelta); // 소비 레벨
         entry.CanSelect = selectable; // 선택 가능 여부
-        entry.SegmentAddCard?.ConfigureAction(catalogEntry.NormalizedId, title, description, selectable); // 카드 문구 세팅
+        entry.SegmentAddCard?.ConfigureAction(segId, title, description, selectable); // 카드 문구 세팅
+
+        // 안건준 추가 - 0623 : 레벨에 맞는 아이콘 적용 (레벨업 카드는 다음 레벨 이미지)
+        if (entry.Root != null)
+        {
+            int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
+            int iconLevel = (role == SegmentCardRole.LevelUpAction) ? currentLevel + 1 : currentLevel; // 레벨업=다음레벨
+            Sprite icon = GetSegmentIconSprite(segId, iconLevel);
+            ApplyCardTextsDirectly(entry.Root, title, description, icon, GetSegmentIconSizeOffset(segId));
+        }
     }
 
-    // 액션 카드 설명 생성
+    // 액션 카드 설명 생성 (안건준 수정 - 0623 : Card_Text에 이름이 있으므로 DescText는 상태 정보만)
     private static string BuildSegmentActionDescription(string segmentId, string displayName, SegmentCardRole role, bool selectable)
     {
         if (role == SegmentCardRole.AddAction)
         {
-            return selectable ? $"{displayName} +1" : "추가 불가"; // 추가 설명
+            return selectable ? "추가 +1" : "추가 불가"; // 이름은 Card_Text에, 여기선 상태만
         }
 
         if (role == SegmentCardRole.LevelUpAction)
@@ -1159,10 +1185,10 @@ public class CardUI : MonoBehaviour
             if (CoreStatProvider.Active != null && CoreStatProvider.Active.TryGetSegmentModelLevelInfo(segmentId, out int currentLevel, out int maxLevel))
             {
                 int nextLevel = Mathf.Min(currentLevel + 1, maxLevel); // 다음 레벨
-                return selectable ? $"{displayName} Lv.{currentLevel} → Lv.{nextLevel}" : $"{displayName} MAX"; // 레벨 설명
+                return selectable ? $"Lv.{currentLevel} → Lv.{nextLevel}" : "MAX"; // 이름은 Card_Text에
             }
 
-            return selectable ? $"{displayName} 전체 레벨업" : "레벨업 불가"; // fallback
+            return selectable ? "레벨업 가능" : "레벨업 불가"; // fallback
         }
 
         return string.Empty;
@@ -1976,11 +2002,10 @@ public class CardUI : MonoBehaviour
             segmentAddCard = instance.GetComponentInChildren<SegmentAddCard>(true);
         }
 
+        // 안건준 추가 - 0623 : SegmentUpgradeCard 같이 SegmentAddCard가 없는 커스텀 프리팹도 텍스트 주입 가능하도록 자동 추가
         if (statUpgrade == null && segmentAddCard == null)
         {
-            Debug.LogWarning("[CardUI] 카드 프리팹에 StatUpgrade 또는 SegmentAddCard가 없습니다.", prefab);
-            Destroy(instance);
-            return null;
+            segmentAddCard = instance.AddComponent<SegmentAddCard>();
         }
 
         if (statUpgrade != null && !skipStatUpgradeRoll)
@@ -2186,6 +2211,25 @@ public class CardUI : MonoBehaviour
         for (int i = 0; i < cards.Count; i++)
         {
             HideInstant(cards[i]);
+        }
+
+        // 안건준 수정 - 0624 :
+        // 이팩트는 카드 오픈 트윈 완료 후 적용 (카드가 완전히 열려야 GetWorldCorners 가 정확)
+        // 이팩트는 Canvas 바깥 씬 루트에 독립 배치 → URP ParticleSystem 충돌 방지
+        if (cardEffect != null)
+        {
+            const float openDuration = 0.35f;
+            const float openInterval = 0.12f;
+            for (int i = 0; i < cards.Count; i++)
+            {
+                SpawnedCardEntry captured = cards[i];
+                float delay = i * openInterval + openDuration;
+                DOVirtual.DelayedCall(delay, () =>
+                {
+                    if (captured?.Root != null)
+                        cardEffect.ApplyEffect(captured.Root, GetCardTier(captured));
+                }, ignoreTimeScale: true);
+            }
         }
 
         Sequence sequence = DOTween.Sequence().SetUpdate(true);
@@ -2552,6 +2596,9 @@ public class CardUI : MonoBehaviour
 
     private void ClearSpawnedCards()
     {
+        // 안건준 추가 - 0623 : 카드 제거 전 이팩트 먼저 정리
+        cardEffect?.ClearAll();
+
         for (int i = 0; i < spawnedCards.Count; i++)
         {
             if (spawnedCards[i]?.Root != null)
@@ -2937,6 +2984,100 @@ public class CardUI : MonoBehaviour
         {
             StopCoroutine(autoSelectRoutine);
             autoSelectRoutine = null;
+        }
+    }
+
+    // 안건준 추가 - 0623 : 세그먼트 ID + 레벨로 SegmentDefinition 아이콘 스프라이트 조회
+    private static Sprite GetSegmentIconSprite(string segmentId, int level)
+    {
+        SegmentCatalogAsset catalog = CoreStatProvider.Active?.SegmentCatalogAsset;
+        if (catalog == null || string.IsNullOrWhiteSpace(segmentId))
+        {
+            return null; // 카탈로그 없음
+        }
+
+        if (!catalog.TryFind(segmentId, out SegmentDefinition def))
+        {
+            return null; // 정의 없음
+        }
+
+        return def.GetIconSpriteForLevel(level); // 레벨별 스프라이트
+    }
+
+    // 안건준 추가 - 0623 : 세그먼트 카드 아이콘 크기 조절값 — CardUI 인스펙터값 우선, 없으면 SegmentDefinition 값 사용
+    private float GetSegmentIconSizeOffset(string segmentId)
+    {
+        if (!Mathf.Approximately(segmentCardIconSizeOffset, 0f))
+        {
+            return segmentCardIconSizeOffset; // CardUI 인스펙터 값 우선
+        }
+
+        SegmentCatalogAsset catalog = CoreStatProvider.Active?.SegmentCatalogAsset;
+        if (catalog == null || string.IsNullOrWhiteSpace(segmentId))
+        {
+            return 0f; // 기본값
+        }
+
+        return catalog.TryFind(segmentId, out SegmentDefinition def) ? def.CardIconSizeOffset : 0f;
+    }
+
+    // 안건준 추가 - 0623 : SegmentUpgradeCard 같은 커스텀 프리팹에 Card_Text / DescText / Image 직접 주입
+    private static void ApplyCardTextsDirectly(GameObject root, string title, string desc, Sprite iconSprite = null, float iconSizeOffset = 0f)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        TMPro.TMP_Text[] texts = root.GetComponentsInChildren<TMPro.TMP_Text>(true);
+        TMPro.TMP_Text cardText = null;
+        TMPro.TMP_Text descText = null;
+
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i].gameObject.name == "Card_Text")
+            {
+                cardText = texts[i];
+            }
+            else if (texts[i].gameObject.name == "DescText")
+            {
+                descText = texts[i];
+            }
+        }
+
+        if (cardText != null && !string.IsNullOrWhiteSpace(title))
+        {
+            cardText.text = title; // 세그먼트 이름 (캐논, 미사일 등)
+        }
+
+        if (descText != null && !string.IsNullOrWhiteSpace(desc))
+        {
+            descText.text = desc; // WeaponDefinition Description
+        }
+
+        // 안건준 추가 - 0623 : "Image" 오브젝트에 세그먼트 Lv1 아이콘 적용
+        if (iconSprite != null)
+        {
+            Transform imageTransform = root.transform.Find("Image");
+            if (imageTransform != null && imageTransform.TryGetComponent(out UnityEngine.UI.Image img))
+            {
+                img.sprite = iconSprite;
+                img.enabled = true;
+                img.color = Color.white;
+                img.type = UnityEngine.UI.Image.Type.Simple;
+                img.preserveAspect = false;
+                img.SetNativeSize(); // 원본 크기로 설정
+                // 크기 조절 적용 (0=원본, -50=절반, 100=두배)
+                if (!Mathf.Approximately(iconSizeOffset, 0f))
+                {
+                    float scale = Mathf.Max(0.01f, 1f + Mathf.Clamp(iconSizeOffset, -100f, 100f) / 100f);
+                    img.rectTransform.sizeDelta *= scale;
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[CardUI] 'Image' 자식 오브젝트를 찾지 못했습니다. root={root.name}, 자식 수={root.transform.childCount}");
+            }
         }
     }
 

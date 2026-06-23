@@ -1,7 +1,6 @@
 // 안건준 추가 - 0622
 using TeamProject01.Gameplay;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class StatUpgrade : MonoBehaviour
 {
@@ -27,17 +26,6 @@ public class StatUpgrade : MonoBehaviour
     [Header("넥서스 체력 보너스")]
     [SerializeField] private float nexusHealthBonus; // 넥서스 체력 보너스
 
-    [Header("카드 등급 표시")]
-    [SerializeField] private Image cardHighlightImage; // 비우면 자식 Image 탐색
-    [SerializeField] private Color normalCardColor = Color.white; // 일반 카드 색
-    [SerializeField] private Color rareCardColor = Color.yellow; // 레어 카드 색 (2배)
-    [SerializeField] private Color uniqueCardColor = Color.green; // 유니크 카드 색 (3배)
-
-    [Header("추후 — 등급별 프리팹 교체 (현재 미사용, 비워두면 색상 틴트 방식)")]
-    [SerializeField] private GameObject normalCardPrefab; // 일반 전용 프리팹 (비우면 statUpgradeCards 풀 프리팹)
-    [SerializeField] private GameObject rareCardPrefab; // 레어 전용 프리팹 (추후 CardUI 연동)
-    [SerializeField] private GameObject uniqueCardPrefab; // 유니크 전용 프리팹 (추후 CardUI 연동)
-
     private float upgradeMultiplier = 1f; // 생성 시 1, 2, 3
     private StatCardTier currentTier = StatCardTier.Normal; // 현재 등급
 
@@ -45,28 +33,19 @@ public class StatUpgrade : MonoBehaviour
     public bool IsRareUpgrade => currentTier == StatCardTier.Rare; // 레어 카드 여부
     public bool IsUniqueUpgrade => currentTier == StatCardTier.Unique; // 유니크 카드 여부
 
-    public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹 + 색상 틴트 여부
+    public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹
     {
         public readonly GameObject Prefab;
-        public readonly bool ApplyFallbackVisual;
 
-        public CardSpawnResolve(GameObject prefab, bool applyFallbackVisual)
+        public CardSpawnResolve(GameObject prefab)
         {
             Prefab = prefab;
-            ApplyFallbackVisual = applyFallbackVisual;
         }
     }
 
     public CardSpawnResolve ResolveCardSpawn(StatCardTier tier, GameObject defaultPrefab) // 등급별 Instantiate 대상
     {
-        GameObject resolvedPrefab = ResolveSpawnPrefabForTier(tier, defaultPrefab); // 등급별 프리팹
-        if (resolvedPrefab == null)
-        {
-            resolvedPrefab = defaultPrefab; // fallback
-        }
-
-        bool applyFallbackVisual = resolvedPrefab == defaultPrefab || resolvedPrefab == null; // 기본 껍데기면 색 틴트
-        return new CardSpawnResolve(resolvedPrefab, applyFallbackVisual);
+        return new CardSpawnResolve(defaultPrefab); // 등급별 프리팹 교체 미사용 — 이팩트로 대체
     }
 
     public void CopyStatValuesFrom(StatUpgrade source) // 등급 프리팹 → 풀 프리팹 수치 복사
@@ -85,12 +64,10 @@ public class StatUpgrade : MonoBehaviour
         nexusHealthBonus = source.nexusHealthBonus; // 안건준 수정 - 0622 — 넥서스 체력 보너스도 등급 프리팹에서 복사
     }
 
-    public void RollSpawnVariant(float rareChancePercent, float uniqueChancePercent) // 생성 시 등급·배율·색상 결정 (현재 사용)
+    public void RollSpawnVariant(float rareChancePercent, float uniqueChancePercent) // 생성 시 등급·배율 결정
     {
-        ApplySpawnTier(RollTier(rareChancePercent, uniqueChancePercent), applyFallbackVisual: true); // 색상 틴트 방식
+        ApplySpawnTier(RollTier(rareChancePercent, uniqueChancePercent)); // 등급 및 배율 적용
     }
-
-    // ===== 추후 프리팹 교체용 — CardUI.CreateSpawnedCard 에서 연동 예정 =====
 
     public static StatCardTier RollTier(float rareChancePercent, float uniqueChancePercent) // 등급 난수
     {
@@ -111,37 +88,7 @@ public class StatUpgrade : MonoBehaviour
         return StatCardTier.Normal; // 일반
     }
 
-    public GameObject ResolveSpawnPrefabForTier(StatCardTier tier, GameObject defaultPrefab) // 등급별 Instantiate 대상 (추후)
-    {
-        switch (tier)
-        {
-            case StatCardTier.Normal:
-                if (normalCardPrefab != null)
-                {
-                    return normalCardPrefab; // 일반 전용 프리팹
-                }
-
-                break;
-            case StatCardTier.Unique:
-                if (uniqueCardPrefab != null)
-                {
-                    return uniqueCardPrefab; // 유니크 전용 프리팹
-                }
-
-                break;
-            case StatCardTier.Rare:
-                if (rareCardPrefab != null)
-                {
-                    return rareCardPrefab; // 레어 전용 프리팹
-                }
-
-                break;
-        }
-
-        return defaultPrefab != null ? defaultPrefab : gameObject; // 일반 또는 대체 없음
-    }
-
-    public void ApplySpawnTier(StatCardTier tier, bool applyFallbackVisual) // 생성 후 등급·배율 반영 (추후)
+    public void ApplySpawnTier(StatCardTier tier) // 생성 후 등급·배율 반영
     {
         currentTier = tier; // 등급 저장
         upgradeMultiplier = tier switch // 스탯 배율
@@ -150,11 +97,6 @@ public class StatUpgrade : MonoBehaviour
             StatCardTier.Rare => 2f,
             _ => 1f
         };
-
-        if (applyFallbackVisual)
-        {
-            ApplyCardVisual(); // 색상 틴트
-        }
     }
 
     public GrowthStatData CreateGrowthStatData() // 코어로 보낼 성장값 생성
@@ -222,46 +164,4 @@ public class StatUpgrade : MonoBehaviour
         nexus.IncreaseMaxHealth(amount); // 최대 체력만 증가
     }
 
-    private void ApplyCardVisual() // 등급에 따라 카드 색 변경
-    {
-        Image image = ResolveCardHighlightImage(); // 강조 Image 찾기
-        if (image == null)
-        {
-            return; // 표시 대상 없음
-        }
-
-        Color targetColor = normalCardColor; // 기본은 일반 색
-        if (currentTier == StatCardTier.Unique)
-        {
-            targetColor = uniqueCardColor; // 유니크 → 초록
-        }
-        else if (currentTier == StatCardTier.Rare)
-        {
-            targetColor = rareCardColor; // 레어 → 노랑
-        }
-
-        image.color = new Color(targetColor.r, targetColor.g, targetColor.b, image.color.a); // 알파 유지
-    }
-
-    private Image ResolveCardHighlightImage() // 강조용 Image 참조
-    {
-        if (cardHighlightImage != null)
-        {
-            return cardHighlightImage; // Inspector 지정값
-        }
-
-        Transform imageTransform = transform.Find("Image"); // 자식 Image 탐색
-        if (imageTransform != null && imageTransform.TryGetComponent(out Image childImage))
-        {
-            cardHighlightImage = childImage; // 캐시
-            return cardHighlightImage;
-        }
-
-        if (TryGetComponent(out Image rootImage))
-        {
-            cardHighlightImage = rootImage; // 루트 Image fallback
-        }
-
-        return cardHighlightImage;
-    }
 }

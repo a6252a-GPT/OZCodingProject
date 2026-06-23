@@ -31,3 +31,6 @@ MonoBehaviour:
     AttackProfile: {fileID: 0}
     Memo: 'Support profile: SP_SG51_Magnet_Lv1. Attack/effect gameplay is planned
       as a later pass.'
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: 623b6065af950284498600f8af4431fc, type: 3}
+  CardIconSizeOffset: 0

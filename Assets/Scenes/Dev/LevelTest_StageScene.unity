@@ -14802,6 +14802,7 @@ GameObject:
   - component: {fileID: 1570409890}
   - component: {fileID: 1570409888}
   - component: {fileID: 1570409887}
+  - component: {fileID: 1570409893}
   m_Layer: 5
   m_Name: LevelUpPanel
   m_TagString: Untagged
@@ -14827,14 +14828,9 @@ MonoBehaviour:
   - {fileID: 5093926429036568398, guid: 922b7080113cbd34d8b277e8b5b6ad62, type: 3}
   - {fileID: 4273208215378241979, guid: 7a79283604a4e7c4eb4ac5619406ef66, type: 3}
   - {fileID: 7600267103908896176, guid: 24dd4616ba097ba4986e42138944d0d4, type: 3}
-  addSegmentCards:
-  - {fileID: 1511448857506858134, guid: 33707fd6579d28c44b57936196072952, type: 3}
-  - {fileID: 1511448857506858134, guid: fd38a8518a98b2e4b8f047aa5d60a59d, type: 3}
-  - {fileID: 1511448857506858134, guid: a07c2db2c65b556429e27d4e3eeac86c, type: 3}
-  - {fileID: 1511448857506858134, guid: ea0d40b0a429b164ea58817dc21f486b, type: 3}
-  - {fileID: 1511448857506858134, guid: 34155b9013e604f48890dfdf542819f4, type: 3}
-  segmentAddActionCardPrefab: {fileID: 0}
-  segmentLevelUpActionCardPrefab: {fileID: 0}
+  segmentCardBasePrefab: {fileID: 1511448857506858134, guid: 3a49d0b5d6d28734c8caac14b1e175c5, type: 3}
+  segmentCardIconSizeOffset: -80
+  cardEffect: {fileID: 1570409893}
   weaponCatalogAsset: {fileID: 11400000, guid: 3c4d5e6f7890abcdef1234567890abcd, type: 2}
   rareCardChancePercent: 30
   uniqueCardChancePercent: 10
@@ -14956,6 +14952,26 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1570409886}
   m_CullTransparentMesh: 1
+--- !u!114 &1570409893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1570409886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d751b816ae209284589396918dcdfed9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardEffect
+  rareEffect: 7
+  uniqueEffect: 7
+  rareEffectPrefab: {fileID: 7890596235615952909, guid: 8aeabbea35df08b4baba6c6c21e07f00, type: 3}
+  uniqueEffectPrefab: {fileID: 6106711444516153149, guid: cc21b263816b75c46b3f28d2bd1a1103, type: 3}
+  normalEffectPrefab: {fileID: 0}
+  EffectBrightness: 1
+  EffectWidth: 1
+  EffectHeight: 1
 --- !u!1 &1579894723
 GameObject:
   m_ObjectHideFlags: 0
@@ -15960,7 +15976,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1711893921
 RectTransform:
   m_ObjectHideFlags: 0
