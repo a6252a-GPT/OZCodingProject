@@ -165,10 +165,11 @@ public class LevelUpUi : MonoBehaviour
             SetOverlayPanelActive(!IsAutoOrbitActive()); // 안건준 추가 - 0622 : 자동모드면 Overlay Panel 숨김
         }
 
-        panelCanvasGroup.alpha = 0.0f;
+        // DOFade 가 timeScale=0 에서 충돌하거나 지연되는 문제 → 즉시 표시
+        panelCanvasGroup.DOKill();
+        panelCanvasGroup.alpha = 1f;
         panelCanvasGroup.blocksRaycasts = true;
         panelCanvasGroup.interactable = true;
-        panelCanvasGroup.DOFade(1.0f, 0.25f).SetUpdate(true);
 
         PlayTitleTween();
     }

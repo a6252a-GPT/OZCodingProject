@@ -24,6 +24,9 @@ public class CardUI : MonoBehaviour
     // 안건준 추가 - 0623 : 카드 등급별 VFX 이팩트 (같은 오브젝트의 CardEffect 컴포넌트)
     [SerializeField] private CardEffect cardEffect; // 카드 등급 이팩트 컴포넌트
 
+    // 안건준 추가 - 0624 : 카드 사운드 매니저
+    [SerializeField] private CardSoundManager cardSound;
+
     [Header("세그먼트 강화 카탈로그")]
     [SerializeField] private WeaponCatalogAsset weaponCatalogAsset; // 무기 강화 2단계 카탈로그
 
@@ -200,6 +203,18 @@ public class CardUI : MonoBehaviour
         ResolveManagerReferences(); // 참조 보강
         SetupSegmentListHoverUi(); // 안건준 추가 - 0622 — 호버 브릿지 연결 + 기본 비활성
 
+        // TMP 줄바꿈 재귀 오류 방지 — 긴 텍스트가 들어가는 TMP에 word wrap 비활성
+        if (segmentListText       != null) segmentListText.enableWordWrapping       = false;
+        if (segmentWeaponStatText != null) segmentWeaponStatText.enableWordWrapping = false;
+
+        // 안건준 추가 - 0624 : CardSoundManager 자동 연결 (없으면 자동 생성)
+        if (cardSound == null)
+            cardSound = GetComponent<CardSoundManager>();
+        if (cardSound == null)
+            cardSound = FindFirstObjectByType<CardSoundManager>();
+        if (cardSound == null)
+            cardSound = gameObject.AddComponent<CardSoundManager>();
+
         // 안건준 추가 - 0623 : 같은 오브젝트에 CardEffect가 있으면 자동 연결
         if (cardEffect == null)
         {
@@ -301,6 +316,9 @@ public class CardUI : MonoBehaviour
         entry.RootTransform.DOScale(entry.OriginalScale * hoverScale, 0.15f)
             .SetEase(Ease.OutQuad)
             .SetUpdate(true);
+
+        // 이팩트 컨테이너도 동일 배율로 확대
+        cardEffect?.OnCardHoverEnter(entry.Root, hoverScale);
     }
 
     private void NotifySpawnedCardPointerExit(SpawnedCardEntry entry)
@@ -314,6 +332,9 @@ public class CardUI : MonoBehaviour
         entry.RootTransform.DOScale(entry.OriginalScale, 0.15f)
             .SetEase(Ease.InQuad)
             .SetUpdate(true);
+
+        // 이팩트 컨테이너도 원래 크기로 복원
+        cardEffect?.OnCardHoverExit(entry.Root);
     }
 
     private void ResolveManagerReferences()
@@ -2208,14 +2229,16 @@ public class CardUI : MonoBehaviour
             return;
         }
 
+        // 카드 패널 등장 사운드 - 레벨업마다 패널이 열릴 때 1회 재생
+        cardSound?.PlayCardAppear();
+
         for (int i = 0; i < cards.Count; i++)
         {
             HideInstant(cards[i]);
         }
 
-        // 안건준 수정 - 0624 :
-        // 이팩트는 카드 오픈 트윈 완료 후 적용 (카드가 완전히 열려야 GetWorldCorners 가 정확)
-        // 이팩트는 Canvas 바깥 씬 루트에 독립 배치 → URP ParticleSystem 충돌 방지
+        // 이팩트는 카드 오픈 트윈 완료 후 적용 (GetWorldCorners 정확도 보장)
+        // 스탯 강화(None), 세그먼트 강화(EnhanceChoice) 카드만 VFX 적용
         if (cardEffect != null)
         {
             const float openDuration = 0.35f;
@@ -2223,6 +2246,10 @@ public class CardUI : MonoBehaviour
             for (int i = 0; i < cards.Count; i++)
             {
                 SpawnedCardEntry captured = cards[i];
+                bool applyVfx = captured.SegmentRole == SegmentCardRole.None
+                             || captured.SegmentRole == SegmentCardRole.EnhanceChoice;
+                if (!applyVfx) continue;
+
                 float delay = i * openInterval + openDuration;
                 DOVirtual.DelayedCall(delay, () =>
                 {
@@ -2315,6 +2342,9 @@ public class CardUI : MonoBehaviour
         {
             return;
         }
+
+        // 카드 선택 사운드
+        cardSound?.PlayCardSelect();
 
         if (selectedEntry.SegmentRole == SegmentCardRole.Candidate)
         {
@@ -2520,6 +2550,9 @@ public class CardUI : MonoBehaviour
 
     private void PlaySelectionCloseSequence(SpawnedCardEntry selectedEntry)
     {
+        // 카드 페이드(0.2s)와 동시에 이팩트도 축소 후 제거
+        cardEffect?.FadeAllEffects(0.2f);
+
         Sequence sequence = DOTween.Sequence().SetUpdate(true);
 
         for (int i = 0; i < spawnedCards.Count; i++)
