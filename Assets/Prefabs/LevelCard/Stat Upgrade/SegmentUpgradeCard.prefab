@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 192089017015016619}
   - component: {fileID: 8456507016515419839}
   - component: {fileID: 6868406106477447405}
+  - component: {fileID: 2345678901234567891}
   m_Layer: 5
   m_Name: SegmentUpgradeCard
   m_TagString: Untagged
@@ -151,11 +152,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatUpgrade
   levelDelta: 1
   damageMultiplierBonus: 0
-  attackSpeedMultiplierBonus: 0.06
+  attackSpeedMultiplierBonus: 0
   turnSpeedBonus: 0
   collisionForceBonus: 0
   rejoinRangeBonus: 0
   nexusHealthBonus: 0
+--- !u!114 &2345678901234567891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1511448857506858134}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d138926ed462f64cb8b2751c19e54de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  levelDelta: 1
+  segmentId: 
+  segmentAddCount: 1
+  titleText: {fileID: 0}
+  descriptionText: {fileID: 0}
+  cardIconImage: {fileID: 0}
 --- !u!1 &2629721735727405003
 GameObject:
   m_ObjectHideFlags: 0
