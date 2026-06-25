@@ -8,10 +8,13 @@ namespace TeamProject01.Gameplay
         private float freezeTimer;
         private float incomingDamageMultiplier = 1f;
         private float incomingDamageTimer;
+        private float moveSpeedSlowMultiplier = 1f;
+        private float moveSpeedSlowTimer;
         private readonly List<Behaviour> disabledByFreezeBehaviours = new List<Behaviour>(6);
         private bool freezeBehavioursDisabled;
 
         public bool IsFrozen => freezeTimer > 0f;
+        public float MoveSpeedMultiplier => moveSpeedSlowTimer > 0f ? Mathf.Clamp(moveSpeedSlowMultiplier, 0.05f, 1f) : 1f;
 
         public static EnemySupportDebuffState GetOrAdd(EnemyController enemy)
         {
@@ -68,6 +71,17 @@ namespace TeamProject01.Gameplay
             incomingDamageTimer = Mathf.Max(incomingDamageTimer, duration);
         }
 
+        public void ApplyMoveSpeedSlow(float multiplier, float duration)
+        {
+            if (multiplier >= 1f || duration <= 0f)
+            {
+                return;
+            }
+
+            moveSpeedSlowMultiplier = Mathf.Min(moveSpeedSlowMultiplier, Mathf.Clamp(multiplier, 0.05f, 1f));
+            moveSpeedSlowTimer = Mathf.Max(moveSpeedSlowTimer, duration);
+        }
+
         public DamageData ApplyIncomingDamageBonus(DamageData damage)
         {
             if (incomingDamageTimer <= 0f || incomingDamageMultiplier <= 1f)
@@ -91,6 +105,7 @@ namespace TeamProject01.Gameplay
 
             if (incomingDamageTimer <= 0f)
             {
+                UpdateMoveSpeedSlowTimer();
                 return;
             }
 
@@ -99,11 +114,27 @@ namespace TeamProject01.Gameplay
             {
                 incomingDamageMultiplier = 1f;
             }
+
+            UpdateMoveSpeedSlowTimer();
         }
 
         private void OnDisable()
         {
             RestoreFreezeBehaviours();
+        }
+
+        private void UpdateMoveSpeedSlowTimer()
+        {
+            if (moveSpeedSlowTimer <= 0f)
+            {
+                return;
+            }
+
+            moveSpeedSlowTimer -= Time.deltaTime;
+            if (moveSpeedSlowTimer <= 0f)
+            {
+                moveSpeedSlowMultiplier = 1f;
+            }
         }
 
         private void DisableFreezeBehaviours()

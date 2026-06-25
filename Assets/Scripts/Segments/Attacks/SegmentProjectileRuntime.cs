@@ -43,13 +43,32 @@ namespace TeamProject01.Gameplay
         private Transform flameInfluenceAnchor; // 화염 구체가 약하게 따라갈 총구
         private Vector3 lastFlameInfluenceAnchorPosition; // 직전 총구 위치
         private bool hasLastFlameInfluenceAnchorPosition; // 총구 위치 초기화 여부
+        private GameObject areaTelegraphInstance; // 바닥 피해 범위 표시
+        private bool useVerticalImpactDrop; // 착탄점 위 수직 낙하 사용
 
         public static SegmentProjectileRuntime Spawn(Transform root, GameObject prefab, Vector3 position, Vector3 direction, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus = default, Transform flameInfluenceAnchor = null) // 생성 (weaponBonus=카드 강화 누적값)
         {
+            return SpawnInternal(root, prefab, position, direction, target, false, Vector3.zero, profile, damage, weaponBonus, flameInfluenceAnchor); // 적 대상 투사체
+        }
+
+        public static SegmentProjectileRuntime SpawnAtPoint(Transform root, GameObject prefab, Vector3 position, Vector3 direction, Vector3 impactPoint, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus = default, Transform flameInfluenceAnchor = null) // 지점 타격 생성
+        {
+            return SpawnInternal(root, prefab, position, direction, null, true, impactPoint, profile, damage, weaponBonus, flameInfluenceAnchor); // 바닥 지점 투사체
+        }
+
+        private static SegmentProjectileRuntime SpawnInternal(Transform root, GameObject prefab, Vector3 position, Vector3 direction, EnemyController target, bool useImpactPoint, Vector3 impactPoint, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus, Transform flameInfluenceAnchor)
+        {
+            if (ShouldSpawnAsVerticalImpactDrop(useImpactPoint, profile))
+            {
+                Vector3 groundPoint = GroundService.ProjectToGround(impactPoint, 0f); // 착탄 바닥
+                position = groundPoint + Vector3.up * Mathf.Max(0f, profile.VerticalImpactDropHeight); // 하늘 생성
+                direction = Vector3.down; // 수직 낙하 방향
+            }
+
             GameObject instance;
             if (prefab != null)
             {
-                Quaternion rotation = direction.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(direction.normalized, Vector3.up) : Quaternion.identity; // 방향
+                Quaternion rotation = ResolveProjectileRotation(direction); // 방향
                 instance = Instantiate(prefab, position, rotation, root); // 프리팹 생성
             }
             else
@@ -68,15 +87,28 @@ namespace TeamProject01.Gameplay
                 runtime = instance.AddComponent<SegmentProjectileRuntime>(); // 자동 보강
             }
 
-            runtime.Configure(direction, target, profile, damage, weaponBonus, flameInfluenceAnchor); // 값 주입
+            runtime.Configure(direction, target, useImpactPoint, impactPoint, profile, damage, weaponBonus, flameInfluenceAnchor); // 값 주입
             return runtime;
         }
 
-        private void Configure(Vector3 fireDirection, EnemyController target, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus, Transform flameInfluenceAnchor) // 값 주입 (프로필+강화 합산)
+        private static Quaternion ResolveProjectileRotation(Vector3 direction) // 수직 방향도 안전한 회전
+        {
+            if (direction.sqrMagnitude <= 0.0001f)
+            {
+                return Quaternion.identity; // 방향 없음
+            }
+
+            Vector3 forward = direction.normalized; // 진행 방향
+            Vector3 up = Mathf.Abs(Vector3.Dot(forward, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up; // 수직 낙하 보정
+            return Quaternion.LookRotation(forward, up); // 안전 회전
+        }
+
+        private void Configure(Vector3 fireDirection, EnemyController target, bool useImpactPoint, Vector3 impactPoint, SegmentAttackProfile profile, DamageData damage, WeaponStatBonusData weaponBonus, Transform flameInfluenceAnchor) // 값 주입 (프로필+강화 합산)
         {
             this.profile = profile; // 프로필
             this.target = target; // 목표
             this.damage = damage; // 피해
+            useVerticalImpactDrop = ShouldSpawnAsVerticalImpactDrop(useImpactPoint, profile); // 수직 낙하 여부
             this.flameInfluenceAnchor = profile != null
                 && profile.MoveType == SegmentAttackMoveType.ExpandingFlameSphere
                 && profile.UseFlameMuzzleInfluence
@@ -98,7 +130,9 @@ namespace TeamProject01.Gameplay
                 : 0.1f;
             startPosition = transform.position; // 시작
             float targetAimHeight = profile != null ? profile.TargetAimHeight : 0.45f; // 조준 높이
-            endPosition = target != null ? target.transform.position + Vector3.up * targetAimHeight : startPosition + direction * 8f; // 도착
+            endPosition = useImpactPoint
+                ? GroundService.ProjectToGround(impactPoint, 0f)
+                : target != null ? target.transform.position + Vector3.up * targetAimHeight : startPosition + direction * 8f; // 도착
             float distance = Vector3.Distance(startPosition, endPosition); // 거리
             arcDuration = profile != null ? Mathf.Max(0.05f, distance / effectiveProjectileSpeed) : 0.05f; // 곡사 시간
             arcTimer = 0f; // 진행 초기화
@@ -113,6 +147,15 @@ namespace TeamProject01.Gameplay
             flameSphereTickTimer = 0f; // 첫 프레임부터 피해 판정
             flameSphereDuration = profile != null ? Mathf.Max(0.05f, profile.ProjectileLifetime) : 0.05f; // 전체 지속 시간
             SetupExpandingFlameSphereVisual(); // 화염 디버그 구체 표시
+            SpawnAreaTelegraph(); // 피해 범위 장판
+        }
+
+        private static bool ShouldSpawnAsVerticalImpactDrop(bool useImpactPoint, SegmentAttackProfile profile) // 수직 낙하 생성 조건
+        {
+            return useImpactPoint
+                && profile != null
+                && profile.MoveType == SegmentAttackMoveType.ArcProjectile
+                && profile.UseVerticalImpactDrop;
         }
 
         private float GetProjectileSpeed() // 강화 반영 속도
@@ -125,6 +168,29 @@ namespace TeamProject01.Gameplay
         {
             float radius = effectiveExplosionRadius > 0f ? effectiveExplosionRadius : (profile != null ? profile.ExplosionRadius : 0.1f); // fallback
             return Mathf.Max(0.1f, radius); // 최소 반경
+        }
+
+        private void SpawnAreaTelegraph() // 실제 피해 범위 표시
+        {
+            if (profile == null || profile.AreaTelegraphPrefab == null || profile.ImpactType != SegmentAttackImpactType.ExplosionArea)
+            {
+                return; // 표시 없음
+            }
+
+            Vector3 telegraphPosition = GroundService.ProjectToGround(endPosition, profile.AreaTelegraphGroundOffset); // 바닥 위치
+            float lifetime = Mathf.Max(0.05f, arcDuration + 0.1f); // 낙하 중 유지
+            areaTelegraphInstance = SegmentAttackVfxPlayer.PlayExplosion(profile.AreaTelegraphPrefab, telegraphPosition, GetExplosionRadius(), lifetime, profile.AreaTelegraphAlpha); // 반경 기준 장판
+        }
+
+        private void ClearAreaTelegraph() // 장판 제거
+        {
+            if (areaTelegraphInstance == null)
+            {
+                return; // 제거할 대상 없음
+            }
+
+            Destroy(areaTelegraphInstance);
+            areaTelegraphInstance = null;
         }
 
         private void Update() // 이동 루프
@@ -166,6 +232,11 @@ namespace TeamProject01.Gameplay
                     UpdateStraightProjectile(); // 직선/관통
                     break;
             }
+        }
+
+        private void OnDestroy()
+        {
+            ClearAreaTelegraph(); // 투사체 제거 시 장판 정리
         }
 
 

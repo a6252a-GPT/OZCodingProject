@@ -25,6 +25,7 @@ namespace TeamProject01.Gameplay
                 Vector3 spawnPosition = muzzle != null ? muzzle.position : transform.position + Vector3.up * AttackProfile.AttackSpawnHeight; // 번개 시작점
                 DamageData damage = CreateDamageData(spawnPosition); // 피해값
                 Vector3 fireDirection = GetFireDirection(target, spawnPosition); // 첫 타겟 방향
+                HideLoadedProjectileVisual(0); // 장전 전기 VFX 숨김
                 PlayMuzzleVfx(muzzle); // 시전 VFX
                 PlayFireRecoil(fireDirection, muzzle); // 약한 시전 반동
                 FireChainLightning(target, muzzle, spawnPosition, damage); // 즉시 체인 번개
@@ -45,7 +46,7 @@ namespace TeamProject01.Gameplay
             Transform projectileMuzzle = ResolveMuzzle(); // 포구
             Vector3 projectileSpawnPosition = projectileMuzzle != null ? projectileMuzzle.position : transform.position + Vector3.up * AttackProfile.AttackSpawnHeight; // 생성 위치
             DamageData projectileDamage = CreateDamageData(projectileSpawnPosition); // 피해값
-            Vector3 projectileFireDirection = GetFireDirection(target, projectileSpawnPosition); // 실제 투사체 발사 방향
+            Vector3 projectileFireDirection = GetProjectileFireDirection(target, projectileSpawnPosition); // 실제 투사체 발사 방향
             PlayMuzzleVfx(projectileMuzzle); // 발사 VFX
             PlayFireRecoil(projectileFireDirection, projectileMuzzle); // 포구 로컬축 대신 실제 투사체 방향 기준 반동
             FireProjectiles(target, projectileSpawnPosition, projectileDamage, projectileMuzzle); // 투사체
@@ -74,13 +75,15 @@ namespace TeamProject01.Gameplay
             int count = Mathf.Max(1, AttackProfile.ProjectileCount); // 발사 수
             float spread = Mathf.Max(0f, AttackProfile.SpreadAngle); // 산탄 각도
             float delay = Mathf.Max(0f, AttackProfile.ProjectileFireDelay); // 발사 간격
+            int volleySize = Mathf.Clamp(AttackProfile.ProjectileVolleySize, 1, count); // 한 번에 나가는 묶음 수
+            int volleyCount = Mathf.CeilToInt(count / (float)volleySize); // 묶음 개수
             bool useSustainedMuzzleVfx = ShouldUseSustainedMuzzleVfx();
             if (useSustainedMuzzleVfx)
             {
                 StartSustainedMuzzleVfx(ResolveMuzzle());
             }
 
-            for (int i = 0; i < count; i++)
+            for (int volleyIndex = 0; volleyIndex < volleyCount; volleyIndex++)
             {
                 if (!CanUseWeapon())
                 {
@@ -92,9 +95,10 @@ namespace TeamProject01.Gameplay
                 UpdateProjectileSequencePreferredSide(target); // 이번 발사 콘 방향 기억
                 Transform muzzle = ResolveMuzzle(); // 포구
                 AimHeadAtTarget(target, Time.deltaTime, GetFiringHeadTurnSpeedMultiplier()); // 발사 순간에도 느리게 재조준
-                Vector3 spawnPosition = GetProjectileSpawnPosition(i, muzzle); // 장전 위치 우선
-                DamageData damage = CreateDamageData(spawnPosition); // 피해값
-                Vector3 fireDirection = GetProjectileFireDirection(target, spawnPosition); // 순차 발사 실제 방향
+                int startIndex = volleyIndex * volleySize; // 이번 묶음 시작
+                int currentVolleySize = Mathf.Min(volleySize, count - startIndex); // 마지막 묶음 보정
+                Vector3 leadSpawnPosition = GetProjectileSpawnPosition(startIndex, muzzle); // 대표 위치
+                Vector3 fireDirection = GetProjectileFireDirection(target, leadSpawnPosition); // 묶음 발사 방향
                 if (useSustainedMuzzleVfx)
                 {
                     UpdateSustainedMuzzleVfx(muzzle);
@@ -104,12 +108,18 @@ namespace TeamProject01.Gameplay
                     PlayMuzzleVfx(muzzle); // 발사 VFX
                 }
                 PlayFireRecoil(fireDirection, muzzle); // 순차 발사도 실제 발사 방향 반대로 반동 적용
-                FireSingleProjectile(target, spawnPosition, damage, i, count, spread, muzzle); // 개별 발사
-                HideLoadedProjectileVisual(i); // 사용한 장전탄 숨김
-
-                if (i < count - 1 && delay > 0f)
+                for (int localIndex = 0; localIndex < currentVolleySize; localIndex++)
                 {
-                    yield return new WaitForSeconds(delay); // 다음 발 지연
+                    int projectileIndex = startIndex + localIndex; // 전체 장전 슬롯 번호
+                    Vector3 spawnPosition = GetProjectileSpawnPosition(projectileIndex, muzzle); // 장전 위치 우선
+                    DamageData damage = CreateDamageData(spawnPosition); // 피해값
+                    FireSingleProjectile(target, spawnPosition, damage, localIndex, currentVolleySize, spread, muzzle); // 묶음 내 산탄
+                    HideLoadedProjectileVisual(projectileIndex); // 사용한 장전탄 숨김
+                }
+
+                if (volleyIndex < volleyCount - 1 && delay > 0f)
+                {
+                    yield return new WaitForSeconds(delay); // 다음 묶음 지연
                 }
             }
 
@@ -131,11 +141,22 @@ namespace TeamProject01.Gameplay
             Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * baseDirection; // 산탄 방향
             WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
             Transform flameInfluenceAnchor = AttackProfile != null && AttackProfile.MoveType == SegmentAttackMoveType.ExpandingFlameSphere ? muzzle : null;
+            if (ShouldUseResolvedImpactPoint())
+            {
+                SegmentProjectileRuntime.SpawnAtPoint(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, resolvedImpactPoint, AttackProfile, damage, weaponBonus, flameInfluenceAnchor); // 지점 타격 투사체
+                return;
+            }
+
             SegmentProjectileRuntime.Spawn(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, target, AttackProfile, damage, weaponBonus, flameInfluenceAnchor); // 공통 투사체
         }
 
         private EnemyController ResolveSequenceTarget(EnemyController initialTarget) // 순차 발사 대상
         {
+            if (AttackProfile != null && AttackProfile.TargetPriorityMode == SegmentTargetPriorityMode.DensestClusterOrRandom)
+            {
+                return TryFindTarget(out EnemyController clusterTarget) ? clusterTarget : null; // 매 묶음마다 밀집 지점 재탐색
+            }
+
             if (IsTargetUsable(initialTarget))
             {
                 float range = GetUpgrade().ApplyRange(AttackProfile.SearchRange); // 사거리
@@ -201,6 +222,15 @@ namespace TeamProject01.Gameplay
 
         private Vector3 GetProjectileFireDirection(EnemyController target, Vector3 spawnPosition) // 투사체 방향 선택
         {
+            if (ShouldUseResolvedImpactPoint())
+            {
+                Vector3 directionToPoint = resolvedImpactPoint - spawnPosition;
+                if (directionToPoint.sqrMagnitude > 0.0001f)
+                {
+                    return directionToPoint.normalized; // 지점 타격 무기는 저장된 착탄 지점으로 발사
+                }
+            }
+
             if (AttackProfile != null && AttackProfile.UseMuzzleDirectionDuringProjectileSequence && isFiringProjectileSequence)
             {
                 Transform muzzle = ResolveMuzzle();
@@ -213,6 +243,13 @@ namespace TeamProject01.Gameplay
             }
 
             return GetFireDirection(target, spawnPosition); // 기존 타겟 방향
+        }
+
+        private bool ShouldUseResolvedImpactPoint() // 지점 타격 사용 여부
+        {
+            return AttackProfile != null
+                && AttackProfile.TargetPriorityMode == SegmentTargetPriorityMode.DensestClusterOrRandom
+                && hasResolvedImpactPoint;
         }
     }
 }
