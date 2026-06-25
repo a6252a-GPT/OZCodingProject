@@ -36,8 +36,8 @@ MonoBehaviour:
   SpreadAngle: 0
   FireProjectilesSequentially: 0
   ProjectileFireDelay: 0.18
-  UseLoadedProjectileVisuals: 0
-  LoadedProjectileReloadRatio: 0.5
+  UseLoadedProjectileVisuals: 1
+  LoadedProjectileReloadRatio: 0
   ProjectileScale: {x: 0, y: 0, z: 0}
   ProjectileSpeed: 20
   ProjectileHitRadius: 0.5

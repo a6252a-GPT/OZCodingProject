@@ -40,6 +40,7 @@ namespace TeamProject01.Gameplay
         {
             if (profile.ImpactType == SegmentAttackImpactType.ExplosionArea)
             {
+                ClearAreaTelegraph(); // 폭발 순간 장판 제거
                 ApplyExplosion(position); // 범위 피해
                 Destroy(gameObject); // 투사체 제거
                 return;
@@ -47,7 +48,10 @@ namespace TeamProject01.Gameplay
 
             if (enemy != null)
             {
-                SegmentHitResolver.ApplyDamageAndFeedback(enemy, damage, profile, position, transform.position, SegmentMonsterFeedbackKind.Direct); // 직접 피해 + 피드백
+                bool isPiercingHit = profile.MoveType == SegmentAttackMoveType.PiercingProjectile || profile.ImpactType == SegmentAttackImpactType.PierceDamage; // 관통탄 여부
+                DamageData hitDamage = isPiercingHit ? damage.WithAmount(damage.Amount * GetPiercingDamageRatio()) : damage; // 관통 피해 비율
+                SegmentMonsterFeedbackKind feedbackKind = isPiercingHit ? SegmentMonsterFeedbackKind.Pierce : SegmentMonsterFeedbackKind.Direct; // 피드백 종류
+                SegmentHitResolver.ApplyDamageAndFeedback(enemy, hitDamage, profile, position, transform.position, feedbackKind); // 직접/관통 피해 + 피드백
                 PlayHitVfx(position); // 명중 VFX
                 hitEnemyIds.Add(enemy.EnemyId); // 관통 중복 방지
             }
@@ -62,6 +66,11 @@ namespace TeamProject01.Gameplay
             }
 
             Destroy(gameObject); // 종료
+        }
+
+        private float GetPiercingDamageRatio() // 일반 관통탄 피해 비율
+        {
+            return profile != null ? Mathf.Clamp01(profile.PiercingProjectileDamageRatio) : 1f; // 기본 100%
         }
 
         private void ApplyExplosion(Vector3 position) // 폭발 처리
@@ -95,6 +104,21 @@ namespace TeamProject01.Gameplay
                 hitIds.Add(enemy.EnemyId); // 중복 방지
                 Vector3 hitPosition = GetEnemyHitPosition(enemy); // 명중 위치
                 SegmentHitResolver.ApplyDamageAndFeedback(enemy, explosionDamage, profile, hitPosition, position, SegmentMonsterFeedbackKind.Explosion); // 범위 피해 + 피드백
+                ApplyExplosionDebuff(enemy); // 감속 등 폭발 부가 효과
+            }
+        }
+
+        private void ApplyExplosionDebuff(EnemyController enemy) // 폭발 부가 디버프
+        {
+            if (enemy == null || profile == null || profile.SlowDuration <= 0f || profile.SlowMoveSpeedMultiplier >= 1f)
+            {
+                return; // 감속 없음
+            }
+
+            EnemySupportDebuffState state = EnemySupportDebuffState.GetOrAdd(enemy);
+            if (state != null)
+            {
+                state.ApplyMoveSpeedSlow(profile.SlowMoveSpeedMultiplier, profile.SlowDuration); // 이동속도 감속
             }
         }
 

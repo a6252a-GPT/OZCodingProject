@@ -57,7 +57,7 @@ namespace TeamProject01.Gameplay
             SetSprite(IconImage, icon);
             SetText(KeyText, keyLabel, NormalTextColor);
             SetText(NameText, string.Empty, NormalTextColor);
-            SetText(LevelText, string.Empty, NormalTextColor);
+            SetText(LevelText, levelLabel, locked ? DisabledTextColor : NormalTextColor);
             SetText(StateText, locked ? stateLabel : string.Empty, DisabledTextColor);
             SetText(CooldownText, cooldownLabel, coolingDown ? CooldownTextColor : DisabledTextColor);
             SetText(ActionButtonText, buttonLabel, buttonEnabled ? NormalTextColor : DisabledTextColor);

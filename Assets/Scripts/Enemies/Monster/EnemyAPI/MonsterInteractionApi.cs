@@ -49,6 +49,97 @@ namespace TeamProject01.Gameplay
             return false;
         }
 
+        public static bool TryGetRandomAttachedWeaponSegment(out Transform targetSegment) //조성원추가-0622 무작위 부착 무기 세그먼트 요청
+        {
+            targetSegment = null;
+
+            if (!TryGetConvoyController(out ConvoyController convoyController))
+            {
+                return false;
+            }
+
+            return convoyController.TryGetRandomAttachedWeaponSegment(out targetSegment);
+        }
+
+        public static bool IsConvoyHeadCollider(Collider other) //조성원추가-0622 컨보이 머리 충돌 확인
+        {
+            if (!TryGetConvoyController(out ConvoyController convoyController))
+            {
+                return false;
+            }
+
+            return convoyController.IsConvoyHeadCollider(other);
+        }
+
+        public static bool IsTargetWeaponSegmentCollider(Collider other, Transform targetSegment) //조성원추가-0622 선택된 무기 세그먼트 충돌 확인
+        {
+            if (!TryGetConvoyController(out ConvoyController convoyController))
+            {
+                return false;
+            }
+
+            return convoyController.IsTargetSegmentCollider(other, targetSegment);
+        }
+
+        public static bool RequestSegmentCut(Transform targetSegment) //조성원추가-0622 선택된 세그먼트 절단 요청
+        {
+            if (!TryGetConvoyController(out ConvoyController convoyController))
+            {
+                return false;
+            }
+
+            return convoyController.TryCutTailFromTargetSegment(targetSegment);
+        }
+
+        public static bool IsAttachedSegmentCutTarget(Transform targetSegment) //조성원추가-0622 절단 대상 연결 상태 확인
+        {
+            if (!TryGetConvoyController(out ConvoyController convoyController))
+            {
+                return false;
+            }
+
+            return convoyController.IsAttachedSegmentCutTarget(targetSegment);
+        }
+
+        public static void ReleaseSegmentCutTarget(Transform targetSegment) //조성원추가-0622 절단 대상 예약 해제
+        {
+            if (!TryGetConvoyController(out ConvoyController convoyController))
+            {
+                return;
+            }
+
+            convoyController.ReleaseSegmentCutTarget(targetSegment);
+        }
+
+        public static int RequestSegmentShockwave(Vector3 center, float radius, float pushDistance, float recoveryDuration) //조성원추가-0622 점프 몬스터의 착지 충격파를 컨보이에 요청
+        {
+            if (!TryGetConvoyController(out ConvoyController convoyController)) //조성원추가-0622 등록된 컨보이를 찾지 못했다면
+            {
+                return 0; //조성원추가-0622 영향받은 세그먼트 없음
+            }
+
+            return convoyController.ApplySegmentShockwave(center, radius, pushDistance, recoveryDuration); //조성원추가-0622 범위 안 연결 세그먼트에 충격파 적용
+        }
+
+        private static bool TryGetConvoyController(out ConvoyController convoyController) //조성원추가-0622 등록된 컨보이에서 ConvoyController 확인
+        {
+            convoyController = null;
+
+            if (!TryGetConvoyTarget(out Transform target))
+            {
+                return false;
+            }
+
+            convoyController = target.GetComponent<ConvoyController>();
+
+            if (convoyController == null)
+            {
+                convoyController = target.GetComponentInParent<ConvoyController>();
+            }
+
+            return convoyController != null;
+        }
+
         public static void RequestConvoyKnockback(Vector3 center, float radius, float distance, float duration)
         {
             RequestConvoyKnockback(center, radius, distance, duration, 0.0f);
@@ -97,6 +188,7 @@ namespace TeamProject01.Gameplay
                 }
 
                 direction = offset.sqrMagnitude > 0.0001f ? offset.normalized : Vector3.forward;
+
                 distance = request.Distance;
                 duration = request.Duration;
                 height = request.Height;
@@ -109,6 +201,7 @@ namespace TeamProject01.Gameplay
             distance = 0.0f;
             duration = 0.0f;
             height = 0.0f;
+
             return false;
         }
 
