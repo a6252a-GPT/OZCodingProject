@@ -62,8 +62,8 @@ Transform:
   m_GameObject: {fileID: 2785354293365819215}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.5, z: 0}
-  m_LocalScale: {x: 1, y: 0.2, z: 1}
+  m_LocalPosition: {x: 0, y: -0.2, z: 0}
+  m_LocalScale: {x: 1.4, y: 0.2, z: 1.4}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7389456790562328698}
@@ -288,6 +288,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyController
   grade: 1
+  countsAsMonster: 1
 --- !u!114 &464322772614052711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -409,7 +410,7 @@ MonoBehaviour:
   firePoint: {fileID: 0}
   attackType: 1
   projectilePrefab: {fileID: 0}
-  impactPrefab: {fileID: 6430164519153721332, guid: 58d86f16d110fc540beec250fc83df6a, type: 3}
+  impactPrefab: {fileID: 2176432936177206862, guid: f3401e0676a2d534cb002de212741df5, type: 3}
   attackRange: 12
   attackDelay: 3
   impactLifeTimeMin: 0.5
@@ -445,8 +446,8 @@ Transform:
   m_GameObject: {fileID: 3981967202905672510}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.5, z: 0}
-  m_LocalScale: {x: 1, y: 0.2, z: 1}
+  m_LocalPosition: {x: 0, y: -0.2, z: 0}
+  m_LocalScale: {x: 1.4, y: 0.2, z: 1.4}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7389456790562328698}
@@ -559,8 +560,8 @@ Transform:
   m_GameObject: {fileID: 5013858327577446965}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.5, z: 0}
-  m_LocalScale: {x: 1, y: 0.2, z: 1}
+  m_LocalPosition: {x: 0, y: -0.2, z: 0}
+  m_LocalScale: {x: 1.4, y: 0.3, z: 1.4}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7389456790562328698}

@@ -542,6 +542,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyController
   grade: 1
+  countsAsMonster: 1
 --- !u!114 &6783988893359097328
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -611,7 +612,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25fb32a689358634894a9eec08684912, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyObstacleSummoner
-  obstaclePrefab: {fileID: 7676413055433021918, guid: 477cc495ffe07b34c8e469c6c79b5b7f, type: 3}
+  obstaclePrefab: {fileID: 5254551350790090197, guid: 9fccf1ccaef857a4a805d1b083398aa6, type: 3}
   telegraphPrefab: {fileID: 1560000901720069291, guid: 0b36ab3089c4a8e46b9975f4062deea0, type: 3}
   detectionRange: 10
   telegraphStartAlpha: 0.05

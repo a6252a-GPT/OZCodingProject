@@ -28,6 +28,20 @@ namespace TeamProject01.Gameplay
             return state;
         }
 
+        public static bool IsEnemyFrozen(EnemyController enemy) //조성원추가-0622 동결 몬스터 상태 확인
+        {
+            if(enemy == null) //조성원추가-0622 확인할 몬스터가 없으면 동결상태가 아니다.
+            {
+                return false; //조성원추가-0622 동결되지 않음으로 반환
+            }
+
+            if(!enemy.TryGetComponent(out EnemySupportDebuffState state)) //조성원추가-0622 디버프 상태 확인
+            {
+                return false; //조성원추가-0622 디버프상태가 없다면 동결되지 않은것으로 반환
+            }
+            return state.IsFrozen; //조성원추가-0622 현재 동결상태를 반환
+        }
+
         public void ApplyFreeze(float duration)
         {
             if (duration <= 0f)
