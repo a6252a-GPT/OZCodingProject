@@ -68,7 +68,7 @@ MonoBehaviour:
   FireAngleTolerance: 8
   MuzzleVfxPrefab: {fileID: 0}
   MuzzleVfxLifetime: 1.5
-  HitVfxPrefab: {fileID: 0}
+  HitVfxPrefab: {fileID: 868468853075218060, guid: 28aa90600df2fd9479eb5ccbc39a3fc1, type: 3}
   HitVfxLifetime: 2
   ExplosionVfxPrefab: {fileID: 0}
   ExplosionVfxLifetime: 2

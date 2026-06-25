@@ -37,8 +37,10 @@ namespace TeamProject01.Gameplay
 
         private EnemySlowZoneThrower slowZoneThrower; // 같은 GameObject에 붙은 슬로우 장판 투척 공격 Script Component 참조
         private EnemyObstacleSummoner obstacleSummoner; // 같은 GameObject에 붙은 장애물 소환 Script Component 참조
+        private EnemySegmentCutCaster segmentCutCaster;//같은 GameObject에 붙은 절단 상태 Script Component 참조
+
         private EnemyBuffReceiver buffReceiver; // 같은 GameObject에 붙은 버프 상태 Script Component 참조
-        private EnemySupportDebuffState supportDebuff; // 전찬우추가-0621 - 지원형 디버프 상태
+        private EnemySupportDebuffState supportDebuff; // 전찬우추가-0621 - 지원형 디버프 상태       
 
         private EnemyPortalTotemCaster portalTotemCaster; // 같은 GameObject에 붙은 포탈 토템 소환 Script Component 참조
 
@@ -50,10 +52,12 @@ namespace TeamProject01.Gameplay
             rangedAttack = GetComponent<EnemyRangedAttack>(); // 같은 GameObject에 붙은 EnemyRangedAttack Script Component를 찾는다.
             slowZoneThrower = GetComponent<EnemySlowZoneThrower>(); // 같은 GameObject에 붙은 EnemySlowZoneThrower Script Component를 찾는다.
             obstacleSummoner = GetComponent<EnemyObstacleSummoner>(); // 같은 GameObject에 붙은 EnemyObstacleSummoner Script Component를 찾는다.
+            segmentCutCaster = GetComponent<EnemySegmentCutCaster>(); //같은 GameObject에 붙은 절단 상태 Script Component 참조
+
             buffReceiver = GetComponent<EnemyBuffReceiver>(); // 같은 GameObject에 붙은 EnemyBuffReceiver Script Component를 찾는다.
             supportDebuff = GetComponent<EnemySupportDebuffState>(); // 전찬우추가-0621 - 지원형 디버프 상태를 찾는다.
 
-            portalTotemCaster = GetComponent<EnemyPortalTotemCaster>(); // 같은 GameObject에 붙은 EnemyPortalTotemCaster Script Component를 찾는다.
+            portalTotemCaster = GetComponent<EnemyPortalTotemCaster>(); // 같은 GameObject에 붙은 EnemyPortalTotemCaster Script Component를 찾는다.           
 
             if (nexus == null) //Nexus가 연결되지 않았다면
             {
@@ -137,6 +141,7 @@ namespace TeamProject01.Gameplay
 
             bool isSlowTargetInRange = !isMovingToPortalTotem && slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
             bool isObstacleSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; // 장애물 소환 과정이 진행 중인지 확인한다.
+            bool isSegmentCutTargetInRange = !isMovingToPortalTotem && segmentCutCaster != null && segmentCutCaster.IsTargetInCastRange(); //컨보이가 절단 마법 시전 범위 안에 있는지 확인한다.
 
             if (isMovingToPortalTotem && isTargetInStopRange) // 입구 토템의 Entry Radius 안에 도착했다면
             {
@@ -148,7 +153,7 @@ namespace TeamProject01.Gameplay
                 return; // 순간이동할 때까지 입구 토템 주변에서 정지한다.
             }
 
-            if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning) // Nexus 공격 가능 거리거나, PlayerConvoy 투척 가능 거리거나, 장애물 소환 중이라면
+            if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning || isSegmentCutTargetInRange) // 공격 가능 거리거나, 투척 가능 거리거나, 장애물 소환 중이거나 절단마법 중이 거나
             {
                 IsInStopRange = isNexusInStopRange; // 이 값은 Nexus 공격 사거리 여부만 저장한다.
 
@@ -170,7 +175,8 @@ namespace TeamProject01.Gameplay
                 moveSpeedBuffMultiplier = buffReceiver.GetMoveSpeedMultiplier(); // 현재 이동속도 버프 배율을 가져온다.
             }
 
-            Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * Time.deltaTime); // 버프 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
+            float moveSpeedDebuffMultiplier = supportDebuff != null ? supportDebuff.MoveSpeedMultiplier : 1f; // 지원/마법 감속 배율
+            Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * moveSpeedDebuffMultiplier * Time.deltaTime); // 버프/감속 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
             ////// 전찬우추가-0619 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.

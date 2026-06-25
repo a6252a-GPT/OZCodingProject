@@ -17,6 +17,8 @@ namespace TeamProject01.Gameplay
 
     public sealed partial class ConvoyController : MonoBehaviour // 컨보이 본체
     {
+        private const ConvoyControlMode DefaultControlMode = ConvoyControlMode.WasdDirection; // 기본 조작
+
         [Header("Scene References")]
         public Transform SegmentRoot; // 세그먼트 부모
         public Transform DetachedTailRoot; // 분리 꼬리 부모
@@ -34,7 +36,7 @@ namespace TeamProject01.Gameplay
         [Min(1f)] public float TurnResponse = 11f; // 회전 반응
         [Min(1f)] public float TurnReleaseResponse = 17f; // 회전 복귀
         [Min(1f)] public float DirectionSteerFullTurnAngle = 42f; // 최대 조향각
-        public ConvoyControlMode ControlMode = ConvoyControlMode.RelativeTurn; // 현재 모드
+        public ConvoyControlMode ControlMode = DefaultControlMode; // 현재 모드
 
         [Header("Body Follow")]
         public bool EnableStartingSegments = false; // 시작 세그먼트 자동 생성
@@ -136,6 +138,7 @@ namespace TeamProject01.Gameplay
 
         private void Awake() // 참조 준비
         {
+            ApplyDefaultControlModeIfNeeded(); // 기존 씬 기본값 보정
             startPosition = transform.position; // 리셋 위치
             startRotation = transform.rotation; // 리셋 회전
             EnsureHeadVisual(); // 머리 보강
@@ -149,6 +152,16 @@ namespace TeamProject01.Gameplay
             RegisterDefaultAddCatalogDefinitions(); // 카탈로그 후보 등록
             CollectExistingSegments(); // 씬 배치 몸통 수집
             ClearInitialSegmentsIfNeeded(); // 시작 몸통 제거
+        }
+
+        private void ApplyDefaultControlModeIfNeeded() // 기본 조작 보정
+        {
+            if (ControlMode != ConvoyControlMode.RelativeTurn)
+            {
+                return; // 이미 명시된 다른 모드
+            }
+
+            ControlMode = DefaultControlMode; // 구 씬 기본값을 WASD로 전환
         }
 
         // 컨보이 타겟 등록은 ConvoyController가 직접 책임진다.

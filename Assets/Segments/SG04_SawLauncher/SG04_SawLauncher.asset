@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG04_SawLauncher
   DisplayName: "\uD1B1\uB0A0\uBC1C\uC0AC\uAE30"
-  Description: 중거리~장거리 적을 노려 톱날을 발사합니다. 목표까지 지나가는 적에게 관통 피해를 주고, 명중 후 다른 적으로 연쇄됩니다.
+  Description: "\uC911\uAC70\uB9AC~\uC7A5\uAC70\uB9AC \uC801\uC744 \uB178\uB824 \uD1B1\uB0A0\uC744
+    \uBC1C\uC0AC\uD569\uB2C8\uB2E4. \uBAA9\uD45C\uAE4C\uC9C0 \uC9C0\uB098\uAC00\uB294
+    \uC801\uC5D0\uAC8C \uAD00\uD1B5 \uD53C\uD574\uB97C \uC8FC\uACE0, \uBA85\uC911
+    \uD6C4 \uB2E4\uB978 \uC801\uC73C\uB85C \uC5F0\uC1C4\uB429\uB2C8\uB2E4."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1
@@ -40,3 +43,8 @@ MonoBehaviour:
     HeadPrefab: {fileID: 548891772545940372, guid: 0145ba0d32a4e304fa8d6dbf7f01e3d9, type: 3}
     AttackProfile: {fileID: 11400000, guid: 4ccda065091025040a10538b66502305, type: 2}
     Memo: Straight saw blades x4 sequential draft.
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: a014062990e05314c94cc224b79b2bb5, type: 3}
+  - {fileID: 21300000, guid: b36532758140fd345924c66c95710be8, type: 3}
+  - {fileID: 21300000, guid: 5951843d7fef1a64b8b53b1f7bea5475, type: 3}
+  CardIconSizeOffset: 0

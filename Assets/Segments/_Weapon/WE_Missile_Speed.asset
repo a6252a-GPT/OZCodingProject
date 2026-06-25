@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WeaponDefinition
   EnhancementId: WE_Missile_Speed
   DisplayName: "\uBBF8\uC0AC\uC77C \uAC15\uD654"
-  Description: "\uBBF8\uC0AC\uC77C \uC18D\uB3C4 \uC99D\uAC00"
+  Description: "\uD0C4\uD658 \uC18D\uB3C4 \uC99D\uAC00"
   TargetSegmentId: SG02_Missile
   BaseDamage: 0
   BaseDamageUsePercent: 0
@@ -52,12 +52,9 @@ MonoBehaviour:
   ProjectileCount: 0
   ProjectileCountRare: 0
   ProjectileCountUnique: 0
-  MinAttackInterval: 0
-  MinAttackIntervalRare: 0
-  MinAttackIntervalUnique: 0
-  MaxAttackInterval: 0
-  MaxAttackIntervalRare: 0
-  MaxAttackIntervalUnique: 0
+  CooldownReduction: 0
+  CooldownReductionRare: 0
+  CooldownReductionUnique: 0
   SideConeAngle: 0
   SideConeAngleRare: 0
   SideConeAngleUnique: 0
@@ -91,7 +88,10 @@ MonoBehaviour:
   ExplosionRadiusUsePercentRare: 0
   ExplosionRadiusUnique: 0
   ExplosionRadiusUsePercentUnique: 0
-  CardPrefabOverride: {fileID: 0}
-  RareCardPrefabOverride: {fileID: 0}
-  UniqueCardPrefabOverride: {fileID: 0}
-  CardIconOverride: {fileID: 0}
+  CardPrefabOverride: {fileID: 1511448857506858134, guid: 3a49d0b5d6d28734c8caac14b1e175c5, type: 3}
+  CardIconSprite: {fileID: 21300000, guid: 3578b26932a7130409582c40ef744576, type: 3}
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: 3578b26932a7130409582c40ef744576, type: 3}
+  - {fileID: 21300000, guid: c57c288a5fe5a924b9beeaadfb966d04, type: 3}
+  - {fileID: 21300000, guid: 4767839cd9c41024b947a9b4d7a5f05e, type: 3}
+  CardIconSizeOffset: -80

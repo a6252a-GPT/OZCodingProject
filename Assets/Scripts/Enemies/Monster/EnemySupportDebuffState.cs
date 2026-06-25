@@ -8,10 +8,13 @@ namespace TeamProject01.Gameplay
         private float freezeTimer;
         private float incomingDamageMultiplier = 1f;
         private float incomingDamageTimer;
+        private float moveSpeedSlowMultiplier = 1f;
+        private float moveSpeedSlowTimer;
         private readonly List<Behaviour> disabledByFreezeBehaviours = new List<Behaviour>(6);
         private bool freezeBehavioursDisabled;
 
         public bool IsFrozen => freezeTimer > 0f;
+        public float MoveSpeedMultiplier => moveSpeedSlowTimer > 0f ? Mathf.Clamp(moveSpeedSlowMultiplier, 0.05f, 1f) : 1f;
 
         public static EnemySupportDebuffState GetOrAdd(EnemyController enemy)
         {
@@ -26,6 +29,20 @@ namespace TeamProject01.Gameplay
             }
 
             return state;
+        }
+
+        public static bool IsEnemyFrozen(EnemyController enemy) //조성원추가-0622 동결 몬스터 상태 확인
+        {
+            if(enemy == null) //조성원추가-0622 확인할 몬스터가 없으면 동결상태가 아니다.
+            {
+                return false; //조성원추가-0622 동결되지 않음으로 반환
+            }
+
+            if(!enemy.TryGetComponent(out EnemySupportDebuffState state)) //조성원추가-0622 디버프 상태 확인
+            {
+                return false; //조성원추가-0622 디버프상태가 없다면 동결되지 않은것으로 반환
+            }
+            return state.IsFrozen; //조성원추가-0622 현재 동결상태를 반환
         }
 
         public void ApplyFreeze(float duration)
@@ -54,6 +71,17 @@ namespace TeamProject01.Gameplay
             incomingDamageTimer = Mathf.Max(incomingDamageTimer, duration);
         }
 
+        public void ApplyMoveSpeedSlow(float multiplier, float duration)
+        {
+            if (multiplier >= 1f || duration <= 0f)
+            {
+                return;
+            }
+
+            moveSpeedSlowMultiplier = Mathf.Min(moveSpeedSlowMultiplier, Mathf.Clamp(multiplier, 0.05f, 1f));
+            moveSpeedSlowTimer = Mathf.Max(moveSpeedSlowTimer, duration);
+        }
+
         public DamageData ApplyIncomingDamageBonus(DamageData damage)
         {
             if (incomingDamageTimer <= 0f || incomingDamageMultiplier <= 1f)
@@ -77,6 +105,7 @@ namespace TeamProject01.Gameplay
 
             if (incomingDamageTimer <= 0f)
             {
+                UpdateMoveSpeedSlowTimer();
                 return;
             }
 
@@ -85,11 +114,27 @@ namespace TeamProject01.Gameplay
             {
                 incomingDamageMultiplier = 1f;
             }
+
+            UpdateMoveSpeedSlowTimer();
         }
 
         private void OnDisable()
         {
             RestoreFreezeBehaviours();
+        }
+
+        private void UpdateMoveSpeedSlowTimer()
+        {
+            if (moveSpeedSlowTimer <= 0f)
+            {
+                return;
+            }
+
+            moveSpeedSlowTimer -= Time.deltaTime;
+            if (moveSpeedSlowTimer <= 0f)
+            {
+                moveSpeedSlowMultiplier = 1f;
+            }
         }
 
         private void DisableFreezeBehaviours()

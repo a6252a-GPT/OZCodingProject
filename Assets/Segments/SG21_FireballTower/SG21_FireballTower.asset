@@ -41,3 +41,8 @@ MonoBehaviour:
     HeadPrefab: {fileID: 1277541544916695758, guid: 77453310489b94342b2791bbf057517d, type: 3}
     AttackProfile: {fileID: 11400000, guid: 74b6d17abc58dcc42a07621873cadb55, type: 2}
     Memo: Straight fireball explosion draft Lv3.
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: cae6366f45241b54491f8300860a3bdc, type: 3}
+  - {fileID: 21300000, guid: 76b3fe3a9224f674d8795b66b5705824, type: 3}
+  - {fileID: 21300000, guid: d74313aa714f6a14496cba6f079cdffe, type: 3}
+  CardIconSizeOffset: 0
