@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace TeamProject01.Gameplay
 {
@@ -83,19 +84,19 @@ namespace TeamProject01.Gameplay
         [Header("")]
         [Min(0)] public int ProjectileCountUnique = 0; // 유니크
 
-        [Header("공격 쿨타임 최소 간격 감소")]
-        [Range(0f, 1f)] public float MinAttackInterval = 0f; // 일반 (0.1=최소 쿨 10% 감소)
+        //전찬우 수정-0622
+        [Header("공격 기준 쿨타임 감소")]
+        [FormerlySerializedAs("MinAttackInterval")]
+        [FormerlySerializedAs("MaxAttackInterval")]
+        [Range(0f, 1f)] public float CooldownReduction = 0f; // 일반 (0.1=기준 쿨 10% 감소)
         [Header("")]
-        [Range(0f, 1f)] public float MinAttackIntervalRare = 0f; // 레어
+        [FormerlySerializedAs("MinAttackIntervalRare")]
+        [FormerlySerializedAs("MaxAttackIntervalRare")]
+        [Range(0f, 1f)] public float CooldownReductionRare = 0f; // 레어
         [Header("")]
-        [Range(0f, 1f)] public float MinAttackIntervalUnique = 0f; // 유니크
-
-        [Header("공격 쿨타임 최대 간격 감소")]
-        [Range(0f, 1f)] public float MaxAttackInterval = 0f; // 일반 (0.1=최대 쿨 10% 감소)
-        [Header("")]
-        [Range(0f, 1f)] public float MaxAttackIntervalRare = 0f; // 레어
-        [Header("")]
-        [Range(0f, 1f)] public float MaxAttackIntervalUnique = 0f; // 유니크
+        [FormerlySerializedAs("MinAttackIntervalUnique")]
+        [FormerlySerializedAs("MaxAttackIntervalUnique")]
+        [Range(0f, 1f)] public float CooldownReductionUnique = 0f; // 유니크
 
         [Header("좌우 각각의 부채꼴 각도 증가")]
         [Min(0f)] public float SideConeAngle = 0f; // 일반 (보너스 각도, 0=효과 없음)
@@ -162,14 +163,28 @@ namespace TeamProject01.Gameplay
         public float ExplosionRadiusUnique = 0f; // 유니크
         public bool ExplosionRadiusUsePercentUnique; // 유니크 %곱연산 사용
 
-        [Header("추후 — 카드 UI")]
-        public GameObject CardPrefabOverride; // 강화별 공통 카드 프리팹
-        public GameObject RareCardPrefabOverride; // 레어 전용
-        public GameObject UniqueCardPrefabOverride; // 유니크 전용
-        public Sprite CardIconOverride; // 카드 아이콘
+        [Header("카드 이미지 변경")]
+        public GameObject CardPrefabOverride; // 강화별 공통 카드 프리팹 (등급 무관 동일 이미지)
+        // 안건준 추가 - 0623 : 카드에 표시할 세그먼트 레벨별 이미지 (인덱스 0=Lv1, 1=Lv2, 2=Lv3 ...)
+        public Sprite CardIconSprite; // Lv1 기본 아이콘 (레벨별 배열 미설정 시 fallback)
+        public Sprite[] CardIconSpritesPerLevel; // 레벨별 아이콘 배열 (0=Lv1, 1=Lv2, ...)
+        // 안건준 추가 - 0623 : 카드 아이콘 크기 조절 (0 = 원본, -100 = 절반, +100 = 두배)
+        [Range(-100f, 100f)] public float CardIconSizeOffset = 0f; // 아이콘 크기 조절
 
         public string NormalizedId => string.IsNullOrWhiteSpace(EnhancementId) ? string.Empty : EnhancementId.Trim(); // 비교 ID
         public string NormalizedTargetSegmentId => string.IsNullOrWhiteSpace(TargetSegmentId) ? string.Empty : TargetSegmentId.Trim(); // 대상 ID
+
+        // 안건준 추가 - 0623 : 현재 세그먼트 레벨에 맞는 아이콘 반환 (배열 없으면 CardIconSprite fallback)
+        public Sprite GetIconSpriteForLevel(int segmentLevel)
+        {
+            int idx = Mathf.Max(0, segmentLevel - 1); // 레벨 1 → 인덱스 0
+            if (CardIconSpritesPerLevel != null && idx < CardIconSpritesPerLevel.Length && CardIconSpritesPerLevel[idx] != null)
+            {
+                return CardIconSpritesPerLevel[idx]; // 레벨별 전용 스프라이트
+            }
+
+            return CardIconSprite; // fallback: Lv1 기본 스프라이트
+        }
         public bool HasId => !string.IsNullOrWhiteSpace(EnhancementId); // ID 존재
         public bool HasTarget => !string.IsNullOrWhiteSpace(TargetSegmentId); // 대상 존재
 
@@ -182,8 +197,7 @@ namespace TeamProject01.Gameplay
             || HasTieredFloat(ChainRange, ChainRangeRare, ChainRangeUnique)
             || HasTieredFloat(ChainDamageFalloff, ChainDamageFalloffRare, ChainDamageFalloffUnique)
             || HasTieredInt(ProjectileCount, ProjectileCountRare, ProjectileCountUnique)
-            || HasTieredFloat(MinAttackInterval, MinAttackIntervalRare, MinAttackIntervalUnique)
-            || HasTieredFloat(MaxAttackInterval, MaxAttackIntervalRare, MaxAttackIntervalUnique)
+            || HasTieredFloat(CooldownReduction, CooldownReductionRare, CooldownReductionUnique)
             || HasTieredFloat(SideConeAngle, SideConeAngleRare, SideConeAngleUnique)
             || HasTieredFloat(LaserDuration, LaserDurationRare, LaserDurationUnique)
             || HasTieredFloat(LaserTickInterval, LaserTickIntervalRare, LaserTickIntervalUnique)
@@ -192,28 +206,20 @@ namespace TeamProject01.Gameplay
             || HasTieredInt(PierceCount, PierceCountRare, PierceCountUnique)
             || HasTieredFloat(ExplosionRadius, ExplosionRadiusRare, ExplosionRadiusUnique); // 수치 보너스 존재
 
-        public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹 + 색상 틴트 여부
+        public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹
         {
             public readonly GameObject Prefab;
-            public readonly bool ApplyFallbackVisual;
 
-            public CardSpawnResolve(GameObject prefab, bool applyFallbackVisual)
+            public CardSpawnResolve(GameObject prefab)
             {
                 Prefab = prefab;
-                ApplyFallbackVisual = applyFallbackVisual;
             }
         }
 
         public CardSpawnResolve ResolveCardSpawn(StatUpgrade.StatCardTier tier, GameObject defaultPrefab, SegmentAddCard templatePresentation = null)
         {
             GameObject resolvedPrefab = ResolveSpawnPrefabForTier(tier, defaultPrefab, templatePresentation); // 등급별 프리팹
-            if (resolvedPrefab == null)
-            {
-                resolvedPrefab = defaultPrefab; // fallback
-            }
-
-            bool applyFallbackVisual = resolvedPrefab == defaultPrefab || resolvedPrefab == null; // 기본 껍데기면 색 틴트
-            return new CardSpawnResolve(resolvedPrefab, applyFallbackVisual);
+            return new CardSpawnResolve(resolvedPrefab != null ? resolvedPrefab : defaultPrefab);
         }
 
         public float GetBaseDamage(StatUpgrade.StatCardTier tier) => GetTieredFlatValue(BaseDamage, BaseDamageRare, BaseDamageUnique, BaseDamageUsePercent, BaseDamageUsePercentRare, BaseDamageUsePercentUnique, tier);
@@ -240,9 +246,8 @@ namespace TeamProject01.Gameplay
 
         public int GetProjectileCount(StatUpgrade.StatCardTier tier) => ResolveTieredInt(ProjectileCount, ProjectileCountRare, ProjectileCountUnique, tier);
 
-        public float GetMinAttackInterval(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(MinAttackInterval, MinAttackIntervalRare, MinAttackIntervalUnique, tier);
-
-        public float GetMaxAttackInterval(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(MaxAttackInterval, MaxAttackIntervalRare, MaxAttackIntervalUnique, tier);
+        //전찬우 수정-0622
+        public float GetCooldownReduction(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(CooldownReduction, CooldownReductionRare, CooldownReductionUnique, tier);
 
         public float GetSideConeAngle(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(SideConeAngle, SideConeAngleRare, SideConeAngleUnique, tier);
 
@@ -349,30 +354,13 @@ namespace TeamProject01.Gameplay
 
         private GameObject ResolveSpawnPrefabForTier(StatUpgrade.StatCardTier tier, GameObject defaultPrefab, SegmentAddCard templatePresentation)
         {
-            switch (tier)
-            {
-                case StatUpgrade.StatCardTier.Unique:
-                    if (UniqueCardPrefabOverride != null)
-                    {
-                        return UniqueCardPrefabOverride;
-                    }
-
-                    break;
-                case StatUpgrade.StatCardTier.Rare:
-                    if (RareCardPrefabOverride != null)
-                    {
-                        return RareCardPrefabOverride;
-                    }
-
-                    break;
-            }
-
+            // 안건준 수정 - 0623 : 레어/유니크 전용 프리팹 제거 — 등급 무관 공통 프리팹 사용
             if (CardPrefabOverride != null)
             {
                 return CardPrefabOverride;
             }
 
-            return defaultPrefab; // templatePresentation 등급 프리팹은 SegmentAddCard 연동 시 확장
+            return defaultPrefab;
         }
         // 건춘추가 - 0621 ======
     }
@@ -393,8 +381,8 @@ namespace TeamProject01.Gameplay
         public float ChainRangePercentMultiplier; // 누적 연쇄 거리 % 곱연산
         public float ChainDamageFalloffBonus; // 누적 체인 피해 유지 비율 보너스 (기본 + 보너스)
         public int ProjectileCountBonus; // 누적 발사 수 보너스
-        public float MinAttackIntervalReductionMultiplier; // 누적 최소 쿨 % 감소 곱연산 (0.9=10% 감소)
-        public float MaxAttackIntervalReductionMultiplier; // 누적 최대 쿨 % 감소 곱연산
+        //전찬우 수정-0622
+        public float CooldownReductionMultiplier; // 누적 기준 쿨 % 감소 곱연산 (0.9=10% 감소)
         public float SideConeAngleBonus; // 누적 부채꼴 각도 보너스
         public float LaserDurationBonus; // 누적 레이저 지속 시간 고정 보너스
         public float LaserDurationPercentMultiplier; // 누적 레이저 지속 % 곱연산
@@ -421,8 +409,7 @@ namespace TeamProject01.Gameplay
             || HasPercentMultiplier(ChainRangePercentMultiplier)
             || ChainDamageFalloffBonus > 0f
             || ProjectileCountBonus > 0
-            || HasReductionMultiplier(MinAttackIntervalReductionMultiplier)
-            || HasReductionMultiplier(MaxAttackIntervalReductionMultiplier)
+            || HasReductionMultiplier(CooldownReductionMultiplier)
             || SideConeAngleBonus > 0f
             || LaserDurationBonus > 0f
             || HasPercentMultiplier(LaserDurationPercentMultiplier)
@@ -454,8 +441,7 @@ namespace TeamProject01.Gameplay
             ApplyPercentMultiplier(ref ChainRangePercentMultiplier, definition.GetChainRangePercent(tier));
             ChainDamageFalloffBonus += definition.GetChainDamageFalloff(tier);
             ProjectileCountBonus += definition.GetProjectileCount(tier);
-            ApplyReductionMultiplier(ref MinAttackIntervalReductionMultiplier, definition.GetMinAttackInterval(tier));
-            ApplyReductionMultiplier(ref MaxAttackIntervalReductionMultiplier, definition.GetMaxAttackInterval(tier));
+            ApplyReductionMultiplier(ref CooldownReductionMultiplier, definition.GetCooldownReduction(tier));
             SideConeAngleBonus += definition.GetSideConeAngle(tier);
             LaserDurationBonus += definition.GetLaserDuration(tier);
             ApplyPercentMultiplier(ref LaserDurationPercentMultiplier, definition.GetLaserDurationPercent(tier));
@@ -525,9 +511,8 @@ namespace TeamProject01.Gameplay
 
         public int ResolveProjectileCount(int profileValue) => Mathf.Max(1, profileValue + ProjectileCountBonus);
 
-        public float ResolveMinAttackInterval(float profileValue) => Mathf.Max(0.05f, profileValue * GetReductionMultiplier(MinAttackIntervalReductionMultiplier));
-
-        public float ResolveMaxAttackInterval(float profileValue) => Mathf.Max(0.05f, profileValue * GetReductionMultiplier(MaxAttackIntervalReductionMultiplier));
+        //전찬우 수정-0622
+        public float ResolveCooldown(float profileValue) => Mathf.Max(0.05f, profileValue * GetReductionMultiplier(CooldownReductionMultiplier));
 
         public float ResolveSideConeAngle(float profileValue) => Mathf.Clamp(profileValue + SideConeAngleBonus, 1f, 180f);
 
