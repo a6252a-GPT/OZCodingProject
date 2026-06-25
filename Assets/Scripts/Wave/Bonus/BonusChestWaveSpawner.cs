@@ -1,123 +1,387 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class BonusChestWaveSpawner : MonoBehaviour // 보너스 상자 웨이브 생성 담당
+    public sealed class BonusChestWaveSpawner : MonoBehaviour
     {
+#pragma warning disable CS0649
         [System.Serializable]
-        private sealed class BonusChestSpawnRule // 상자 등급 하나의 생성 규칙
+        private sealed class BonusChestGradeRule
         {
-            [Tooltip("Inspector에서 구분하기 위한 이름입니다.")]
-            public string displayName = "낡은 상자"; // 상자 등급 이름
+            [Tooltip("Inspector에서 구분하기 위한 상자 등급 이름입니다.")]
+            [InspectorName("등급 이름")]
+            public string displayName = "Lv1 일반 상자";
 
-            [Tooltip("이 등급 상자를 몇 개 생성할지 정합니다.")]
-            [Range(0, 10)]
-            public int count = 1; // 생성 개수
+            [Tooltip("이 등급에서 사용할 상자 프리팹입니다. 비워두면 기본 상자 프리팹을 사용합니다.")]
+            [InspectorName("상자 프리팹")]
+            public BonusChest prefab;
 
-            [Tooltip("이 등급 상자가 줄 경험치입니다.")]
+            [Tooltip("이 등급 상자가 뽑힐 확률입니다. 86이면 86%로 이해하면 됩니다.")]
+            [InspectorName("등장 확률(%)")]
+            [Range(0.0f, 100.0f)]
+            public float chancePercent = 86.0f;
+
+            [Tooltip("이 등급 상자가 줄 총 경험치입니다.")]
+            [InspectorName("총 경험치 보상")]
             [Min(0)]
-            public int experienceReward = 20; // 경험치 보상
+            public int experienceReward = 12;
 
-            [Tooltip("이 등급 상자가 줄 골드입니다.")]
+            [Tooltip("이 등급 상자가 줄 총 골드입니다.")]
+            [InspectorName("총 골드 보상")]
             [Min(0)]
-            public int goldReward = 20; // 골드 보상
+            public int goldReward = 20;
+
+            [Tooltip("경험치 보상을 몇 조각으로 나눠 떨어뜨릴지 정합니다.")]
+            [InspectorName("경험치 드랍 개수")]
+            [Range(1, 40)]
+            public int experienceDropCount = 6;
+
+            [Tooltip("골드 보상을 몇 조각으로 나눠 떨어뜨릴지 정합니다.")]
+            [InspectorName("골드 드랍 개수")]
+            [Range(1, 60)]
+            public int goldDropCount = 8;
         }
+#pragma warning restore CS0649
 
-        [Header("Reference")]
-        [Tooltip("생성할 상자 Prefab입니다. Animated Fantasy Polygon Chest Prefab을 연결하세요.")]
-        [SerializeField] private BonusChest chestPrefab; // 상자 Prefab
+        [Header("참조 설정")]
+        [Tooltip("등급별 프리팹이 비어 있을 때 사용할 기본 상자 프리팹입니다.")]
+        [InspectorName("기본 상자 프리팹")]
+        [SerializeField] private BonusChest chestPrefab; // 기존 세팅 호환용 기본 프리팹입니다.
 
-        [Tooltip("생성된 상자를 정리할 부모 Transform입니다. 비워두면 자기 자신 아래에 생성합니다.")]
-        [SerializeField] private Transform chestRoot; // 생성 상자 부모
+        [Tooltip("생성된 상자를 정리할 부모 Transform입니다. 비워두면 이 오브젝트 아래에 생성합니다.")]
+        [InspectorName("상자 생성 부모")]
+        [SerializeField] private Transform chestRoot; // 생성된 상자를 묶어둘 부모입니다.
 
-        [Header("Spawn Area")]
-        [Tooltip("컨보이 주변을 기준으로 랜덤 생성할지 정합니다.")]
-        [SerializeField] private bool spawnAroundConvoy = true; // 컨보이 주변 생성 여부
+        [Header("생성 위치 설정")]
+        [Tooltip("켜두면 컨보이 주변을 기준으로 상자를 생성합니다.")]
+        [InspectorName("컨보이 주변에 생성")]
+        [SerializeField] private bool spawnAroundConvoy = true; // 컨보이 주변 생성 여부입니다.
 
-        [Tooltip("컨보이 위치를 못 찾았을 때 사용할 기준 위치입니다.")]
-        [SerializeField] private Transform fallbackCenter; // 대체 기준 위치
+        [Tooltip("컨보이 위치를 찾지 못했을 때 사용할 기준 위치입니다.")]
+        [InspectorName("대체 기준 위치")]
+        [SerializeField] private Transform fallbackCenter; // 컨보이를 못 찾았을 때 사용할 기준입니다.
 
         [Tooltip("기준 위치에서 최소 몇 m 떨어져 생성할지 정합니다.")]
-        [Range(0.0f, 80.0f)]
-        [SerializeField] private float minSpawnRadius = 16.0f; // 최소 생성 거리
+        [InspectorName("최소 생성 반경")]
+        [Range(0.0f, 120.0f)]
+        [SerializeField] private float minSpawnRadius = 35.0f; // 플레이어가 상자를 볼 여유를 주기 위한 최소 거리입니다.
 
         [Tooltip("기준 위치에서 최대 몇 m 떨어져 생성할지 정합니다.")]
-        [Range(1.0f, 120.0f)]
-        [SerializeField] private float maxSpawnRadius = 34.0f; // 최대 생성 거리
+        [InspectorName("최대 생성 반경")]
+        [Range(1.0f, 160.0f)]
+        [SerializeField] private float maxSpawnRadius = 55.0f; // 너무 멀리 가지 않도록 제한하는 거리입니다.
 
-        [Tooltip("상자가 바닥 위에 떠 보이지 않게 보정할 높이입니다.")]
+        [Tooltip("상자가 바닥 아래에 묻히지 않도록 올리는 높이입니다.")]
+        [InspectorName("바닥 높이 보정")]
         [Range(0.0f, 5.0f)]
-        [SerializeField] private float groundHeightOffset = 0.0f; // 바닥 높이 보정
+        [SerializeField] private float groundHeightOffset = 0.0f; // 바닥 투영 후 올릴 높이입니다.
 
-        [Header("Chest Rules")]
-        [Tooltip("등급별 상자 생성 규칙입니다. 예: 낡은 2개, 중간 1개, 최고급 1개")]
-        [SerializeField] private BonusChestSpawnRule[] chestRules =
+        [Tooltip("상자끼리 최소 몇 m 이상 떨어지게 배치할지 정합니다.")]
+        [InspectorName("상자 간 최소 거리")]
+        [Range(0.0f, 60.0f)]
+        [SerializeField] private float minChestSpacing = 14.0f; // 상자끼리 너무 붙지 않도록 막는 거리입니다.
+
+        [Tooltip("상자가 너무 가까우면 위치를 다시 뽑는 횟수입니다.")]
+        [InspectorName("위치 재시도 횟수")]
+        [Range(1, 50)]
+        [SerializeField] private int spawnPositionRetryCount = 16; // 퍼진 위치를 찾기 위한 재시도 횟수입니다.
+
+        [Header("상자 선택 설정")]
+        [Tooltip("보너스 웨이브마다 생성할 상자 개수입니다.")]
+        [InspectorName("상자 생성 개수")]
+        [Range(1, 8)]
+        [SerializeField] private int chestSpawnCount = 3; // 기본 기획은 상자 3개입니다.
+
+        [Tooltip("켜두면 여러 상자 중 하나만 열 수 있습니다.")]
+        [InspectorName("하나만 선택 가능")]
+        [SerializeField] private bool allowOnlyOneChoice = true; // 하나를 선택하면 나머지는 사라집니다.
+
+        [Tooltip("선택되지 않은 상자가 사라지기 전까지 기다리는 시간입니다.")]
+        [InspectorName("미선택 상자 제거 대기(초)")]
+        [Range(0.0f, 10.0f)]
+        [SerializeField] private float unselectedChestDestroyDelay = 0.2f; // 선택되지 않은 상자를 정리하는 시간입니다.
+
+        [Header("등급 확률 설정")]
+        [Tooltip("Lv2 이상 상자가 한 번의 보너스 웨이브에 최대 몇 개까지 나올지 정합니다.")]
+        [InspectorName("Lv2 이상 최대 등장 수")]
+        [Range(0, 8)]
+        [SerializeField] private int maxHighGradeCount = 1; // 보상이 과하게 풀리지 않게 제한합니다.
+
+        [Tooltip("켜두면 Lv3 상자가 등장한 웨이브에서는 Lv2 상자가 같이 나오지 않습니다.")]
+        [InspectorName("Lv3 등장 시 Lv2 제외")]
+        [SerializeField] private bool blockLevel2WhenLevel3Appears = true; // 고급 상자의 희소성을 지킵니다.
+
+        [Tooltip("상자 등급별 프리팹, 등장 확률, 보상량, 드랍 개수를 정합니다.")]
+        [InspectorName("상자 등급 목록")]
+        [SerializeField] private BonusChestGradeRule[] chestGrades =
         {
-            new BonusChestSpawnRule
+            new BonusChestGradeRule
             {
-                displayName = "낡은 상자",
-                count = 2,
-                experienceReward = 20,
-                goldReward = 20
+                displayName = "Lv1 일반 상자",
+                chancePercent = 86.0f,
+                experienceReward = 12,
+                goldReward = 20,
+                experienceDropCount = 6,
+                goldDropCount = 8
             },
-            new BonusChestSpawnRule
+            new BonusChestGradeRule
             {
-                displayName = "중간 상자",
-                count = 1,
-                experienceReward = 40,
-                goldReward = 40
+                displayName = "Lv2 희귀 상자",
+                chancePercent = 12.0f,
+                experienceReward = 30,
+                goldReward = 50,
+                experienceDropCount = 10,
+                goldDropCount = 14
             },
-            new BonusChestSpawnRule
+            new BonusChestGradeRule
             {
-                displayName = "최고급 상자",
-                count = 1,
-                experienceReward = 80,
-                goldReward = 80
+                displayName = "Lv3 고급 상자",
+                chancePercent = 2.0f,
+                experienceReward = 70,
+                goldReward = 110,
+                experienceDropCount = 16,
+                goldDropCount = 22
             }
         };
 
+        private readonly List<BonusChest> activeChests = new List<BonusChest>(); // 현재 보너스 웨이브에 생성된 상자들입니다.
+        private BonusChest selectedChest; // 플레이어가 선택한 상자입니다.
+
         [ContextMenu("Spawn Bonus Chest Wave")]
-        public void SpawnBonusChestWave() // Inspector 우클릭 메뉴나 다른 시스템에서 호출할 상자 웨이브 입구
+        public void SpawnBonusChestWave()
         {
-            if (chestPrefab == null) // 상자 Prefab이 없으면 생성할 수 없다.
+            ClearActiveChests();
+
+            Transform root = chestRoot != null ? chestRoot : transform;
+            Vector3 center = ResolveSpawnCenter();
+
+            int highGradeCount = 0;
+            bool level3Appeared = false;
+            int spawnCount = Mathf.Max(1, chestSpawnCount);
+            List<Vector3> usedPositions = new List<Vector3>(spawnCount);
+
+            for (int i = 0; i < spawnCount; i++)
             {
-                Debug.LogWarning("[BonusChestWaveSpawner] Chest Prefab이 연결되지 않았습니다.", this);
-                return;
-            }
-
-            if (chestRules == null || chestRules.Length == 0) // 생성 규칙이 없다면
-            {
-                return;
-            }
-
-            Transform root = chestRoot != null ? chestRoot : transform; // 정리 부모
-            Vector3 center = ResolveSpawnCenter(); // 기준 위치
-
-            for (int ruleIndex = 0; ruleIndex < chestRules.Length; ruleIndex++)
-            {
-                BonusChestSpawnRule rule = chestRules[ruleIndex];
-
-                if (rule == null || rule.count <= 0)
+                int selectedGradeIndex = RollGradeIndex(highGradeCount, level3Appeared);
+                BonusChestGradeRule grade = GetGrade(selectedGradeIndex);
+                if (grade == null)
                 {
                     continue;
                 }
 
-                for (int countIndex = 0; countIndex < rule.count; countIndex++)
+                BonusChest spawnedChest = SpawnChest(grade, center, root, usedPositions);
+                if (spawnedChest == null)
                 {
-                    SpawnChest(rule, center, root);
+                    continue;
+                }
+
+                activeChests.Add(spawnedChest);
+                usedPositions.Add(spawnedChest.transform.position);
+
+                if (selectedGradeIndex > 0)
+                {
+                    highGradeCount++;
+                }
+
+                if (selectedGradeIndex >= 2)
+                {
+                    level3Appeared = true;
                 }
             }
         }
 
-        private void SpawnChest(BonusChestSpawnRule rule, Vector3 center, Transform root) // 상자 하나 생성
+        public bool TrySelectChest(BonusChest chest)
         {
-            Vector3 position = GetRandomSpawnPosition(center);
-            Quaternion rotation = Quaternion.Euler(0.0f, Random.Range(0.0f, 360.0f), 0.0f);
-            BonusChest chest = Instantiate(chestPrefab, position, rotation, root);
-            chest.ConfigureReward(rule.experienceReward, rule.goldReward);
+            if (chest == null)
+            {
+                return false;
+            }
+
+            if (!allowOnlyOneChoice)
+            {
+                return true;
+            }
+
+            if (selectedChest != null)
+            {
+                return selectedChest == chest;
+            }
+
+            selectedChest = chest;
+            RemoveUnselectedChests(chest);
+            return true;
         }
 
-        private Vector3 ResolveSpawnCenter() // 상자 생성 기준 위치 결정
+        private BonusChest SpawnChest(BonusChestGradeRule grade, Vector3 center, Transform root, List<Vector3> usedPositions)
+        {
+            BonusChest prefab = grade.prefab != null ? grade.prefab : chestPrefab;
+            if (prefab == null)
+            {
+                Debug.LogWarning("[BonusChestWaveSpawner] 사용할 상자 프리팹이 없습니다.", this);
+                return null;
+            }
+
+            Vector3 position = GetSeparatedSpawnPosition(center, usedPositions);
+            Quaternion rotation = Quaternion.Euler(0.0f, Random.Range(0.0f, 360.0f), 0.0f);
+            BonusChest chest = Instantiate(prefab, position, rotation, root);
+            chest.ConfigureOwner(this);
+            chest.ConfigureChoiceGroup(root, allowOnlyOneChoice, unselectedChestDestroyDelay);
+            chest.ConfigureReward(grade.experienceReward, grade.goldReward, grade.experienceDropCount, grade.goldDropCount);
+            return chest;
+        }
+
+        private int RollGradeIndex(int currentHighGradeCount, bool level3Appeared)
+        {
+            if (chestGrades == null || chestGrades.Length == 0)
+            {
+                return -1;
+            }
+
+            float totalWeight = 0.0f;
+            for (int i = 0; i < chestGrades.Length; i++)
+            {
+                if (!CanUseGrade(i, currentHighGradeCount, level3Appeared))
+                {
+                    continue;
+                }
+
+                BonusChestGradeRule grade = chestGrades[i];
+                if (grade == null)
+                {
+                    continue;
+                }
+
+                totalWeight += Mathf.Max(0.0f, grade.chancePercent);
+            }
+
+            if (totalWeight <= 0.0f)
+            {
+                return FindFirstUsableGrade(currentHighGradeCount, level3Appeared);
+            }
+
+            float roll = Random.Range(0.0f, totalWeight);
+            float accumulated = 0.0f;
+
+            for (int i = 0; i < chestGrades.Length; i++)
+            {
+                if (!CanUseGrade(i, currentHighGradeCount, level3Appeared))
+                {
+                    continue;
+                }
+
+                BonusChestGradeRule grade = chestGrades[i];
+                if (grade == null)
+                {
+                    continue;
+                }
+
+                accumulated += Mathf.Max(0.0f, grade.chancePercent);
+                if (roll <= accumulated)
+                {
+                    return i;
+                }
+            }
+
+            return FindFirstUsableGrade(currentHighGradeCount, level3Appeared);
+        }
+
+        private bool CanUseGrade(int gradeIndex, int currentHighGradeCount, bool level3Appeared)
+        {
+            if (gradeIndex < 0 || chestGrades == null || gradeIndex >= chestGrades.Length)
+            {
+                return false;
+            }
+
+            bool isHighGrade = gradeIndex > 0;
+            if (isHighGrade && currentHighGradeCount >= maxHighGradeCount)
+            {
+                return false;
+            }
+
+            bool isLevel2 = gradeIndex == 1;
+            if (isLevel2 && blockLevel2WhenLevel3Appears && level3Appeared)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private int FindFirstUsableGrade(int currentHighGradeCount, bool level3Appeared)
+        {
+            for (int i = 0; i < chestGrades.Length; i++)
+            {
+                if (CanUseGrade(i, currentHighGradeCount, level3Appeared))
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        private BonusChestGradeRule GetGrade(int index)
+        {
+            if (chestGrades == null || chestGrades.Length == 0)
+            {
+                return null;
+            }
+
+            int safeIndex = Mathf.Clamp(index, 0, chestGrades.Length - 1);
+            return chestGrades[safeIndex];
+        }
+
+        private void RemoveUnselectedChests(BonusChest selected)
+        {
+            for (int i = activeChests.Count - 1; i >= 0; i--)
+            {
+                BonusChest chest = activeChests[i];
+                if (chest == null || chest == selected)
+                {
+                    continue;
+                }
+
+                chest.RemoveWithoutReward(unselectedChestDestroyDelay);
+                activeChests.RemoveAt(i);
+            }
+        }
+
+        private void ClearActiveChests()
+        {
+            selectedChest = null;
+
+            for (int i = activeChests.Count - 1; i >= 0; i--)
+            {
+                BonusChest chest = activeChests[i];
+                if (chest == null)
+                {
+                    continue;
+                }
+
+                DestroyChestObject(chest.gameObject);
+            }
+
+            activeChests.Clear();
+        }
+
+        private void DestroyChestObject(GameObject chestObject)
+        {
+            if (chestObject == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(chestObject);
+                return;
+            }
+
+            DestroyImmediate(chestObject);
+        }
+
+        private Vector3 ResolveSpawnCenter()
         {
             if (spawnAroundConvoy && MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget))
             {
@@ -132,7 +396,7 @@ namespace TeamProject01.Gameplay
             return transform.position;
         }
 
-        private Vector3 GetRandomSpawnPosition(Vector3 center) // 기준 위치 주변 랜덤 지점 생성
+        private Vector3 GetRandomSpawnPosition(Vector3 center)
         {
             float safeMinRadius = Mathf.Max(0.0f, minSpawnRadius);
             float safeMaxRadius = Mathf.Max(safeMinRadius + 0.1f, maxSpawnRadius);
@@ -142,6 +406,70 @@ namespace TeamProject01.Gameplay
             Vector3 position = center + offset;
 
             return GroundService.ProjectToGround(position, groundHeightOffset);
+        }
+
+        private Vector3 GetSeparatedSpawnPosition(Vector3 center, List<Vector3> usedPositions)
+        {
+            int retryCount = Mathf.Max(1, spawnPositionRetryCount);
+            Vector3 fallbackPosition = GetRandomSpawnPosition(center);
+
+            for (int i = 0; i < retryCount; i++)
+            {
+                Vector3 candidate = i == 0 ? fallbackPosition : GetRandomSpawnPosition(center);
+                if (IsFarEnoughFromOtherChests(candidate, usedPositions))
+                {
+                    return candidate;
+                }
+            }
+
+            return fallbackPosition; // 자리가 빡빡할 때는 생성 실패보다 마지막 후보를 쓰는 쪽이 테스트에 안전합니다.
+        }
+
+        private bool IsFarEnoughFromOtherChests(Vector3 candidate, List<Vector3> usedPositions)
+        {
+            if (usedPositions == null || usedPositions.Count == 0)
+            {
+                return true;
+            }
+
+            float safeSpacing = Mathf.Max(0.0f, minChestSpacing);
+            float safeSpacingSqr = safeSpacing * safeSpacing;
+
+            for (int i = 0; i < usedPositions.Count; i++)
+            {
+                Vector3 other = usedPositions[i];
+                Vector3 flatDelta = new Vector3(candidate.x - other.x, 0.0f, candidate.z - other.z);
+                if (flatDelta.sqrMagnitude < safeSpacingSqr)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void OnValidate()
+        {
+            chestSpawnCount = Mathf.Max(1, chestSpawnCount);
+            maxHighGradeCount = Mathf.Clamp(maxHighGradeCount, 0, chestSpawnCount);
+            minChestSpacing = Mathf.Max(0.0f, minChestSpacing);
+            spawnPositionRetryCount = Mathf.Max(1, spawnPositionRetryCount);
+
+            if (maxSpawnRadius < minSpawnRadius + 0.1f)
+            {
+                maxSpawnRadius = minSpawnRadius + 0.1f;
+            }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Vector3 center = fallbackCenter != null ? fallbackCenter.position : transform.position;
+
+            Gizmos.color = new Color(0.4f, 0.8f, 1.0f, 0.35f);
+            Gizmos.DrawWireSphere(center, minSpawnRadius);
+
+            Gizmos.color = new Color(0.2f, 1.0f, 0.5f, 0.35f);
+            Gizmos.DrawWireSphere(center, maxSpawnRadius);
         }
     }
 }
