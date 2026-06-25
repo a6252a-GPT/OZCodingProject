@@ -108,6 +108,14 @@ public class CardUI : MonoBehaviour
     [SerializeField] private RectTransform segmentListContent; // 스크롤 Content RT
     // 안건준 추가 - 0622 ======
 
+    [Header("마법책 리롤 UI")]
+    [SerializeField] private GameObject rerollUiRoot; // 씬에 배치된 리롤 UI 루트
+    [SerializeField] private Button rerollButton; // 정사각형 리롤 버튼
+    [SerializeField] private Image rerollButtonImage; // 버튼 배경 이미지
+    [SerializeField] private Sprite rerollButtonActiveSprite; // 리롤 가능 상태 이미지
+    [SerializeField] private Sprite rerollButtonDisabledSprite; // 리롤 불가 상태 이미지
+    [SerializeField] private TextMeshProUGUI rerollCountText; // 남은 리롤 횟수
+
     //전찬우 수정-0622
     private enum SegmentWeaponStatViewTarget // 스탯 UI 표시 대상
     {
@@ -172,8 +180,12 @@ public class CardUI : MonoBehaviour
     // 건춘추가 - 0621 ======
 
     private readonly List<SpawnedCardEntry> spawnedCards = new List<SpawnedCardEntry>(); // 생성된 카드 목록
+    private readonly Dictionary<string, int> rerollCountsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // 마법책 개수 집계용
+    private const string MagicBookRerollSegmentId = "SG55_MagicBook"; // 마법책 세그먼트 ID
     private bool spawnedForCurrentOpen; // 이번 패널 오픈에서 생성 완료 여부
     private bool isProcessingSelection; // 선택 처리 중
+    private bool rerollAllowedForCurrentChoices; // 현재 카드 묶음 리롤 가능 여부
+    private int remainingRerollCount; // 이번 카드 선택창 남은 리롤
     private static bool loggedWeaponEnhancementInitial; // 무기 강화 초기 디버그 1회
     private LevelUpCardPhase currentSpawnPhase = LevelUpCardPhase.StatUpgrade; // 이번 레벨업 카드 종류
     private string selectedSegmentWeaponStatId; // 카드 선택으로 갱신되는 디버그 표시 대상
@@ -202,10 +214,12 @@ public class CardUI : MonoBehaviour
     {
         ResolveManagerReferences(); // 참조 보강
         SetupSegmentListHoverUi(); // 안건준 추가 - 0622 — 호버 브릿지 연결 + 기본 비활성
+        SetupRerollUi(); // 마법책 리롤 버튼 연결
 
         // TMP 줄바꿈 재귀 오류 방지 — 긴 텍스트가 들어가는 TMP에 word wrap 비활성
         if (segmentListText       != null) segmentListText.enableWordWrapping       = false;
         if (segmentWeaponStatText != null) segmentWeaponStatText.enableWordWrapping = false;
+        if (rerollCountText       != null) rerollCountText.textWrappingMode         = TextWrappingModes.NoWrap;
 
         // 안건준 추가 - 0624 : CardSoundManager 자동 연결 (없으면 자동 생성)
         if (cardSound == null)
@@ -236,6 +250,11 @@ public class CardUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (rerollButton != null)
+        {
+            rerollButton.onClick.RemoveListener(HandleRerollButtonClicked); // 리스너 정리
+        }
+
         UnsubscribeSegmentCountDebug(); // [임시] 구독 해제
         UnsubscribeSegmentWeaponStatDebug(); // 스탯 변경 구독 해제
     }
@@ -246,6 +265,7 @@ public class CardUI : MonoBehaviour
         if (Application.isPlaying)
         {
             RefreshSegmentWeaponStatUi();
+            RefreshRerollUi();
         }
     }
     // 건춘추가 - 0621 ======
@@ -257,6 +277,7 @@ public class CardUI : MonoBehaviour
         bool panelOpen = IsLevelUpPanelOpen(); // 패널 열림 여부
         if (panelOpen && !spawnedForCurrentOpen)
         {
+            BeginRerollForPanelOpen(); // 마법책 개수만큼 이번 선택창 리롤 충전
             SpawnLevelUpCards(); // 순환 순서에 맞는 카드 생성
             spawnedForCurrentOpen = true;
             ShowSegmentListPopupOnPanelOpen(); // 안건준 추가 - 0622 — 트리거 바만 표시
@@ -270,6 +291,9 @@ public class CardUI : MonoBehaviour
             spawnedForCurrentOpen = false;
             isProcessingSelection = false;
             currentSpawnPhase = LevelUpCardPhase.StatUpgrade; // 다음 오픈 시 재계산
+            remainingRerollCount = 0; // 패널 닫힘 → 리롤 소멸
+            rerollAllowedForCurrentChoices = false; // 다음 오픈 전까지 비활성
+            RefreshRerollUi(); // 버튼 숨김/비활성 갱신
             HideSegmentListUi(); // 안건준 추가 - 0622 — 팝업·리스트 모두 숨김
             StopAutoSelect(); // 안건준 추가 - 0622 : 패널 닫힐 때 자동선택 코루틴 정리
             if (CoreStatProvider.Active != null && CoreStatProvider.Active.IsLevelUpChoicePending)
@@ -290,6 +314,111 @@ public class CardUI : MonoBehaviour
         {
             ResolveLevelUpUi()?.Open();
         }
+    }
+
+    private void SetupRerollUi()
+    {
+        if (rerollButton != null)
+        {
+            rerollButton.onClick.RemoveListener(HandleRerollButtonClicked); // 중복 등록 방지
+            rerollButton.onClick.AddListener(HandleRerollButtonClicked); // 씬 배치 버튼 클릭 연결
+            if (rerollButtonImage == null)
+            {
+                rerollButtonImage = rerollButton.targetGraphic as Image;
+            }
+
+            if (rerollButtonImage == null)
+            {
+                rerollButtonImage = rerollButton.GetComponent<Image>();
+            }
+        }
+
+        RefreshRerollUi(); // 초기 닫힘 상태 반영
+    }
+
+    private void BeginRerollForPanelOpen()
+    {
+        remainingRerollCount = ResolveMagicBookRerollCount(); // 현재 장착 마법책 수량
+        rerollAllowedForCurrentChoices = false; // 카드 생성 전에는 비활성
+        RefreshRerollUi();
+    }
+
+    private int ResolveMagicBookRerollCount()
+    {
+        rerollCountsBySegmentId.Clear(); // 이전 집계 제거
+        ConvoyController convoy = CoreStatProvider.Active != null ? CoreStatProvider.Active.Convoy : null;
+        if (convoy == null)
+        {
+            return 0; // 컨보이 없음
+        }
+
+        convoy.CollectAttachedSegmentCounts(rerollCountsBySegmentId); // 장착 세그먼트 ID별 수량
+        return rerollCountsBySegmentId.TryGetValue(MagicBookRerollSegmentId, out int count)
+            ? Mathf.Max(0, count)
+            : 0;
+    }
+
+    private void HandleRerollButtonClicked()
+    {
+        if (!CanRerollCurrentChoices())
+        {
+            RefreshRerollUi(); // 클릭 불가 상태 재반영
+            return;
+        }
+
+        remainingRerollCount = Mathf.Max(0, remainingRerollCount - 1); // 리롤 1회 소비
+        StopAutoSelect(); // 재생성 중 자동 선택 중지
+        ClearSpawnedCards(); // 현재 후보 제거
+        SpawnCardsForCurrentPhase(); // 같은 단계의 선택지만 다시 생성
+        RefreshRerollUi();
+        TryStartAutoSelect(); // 자동궤도면 새 후보 기준 자동선택 재시작
+    }
+
+    private bool CanRerollCurrentChoices()
+    {
+        return remainingRerollCount > 0
+            && rerollAllowedForCurrentChoices
+            && !isProcessingSelection
+            && IsLevelUpPanelOpen(); // 선택 처리 중/패널 닫힘 방지
+    }
+
+    private void RefreshRerollUi()
+    {
+        bool panelOpen = IsLevelUpPanelOpen(); // CanvasGroup 기준 표시 여부
+        if (rerollUiRoot != null)
+        {
+            rerollUiRoot.SetActive(panelOpen); // 패널이 열릴 때만 표시
+        }
+
+        if (rerollCountText != null)
+        {
+            rerollCountText.text = $"남은 {remainingRerollCount}"; // 우측 남은 횟수
+        }
+
+        if (rerollButton != null)
+        {
+            bool canReroll = CanRerollCurrentChoices(); // 가능할 때만 클릭
+            rerollButton.interactable = canReroll;
+            ApplyRerollButtonVisual(canReroll);
+        }
+    }
+
+    private void ApplyRerollButtonVisual(bool canReroll)
+    {
+        if (rerollButtonImage == null)
+        {
+            return;
+        }
+
+        Sprite sprite = canReroll ? rerollButtonActiveSprite : rerollButtonDisabledSprite;
+        if (sprite == null)
+        {
+            return;
+        }
+
+        rerollButtonImage.sprite = sprite;
+        rerollButtonImage.color = Color.white;
+        rerollButtonImage.preserveAspect = true;
     }
 
     // 안건준 추가 - 0622 : 현재 자동궤도 모드 여부 확인
@@ -360,14 +489,23 @@ public class CardUI : MonoBehaviour
     private void SpawnLevelUpCards()
     {
         ClearSpawnedCards();
+        rerollAllowedForCurrentChoices = false; // 기본 비활성
 
         if (cardSlots == null || cardSlots.Length == 0)
         {
             Debug.LogWarning("[CardUI] 카드 생성 슬롯이 비어 있습니다.", this);
+            RefreshRerollUi();
             return;
         }
 
         currentSpawnPhase = ResolveLevelUpCardPhase(); // 스탯 → 무기강화 → 세그먼트 3종 순환
+        rerollAllowedForCurrentChoices = true; // 1차 랜덤 선택지만 리롤 가능
+        SpawnCardsForCurrentPhase();
+        RefreshRerollUi();
+    }
+
+    private void SpawnCardsForCurrentPhase()
+    {
         switch (currentSpawnPhase)
         {
             case LevelUpCardPhase.WeaponEnhance:
@@ -449,6 +587,7 @@ public class CardUI : MonoBehaviour
             }
 
             entry.StatUpgrade.ApplySpawnTier(tier); // 등급·배율 반영
+            ApplyTierPrefixToCardDescription(entry.Root, tier, isReduction: false); // 표시용 등급 기호만 설명 앞에 붙임
         }
 
         return entry;
@@ -743,6 +882,8 @@ public class CardUI : MonoBehaviour
     // 세그먼트 추가/레벨업 2차 선택 카드 2장 생성
     private void SpawnSegmentActionCards(SegmentCatalogEntry entry, int levelDelta, bool canAdd, bool canLevelUp)
     {
+        rerollAllowedForCurrentChoices = false; // 추가/레벨업 결정 화면은 리롤 제외
+        RefreshRerollUi();
         ClearSpawnedCards(); // 후보 카드 제거
         RectTransform parentSlot = GetCenteredActionParentSlot(); // 2장 중앙 배치 기준
         if (parentSlot == null)
@@ -775,6 +916,8 @@ public class CardUI : MonoBehaviour
     // 2단계 - 선택 세그먼트에 맞는 무기 강화 카드 생성
     private void SpawnSegmentEnhancementCards(string targetSegmentId, int levelDelta)
     {
+        rerollAllowedForCurrentChoices = false; // 선택 세그먼트의 강화 카드 화면은 리롤 제외
+        RefreshRerollUi();
         ClearSpawnedCards(); // 2단계 카드 제거
         int resolvedLevelDelta = Mathf.Max(1, levelDelta); // 소비 레벨
         WeaponCatalogAsset catalog = ResolveWeaponCatalog(); // 카탈로그
@@ -846,7 +989,8 @@ public class CardUI : MonoBehaviour
         entry.SegmentId = targetSegmentId; // 대상 세그먼트
         entry.LevelDelta = Mathf.Max(1, levelDelta); // 소비 레벨
         entry.CanSelect = definition != null && definition.HasAnyStatBonus; // 선택 가능
-        entry.SegmentAddCard?.ConfigureWeaponEnhancement(definition, entry.LevelDelta); // 카드 문구·아이콘
+        string tieredDescription = BuildTierPrefixedWeaponDescription(definition, tier); // 표시용 등급 기호가 붙은 설명
+        entry.SegmentAddCard?.ConfigureWeaponEnhancement(definition, entry.LevelDelta, tieredDescription); // 카드 문구·아이콘
         entry.SegmentAddCard?.ApplyWeaponEnhancementTier(tier); // 등급 저장
         // 건준수정 - 0621 ======
         entry.WeaponEnhancementTier = tier; // 적용 시 등급별 수치
@@ -865,7 +1009,7 @@ public class CardUI : MonoBehaviour
                     $"CardIconSpritesPerLevel 또는 CardIconSprite 를 Inspector 에서 할당하세요. (TargetSegmentId={definition.TargetSegmentId})", definition);
             }
 
-            ApplyCardTextsDirectly(entry.Root, definition.DisplayName, definition.Description, iconSprite, definition.CardIconSizeOffset);
+            ApplyCardTextsDirectly(entry.Root, definition.DisplayName, tieredDescription, iconSprite, definition.CardIconSizeOffset);
         }
 
         if (definition != null && !definition.HasAnyStatBonus)
@@ -1824,6 +1968,109 @@ public class CardUI : MonoBehaviour
         return normal != 0 || rare != 0 || unique != 0;
     }
 
+    private static string BuildTierPrefixedWeaponDescription(WeaponDefinition definition, StatUpgrade.StatCardTier tier)
+    {
+        if (definition == null)
+        {
+            return string.Empty;
+        }
+
+        string description = string.IsNullOrWhiteSpace(definition.Description)
+            ? definition.NormalizedId
+            : definition.Description;
+        return BuildTierPrefixedDescription(description, tier, IsReductionWeaponEnhancement(definition, tier));
+    }
+
+    private static void ApplyTierPrefixToCardDescription(GameObject root, StatUpgrade.StatCardTier tier, bool isReduction)
+    {
+        TMP_Text descText = FindCardDescriptionText(root);
+        if (descText == null || string.IsNullOrWhiteSpace(descText.text))
+        {
+            return;
+        }
+
+        descText.text = BuildTierPrefixedDescription(descText.text, tier, isReduction);
+    }
+
+    private static string BuildTierPrefixedDescription(string description, StatUpgrade.StatCardTier tier, bool isReduction)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return string.Empty;
+        }
+
+        string suffix = GetTierPrefix(tier, isReduction);
+        string body = StripTierSymbols(description);
+        return string.IsNullOrWhiteSpace(body) ? suffix : $"{body} {suffix}";
+    }
+
+    private static string GetTierPrefix(StatUpgrade.StatCardTier tier, bool isReduction)
+    {
+        int count = tier switch
+        {
+            StatUpgrade.StatCardTier.Unique => 3,
+            StatUpgrade.StatCardTier.Rare => 2,
+            _ => 1
+        };
+
+        return new string(isReduction ? '-' : '+', count);
+    }
+
+    private static bool IsReductionWeaponEnhancement(WeaponDefinition definition, StatUpgrade.StatCardTier tier)
+    {
+        return definition != null
+            && (definition.GetCooldownReduction(tier) > 0.0001f
+                || definition.GetLaserTickInterval(tier) > 0.0001f);
+    }
+
+    private static string StripTierSymbols(string text)
+    {
+        string trimmed = text.Trim();
+        int index = 0;
+        while (index < trimmed.Length && (trimmed[index] == '+' || trimmed[index] == '-'))
+        {
+            index++;
+        }
+
+        string body = trimmed;
+        if (index > 0 && index < trimmed.Length && char.IsWhiteSpace(trimmed[index]))
+        {
+            body = trimmed.Substring(index).TrimStart();
+        }
+
+        int symbolStart = body.Length;
+        while (symbolStart > 0 && (body[symbolStart - 1] == '+' || body[symbolStart - 1] == '-'))
+        {
+            symbolStart--;
+        }
+
+        if (symbolStart < body.Length && (symbolStart == 0 || char.IsWhiteSpace(body[symbolStart - 1])))
+        {
+            body = body.Substring(0, symbolStart).TrimEnd();
+        }
+
+        return body;
+    }
+
+    private static TMP_Text FindCardDescriptionText(GameObject root)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        TMP_Text[] texts = root.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i].gameObject.name == "DescText")
+            {
+                return texts[i];
+            }
+        }
+
+        return null;
+    }
+
     private static bool Includes(SegmentWeaponStatDisplayFlags flags, SegmentWeaponStatDisplayFlags target)
     {
         return (flags & target) != 0;
@@ -2400,6 +2647,13 @@ public class CardUI : MonoBehaviour
         bool canAdd = core.CanAddSegment(selectedEntry.SegmentId); // 추가 가능 여부
         bool canLevelUp = core.CanLevelUpSegmentModel(selectedEntry.SegmentId); // 레벨업 가능 여부
         isProcessingSelection = true; // 2단계 전환 중
+
+        if (TryResolveSingleSegmentAction(canAdd, canLevelUp, out SegmentCardRole singleActionRole))
+        {
+            PlaySingleSegmentActionAutoApplySequence(selectedEntry, singleActionRole, canAdd, canLevelUp); // 선택지 1개면 2차 창 스킵
+            return;
+        }
+
         PlaySegmentActionChoiceSequence(selectedEntry, canAdd, canLevelUp); // 추가/레벨업 2장
     }
 
@@ -2466,6 +2720,102 @@ public class CardUI : MonoBehaviour
             isProcessingSelection = false; // 다시 클릭 허용
             TryStartAutoSelectSegmentAction(canAdd, canLevelUp); // 안건준 추가 - 0622 : 자동모드면 추가/레벨업 자동선택
         });
+    }
+
+    private static bool TryResolveSingleSegmentAction(bool canAdd, bool canLevelUp, out SegmentCardRole role) // 2차 선택지가 1개인지 판정
+    {
+        role = SegmentCardRole.None; // 기본값
+        if (canAdd == canLevelUp)
+        {
+            return false; // 둘 다 가능하거나 둘 다 불가면 기존 2차 UI 유지
+        }
+
+        role = canAdd ? SegmentCardRole.AddAction : SegmentCardRole.LevelUpAction; // 유일한 액션
+        return true;
+    }
+
+    private void PlaySingleSegmentActionAutoApplySequence(SpawnedCardEntry selectedEntry, SegmentCardRole actionRole, bool canAdd, bool canLevelUp)
+    {
+        SegmentCatalogEntry catalogEntry = selectedEntry.SegmentCatalogEntry; // 실패 fallback용 후보 데이터
+        int levelDelta = Mathf.Max(1, selectedEntry.LevelDelta); // 소비 레벨 보관
+        Sequence sequence = DOTween.Sequence().SetUpdate(true); // 후보 선택 연출 재사용
+
+        for (int i = 0; i < spawnedCards.Count; i++)
+        {
+            SpawnedCardEntry card = spawnedCards[i]; // 현재 후보 카드
+            if (card == null)
+            {
+                continue; // null 방지
+            }
+
+            if (card == selectedEntry)
+            {
+                sequence.Join(PlaySelectTween(card)); // 선택 카드 강조
+            }
+            else
+            {
+                sequence.Join(PlayHideTween(card)); // 나머지 카드 숨김
+            }
+        }
+
+        sequence.AppendInterval(0.25f); // 기존 2차 전환과 동일한 여유
+        sequence.OnComplete(() =>
+        {
+            if (TryApplySingleSegmentAction(selectedEntry, actionRole))
+            {
+                cardEffect?.FadeAllEffects(0.2f); // 기존 닫기 경로와 동일하게 이펙트 정리
+                CloseLevelUpPanelAfterSuccessfulSelection(); // 성공 시 바로 선택 완료
+                return;
+            }
+
+            Debug.LogWarning("[CardUI] 단일 세그먼트 액션 자동 적용 실패: 2차 선택 UI로 fallback합니다.", selectedEntry.Root);
+            SpawnSegmentActionCards(catalogEntry, levelDelta, canAdd, canLevelUp); // 실패 시 조작 가능한 화면 복구
+            isProcessingSelection = false; // fallback 카드 클릭 허용
+        });
+    }
+
+    private bool TryApplySingleSegmentAction(SpawnedCardEntry selectedEntry, SegmentCardRole actionRole) // 2차 카드 없이 코어에 직접 적용
+    {
+        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
+        if (core == null || selectedEntry == null || string.IsNullOrWhiteSpace(selectedEntry.SegmentId))
+        {
+            Debug.LogWarning("[CardUI] 단일 세그먼트 액션 적용 실패: CoreStatProvider 또는 SegmentId 없음", selectedEntry?.Root);
+            return false;
+        }
+
+        int levelDelta = Mathf.Max(1, selectedEntry.LevelDelta); // 소비 레벨
+        if (actionRole == SegmentCardRole.AddAction)
+        {
+            int addCount = selectedEntry.SegmentAddCard != null ? selectedEntry.SegmentAddCard.SegmentAddCount : 1; // 카드 설정 우선
+            bool applied = core.TryApplySegmentAddChoice(selectedEntry.SegmentId, levelDelta, addCount); // 추가 적용
+            if (applied)
+            {
+                SetSegmentWeaponStatDebugTarget(selectedEntry.SegmentId); // 추가 대상 표시
+            }
+            else
+            {
+                Debug.LogWarning("[CardUI] 세그먼트 추가 자동 적용 실패: 경험치/카탈로그/컨보이 조건 확인 필요", selectedEntry.Root);
+            }
+
+            return applied;
+        }
+
+        if (actionRole == SegmentCardRole.LevelUpAction)
+        {
+            bool applied = core.TryApplySegmentLevelUpChoice(selectedEntry.SegmentId, levelDelta); // 레벨업 적용
+            if (applied)
+            {
+                SetSegmentWeaponStatDebugTarget(selectedEntry.SegmentId); // 레벨업 대상 표시
+            }
+            else
+            {
+                Debug.LogWarning("[CardUI] 세그먼트 레벨업 자동 적용 실패: 만렙/경험치/장착 상태 확인 필요", selectedEntry.Root);
+            }
+
+            return applied;
+        }
+
+        return false; // 지원하지 않는 역할
     }
 
     private bool TryApplySelectedCard(SpawnedCardEntry selectedEntry)
@@ -2574,19 +2924,21 @@ public class CardUI : MonoBehaviour
         }
 
         sequence.AppendInterval(Mathf.Max(0f, selectionCloseHoldSeconds));
-        sequence.OnComplete(() =>
-        {
-            // 안건준 수정 - 0622 : 패널이 완전히 닫힌 후 CompleteLevelUpChoice 호출 — 연속 레벨업 대응
-            CloseLevelUpPanelAfterSelection(() =>
-            {
-                // 패널이 같은 프레임에 재오픈될 경우 Update()가 닫힘을 감지 못하므로 여기서 직접 정리
-                StopAutoSelect();           // 이전 자동선택 코루틴 정리
-                ClearSpawnedCards();        // 이전 카드 오브젝트 파괴
-                spawnedForCurrentOpen = false; // 다음 오픈 시 새 카드 생성 허용
-                isProcessingSelection = false; // 입력 잠금 해제
+        sequence.OnComplete(CloseLevelUpPanelAfterSuccessfulSelection);
+    }
 
-                CoreStatProvider.Active?.CompleteLevelUpChoice(); // 순환 진행 + StatsChanged → 다음 레벨업 트리거
-            });
+    private void CloseLevelUpPanelAfterSuccessfulSelection()
+    {
+        // 안건준 수정 - 0622 : 패널이 완전히 닫힌 후 CompleteLevelUpChoice 호출 — 연속 레벨업 대응
+        CloseLevelUpPanelAfterSelection(() =>
+        {
+            // 패널이 같은 프레임에 재오픈될 경우 Update()가 닫힘을 감지 못하므로 여기서 직접 정리
+            StopAutoSelect();           // 이전 자동선택 코루틴 정리
+            ClearSpawnedCards();        // 이전 카드 오브젝트 파괴
+            spawnedForCurrentOpen = false; // 다음 오픈 시 새 카드 생성 허용
+            isProcessingSelection = false; // 입력 잠금 해제
+
+            CoreStatProvider.Active?.CompleteLevelUpChoice(); // 순환 진행 + StatsChanged → 다음 레벨업 트리거
         });
     }
 

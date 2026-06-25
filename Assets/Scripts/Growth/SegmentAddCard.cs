@@ -104,7 +104,7 @@ public class SegmentAddCard : MonoBehaviour
     }
 
     ////// 무기 강화 2단계 카드 설정 (세그먼트 선택 후 강화 카드 UI)
-    public void ConfigureWeaponEnhancement(WeaponDefinition definition, int levelDeltaValue)
+    public void ConfigureWeaponEnhancement(WeaponDefinition definition, int levelDeltaValue, string overrideDescription = null)
     {
         if (definition == null)
         {
@@ -116,7 +116,9 @@ public class SegmentAddCard : MonoBehaviour
         segmentId = definition.NormalizedTargetSegmentId; // 대상 세그먼트
         IsSelectableChoice = definition.HasAnyStatBonus && !string.IsNullOrWhiteSpace(segmentId); // 유효 강화만 선택
         string title = string.IsNullOrWhiteSpace(definition.DisplayName) ? definition.NormalizedId : definition.DisplayName; // 제목
-        string description = string.IsNullOrWhiteSpace(definition.Description) ? definition.NormalizedId : definition.Description; // 설명
+        string description = string.IsNullOrWhiteSpace(overrideDescription)
+            ? (string.IsNullOrWhiteSpace(definition.Description) ? definition.NormalizedId : definition.Description)
+            : overrideDescription; // 설명
         ApplyTexts(title, description); // 카드 문구
         // 안건준 추가 - 0623 : WeaponDefinition에 지정된 세그먼트 Lv1 아이콘 + 크기 조절 적용
         if (definition.CardIconSprite != null)

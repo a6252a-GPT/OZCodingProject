@@ -39,8 +39,9 @@ namespace TeamProject01.Gameplay
         public bool ShowLoadingOverlay = true; // 생성 중 로딩 표시
         public bool LogGenerationTimings = true; // 생성 단계별 시간 로그
         [Min(0f)] public float MinimumLoadingSeconds = 0.35f; // 너무 빠른 깜빡임 방지
-        public string LoadingTitle = "맵 생성중"; // 임시 로딩 문구
-        public string LoadingStatus = "초원 지형을 준비하는 중입니다."; // 보조 문구
+        public string LoadingTitle = "전장 진입 준비"; // 로딩 제목
+        public string LoadingStatus = "초원 전장을 준비하는 중..."; // 보조 문구
+        public Sprite LoadingBackgroundSprite; // 로딩 배경 이미지
 
         [Header("Scene")]
         public Material TerrainMaterial; // 01/02/03 블렌드 머티리얼
@@ -364,20 +365,20 @@ namespace TeamProject01.Gameplay
             float startedAt = Time.unscaledTime;
             if (ShowLoadingOverlay)
             {
-                overlay = MeadowLoadingOverlay.Create(LoadingCanvasName, LoadingTitle, LoadingStatus);
+                overlay = MeadowLoadingOverlay.Create(LoadingCanvasName, LoadingTitle, LoadingStatus, LoadingBackgroundSprite);
                 overlay.SetProgress(0.02f, LoadingStatus);
             }
 
             yield return null; // 로딩창 먼저 그리기
 
-            overlay?.SetProgress(0.08f, "기존 지형 표시를 정리하는 중입니다.");
+            overlay?.SetProgress(0.08f, "전장 잔상을 걷어내는 중...");
             yield return null;
 
             Transform parent = ResolveGeneratedParent();
             LogTiming("BuildRoutine.resolveGeneratedParent", stageWatch);
             DestroyGeneratedRoot(parent);
             LogTiming("BuildRoutine.destroyGeneratedRoot", stageWatch);
-            overlay?.SetProgress(0.14f, "흙길 경로를 계산하는 중입니다.");
+            overlay?.SetProgress(0.14f, "초원의 길을 여는 중...");
             yield return null;
 
             Vector2 center = ResolveNexusCenter();
@@ -385,13 +386,13 @@ namespace TeamProject01.Gameplay
             LogTiming("BuildRoutine.createTrailNetwork", stageWatch);
             if (UseDemoTerrainTemplateSurface)
             {
-                overlay?.SetProgress(0.2f, "데모 초원 지형을 복제하는 중입니다.");
+                overlay?.SetProgress(0.2f, "초원 표면을 펼치는 중...");
                 yield return null;
 
                 if (TryCreateGeneratedDemoTerrainObject(parent, center, trails))
                 {
                     LogTiming("BuildRoutine.demoTerrainPath", stageWatch);
-                    overlay?.SetProgress(0.96f, "지형을 씬에 배치하는 중입니다.");
+                    overlay?.SetProgress(0.96f, "출격 구역을 정리하는 중...");
                     yield return null;
 
                     while (Time.unscaledTime - startedAt < MinimumLoadingSeconds)
@@ -399,7 +400,7 @@ namespace TeamProject01.Gameplay
                         yield return null; // 최소 표시 시간
                     }
 
-                    overlay?.SetProgress(1f, "맵 생성 완료");
+                    overlay?.SetProgress(1f, "출격 준비 완료");
                     yield return null;
                     overlay?.Close();
                     overlay = null;
@@ -410,7 +411,7 @@ namespace TeamProject01.Gameplay
 
             MeshBuildContext context = CreateMeshBuildContext(center, trails);
             LogTiming("BuildRoutine.createMeshContext", stageWatch, $"rows={context.Rows}, columns={context.Columns}");
-            overlay?.SetProgress(0.2f, "초원 높이를 계산하는 중입니다.");
+            overlay?.SetProgress(0.2f, "초원 표면을 펼치는 중...");
 
             int vertexRows = context.VertexRows;
             for (int z = 0; z < vertexRows; z++)
@@ -419,13 +420,13 @@ namespace TeamProject01.Gameplay
                 if (z % Mathf.Max(1, RowsPerFrame) == 0)
                 {
                     float progress = Mathf.Lerp(0.2f, 0.72f, z / Mathf.Max(1f, vertexRows - 1f));
-                    overlay?.SetProgress(progress, "초원 높이와 흙길 블렌딩을 계산하는 중입니다.");
+                    overlay?.SetProgress(progress, "흙길과 풀숲을 엮는 중...");
                     yield return null;
                 }
             }
 
             LogTiming("BuildRoutine.fillVertices", stageWatch, $"vertexRows={vertexRows}");
-            overlay?.SetProgress(0.74f, "지형 면을 구성하는 중입니다.");
+            overlay?.SetProgress(0.74f, "전장 밀도를 조율하는 중...");
             int rows = context.Rows;
             for (int z = 0; z < rows; z++)
             {
@@ -433,7 +434,7 @@ namespace TeamProject01.Gameplay
                 if (z % Mathf.Max(1, TriangleRowsPerFrame) == 0)
                 {
                     float progress = Mathf.Lerp(0.74f, 0.9f, z / Mathf.Max(1f, rows - 1f));
-                    overlay?.SetProgress(progress, "지형 면을 구성하는 중입니다.");
+                    overlay?.SetProgress(progress, "전장 밀도를 조율하는 중...");
                     yield return null;
                 }
             }
@@ -443,7 +444,7 @@ namespace TeamProject01.Gameplay
             LogTiming("BuildRoutine.completeMesh", stageWatch, $"vertices={context.Vertices.Length}, triangles={context.Triangles.Count / 3}");
             CreateGeneratedMeshObject(parent, mesh, center, trails);
             LogTiming("BuildRoutine.createGeneratedMeshObject", stageWatch);
-            overlay?.SetProgress(0.96f, "지형을 씬에 배치하는 중입니다.");
+            overlay?.SetProgress(0.96f, "출격 구역을 정리하는 중...");
             yield return null;
 
             while (Time.unscaledTime - startedAt < MinimumLoadingSeconds)
@@ -451,7 +452,7 @@ namespace TeamProject01.Gameplay
                 yield return null; // 최소 표시 시간
             }
 
-            overlay?.SetProgress(1f, "맵 생성 완료");
+            overlay?.SetProgress(1f, "출격 준비 완료");
             yield return null;
             overlay?.Close();
             overlay = null;
@@ -4433,7 +4434,7 @@ namespace TeamProject01.Gameplay
                 this.statusText = statusText;
             }
 
-            public static MeadowLoadingOverlay Create(string name, string title, string status) // UI 생성
+            public static MeadowLoadingOverlay Create(string name, string title, string status, Sprite backgroundSprite) // UI 생성
             {
                 GameObject old = GameObject.Find(name);
                 if (old != null)
@@ -4451,28 +4452,41 @@ namespace TeamProject01.Gameplay
                 scaler.referenceResolution = new Vector2(1920f, 1080f);
                 scaler.matchWidthOrHeight = 0.5f;
 
-                Image background = CreateImage("Dim", canvasObject.transform, new Color(0.04f, 0.055f, 0.05f, 0.86f));
+                Image background = CreateImage("LoadingBackground", canvasObject.transform, backgroundSprite == null ? Color.black : Color.white);
+                background.sprite = backgroundSprite;
+                background.preserveAspect = false;
                 RectTransform bgRect = background.rectTransform;
                 bgRect.anchorMin = Vector2.zero;
                 bgRect.anchorMax = Vector2.one;
                 bgRect.offsetMin = Vector2.zero;
                 bgRect.offsetMax = Vector2.zero;
 
-                Text titleText = CreateText("Title", canvasObject.transform, title, 40, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.93f, 0.98f, 0.92f, 1f));
+                if (backgroundSprite != null)
+                {
+                    Image shade = CreateImage("ScreenShade", canvasObject.transform, new Color(0f, 0f, 0f, 0.18f));
+                    shade.raycastTarget = false;
+                    RectTransform shadeRect = shade.rectTransform;
+                    shadeRect.anchorMin = Vector2.zero;
+                    shadeRect.anchorMax = Vector2.one;
+                    shadeRect.offsetMin = Vector2.zero;
+                    shadeRect.offsetMax = Vector2.zero;
+                }
+
+                Text titleText = CreateText("Title", canvasObject.transform, title, 42, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.96f, 0.91f, 0.72f, 1f));
                 RectTransform titleRect = titleText.rectTransform;
                 titleRect.anchorMin = new Vector2(0.5f, 0.5f);
                 titleRect.anchorMax = new Vector2(0.5f, 0.5f);
-                titleRect.anchoredPosition = new Vector2(0f, 74f);
-                titleRect.sizeDelta = new Vector2(620f, 68f);
+                titleRect.anchoredPosition = new Vector2(0f, -82f);
+                titleRect.sizeDelta = new Vector2(760f, 64f);
 
-                Image barBack = CreateImage("ProgressBack", canvasObject.transform, new Color(0.16f, 0.20f, 0.16f, 0.95f));
+                Image barBack = CreateImage("ProgressBack", canvasObject.transform, new Color(0.12f, 0.105f, 0.07f, 1f));
                 RectTransform barRect = barBack.rectTransform;
                 barRect.anchorMin = new Vector2(0.5f, 0.5f);
                 barRect.anchorMax = new Vector2(0.5f, 0.5f);
-                barRect.anchoredPosition = new Vector2(0f, 0f);
-                barRect.sizeDelta = new Vector2(520f, 18f);
+                barRect.anchoredPosition = new Vector2(0f, -146f);
+                barRect.sizeDelta = new Vector2(620f, 14f);
 
-                Image fill = CreateImage("ProgressFill", barBack.transform, new Color(0.56f, 0.78f, 0.39f, 1f));
+                Image fill = CreateImage("ProgressFill", barBack.transform, new Color(0.92f, 0.69f, 0.24f, 1f));
                 RectTransform fillRect = fill.rectTransform;
                 fillRect.anchorMin = new Vector2(0f, 0f);
                 fillRect.anchorMax = new Vector2(0f, 1f);
@@ -4480,18 +4494,18 @@ namespace TeamProject01.Gameplay
                 fillRect.offsetMax = Vector2.zero;
                 fillRect.pivot = new Vector2(0f, 0.5f);
 
-                Text percent = CreateText("Percent", canvasObject.transform, "0%", 22, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.96f, 0.98f, 0.92f, 1f));
+                Text percent = CreateText("Percent", canvasObject.transform, "0%", 20, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.92f, 0.88f, 0.74f, 1f));
                 RectTransform percentRect = percent.rectTransform;
                 percentRect.anchorMin = new Vector2(0.5f, 0.5f);
                 percentRect.anchorMax = new Vector2(0.5f, 0.5f);
-                percentRect.anchoredPosition = new Vector2(0f, -34f);
-                percentRect.sizeDelta = new Vector2(300f, 34f);
+                percentRect.anchoredPosition = new Vector2(0f, -176f);
+                percentRect.sizeDelta = new Vector2(220f, 30f);
 
-                Text statusText = CreateText("Status", canvasObject.transform, status, 22, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.76f, 0.86f, 0.74f, 1f));
+                Text statusText = CreateText("Status", canvasObject.transform, status, 22, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.78f, 0.78f, 0.82f, 1f));
                 RectTransform statusRect = statusText.rectTransform;
                 statusRect.anchorMin = new Vector2(0.5f, 0.5f);
                 statusRect.anchorMax = new Vector2(0.5f, 0.5f);
-                statusRect.anchoredPosition = new Vector2(0f, -76f);
+                statusRect.anchoredPosition = new Vector2(0f, -220f);
                 statusRect.sizeDelta = new Vector2(760f, 40f);
 
                 UnityEngine.Object.DontDestroyOnLoad(canvasObject);

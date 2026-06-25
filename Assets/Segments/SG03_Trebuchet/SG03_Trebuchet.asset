@@ -43,7 +43,7 @@ MonoBehaviour:
     AttackProfile: {fileID: 11400000, guid: e0f4225bb61cae14f9ba8986b125aa80, type: 2}
     Memo: "\uD22C\uC11D\uAE30 \uD5E4\uB4DC + \uB9CC\uB819 \uACF5\uACA9\uD615 \uBAB8\uD1B5"
   CardIconSpritesPerLevel:
-  - {fileID: 21300000, guid: b3d90395107851d418b567febbf09cdf, type: 3}
-  - {fileID: 21300000, guid: 1aad96a81f4493e40b001044f746b240, type: 3}
-  - {fileID: 21300000, guid: 917c7a68a700f2b4891854c28a0f8767, type: 3}
+  - {fileID: 21300000, guid: ec931bf8e16f6e742904d7b8a45b336f, type: 3}
+  - {fileID: 21300000, guid: ada5804fc0d27d540a27fe900097157d, type: 3}
+  - {fileID: 21300000, guid: f6e78fff0f6b3bf40bcc4b4514e3534d, type: 3}
   CardIconSizeOffset: 0

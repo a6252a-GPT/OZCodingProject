@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace TeamProject01.Gameplay
@@ -34,10 +33,9 @@ namespace TeamProject01.Gameplay
                 return; // 아무것도 만들지 않는다.
             }
 
-            Scene activeScene = SceneManager.GetActiveScene(); // 현재 열린 씬 정보
-            if (!activeScene.IsValid() || !string.Equals(activeScene.name, "SegmentTest_StageScene", StringComparison.OrdinalIgnoreCase))
+            if (FindFirstObjectByType<WaveController>() == null) // 웨이브 시스템이 없는 씬이라면
             {
-                return; // 민규 담당 테스트 씬에서만 자동 표시해 공용 씬 변경 위험을 줄인다.
+                return; // 표시할 웨이브 정보가 없으므로 만들지 않는다.
             }
 
             if (FindFirstObjectByType<WaveRuntimeDebugOverlay>() != null) // 이미 씬에 있다면
