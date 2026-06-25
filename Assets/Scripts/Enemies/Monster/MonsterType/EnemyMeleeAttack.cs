@@ -15,6 +15,8 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)]
         [SerializeField] private float attackDelay = 1.0f; // 공격 사이의 대기 시간, 공격속도 역할
 
+        public event System.Action AttackPerformed;
+
         public float AttackRange // EnemyMovement가 근거리 공격 사거리를 읽기 위한 property
         {
             get
@@ -83,6 +85,7 @@ namespace TeamProject01.Gameplay
             int finalAttackDamage = Mathf.Max(0, Mathf.RoundToInt(attackDamage * attackPowerMultiplier * hatchlingAttackPowerMultiplier)); // 버프 배율을 적용한 최종 피해량을 계산한다.
             float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier / hatchlingAttackSpeedMultiplier); // 공격속도 배율을 적용한 최종 공격 대기 시간을 계산한다.
 
+            AttackPerformed?.Invoke();
             NexusController.TryApplyDamage(nexus, finalAttackDamage); // 최종 피해량을 요청한다.
             attackTimer = finalAttackDelay; // 공격 후 다음 공격까지 대기 시간을 다시 설정한다.
         }
