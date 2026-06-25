@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG01_Cannon
   DisplayName: "\uCE90\uB17C"
-  Description: "\uAC00\uAE4C\uC6B4 \uC801\uC5D0\uAC8C \uD3EC\uD0C4\uC744 \uBC1C\uC0AC\uD558\uB294
-    \uAE30\uBCF8 \uACF5\uACA9 \uC138\uADF8\uBA3C\uD2B8"
+  Description: "\uCE90\uB17C"
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1
@@ -43,3 +42,8 @@ MonoBehaviour:
     AttackProfile: {fileID: 11400000, guid: 64ec46b9e76a8ca4eba875b11b4e15c2, type: 2}
     Memo: "\uB9CC\uB819 \uBAB8\uD1B5 + Lv3 \uC804\uC6A9 \uCE90\uB17C \uBA38\uB9AC
       \uC0AC\uC6A9. \uD22C\uC0AC\uCCB4 3\uBC1C."
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: fd72d305a55bcdd4a89db44064e8206f, type: 3}
+  - {fileID: 21300000, guid: e1d5f700f66cb244eb32ec63f396f248, type: 3}
+  - {fileID: 21300000, guid: e607766fc38dd6f48beac3f29ada90df, type: 3}
+  CardIconSizeOffset: 0

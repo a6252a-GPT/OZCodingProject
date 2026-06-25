@@ -16,6 +16,7 @@ public class LevelUpUi : MonoBehaviour
 
     private bool isOpen;
     private float previousTimeScale = 1f;
+    private bool skipPause; // 안건준 추가 - 0622 : 자동모드일 때 일시정지 스킵 플래그
     private float closeFadeDuration = 0.25f; // Close() 기본 페이드
     private CoreStatProvider subscribedCore; // 구독 중인 코어
     private int lastLoggedExp = -1; // 마지막 로그 경험치
@@ -136,6 +137,14 @@ public class LevelUpUi : MonoBehaviour
         }
     }
 
+    // 안건준 추가 - 0622 : 자동모드에서 일시정지 없이 패널 열기
+    public void OpenWithoutPause()
+    {
+        skipPause = true;
+        Open();
+        skipPause = false;
+    }
+
     public void Open()
     {
         if (isOpen || panelCanvasGroup == null)
@@ -144,19 +153,48 @@ public class LevelUpUi : MonoBehaviour
         }
 
         isOpen = true;
-        PauseGame();
+        // 안건준 추가 - 0622 : skipPause 플래그 또는 자동궤도 모드이면 일시정지 스킵
+        if (!skipPause && !IsAutoOrbitActive())
+        {
+            PauseGame();
+        }
 
         if (levelUpPanel != null)
         {
             levelUpPanel.SetActive(true);
+            SetOverlayPanelActive(!IsAutoOrbitActive()); // 안건준 추가 - 0622 : 자동모드면 Overlay Panel 숨김
         }
 
-        panelCanvasGroup.alpha = 0.0f;
+        // DOFade 가 timeScale=0 에서 충돌하거나 지연되는 문제 → 즉시 표시
+        panelCanvasGroup.DOKill();
+        panelCanvasGroup.alpha = 1f;
         panelCanvasGroup.blocksRaycasts = true;
         panelCanvasGroup.interactable = true;
-        panelCanvasGroup.DOFade(1.0f, 0.25f).SetUpdate(true);
 
         PlayTitleTween();
+    }
+
+    // 안건준 추가 - 0622 : Overlay Panel 활성/비활성 (LevelUpPanel 하위에서 이름으로 검색)
+    private void SetOverlayPanelActive(bool active)
+    {
+        if (levelUpPanel == null)
+        {
+            return;
+        }
+
+        Transform overlayTransform = levelUpPanel.transform.Find("Overlay Panel");
+        if (overlayTransform != null)
+        {
+            overlayTransform.gameObject.SetActive(active);
+        }
+    }
+
+    // 안건준 추가 - 0622 : 자동궤도 활성 여부 확인
+    private bool IsAutoOrbitActive()
+    {
+        TeamProject01.Gameplay.ConvoyController convoy =
+            FindFirstObjectByType<TeamProject01.Gameplay.ConvoyController>();
+        return convoy != null && convoy.IsAutoOrbitActive;
     }
 
     private void PauseGame()
@@ -177,15 +215,26 @@ public class LevelUpUi : MonoBehaviour
 
     public void Close(float fadeDuration) // CardUI 선택 후 닫기 — 페이드 시간 지정
     {
+        Close(fadeDuration, null);
+    }
+
+    // 안건준 추가 - 0622 : 닫힘 완료 후 콜백 — 연속 레벨업 대응
+    public void Close(float fadeDuration, System.Action onClosed)
+    {
         if (panelCanvasGroup == null)
         {
             CloseInstant();
+            onClosed?.Invoke();
             return;
         }
 
         float duration = Mathf.Max(0.01f, fadeDuration);
         panelCanvasGroup.DOKill();
-        panelCanvasGroup.DOFade(0.0f, duration).SetUpdate(true).OnComplete(CloseInstant);
+        panelCanvasGroup.DOFade(0.0f, duration).SetUpdate(true).OnComplete(() =>
+        {
+            CloseInstant();
+            onClosed?.Invoke(); // 완전히 닫힌 후 호출
+        });
     }
 
     private void PlayTitleTween()

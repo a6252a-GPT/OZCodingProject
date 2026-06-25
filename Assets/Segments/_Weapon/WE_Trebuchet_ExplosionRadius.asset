@@ -52,12 +52,9 @@ MonoBehaviour:
   ProjectileCount: 0
   ProjectileCountRare: 0
   ProjectileCountUnique: 0
-  MinAttackInterval: 0
-  MinAttackIntervalRare: 0
-  MinAttackIntervalUnique: 0
-  MaxAttackInterval: 0
-  MaxAttackIntervalRare: 0
-  MaxAttackIntervalUnique: 0
+  CooldownReduction: 0
+  CooldownReductionRare: 0
+  CooldownReductionUnique: 0
   SideConeAngle: 0
   SideConeAngleRare: 0
   SideConeAngleUnique: 0
@@ -91,7 +88,10 @@ MonoBehaviour:
   ExplosionRadiusUsePercentRare: 0
   ExplosionRadiusUnique: 0.6
   ExplosionRadiusUsePercentUnique: 0
-  CardPrefabOverride: {fileID: 0}
-  RareCardPrefabOverride: {fileID: 0}
-  UniqueCardPrefabOverride: {fileID: 0}
-  CardIconOverride: {fileID: 0}
+  CardPrefabOverride: {fileID: 1511448857506858134, guid: 3a49d0b5d6d28734c8caac14b1e175c5, type: 3}
+  CardIconSprite: {fileID: 21300000, guid: b3d90395107851d418b567febbf09cdf, type: 3}
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: b3d90395107851d418b567febbf09cdf, type: 3}
+  - {fileID: 21300000, guid: 1aad96a81f4493e40b001044f746b240, type: 3}
+  - {fileID: 21300000, guid: 917c7a68a700f2b4891854c28a0f8767, type: 3}
+  CardIconSizeOffset: -80
