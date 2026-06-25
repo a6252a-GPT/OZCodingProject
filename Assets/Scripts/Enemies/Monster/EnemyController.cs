@@ -24,6 +24,8 @@ namespace TeamProject01.Gameplay
 
         private EnemyHealth health; // 체력 처리를 담당하는 EnemyHealth Script Component 참조
         private EnemyReward reward; // 보상 처리를 담당하는 EnemyReward Script Component 참조
+        private EnemyDeathAnimatorBridge deathAnimatorBridge; // 조성원추가-0624 - 사망 애니메이션 재생과 지연 제거를 담당하는 Script Component 참조
+
         public bool IsDead => dead; // 외부 타겟 유효성 확인
 
         public static int ActiveCount // 현재 활성 몬스터 수
@@ -35,12 +37,13 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void Awake() 
+        private void Awake()
         {
             EnemyId = ++nextEnemyId; // 몬스터마다 고유 ID를 부여
 
             health = GetComponent<EnemyHealth>(); // 같은 GameObject에 붙은 EnemyHealth Script Component를 찾는다.
             reward = GetComponent<EnemyReward>(); // 같은 GameObject에 붙은 EnemyReward Script Component를 찾는다.
+            deathAnimatorBridge = GetComponent<EnemyDeathAnimatorBridge>(); // 조성원추가-0624 - 같은 GameObject에 붙은 사망 애니메이션 연결 Script Component를 찾는다.
 
             EnemyTags.TryApplyTag(gameObject, grade); // 몬스터 등급에 맞는 Unity Tag를 적용한다.
         }
@@ -104,6 +107,12 @@ namespace TeamProject01.Gameplay
             }
 
             dead = true; // 사망 표시
+
+            if (deathAnimatorBridge != null && deathAnimatorBridge.TryBeginDeath()) // 조성원추가-0624 - 사망 애니메이션을 시작할 수 있다면 즉시 제거하지 않는다.
+            {
+                return; // 조성원추가-0624 - 제거는 EnemyDeathAnimatorBridge의 Death Duration 이후 처리한다.
+            }
+
             Destroy(gameObject);  // 몬스터 제거
         }
 

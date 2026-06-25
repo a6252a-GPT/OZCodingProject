@@ -21,6 +21,11 @@ namespace TeamProject01.Gameplay
         [Header("Level Prefabs")]
         public SegmentLevelDefinition[] Levels = Array.Empty<SegmentLevelDefinition>(); // Lv 프리팹 목록
 
+        [Header("카드 이미지")]
+        // 안건준 추가 - 0623 : 레벨별 카드 아이콘 (인덱스 0=Lv1, 1=Lv2, ...)
+        public Sprite[] CardIconSpritesPerLevel; // 레벨별 아이콘 배열
+        [Range(-100f, 100f)] public float CardIconSizeOffset = 0f; // 아이콘 크기 조절
+
         public string NormalizedId => string.IsNullOrWhiteSpace(SegmentId) ? string.Empty : SegmentId.Trim(); // 비교 ID
         public string UpgradeId => string.IsNullOrWhiteSpace(SharedUpgradeSegmentId) ? NormalizedId : SharedUpgradeSegmentId.Trim(); // 강화 ID
         public bool HasId => !string.IsNullOrWhiteSpace(SegmentId); // ID 존재
@@ -65,6 +70,18 @@ namespace TeamProject01.Gameplay
 
             prefab = level.SegmentPrefab; // 프리팹 반환
             return prefab != null;
+        }
+
+        // 안건준 추가 - 0623 : 현재 레벨에 맞는 아이콘 반환
+        public Sprite GetIconSpriteForLevel(int segmentLevel)
+        {
+            int idx = Mathf.Max(0, segmentLevel - 1); // 레벨 1 → 인덱스 0
+            if (CardIconSpritesPerLevel != null && idx < CardIconSpritesPerLevel.Length && CardIconSpritesPerLevel[idx] != null)
+            {
+                return CardIconSpritesPerLevel[idx]; // 레벨별 아이콘
+            }
+
+            return null; // 없음
         }
 
         public SegmentCatalogEntry ToCatalogEntry() // 기존 코어 카탈로그 호환

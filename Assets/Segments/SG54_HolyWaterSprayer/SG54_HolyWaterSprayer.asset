@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG54_HolyWaterSprayer
   DisplayName: "\uC131\uC218\uBC1C\uC0AC\uAE30"
-  Description: "화염방사기와 같은 전방 분사 방식으로 성수 구체를 발사하는 지원 세그먼트입니다. 현재는 후속 연결용 디버프 데이터만 발생시킵니다."
+  Description: "\uD654\uC5FC\uBC29\uC0AC\uAE30\uC640 \uAC19\uC740 \uC804\uBC29 \uBD84\uC0AC
+    \uBC29\uC2DD\uC73C\uB85C \uC131\uC218 \uAD6C\uCCB4\uB97C \uBC1C\uC0AC\uD558\uB294
+    \uC9C0\uC6D0 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4. \uD604\uC7AC\uB294 \uD6C4\uC18D
+    \uC5F0\uACB0\uC6A9 \uB514\uBC84\uD504 \uB370\uC774\uD130\uB9CC \uBC1C\uC0DD\uC2DC\uD0B5\uB2C8\uB2E4."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1
@@ -27,4 +30,10 @@ MonoBehaviour:
     BodyPrefab: {fileID: 2894136110198890850, guid: 87dcfb70d87b2264d83db394c1d4c959, type: 3}
     HeadPrefab: {fileID: 5606047459754514579, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
     AttackProfile: {fileID: 0}
-    Memo: "SP_SG54_HolyWaterSprayer_Lv1 프로필 사용. 화염방사기식 성수 구체를 발사하고, 실제 몬스터 디버프 적용 전까지 후속 연결용 데이터만 발생시킴."
+    Memo: "SP_SG54_HolyWaterSprayer_Lv1 \uD504\uB85C\uD544 \uC0AC\uC6A9. \uD654\uC5FC\uBC29\uC0AC\uAE30\uC2DD
+      \uC131\uC218 \uAD6C\uCCB4\uB97C \uBC1C\uC0AC\uD558\uACE0, \uC2E4\uC81C \uBAAC\uC2A4\uD130
+      \uB514\uBC84\uD504 \uC801\uC6A9 \uC804\uAE4C\uC9C0 \uD6C4\uC18D \uC5F0\uACB0\uC6A9
+      \uB370\uC774\uD130\uB9CC \uBC1C\uC0DD\uC2DC\uD0B4."
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: 6c1172ab62c27b14ba02a23201a36b18, type: 3}
+  CardIconSizeOffset: 0

@@ -60,6 +60,150 @@ namespace TeamProject01.Gameplay
             return target != null;
         }
 
+        public static bool TryPickBossEliteThenFarthestTarget(
+            Vector3 origin,
+            float range,
+            Func<EnemyController, bool> isValidTarget,
+            float targetAimHeight,
+            out EnemyController target) // 보스/엘리트 우선 + 장거리 대상
+        {
+            target = null; // 기본값
+            if (range <= 0f)
+            {
+                return false; // 사거리 없음
+            }
+
+            List<EnemyController> candidates = new List<EnemyController>(32); // 범위 후보
+            EnemyController.CollectActiveInRange(origin, range, candidates, isValidTarget); // 활성 몬스터 수집
+            int bestGradePriority = -1; // 등급 우선순위
+            float bestDistance = -1f; // 같은 등급 내 가장 먼 거리
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                EnemyController enemy = candidates[i]; // 후보
+                if (enemy == null)
+                {
+                    continue; // 빈 후보
+                }
+
+                int gradePriority = GetGradePriority(enemy.Grade); // 보스/엘리트 우선
+                Vector3 center = GetEnemyHitPosition(enemy, origin, targetAimHeight); // 중심 위치
+                float distance = GetHorizontalDistance(origin, center); // 수평 거리
+                if (gradePriority < bestGradePriority)
+                {
+                    continue; // 낮은 등급
+                }
+
+                if (gradePriority == bestGradePriority && distance <= bestDistance)
+                {
+                    continue; // 같은 등급이면 더 먼 대상 우선
+                }
+
+                bestGradePriority = gradePriority; // 우선순위 갱신
+                bestDistance = distance; // 거리 갱신
+                target = enemy; // 대상 갱신
+            }
+
+            return target != null; // 발견 여부
+        }
+
+        public static bool TryPickDensestClusterOrRandomTarget(
+            Vector3 origin,
+            float range,
+            float clusterRadius,
+            int clusterMinEnemyCount,
+            Func<EnemyController, bool> isValidTarget,
+            float targetAimHeight,
+            out EnemyController target,
+            out Vector3 impactPoint) // 밀집 구역 우선, 없으면 랜덤
+        {
+            target = null;
+            impactPoint = origin;
+            if (range <= 0f)
+            {
+                return false; // 사거리 없음
+            }
+
+            List<EnemyController> candidates = new List<EnemyController>(32);
+            EnemyController.CollectActiveInRange(origin, range, candidates, isValidTarget); // 사거리 후보
+            if (candidates.Count == 0)
+            {
+                return false; // 후보 없음
+            }
+
+            float resolvedClusterRadius = Mathf.Max(0.1f, clusterRadius);
+            float clusterRadiusSqr = resolvedClusterRadius * resolvedClusterRadius;
+            int minCount = Mathf.Max(1, clusterMinEnemyCount);
+            int bestCount = 0;
+            Vector3 bestCenter = Vector3.zero;
+            EnemyController bestTarget = null;
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                EnemyController centerEnemy = candidates[i];
+                if (centerEnemy == null)
+                {
+                    continue; // 빈 후보
+                }
+
+                Vector3 center = centerEnemy.transform.position;
+                Vector3 sum = Vector3.zero;
+                int count = 0;
+                for (int j = 0; j < candidates.Count; j++)
+                {
+                    EnemyController other = candidates[j];
+                    if (other == null)
+                    {
+                        continue; // 빈 후보
+                    }
+
+                    Vector3 offset = other.transform.position - center;
+                    offset.y = 0f;
+                    if (offset.sqrMagnitude > clusterRadiusSqr)
+                    {
+                        continue; // 밀집 반경 밖
+                    }
+
+                    sum += other.transform.position;
+                    count++;
+                }
+
+                if (count < minCount || count < bestCount)
+                {
+                    continue; // 조건 미달/더 작은 군집
+                }
+
+                Vector3 clusterCenter = sum / Mathf.Max(1, count);
+                EnemyController centerTarget = FindNearestCandidate(candidates, clusterCenter);
+                if (count == bestCount && bestTarget != null)
+                {
+                    float currentDistance = GetHorizontalDistance(origin, clusterCenter);
+                    float bestDistance = GetHorizontalDistance(origin, bestCenter);
+                    if (currentDistance >= bestDistance)
+                    {
+                        continue; // 동률이면 세그먼트에 더 가까운 군집 유지
+                    }
+                }
+
+                bestCount = count;
+                bestCenter = clusterCenter;
+                bestTarget = centerTarget;
+            }
+
+            if (bestTarget != null)
+            {
+                target = bestTarget;
+                impactPoint = GroundService.ProjectToGround(bestCenter, 0f);
+                return true; // 밀집 지점 사용
+            }
+
+            int randomIndex = UnityEngine.Random.Range(0, candidates.Count);
+            target = candidates[randomIndex];
+            impactPoint = target != null
+                ? GroundService.ProjectToGround(target.transform.position, 0f)
+                : origin;
+            return target != null; // 밀집 실패 시 랜덤 적
+        }
+
         public static Vector3 GetEnemyHitPosition(EnemyController enemy, Vector3 fallbackPosition, float targetAimHeight) // 몬스터 중심
         {
             if (enemy == null)
@@ -138,6 +282,33 @@ namespace TeamProject01.Gameplay
             return false;
         }
 
+        private static EnemyController FindNearestCandidate(List<EnemyController> candidates, Vector3 point) // 중심에 가장 가까운 몬스터
+        {
+            EnemyController result = null;
+            float bestDistanceSqr = float.PositiveInfinity;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                EnemyController candidate = candidates[i];
+                if (candidate == null)
+                {
+                    continue; // 빈 후보
+                }
+
+                Vector3 offset = candidate.transform.position - point;
+                offset.y = 0f;
+                float distanceSqr = offset.sqrMagnitude;
+                if (distanceSqr >= bestDistanceSqr)
+                {
+                    continue; // 더 멂
+                }
+
+                bestDistanceSqr = distanceSqr;
+                result = candidate;
+            }
+
+            return result;
+        }
+
         private static Vector3 GetHorizontalDirection(Vector3 primary, Vector3 secondary, Vector3 fallback) // 수평 방향
         {
             primary.y = 0f; // 수평화
@@ -154,6 +325,19 @@ namespace TeamProject01.Gameplay
 
             fallback.y = 0f; // 수평화
             return fallback.sqrMagnitude > 0.0001f ? fallback.normalized : Vector3.right; // 최종
+        }
+
+        private static int GetGradePriority(EnemyGrade grade) // 등급 점수
+        {
+            switch (grade)
+            {
+                case EnemyGrade.Boss:
+                    return 3; // 보스 최우선
+                case EnemyGrade.Elite:
+                    return 2; // 엘리트
+                default:
+                    return 1; // 일반
+            }
         }
 
         private readonly struct TargetCandidate // 타겟 후보
