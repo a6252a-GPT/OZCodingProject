@@ -14,6 +14,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float distance = 15f;
         [SerializeField] private float pitch = 55f;
         [SerializeField] private float yaw;
+        [SerializeField, Range(1f, 179f)] private float normalFieldOfView = 60f; // 기본 FOV
 
         [Header("Target Blend")]
         [SerializeField] private float targetSwitchSharpness = 6f;
@@ -30,7 +31,8 @@ namespace TeamProject01.Gameplay
 
         [Header("Nexus View")]
         [SerializeField] private float nexusMaxDistance = 34f;
-        [SerializeField] private float nexusFieldOfView = 66f;
+        [SerializeField, Range(1f, 179f)] private float nexusFieldOfView = 66f;
+        [SerializeField] private float nexusSouthFocusOffset; // 넥서스 모드 남쪽 초점 보정
         [SerializeField] private float fieldOfViewSharpness = 8f;
 
         [Header("Manual Rotate")]
@@ -43,19 +45,38 @@ namespace TeamProject01.Gameplay
         private bool isBlendingTarget; // 타겟 전환 중
         private float targetSwitchElapsed; // 전환 시간
         private float targetDistance; // 목표 거리
-        private float normalFieldOfView; // 기본 FOV
         private bool nexusViewMode; // 넥서스 시점
+        private float shakeDuration; // 남은 카메라 흔들림 시간
+        private float shakeTotalDuration; // 흔들림 기준 시간
+        private float shakeAmplitude; // 흔들림 세기
+        private float shakeFrequency = 38f; // 흔들림 속도
+        private float shakeSeed; // 흔들림 난수
 
         private void Awake()
         {
             if (viewCamera == null)
                 viewCamera = GetComponent<Camera>(); // 표시 카메라
 
-            normalFieldOfView = viewCamera != null ? viewCamera.fieldOfView : 60f; // 기본 FOV
+            normalFieldOfView = Mathf.Clamp(normalFieldOfView, 1f, 179f); // 인스펙터 FOV
+            if (viewCamera != null)
+                viewCamera.fieldOfView = normalFieldOfView; // 기본값 즉시 반영
+
             targetDistance = Mathf.Clamp(distance, minDistance, GetEffectiveMaxDistance()); // 줌 초기값
 
             if (pickupInteractor == null)
                 pickupInteractor = FindFirstObjectByType<PlayerPickupInteractor>(); // 픽업 UI
+        }
+
+        private void OnValidate()
+        {
+            normalFieldOfView = Mathf.Clamp(normalFieldOfView, 1f, 179f); // 기본 FOV 제한
+            nexusFieldOfView = Mathf.Clamp(nexusFieldOfView, 1f, 179f); // 넥서스 FOV 제한
+
+            if (viewCamera == null)
+                viewCamera = GetComponent<Camera>(); // 표시 카메라
+
+            if (!Application.isPlaying && viewCamera != null)
+                viewCamera.fieldOfView = normalFieldOfView; // 에디터 미리보기 동기화
         }
 
         private void LateUpdate()
@@ -102,8 +123,28 @@ namespace TeamProject01.Gameplay
 
         public void SetNexusViewMode(bool enabled)
         {
+            if (nexusViewMode != enabled && hasFocusPosition)
+            {
+                isBlendingTarget = true; // 넥서스 초점 보정 전환
+                targetSwitchElapsed = 0f; // 전환 시간 초기화
+            }
+
             nexusViewMode = enabled; // 넥서스 모드
             targetDistance = Mathf.Clamp(targetDistance, minDistance, GetEffectiveMaxDistance()); // 범위 보정
+        }
+
+        public void AddShake(float duration, float amplitude, float frequency = 38f) // 외부 연출용 카메라 흔들림
+        {
+            if (duration <= 0f || amplitude <= 0f)
+            {
+                return; // 흔들림 없음
+            }
+
+            shakeDuration = Mathf.Max(shakeDuration, duration); // 더 긴 흔들림 유지
+            shakeTotalDuration = Mathf.Max(shakeTotalDuration, duration); // 감쇠 기준
+            shakeAmplitude = Mathf.Max(shakeAmplitude, amplitude); // 더 강한 흔들림 유지
+            shakeFrequency = Mathf.Max(1f, frequency); // 속도 보정
+            shakeSeed = Random.value * 1000f; // 패턴 갱신
         }
 
         private void UpdateYawInput()
@@ -167,7 +208,7 @@ namespace TeamProject01.Gameplay
 
         private void UpdateFocusPosition()
         {
-            Vector3 targetPosition = target.position + targetOffset; // 목표 위치
+            Vector3 targetPosition = target.position + targetOffset + GetNexusFocusOffset(); // 목표 위치
 
             if (!hasFocusPosition)
             {
@@ -202,14 +243,46 @@ namespace TeamProject01.Gameplay
             return nexusViewMode ? Mathf.Max(normalMax, nexusMaxDistance) : normalMax; // 넥서스 확장
         }
 
+        private Vector3 GetNexusFocusOffset()
+        {
+            return nexusViewMode ? Vector3.back * nexusSouthFocusOffset : Vector3.zero; // 양수면 월드 남쪽(-Z)
+        }
+
         private void ApplyCameraTransform()
         {
             Quaternion viewRotation = Quaternion.Euler(pitch, yaw, 0f); // 뷰 회전
             Vector3 cameraOffset = viewRotation * Vector3.back * Mathf.Max(0f, distance); // 카메라 offset
             Vector3 cameraPosition = focusPosition + cameraOffset; // 카메라 위치
+            Vector3 shakeOffset = ConsumeShakeOffset(viewRotation); // 카메라 흔들림
 
-            transform.position = cameraPosition;
+            transform.position = cameraPosition + shakeOffset;
             transform.rotation = Quaternion.LookRotation(focusPosition - cameraPosition, Vector3.up); // 대상 바라봄
+        }
+
+        private Vector3 ConsumeShakeOffset(Quaternion viewRotation) // 현재 프레임 흔들림 오프셋
+        {
+            if (shakeDuration <= 0f || shakeAmplitude <= 0f)
+            {
+                return Vector3.zero; // 흔들림 없음
+            }
+
+            shakeDuration = Mathf.Max(0f, shakeDuration - Time.deltaTime); // 시간 감소
+            float duration = Mathf.Max(0.01f, shakeTotalDuration); // 0 나눗셈 방지
+            float fade = Mathf.Clamp01(shakeDuration / duration); // 남은 비율
+            float time = Time.time * shakeFrequency + shakeSeed; // 샘플 시간
+            float x = Mathf.PerlinNoise(time, shakeSeed) * 2f - 1f; // 좌우
+            float y = Mathf.PerlinNoise(shakeSeed, time) * 2f - 1f; // 상하
+            Vector3 right = viewRotation * Vector3.right; // 카메라 기준 오른쪽
+            Vector3 up = viewRotation * Vector3.up; // 카메라 기준 위
+            Vector3 offset = (right * x + up * y) * (shakeAmplitude * fade); // 감쇠 적용
+
+            if (shakeDuration <= 0f)
+            {
+                shakeAmplitude = 0f; // 종료 정리
+                shakeTotalDuration = 0f; // 종료 정리
+            }
+
+            return offset; // 최종 흔들림
         }
     }
 }

@@ -24,6 +24,8 @@ MonoBehaviour:
   AttackSpawnHeight: 0.5
   BaseDamage: 10
   Cooldown: 4.4
+  UseDamageTypeOverride: 0
+  DamageTypeOverride: 1
   ApplyMonsterFeedback: 1
   MonsterKnockbackDistance: 0.25
   MonsterKnockbackDuration: 0.08
@@ -44,6 +46,9 @@ MonoBehaviour:
   ProjectileLifetime: 6
   PierceCount: 1
   ArcHeight: 3.8
+  UseFlameMuzzleInfluence: 0
+  FlameMuzzleInfluenceStrength: 0.3
+  FlameMuzzleInfluenceRange: 0
   RollAfterArcLanding: 0
   LandingImpactRadius: 1.1
   LandingRollDamageRadius: 0.75
@@ -66,13 +71,17 @@ MonoBehaviour:
   RequireAimBeforeFire: 1
   HeadTurnSpeed: 360
   FireAngleTolerance: 10
+  ContinueAimingDuringProjectileSequence: 0
+  FiringHeadTurnSpeedMultiplier: 1
+  UseMuzzleDirectionDuringProjectileSequence: 0
   MuzzleVfxPrefab: {fileID: 0}
   MuzzleVfxLifetime: 1.5
+  MuzzleVfxScale: {x: 1, y: 1, z: 1}
   HitVfxPrefab: {fileID: 0}
   HitVfxLifetime: 2
-  ExplosionVfxPrefab: {fileID: 5227224920444260813, guid: 36102a3cbd4d65943bdde1d0856cb953, type: 3}
-  ExplosionVfxLifetime: 0.45
-  ExplosionVfxAlpha: 0.28
+  ExplosionVfxPrefab: {fileID: 868468853075218060, guid: 6c0e2ea3d9659784bad0f7b76ee08899, type: 3}
+  ExplosionVfxLifetime: 2
+  ExplosionVfxAlpha: 1
   RecoilDistance: 0
   RecoilTiltAngle: 0
   RecoilKickDuration: 0.05

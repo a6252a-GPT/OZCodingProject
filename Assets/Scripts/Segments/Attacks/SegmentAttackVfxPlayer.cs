@@ -29,8 +29,15 @@ namespace TeamProject01.Gameplay
                 return null; // 지정 없음
             }
 
-            instance.transform.localScale = Vector3.one * (Mathf.Max(0f, radius) * 2f); // 범위 표시
-            ApplyTransparent(instance, alpha); // 임시 구체 투명 처리
+            SegmentExplosionVfxScaleSettings settings = instance.GetComponentInChildren<SegmentExplosionVfxScaleSettings>(true);
+            float scale = settings != null ? settings.ResolveUniformScale(radius) : Mathf.Max(0f, radius) * 2f;
+            instance.transform.localScale = Vector3.one * scale; // 범위 표시
+
+            if (settings == null || settings.ApplyAlphaOverride)
+            {
+                ApplyTransparent(instance, alpha); // 임시 구체 투명 처리
+            }
+
             return instance;
         }
 

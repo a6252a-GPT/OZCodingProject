@@ -6,6 +6,7 @@ namespace TeamProject01.Gameplay
     {
         private bool TryFindTarget(out EnemyController target) // 대상 탐색
         {
+            hasResolvedImpactPoint = false; // 일반 타겟 기본값
             float range = GetUpgrade().ApplyRange(AttackProfile.SearchRange); // 강화 사거리
             if (AttackProfile.MoveType == SegmentAttackMoveType.SawBounceProjectile)
             {
@@ -13,7 +14,39 @@ namespace TeamProject01.Gameplay
             }
 
             ClearSawTargetLock(); // 다른 무기는 톱날 락 해제
+            if (AttackProfile.TargetPriorityMode == SegmentTargetPriorityMode.BossEliteThenFarthest)
+            {
+                return TryFindPriorityTarget(range, out target); // 발리스타식 우선순위
+            }
+
+            if (AttackProfile.TargetPriorityMode == SegmentTargetPriorityMode.DensestClusterOrRandom)
+            {
+                return TryFindClusterOrRandomTarget(range, out target); // 수정구식 밀집/랜덤 지점
+            }
+
             return EnemyController.TryFindNearest(transform.position, range, IsTargetInAttackArea, out target); // 데이터에셋의 공격 범위 형태까지 통과한 가까운 몬스터
+        }
+
+        private bool TryFindPriorityTarget(float range, out EnemyController target) // 등급 우선 + 가장 먼 대상
+        {
+            float aimHeight = AttackProfile != null ? AttackProfile.TargetAimHeight : 0.45f; // 조준 높이
+            return SegmentTargetQuery.TryPickBossEliteThenFarthestTarget(transform.position, range, IsTargetInAttackArea, aimHeight, out target); // 공용 우선순위 검색
+        }
+
+        private bool TryFindClusterOrRandomTarget(float range, out EnemyController target) // 밀집 구역 우선 + 랜덤 fallback
+        {
+            float aimHeight = AttackProfile != null ? AttackProfile.TargetAimHeight : 0.45f; // 조준 높이
+            bool found = SegmentTargetQuery.TryPickDensestClusterOrRandomTarget(
+                transform.position,
+                range,
+                AttackProfile.ClusterProbeRadius,
+                AttackProfile.ClusterMinEnemyCount,
+                IsTargetInAttackArea,
+                aimHeight,
+                out target,
+                out resolvedImpactPoint); // 공용 밀집 검색
+            hasResolvedImpactPoint = found; // 지점 타격용 중심 저장
+            return found;
         }
 
         private bool TryFindLockedSawTarget(float range, out EnemyController target) // 톱날 고정 대상 탐색

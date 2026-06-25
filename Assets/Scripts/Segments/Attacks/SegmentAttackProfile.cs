@@ -14,10 +14,13 @@ namespace TeamProject01.Gameplay
 
         [Header("Target")]
         [Min(0.1f)] public float SearchRange = 24f; // 탐색 거리
+        public SegmentTargetPriorityMode TargetPriorityMode = SegmentTargetPriorityMode.Nearest; // 타겟 우선순위
         // 공격 가능 범위를 원형/양옆 부채꼴 중 선택
         public SegmentAttackAreaMode AttackAreaMode = SegmentAttackAreaMode.FullCircle; // 타겟 탐색 범위 형태
         // SideCones일 때 한쪽 부채꼴의 전체 각도
         [Range(1f, 180f)] public float SideConeAngle = 100f; // 좌우 각각의 부채꼴 각도
+        [Min(0.1f)] public float ClusterProbeRadius = 0.5f; // 밀집 탐색 반경
+        [Min(1)] public int ClusterMinEnemyCount = 5; // 밀집으로 인정할 최소 몬스터 수
         [Min(0f)] public float TargetAimHeight = 0.45f; // 조준 높이
         [Min(0f)] public float AttackSpawnHeight = 0.42f; // 포구 fallback 높이
 
@@ -41,6 +44,7 @@ namespace TeamProject01.Gameplay
         [Min(1)] public int ProjectileCount = 1; // 동시 발사 수
         [Min(0f)] public float SpreadAngle = 0f; // 산탄 각도
         public bool FireProjectilesSequentially; // 순차 발사 사용
+        [Min(1)] public int ProjectileVolleySize = 1; // 순차 발사 시 한 번에 묶어 발사할 수
         [Min(0f)] public float ProjectileFireDelay = 0.18f; // 순차 발사 지연
         public bool UseLoadedProjectileVisuals; // 장전 미사일 표시 사용
         [Range(0f, 1f)] public float LoadedProjectileReloadRatio = 0.5f; // 쿨타임 중 복구 시점
@@ -49,7 +53,12 @@ namespace TeamProject01.Gameplay
         [Min(0.05f)] public float ProjectileHitRadius = 0.5f; // 명중 반경
         [Min(0.1f)] public float ProjectileLifetime = 5f; // 생존 시간
         [Min(0)] public int PierceCount = 3; // 관통 가능 수
+        [Range(0f, 1f)] public float PiercingProjectileDamageRatio = 1f; // 일반 관통탄 피해 비율
         [Min(0f)] public float ArcHeight = 3f; // 곡사 높이
+
+        [Header("Impact Point Drop")]
+        public bool UseVerticalImpactDrop; // 지점 타격 투사체를 착탄점 위에서 수직 낙하
+        [Min(0f)] public float VerticalImpactDropHeight = 10f; // 착탄점 기준 생성 높이
 
         [Header("Flame Sphere")]
         public bool UseFlameMuzzleInfluence; // 화염 구체가 총구 이동을 약하게 따라갈지 여부
@@ -71,6 +80,15 @@ namespace TeamProject01.Gameplay
         [Header("Explosion")]
         [Min(0.1f)] public float ExplosionRadius = 3f; // 폭발 반경
         [Min(0.05f)] public float ExplosionLifetime = 0.35f; // 폭발 표시 시간
+
+        [Header("Area Telegraph")]
+        public GameObject AreaTelegraphPrefab; // 실제 피해 범위 바닥 표시
+        [Min(0f)] public float AreaTelegraphGroundOffset = 0.025f; // 바닥 위 표시 높이
+        [Range(0f, 1f)] public float AreaTelegraphAlpha = 0.35f; // 장판 투명도
+
+        [Header("Debuff")]
+        [Range(0.05f, 1f)] public float SlowMoveSpeedMultiplier = 1f; // 1이면 감속 없음
+        [Min(0f)] public float SlowDuration = 0f; // 감속 지속 시간
 
         [Header("Laser")]
         [Min(0.05f)] public float LaserDuration = 0.5f; // 레이저 지속 시간

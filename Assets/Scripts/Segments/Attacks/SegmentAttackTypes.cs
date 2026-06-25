@@ -27,4 +27,11 @@ namespace TeamProject01.Gameplay
         FullCircle = 0, // 기존 방식: 사거리 안이면 모든 방향 공격 가능
         SideCones = 1 // 좌우 부채꼴 안에서만 공격 가능
     }
+
+    public enum SegmentTargetPriorityMode // 타겟 우선순위
+    {
+        Nearest = 0, // 기존 방식: 가장 가까운 몬스터
+        BossEliteThenFarthest = 1, // 보스 > 엘리트 > 일반, 같은 등급이면 가장 먼 몬스터
+        DensestClusterOrRandom = 2 // 밀집 구역 우선, 없으면 사거리 내 랜덤 몬스터
+    }
 }

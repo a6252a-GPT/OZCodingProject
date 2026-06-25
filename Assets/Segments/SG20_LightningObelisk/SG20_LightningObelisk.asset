@@ -42,3 +42,8 @@ MonoBehaviour:
     HeadPrefab: {fileID: 5644814152176499879, guid: 8479603edaa19a54f99b0e7e41798114, type: 3}
     AttackProfile: {fileID: 11400000, guid: 861dd6c169dc12e4180be0db03fba1d3, type: 2}
     Memo: "Lv3 \uC784\uC2DC \uB3D9\uC77C \uD5E4\uB4DC"
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: d042ba0525cb40b4fb502da64992f6e3, type: 3}
+  - {fileID: 21300000, guid: 04b5cef4770e72d428e8ff4fe8d956b1, type: 3}
+  - {fileID: 21300000, guid: ba25f595fdf01594cadc5f4d2082ed00, type: 3}
+  CardIconSizeOffset: 0

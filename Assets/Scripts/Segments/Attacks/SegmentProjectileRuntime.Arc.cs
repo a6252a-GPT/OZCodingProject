@@ -9,13 +9,17 @@ namespace TeamProject01.Gameplay
             arcTimer += Time.deltaTime; // 진행
             float t = Mathf.Clamp01(arcTimer / arcDuration); // 비율
             Vector3 position = Vector3.Lerp(startPosition, endPosition, t); // 직선 보간
-            position.y += Mathf.Sin(t * Mathf.PI) * profile.ArcHeight; // 포물선 높이
+            if (!useVerticalImpactDrop)
+            {
+                position.y += Mathf.Sin(t * Mathf.PI) * profile.ArcHeight; // 포물선 높이
+            }
+
             Vector3 previous = transform.position; // 이전 위치
             transform.position = position; // 이동
             Vector3 moveDirection = position - previous; // 이동 방향
             if (moveDirection.sqrMagnitude > 0.0001f)
             {
-                transform.rotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up); // 방향
+                transform.rotation = ResolveProjectileRotation(moveDirection); // 방향
             }
 
             if (t >= 1f)
@@ -33,6 +37,11 @@ namespace TeamProject01.Gameplay
             if (ShouldRollAfterArcLanding())
             {
                 return; // 투석기 돌은 비행 중 충돌하지 않고 바닥 착지 후 처리
+            }
+
+            if (useVerticalImpactDrop)
+            {
+                return; // 낙하형 지점 타격은 바닥 착탄 때만 피해 처리
             }
 
             TryApplyHitAt(transform.position); // 비행 중 명중

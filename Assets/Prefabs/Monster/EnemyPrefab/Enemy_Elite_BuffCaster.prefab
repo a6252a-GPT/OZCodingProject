@@ -195,6 +195,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyController
   grade: 1
+  countsAsMonster: 1
 --- !u!114 &6283527670755869865
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -252,7 +253,7 @@ MonoBehaviour:
   firePoint: {fileID: 2635504383817441243}
   attackType: 1
   projectilePrefab: {fileID: 0}
-  impactPrefab: {fileID: 6430164519153721332, guid: 58d86f16d110fc540beec250fc83df6a, type: 3}
+  impactPrefab: {fileID: 2176432936177206862, guid: f3401e0676a2d534cb002de212741df5, type: 3}
   attackRange: 12
   attackDelay: 3
   impactLifeTimeMin: 0.5
