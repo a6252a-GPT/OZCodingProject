@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 namespace TeamProject01.Gameplay
 {
@@ -9,8 +10,15 @@ namespace TeamProject01.Gameplay
             Front, // 앞쪽 게이트
             Back, // 뒤쪽 게이트
             Left, // 왼쪽 게이트
-            Right // 오른쪽 게이트
+            Right, // 오른쪽 게이트
+            FrontLeft, // 앞왼쪽 대각선 게이트
+            FrontRight, // 앞오른쪽 대각선 게이트
+            BackLeft, // 뒤왼쪽 대각선 게이트
+            BackRight // 뒤오른쪽 대각선 게이트
         }
+
+        private const int CardinalSpawnDirectionCount = 4; // 기존 Stage Rules가 사용하던 십자 4방향 개수
+        private const int AllSpawnDirectionCount = 8; // 외부 WaveController가 사용할 수 있는 최대 8방향 개수
 
         [System.Serializable]
         private sealed class MonsterSpawnEntry // 한 번 소환할 몬스터 종류와 개수
@@ -105,6 +113,26 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        public readonly struct ExternalSpawnEntry // WaveController 같은 외부 시스템이 요청할 몬스터 조합 항목
+        {
+            public readonly EnemyController Prefab; // 생성할 몬스터 Prefab
+            public readonly int Count; // 이 항목에서 생성할 몬스터 수
+
+            public ExternalSpawnEntry(EnemyController prefab, int count)
+            {
+                Prefab = prefab;
+                Count = count;
+            }
+
+            public bool IsValid // Prefab과 수량이 모두 정상인지 확인한다.
+            {
+                get
+                {
+                    return Prefab != null && Count > 0;
+                }
+            }
+        }
+
         private Transform nexus; // Nexus Transform, Inspector에는 노출하지 않고 자동 탐색한다.
 
         private Transform monsterRoot; // 생성된 몬스터를 정리할 부모 Transform
@@ -114,6 +142,12 @@ namespace TeamProject01.Gameplay
         [SerializeField] private Transform[] backGates; // 뒤쪽 스폰 게이트 목록
         [SerializeField] private Transform[] leftGates; // 왼쪽 스폰 게이트 목록
         [SerializeField] private Transform[] rightGates; // 오른쪽 스폰 게이트 목록
+
+        [Header("Diagonal Spawn Gates")]
+        [SerializeField] private Transform[] frontLeftGates; // 앞왼쪽 대각선 스폰 게이트 목록
+        [SerializeField] private Transform[] frontRightGates; // 앞오른쪽 대각선 스폰 게이트 목록
+        [SerializeField] private Transform[] backLeftGates; // 뒤왼쪽 대각선 스폰 게이트 목록
+        [SerializeField] private Transform[] backRightGates; // 뒤오른쪽 대각선 스폰 게이트 목록
 
         [Header("Group Formation Setting")]
         [Min(0.0f)]
@@ -237,6 +271,179 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        public bool TrySpawnExternalEntries(ExternalSpawnEntry[] entries, int spawnGroupCount, int frontRowCount) // 외부 WaveController가 몬스터 조합 생성을 요청하는 입구
+        {
+            return TrySpawnExternalEntries(entries, spawnGroupCount, frontRowCount, spawnGroupCount); // 기존 호출은 요청 군단 수만큼 방향을 사용한다.
+        }
+
+        public bool TrySpawnExternalEntries(ExternalSpawnEntry[] entries, int spawnGroupCount, int frontRowCount, int directionCount) // 외부 WaveController가 사용할 방향 수까지 지정하는 입구
+        {
+            if (nexus == null) // Nexus가 아직 잡히지 않았다면
+            {
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 기존 Awake와 같은 기준으로 Nexus를 찾는다.
+                nexus = nexusObject != null ? nexusObject.transform : null; // 찾은 결과를 저장한다.
+            }
+
+            if (nexus == null) // Nexus가 없으면 스폰 기준이 아직 준비되지 않은 상태다.
+            {
+                return false;
+            }
+
+            if (monsterRoot == null) // 몬스터 정리 부모가 비어 있다면
+            {
+                monsterRoot = transform; // 기존 Awake와 같은 기준으로 자기 자신을 사용한다.
+            }
+
+            if (entries == null || entries.Length == 0) // 생성할 조합이 없다면
+            {
+                return false;
+            }
+
+            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+
+            if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
+            {
+                return false;
+            }
+
+            int groupCount = Mathf.Max(1, spawnGroupCount); // 한 번 요청으로 몇 개 군단을 만들지
+            int safeFrontRowCount = Mathf.Max(1, frontRowCount); // 한 줄에 배치할 몬스터 수
+            SpawnDirection[] selectedDirections = PickRandomDirectionsForExternalWave(directionCount); // 이번 요청에서 사용할 방향 후보를 고른다.
+            bool spawnedAny = false; // 실제로 한 마리라도 만들었는지 기록한다.
+
+            if (selectedDirections == null || selectedDirections.Length == 0) // 사용할 방향이 없다면
+            {
+                return false;
+            }
+
+            for (int i = 0; i < groupCount; i++) // 요청된 군단 수만큼 반복한다.
+            {
+                if (capacity <= 0) // 더 이상 만들 수 없다면
+                {
+                    return spawnedAny;
+                }
+
+                SpawnDirection direction = selectedDirections[i % selectedDirections.Length]; // 선택된 방향들을 순서대로 사용한다.
+                Transform gate = PickRandomGate(direction); // 해당 방향에 연결된 게이트 중 하나를 고른다.
+
+                if (gate == null) // 사용할 수 있는 게이트가 없다면
+                {
+                    return spawnedAny;
+                }
+
+                if (SpawnExternalGroupAtGate(entries, safeFrontRowCount, gate, ref capacity)) // 선택한 게이트에서 외부 요청 조합을 만든다.
+                {
+                    spawnedAny = true;
+                }
+            }
+
+            return spawnedAny;
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, int directionCount, int frontRowCount) // 외부 요청 몬스터 총량을 여러 게이트에 나눠서 생성하는 입구
+        {
+            return TrySpawnExternalEntriesDistributed(entries, directionCount, frontRowCount, null);
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, int directionCount, int frontRowCount, List<EnemyController> spawnedMonsters) // 생성된 몬스터 목록까지 필요한 외부 요청 입구
+        {
+            if (nexus == null) // Nexus가 아직 잡히지 않았다면
+            {
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 기존 Awake와 같은 기준으로 Nexus를 찾는다.
+                nexus = nexusObject != null ? nexusObject.transform : null; // 찾은 결과를 저장한다.
+            }
+
+            if (nexus == null) // Nexus가 없으면 스폰 기준이 아직 준비되지 않은 상태다.
+            {
+                return false;
+            }
+
+            if (monsterRoot == null) // 몬스터 정리 부모가 비어 있다면
+            {
+                monsterRoot = transform; // 기존 Awake와 같은 기준으로 자기 자신을 사용한다.
+            }
+
+            if (entries == null || entries.Length == 0) // 생성할 조합이 없다면
+            {
+                return false;
+            }
+
+            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+
+            if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
+            {
+                return false;
+            }
+
+            SpawnDirection[] selectedDirections = PickRandomDirectionsForExternalWave(directionCount); // 이번 특수 웨이브에서 사용할 방향을 고른다.
+
+            if (selectedDirections == null || selectedDirections.Length == 0) // 사용할 방향이 없다면
+            {
+                return false;
+            }
+
+            List<ExternalSpawnEntry>[] distributedEntries = new List<ExternalSpawnEntry>[selectedDirections.Length]; // 방향별로 나눠 담을 몬스터 목록
+
+            for (int i = 0; i < distributedEntries.Length; i++) // 방향 수만큼 빈 목록을 만든다.
+            {
+                distributedEntries[i] = new List<ExternalSpawnEntry>();
+            }
+
+            int distributedIndex = 0; // 다음 몬스터를 넣을 방향 순서
+
+            for (int entryIndex = 0; entryIndex < entries.Length; entryIndex++) // 요청된 몬스터 조합을 순회한다.
+            {
+                ExternalSpawnEntry entry = entries[entryIndex]; // 현재 조합 항목
+
+                if (!entry.IsValid) // Prefab이나 수량이 비정상이라면
+                {
+                    continue; // 분산 대상에서 제외한다.
+                }
+
+                for (int countIndex = 0; countIndex < entry.Count; countIndex++) // 몬스터를 한 마리 단위로 나눠 담는다.
+                {
+                    int groupIndex = distributedIndex % distributedEntries.Length; // 선택된 방향들에 번갈아 분배한다.
+                    distributedEntries[groupIndex].Add(new ExternalSpawnEntry(entry.Prefab, 1)); // 해당 방향에 한 마리 추가한다.
+                    distributedIndex++; // 다음 방향으로 이동한다.
+                }
+            }
+
+            if (distributedIndex <= 0) // 실제로 나눠 담은 몬스터가 없다면
+            {
+                return false;
+            }
+
+            int safeFrontRowCount = Mathf.Max(1, frontRowCount); // 한 줄에 배치할 몬스터 수
+            bool spawnedAny = false; // 실제 생성 여부
+
+            for (int i = 0; i < selectedDirections.Length; i++) // 선택된 방향별로 스폰한다.
+            {
+                if (capacity <= 0) // 더 이상 만들 수 없다면
+                {
+                    return spawnedAny;
+                }
+
+                if (distributedEntries[i].Count <= 0) // 이 방향에 배정된 몬스터가 없다면
+                {
+                    continue;
+                }
+
+                Transform gate = PickRandomGate(selectedDirections[i]); // 이 방향에 연결된 게이트 중 하나를 고른다.
+
+                if (gate == null) // 이 방향의 게이트가 비어 있다면
+                {
+                    continue; // 다른 방향은 계속 시도한다.
+                }
+
+                if (SpawnExternalGroupAtGate(distributedEntries[i].ToArray(), safeFrontRowCount, gate, ref capacity, spawnedMonsters)) // 배정된 몬스터만 이 게이트에 생성한다.
+                {
+                    spawnedAny = true;
+                }
+            }
+
+            return spawnedAny;
+        }
+
         private void SpawnStageGroups(StageSpawnRule rule) // 현재 Stage Rule의 군단 스폰
         {
             int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 남은 생성 가능 몬스터 수
@@ -317,6 +524,67 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity) // 외부 요청 조합을 특정 게이트에서 생성
+        {
+            return SpawnExternalGroupAtGate(entries, frontRowCount, gate, ref capacity, null);
+        }
+
+        private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity, List<EnemyController> spawnedMonsters) // 생성된 몬스터 목록까지 기록하는 외부 요청 처리
+        {
+            if (entries == null || entries.Length == 0) // 몬스터 조합이 없다면
+            {
+                return false; // 생성하지 않는다.
+            }
+
+            int totalMonsterCount = GetTotalMonsterCount(entries); // 이 군단에서 생성할 전체 몬스터 수를 계산한다.
+
+            if (totalMonsterCount <= 0) // 생성할 몬스터가 없다면
+            {
+                return false;
+            }
+
+            Vector3 groupCenter = gate.position + gate.forward * groupForwardOffset; // 게이트 앞쪽으로 민 군단 앞줄 중심 위치
+            groupCenter = GroundService.ProjectToGround(groupCenter, spawnGroundHeight); // 바닥 높이에 맞춘다.
+
+            int formationIndex = 0; // 오와열 배치 순서
+            bool spawnedAny = false; // 실제 생성 여부
+
+            for (int entryIndex = 0; entryIndex < entries.Length; entryIndex++) // 몬스터 조합을 순회한다.
+            {
+                ExternalSpawnEntry entry = entries[entryIndex]; // 현재 조합 항목
+
+                if (!entry.IsValid) // 유효하지 않다면
+                {
+                    continue; // 건너뛴다.
+                }
+
+                for (int countIndex = 0; countIndex < entry.Count; countIndex++) // 설정된 개수만큼 생성한다.
+                {
+                    if (capacity <= 0) // 최대 몬스터 수에 도달했다면
+                    {
+                        return spawnedAny; // 생성 중지
+                    }
+
+                    Vector3 formationOffset = GetFormationOffset(formationIndex, totalMonsterCount, frontRowCount, gate); // 오와열 위치 오프셋을 계산한다.
+                    Vector3 spawnPosition = groupCenter + formationOffset; // 최종 생성 위치를 계산한다.
+                    spawnPosition = GroundService.ProjectToGround(spawnPosition, spawnGroundHeight); // 바닥 높이에 맞춘다.
+
+                    EnemyController spawnedMonster = SpawnMonster(entry.Prefab, spawnPosition, gate.rotation); // 몬스터 하나 생성
+
+                    if (spawnedMonster != null && spawnedMonsters != null)
+                    {
+                        spawnedMonsters.Add(spawnedMonster); // 특수 웨이브 보상 판정을 위해 생성 몬스터를 기록한다.
+                    }
+
+                    formationIndex++; // 다음 오와열 위치로 이동한다.
+                    capacity--; // 남은 생성 가능 수 감소
+                    spawnedAny = true; // 최소 한 마리는 생성했다.
+                }
+            }
+
+            return spawnedAny;
+        }
+
         private int GetTotalMonsterCount(MonsterSpawnEntry[] entries) // 한 군단에 생성될 총 몬스터 수 계산
         {
             int totalCount = 0; // 총 몬스터 수
@@ -331,6 +599,30 @@ namespace TeamProject01.Gameplay
                 MonsterSpawnEntry entry = entries[i]; // 현재 항목
 
                 if (entry == null || entry.Prefab == null || entry.Count <= 0) // 유효하지 않다면
+                {
+                    continue; // 제외한다.
+                }
+
+                totalCount += entry.Count; // 생성 개수를 더한다.
+            }
+
+            return totalCount; // 총 몬스터 수를 반환한다.
+        }
+
+        private int GetTotalMonsterCount(ExternalSpawnEntry[] entries) // 외부 요청 조합의 총 몬스터 수 계산
+        {
+            int totalCount = 0; // 총 몬스터 수
+
+            if (entries == null) // 조합이 없다면
+            {
+                return 0; // 0 반환
+            }
+
+            for (int i = 0; i < entries.Length; i++) // 조합을 순회한다.
+            {
+                ExternalSpawnEntry entry = entries[i]; // 현재 항목
+
+                if (!entry.IsValid) // 유효하지 않다면
                 {
                     continue; // 제외한다.
                 }
@@ -382,19 +674,20 @@ namespace TeamProject01.Gameplay
             return right * sideOffset - forward * backOffset; // 앞줄 기준으로 뒤쪽 줄을 추가한 오와열 위치를 반환한다.
         }
 
-        private void SpawnMonster(EnemyController prefab, Vector3 spawnPosition, Quaternion gateRotation) // 몬스터 하나 생성
+        private EnemyController SpawnMonster(EnemyController prefab, Vector3 spawnPosition, Quaternion gateRotation) // 몬스터 하나 생성
         {
             Transform root = monsterRoot != null ? monsterRoot : transform; // 몬스터 부모 선택
             EnemyController monster = Instantiate(prefab, spawnPosition, gateRotation, root); // 몬스터 생성
 
             monster.name = $"{prefab.name}_{++spawnSerial:000}"; // 생성된 몬스터 이름에 번호를 붙인다.
+            return monster;
         }
 
         private Transform PickRandomGateFromAllDirections() // 모든 방향 중 랜덤 게이트 선택
         {
             for (int i = 0; i < 20; i++) // 여러 번 시도한다.
             {
-                SpawnDirection direction = (SpawnDirection)Random.Range(0, 4); // 4방향 중 하나 선택
+                SpawnDirection direction = (SpawnDirection)Random.Range(0, CardinalSpawnDirectionCount); // 기존 Stage Rules는 십자 4방향 중 하나 선택
                 Transform gate = PickRandomGate(direction); // 해당 방향 게이트 선택
 
                 if (gate != null) // 게이트가 있다면
@@ -404,6 +697,49 @@ namespace TeamProject01.Gameplay
             }
 
             return null; // 사용할 수 있는 게이트가 없다.
+        }
+
+        private SpawnDirection[] PickRandomDirectionsForExternalWave(int directionCount) // 외부 웨이브가 사용할 방향을 8방향 후보에서 랜덤 선택
+        {
+            SpawnDirection[] candidates = new SpawnDirection[AllSpawnDirectionCount]; // 연결 가능한 방향 후보
+            int candidateCount = 0; // 실제 연결된 방향 개수
+
+            for (int i = 0; i < AllSpawnDirectionCount; i++) // 8방향 전체를 확인한다.
+            {
+                SpawnDirection direction = (SpawnDirection)i; // 현재 방향
+
+                if (!HasValidGate(direction)) // 이 방향에 연결된 게이트가 없다면
+                {
+                    continue; // 후보에서 제외한다.
+                }
+
+                candidates[candidateCount] = direction; // 후보에 추가한다.
+                candidateCount++; // 후보 개수 증가
+            }
+
+            if (candidateCount <= 0) // 사용할 수 있는 방향이 없다면
+            {
+                return null;
+            }
+
+            int selectedCount = Mathf.Clamp(directionCount, 1, candidateCount); // 요청 방향 수를 실제 후보 개수 안으로 제한한다.
+
+            for (int i = 0; i < selectedCount; i++) // Fisher-Yates 방식으로 앞쪽 selectedCount개만 섞는다.
+            {
+                int randomIndex = Random.Range(i, candidateCount); // 아직 선택되지 않은 후보 중 하나
+                SpawnDirection temp = candidates[i]; // 현재 값을 임시 저장
+                candidates[i] = candidates[randomIndex]; // 랜덤 후보를 앞으로 이동
+                candidates[randomIndex] = temp; // 기존 값을 뒤로 이동
+            }
+
+            SpawnDirection[] selectedDirections = new SpawnDirection[selectedCount]; // 최종 선택 방향 배열
+
+            for (int i = 0; i < selectedCount; i++) // 선택된 방향만 복사한다.
+            {
+                selectedDirections[i] = candidates[i];
+            }
+
+            return selectedDirections; // 이번 웨이브 요청에서 사용할 방향 목록
         }
 
         private Transform PickRandomGate(SpawnDirection direction) // 방향별 게이트 배열에서 하나 선택
@@ -428,7 +764,90 @@ namespace TeamProject01.Gameplay
                 return PickValidGate(rightGates);
             }
 
+            if (direction == SpawnDirection.FrontLeft)
+            {
+                return PickValidGate(frontLeftGates);
+            }
+
+            if (direction == SpawnDirection.FrontRight)
+            {
+                return PickValidGate(frontRightGates);
+            }
+
+            if (direction == SpawnDirection.BackLeft)
+            {
+                return PickValidGate(backLeftGates);
+            }
+
+            if (direction == SpawnDirection.BackRight)
+            {
+                return PickValidGate(backRightGates);
+            }
+
             return null;
+        }
+
+        private bool HasValidGate(SpawnDirection direction) // 해당 방향에 연결된 게이트가 하나라도 있는지 확인
+        {
+            if (direction == SpawnDirection.Front)
+            {
+                return HasValidGate(frontGates);
+            }
+
+            if (direction == SpawnDirection.Back)
+            {
+                return HasValidGate(backGates);
+            }
+
+            if (direction == SpawnDirection.Left)
+            {
+                return HasValidGate(leftGates);
+            }
+
+            if (direction == SpawnDirection.Right)
+            {
+                return HasValidGate(rightGates);
+            }
+
+            if (direction == SpawnDirection.FrontLeft)
+            {
+                return HasValidGate(frontLeftGates);
+            }
+
+            if (direction == SpawnDirection.FrontRight)
+            {
+                return HasValidGate(frontRightGates);
+            }
+
+            if (direction == SpawnDirection.BackLeft)
+            {
+                return HasValidGate(backLeftGates);
+            }
+
+            if (direction == SpawnDirection.BackRight)
+            {
+                return HasValidGate(backRightGates);
+            }
+
+            return false;
+        }
+
+        private bool HasValidGate(Transform[] gates) // 게이트 배열에 실제 Transform이 하나라도 있는지 확인
+        {
+            if (gates == null || gates.Length == 0) // 배열이 없다면
+            {
+                return false;
+            }
+
+            for (int i = 0; i < gates.Length; i++) // 배열을 순회한다.
+            {
+                if (gates[i] != null) // 연결된 게이트가 있다면
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private Transform PickValidGate(Transform[] gates) // 비어 있지 않은 게이트 중 하나 선택
