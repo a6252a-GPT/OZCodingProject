@@ -22,6 +22,8 @@ namespace TeamProject01.Gameplay
         private EnemyController lockedSawTarget; // 톱날 조준 고정 대상
         private EnemyController projectileSequenceTarget; // 순차 발사 중 현재 조준 대상
         private int projectileSequencePreferredSide; // 순차 발사 중 우선 탐색할 좌/우 콘
+        private bool hasResolvedImpactPoint; // 지점 타격 프로필의 현재 착탄 지점
+        private Vector3 resolvedImpactPoint; // 실제 피해/장판 중심
         private GameObject sustainedMuzzleVfxInstance;
         private ParticleSystem[] sustainedMuzzleVfxParticles;
         private Coroutine laserRoutine; // 레이저 지속 피해

@@ -6,6 +6,7 @@ namespace TeamProject01.Gameplay
     public sealed class LoadedProjectileRegrowVisual : MonoBehaviour // 장전 표시를 쿨타임 동안 스케일로 재생성
     {
         [SerializeField, Range(0.001f, 1f)] private float minimumScaleRatio = 0.01f;
+        [SerializeField, Range(0f, 0.99f)] private float growthStartProgress = 0.5f;
         [SerializeField, Range(0f, 1f)] private float particleRgbMultiplier = 0.28f;
         [SerializeField, Range(0f, 1f)] private float particleAlphaMultiplier = 0.55f;
 
@@ -14,6 +15,7 @@ namespace TeamProject01.Gameplay
         private ParticleSystem[] particles;
         private ParticleSystem.MinMaxGradient[] originalStartColors;
         private bool hasCapturedParticleColors;
+        private bool particlesPlayingForReload;
 
         private void Awake()
         {
@@ -30,6 +32,7 @@ namespace TeamProject01.Gameplay
         public void HideImmediate()
         {
             CaptureScaleIfNeeded();
+            StopParticles();
             gameObject.SetActive(true);
             transform.localScale = fullScale * minimumScaleRatio;
         }
@@ -39,15 +42,29 @@ namespace TeamProject01.Gameplay
             CaptureScaleIfNeeded();
             gameObject.SetActive(true);
             transform.localScale = fullScale;
+            RestartParticles();
         }
 
         public void SetReloadProgress(float progress)
         {
             CaptureScaleIfNeeded();
             gameObject.SetActive(true);
-            float eased = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress));
+            if (!particlesPlayingForReload)
+            {
+                RestartParticles();
+            }
+
+            float delayedProgress = ResolveGrowthProgress(progress); // 쿨 후반부부터 성장
+            float eased = Mathf.SmoothStep(0f, 1f, delayedProgress);
             float scaleRatio = Mathf.Lerp(minimumScaleRatio, 1f, eased);
             transform.localScale = fullScale * scaleRatio;
+        }
+
+        private float ResolveGrowthProgress(float progress)
+        {
+            float clampedProgress = Mathf.Clamp01(progress);
+            float growthStart = Mathf.Clamp(growthStartProgress, 0f, 0.99f);
+            return Mathf.Clamp01(Mathf.InverseLerp(growthStart, 1f, clampedProgress));
         }
 
         private void CaptureScaleIfNeeded()
@@ -85,6 +102,50 @@ namespace TeamProject01.Gameplay
                 ParticleSystem.MainModule main = particle.main;
                 main.startColor = ScaleGradient(originalStartColors[i]);
             }
+        }
+
+        private void RestartParticles()
+        {
+            CaptureParticleColorsIfNeeded();
+            if (particles == null || particles.Length == 0)
+            {
+                return;
+            }
+
+            ApplyParticleIntensity();
+            for (int i = 0; i < particles.Length; i++)
+            {
+                ParticleSystem particle = particles[i];
+                if (particle == null)
+                {
+                    continue;
+                }
+
+                particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particle.Play(true);
+            }
+
+            particlesPlayingForReload = true;
+        }
+
+        private void StopParticles()
+        {
+            CaptureParticleColorsIfNeeded();
+            if (particles == null || particles.Length == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < particles.Length; i++)
+            {
+                ParticleSystem particle = particles[i];
+                if (particle != null)
+                {
+                    particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                }
+            }
+
+            particlesPlayingForReload = false;
         }
 
         private void CaptureParticleColorsIfNeeded()

@@ -170,7 +170,8 @@ namespace TeamProject01.Gameplay
                 moveSpeedBuffMultiplier = buffReceiver.GetMoveSpeedMultiplier(); // 현재 이동속도 버프 배율을 가져온다.
             }
 
-            Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * Time.deltaTime); // 버프 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
+            float moveSpeedDebuffMultiplier = supportDebuff != null ? supportDebuff.MoveSpeedMultiplier : 1f; // 지원/마법 감속 배율
+            Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * moveSpeedDebuffMultiplier * Time.deltaTime); // 버프/감속 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
             ////// 전찬우추가-0619 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.

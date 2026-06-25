@@ -6,7 +6,7 @@ namespace TeamProject01.Gameplay
     {
         private bool ShouldFireProjectilesSequentially() // 순차 발사 여부
         {
-            return AttackProfile.FireProjectilesSequentially || ShouldUseLoadedProjectileVisuals(); // 장전 표시 사용 시 순차 처리
+            return AttackProfile != null && AttackProfile.FireProjectilesSequentially; // 장전 표시와 순차 발사는 별도 설정
         }
 
         private bool ShouldUseLoadedProjectileVisuals() // 장전 표시 사용 여부

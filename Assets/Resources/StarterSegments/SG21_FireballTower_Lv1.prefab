@@ -164,54 +164,68 @@ MonoBehaviour:
   Muzzle: {fileID: 8974304773463973036}
   MuzzleVfxSocket: {fileID: 8742008680832239682}
   LoadedProjectileRoot: {fileID: 6005759876795408467}
---- !u!1 &8890964191648506366
-GameObject:
+--- !u!1001 &1343285600011346655
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 152284687928901438}
-  - component: {fileID: 818867255086760298}
-  m_Layer: 0
-  m_Name: SG21_LoadedFireball
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &152284687928901438
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8890964191648506366}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 4859094653518424857}
-  m_Father: {fileID: 6005759876795408467}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &818867255086760298
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6005759876795408467}
+    m_Modifications:
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1682007460361429981, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+      propertyPath: m_Name
+      value: SG21_LoadedFireball
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+--- !u!4 &1795785405424306037 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 742995450951853482, guid: af6733430f704654a9b25e8ed8358749, type: 3}
+  m_PrefabInstance: {fileID: 1343285600011346655}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8890964191648506366}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8323d33cae6dc96408c368c37cb94bf3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.LoadedProjectileRegrowVisual
-  minimumScaleRatio: 0.01
-  particleRgbMultiplier: 0.28
-  particleAlphaMultiplier: 0.55
 --- !u!1001 &1895541543199211404
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -268,10 +282,12 @@ PrefabInstance:
     m_RemovedGameObjects:
     - {fileID: 5400050718637936866, guid: 73cf682b141ad244d8a3c47be42b3c10, type: 3}
     - {fileID: 2588255804870773137, guid: 73cf682b141ad244d8a3c47be42b3c10, type: 3}
+    - {fileID: 7313192572273486357, guid: 73cf682b141ad244d8a3c47be42b3c10, type: 3}
+    - {fileID: 729604238146381626, guid: 73cf682b141ad244d8a3c47be42b3c10, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 5266658722130517983, guid: 73cf682b141ad244d8a3c47be42b3c10, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 152284687928901438}
+      addedObject: {fileID: 1795785405424306037}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 73cf682b141ad244d8a3c47be42b3c10, type: 3}
 --- !u!4 &6005759876795408467 stripped
@@ -360,66 +376,4 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 3837866179916244008, guid: 269605ebc0ea7144c9baf3262b2010d3, type: 3}
   m_PrefabInstance: {fileID: 5575011863494346217}
-  m_PrefabAsset: {fileID: 0}
---- !u!1001 &7383615019307244945
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 152284687928901438}
-    m_Modifications:
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8619269842661320168, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-      propertyPath: m_Name
-      value: VFX_TempFireball
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
---- !u!4 &4859094653518424857 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 2673210093498742408, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
-  m_PrefabInstance: {fileID: 7383615019307244945}
   m_PrefabAsset: {fileID: 0}
