@@ -19426,9 +19426,9 @@ MonoBehaviour:
     alwaysIncludeAsBasePool: 1
     entries:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 2
+      count: 4
     - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      count: 1
+      count: 4
   - waveType: 0
     poolId: P02
     displayName: "\uAE30\uBCF8 \uD63C\uD569"
@@ -19439,11 +19439,11 @@ MonoBehaviour:
     alwaysIncludeAsBasePool: 1
     entries:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 2
+      count: 4
     - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 1
+      count: 4
     - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      count: 1
+      count: 4
   - waveType: 0
     poolId: P03
     displayName: "\uC6D0\uAC70\uB9AC \uC555\uBC15"
@@ -19454,7 +19454,7 @@ MonoBehaviour:
     alwaysIncludeAsBasePool: 0
     entries:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 1
+      count: 2
     - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
       count: 3
   - waveType: 0
@@ -19539,12 +19539,12 @@ MonoBehaviour:
   eliteBaseChance: 1
   eliteChanceIncreasePerMiss: 0
   eliteMaxChance: 1
-  enableBossWave: 0
-  bossWaveStartStage: 2
+  enableBossWave: 1
+  bossWaveStartStage: 10
   bossWaveInterval: 20
   bossBaseChance: 1
-  bossChanceIncreasePerMiss: 0.05
-  bossMaxChance: 0.4
+  bossChanceIncreasePerMiss: 0.43
+  bossMaxChance: 1
   specialWaveSpawnRules: []
   enableBonusChestAfterSpecialWave: 1
   bonusChestWaveSpawner: {fileID: 1801885658}
@@ -40113,7 +40113,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -93.400024, y: 403.68027}
+  m_AnchoredPosition: {x: -93.40015, y: 403.6803}
   m_SizeDelta: {x: 65.631, y: 171.1787}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &1398963729
@@ -47021,10 +47021,12 @@ MonoBehaviour:
   TextureWorldSize: 2.5
   VisualYOffset: 0.035
   UseDemoTerrainTemplateSurface: 1
+  SurfaceProfile: {fileID: 11400000, guid: 6f0e2256627a6b74cbc5cf1cc25ab4af, type: 2}
   TerrainTemplate: {fileID: 15600000, guid: 6000f4686c9d0524fade434bf6f9a09d, type: 2}
   OverlayGeneratedTrailsOnDemoTerrain: 1
   RegenerateDemoTerrainHeights: 0
   ClearDemoDetailsOnTrails: 1
+  UseInstancedTerrainRendering: 0
   DemoTerrainEditPadding: 5
   UseHighQualityControlMap: 1
   ControlMapResolution: 1024
@@ -47098,6 +47100,7 @@ MonoBehaviour:
   FlowerAccentPrefabs: []
   MushroomPrefabs: []
   RockGroupPrefabs: []
+  DecorationCatalogAsset: {fileID: 11400000, guid: 6e5ecf7a03133b8489e7d38916c07053, type: 2}
   SpawnPandazoleAddons: 1
   UsePandazoleEditorFallbacks: 1
   PandazoleFlowerPocketCount: 22

@@ -118,7 +118,24 @@ public class CardEffect : MonoBehaviour
 
     private void Awake()
     {
-        PreloadAllPrefabs();
+#if UNITY_EDITOR
+        PreloadAllPrefabs(); // 전찬우 수정 -0625: AssetDatabase 프리로드는 에디터 전용
+#else
+        CacheAssignedPrefabs(); // 전찬우 수정 -0625: 빌드에서는 인스펙터 연결 프리팹만 캐시
+#endif
+    }
+
+    private void CacheAssignedPrefabs() // 전찬우 수정 -0625: Player Build용 프리팹 캐시
+    {
+        if (rareEffectPrefab != null)
+        {
+            rarePrefabCache[rareEffect] = rareEffectPrefab;
+        }
+
+        if (uniqueEffectPrefab != null)
+        {
+            uniquePrefabCache[uniqueEffect] = uniqueEffectPrefab;
+        }
     }
 
     private void Start()
