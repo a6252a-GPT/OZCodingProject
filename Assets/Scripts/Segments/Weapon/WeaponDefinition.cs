@@ -163,14 +163,28 @@ namespace TeamProject01.Gameplay
         public float ExplosionRadiusUnique = 0f; // 유니크
         public bool ExplosionRadiusUsePercentUnique; // 유니크 %곱연산 사용
 
-        [Header("추후 — 카드 UI")]
-        public GameObject CardPrefabOverride; // 강화별 공통 카드 프리팹
-        public GameObject RareCardPrefabOverride; // 레어 전용
-        public GameObject UniqueCardPrefabOverride; // 유니크 전용
-        public Sprite CardIconOverride; // 카드 아이콘
+        [Header("카드 이미지 변경")]
+        public GameObject CardPrefabOverride; // 강화별 공통 카드 프리팹 (등급 무관 동일 이미지)
+        // 안건준 추가 - 0623 : 카드에 표시할 세그먼트 레벨별 이미지 (인덱스 0=Lv1, 1=Lv2, 2=Lv3 ...)
+        public Sprite CardIconSprite; // Lv1 기본 아이콘 (레벨별 배열 미설정 시 fallback)
+        public Sprite[] CardIconSpritesPerLevel; // 레벨별 아이콘 배열 (0=Lv1, 1=Lv2, ...)
+        // 안건준 추가 - 0623 : 카드 아이콘 크기 조절 (0 = 원본, -100 = 절반, +100 = 두배)
+        [Range(-100f, 100f)] public float CardIconSizeOffset = 0f; // 아이콘 크기 조절
 
         public string NormalizedId => string.IsNullOrWhiteSpace(EnhancementId) ? string.Empty : EnhancementId.Trim(); // 비교 ID
         public string NormalizedTargetSegmentId => string.IsNullOrWhiteSpace(TargetSegmentId) ? string.Empty : TargetSegmentId.Trim(); // 대상 ID
+
+        // 안건준 추가 - 0623 : 현재 세그먼트 레벨에 맞는 아이콘 반환 (배열 없으면 CardIconSprite fallback)
+        public Sprite GetIconSpriteForLevel(int segmentLevel)
+        {
+            int idx = Mathf.Max(0, segmentLevel - 1); // 레벨 1 → 인덱스 0
+            if (CardIconSpritesPerLevel != null && idx < CardIconSpritesPerLevel.Length && CardIconSpritesPerLevel[idx] != null)
+            {
+                return CardIconSpritesPerLevel[idx]; // 레벨별 전용 스프라이트
+            }
+
+            return CardIconSprite; // fallback: Lv1 기본 스프라이트
+        }
         public bool HasId => !string.IsNullOrWhiteSpace(EnhancementId); // ID 존재
         public bool HasTarget => !string.IsNullOrWhiteSpace(TargetSegmentId); // 대상 존재
 
@@ -192,28 +206,20 @@ namespace TeamProject01.Gameplay
             || HasTieredInt(PierceCount, PierceCountRare, PierceCountUnique)
             || HasTieredFloat(ExplosionRadius, ExplosionRadiusRare, ExplosionRadiusUnique); // 수치 보너스 존재
 
-        public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹 + 색상 틴트 여부
+        public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹
         {
             public readonly GameObject Prefab;
-            public readonly bool ApplyFallbackVisual;
 
-            public CardSpawnResolve(GameObject prefab, bool applyFallbackVisual)
+            public CardSpawnResolve(GameObject prefab)
             {
                 Prefab = prefab;
-                ApplyFallbackVisual = applyFallbackVisual;
             }
         }
 
         public CardSpawnResolve ResolveCardSpawn(StatUpgrade.StatCardTier tier, GameObject defaultPrefab, SegmentAddCard templatePresentation = null)
         {
             GameObject resolvedPrefab = ResolveSpawnPrefabForTier(tier, defaultPrefab, templatePresentation); // 등급별 프리팹
-            if (resolvedPrefab == null)
-            {
-                resolvedPrefab = defaultPrefab; // fallback
-            }
-
-            bool applyFallbackVisual = resolvedPrefab == defaultPrefab || resolvedPrefab == null; // 기본 껍데기면 색 틴트
-            return new CardSpawnResolve(resolvedPrefab, applyFallbackVisual);
+            return new CardSpawnResolve(resolvedPrefab != null ? resolvedPrefab : defaultPrefab);
         }
 
         public float GetBaseDamage(StatUpgrade.StatCardTier tier) => GetTieredFlatValue(BaseDamage, BaseDamageRare, BaseDamageUnique, BaseDamageUsePercent, BaseDamageUsePercentRare, BaseDamageUsePercentUnique, tier);
@@ -348,30 +354,13 @@ namespace TeamProject01.Gameplay
 
         private GameObject ResolveSpawnPrefabForTier(StatUpgrade.StatCardTier tier, GameObject defaultPrefab, SegmentAddCard templatePresentation)
         {
-            switch (tier)
-            {
-                case StatUpgrade.StatCardTier.Unique:
-                    if (UniqueCardPrefabOverride != null)
-                    {
-                        return UniqueCardPrefabOverride;
-                    }
-
-                    break;
-                case StatUpgrade.StatCardTier.Rare:
-                    if (RareCardPrefabOverride != null)
-                    {
-                        return RareCardPrefabOverride;
-                    }
-
-                    break;
-            }
-
+            // 안건준 수정 - 0623 : 레어/유니크 전용 프리팹 제거 — 등급 무관 공통 프리팹 사용
             if (CardPrefabOverride != null)
             {
                 return CardPrefabOverride;
             }
 
-            return defaultPrefab; // templatePresentation 등급 프리팹은 SegmentAddCard 연동 시 확장
+            return defaultPrefab;
         }
         // 건춘추가 - 0621 ======
     }

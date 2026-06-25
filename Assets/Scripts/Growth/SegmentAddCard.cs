@@ -26,56 +26,19 @@ public class SegmentAddCard : MonoBehaviour
     ////// 전찬우추가 - 외부에서 추가 수 조회
     public int SegmentAddCount => Mathf.Max(1, segmentAddCount); // 최소 1 보정
 
-    [Header("무기 강화 카드 등급 표시")]
-    [SerializeField] private Image cardHighlightImage; // 비우면 자식 Image 탐색
-    [SerializeField] private Color normalCardColor = Color.white; // 일반 카드 색
-    [SerializeField] private Color rareCardColor = Color.yellow; // 레어 카드 색
-    [SerializeField] private Color uniqueCardColor = Color.green; // 유니크 카드 색
-
-    [Header("추후 — 등급별 프리팹 교체 (비우면 색상 틴트 방식)")]
-    [SerializeField] private GameObject rareCardPrefab; // 레어 전용 프리팹
-    [SerializeField] private GameObject uniqueCardPrefab; // 유니크 전용 프리팹
-
-    [Header("추후 — 카드 아이콘 (비우면 자식 Icon/Image 탐색)")]
+    [Header("카드 아이콘")]
     [SerializeField] private Image cardIconImage; // 강화별 아이콘 표시 대상
 
     private StatUpgrade.StatCardTier weaponEnhancementTier = StatUpgrade.StatCardTier.Normal; // 현재 등급
 
     public StatUpgrade.StatCardTier WeaponEnhancementTier => weaponEnhancementTier; // 외부 등급 조회
 
-    public GameObject ResolveSpawnPrefabForTier(StatUpgrade.StatCardTier tier, GameObject defaultPrefab) // 등급별 Instantiate 대상
+    public void ApplyWeaponEnhancementTier(StatUpgrade.StatCardTier tier) // 생성 후 등급 저장
     {
-        switch (tier)
-        {
-            case StatUpgrade.StatCardTier.Unique:
-                if (uniqueCardPrefab != null)
-                {
-                    return uniqueCardPrefab;
-                }
-
-                break;
-            case StatUpgrade.StatCardTier.Rare:
-                if (rareCardPrefab != null)
-                {
-                    return rareCardPrefab;
-                }
-
-                break;
-        }
-
-        return defaultPrefab != null ? defaultPrefab : gameObject;
+        weaponEnhancementTier = tier; // 등급 저장 (VFX는 CardEffect가 처리)
     }
 
-    public void ApplyWeaponEnhancementTier(StatUpgrade.StatCardTier tier, bool applyFallbackVisual) // 생성 후 등급·색상
-    {
-        weaponEnhancementTier = tier; // 등급 저장
-        if (applyFallbackVisual)
-        {
-            ApplyCardVisual(tier); // 색상 틴트
-        }
-    }
-
-    public void ApplyCardIcon(Sprite icon) // WeaponDefinition 아이콘 적용
+    public void ApplyCardIcon(Sprite icon, float sizeOffset = 0f) // WeaponDefinition 아이콘 적용
     {
         if (icon == null)
         {
@@ -90,6 +53,25 @@ public class SegmentAddCard : MonoBehaviour
 
         image.sprite = icon;
         image.enabled = true;
+        // 안건준 수정 - 0623 : 스프라이트 원본 픽셀 크기 + 인스펙터 크기 조절값 적용
+        image.color = Color.white;
+        image.type = Image.Type.Simple;
+        image.preserveAspect = false;
+        image.SetNativeSize(); // 원본 크기로 먼저 설정
+        ApplyIconSizeOffset(image.rectTransform, sizeOffset); // 크기 조절 적용
+    }
+
+    // 안건준 추가 - 0623 : 원본 크기 기준으로 비율 조절 (0=원본, -50=절반, 100=두배)
+    private static void ApplyIconSizeOffset(RectTransform rt, float offset)
+    {
+        if (rt == null || Mathf.Approximately(offset, 0f))
+        {
+            return; // 조절 없음
+        }
+
+        float scale = 1f + Mathf.Clamp(offset, -100f, 100f) / 100f;
+        scale = Mathf.Max(0.01f, scale); // 최소 크기 보정
+        rt.sizeDelta *= scale;
     }
 
     ////// 전찬우추가 - 세그먼트 카탈로그 후보 카드로 설정
@@ -136,6 +118,11 @@ public class SegmentAddCard : MonoBehaviour
         string title = string.IsNullOrWhiteSpace(definition.DisplayName) ? definition.NormalizedId : definition.DisplayName; // 제목
         string description = string.IsNullOrWhiteSpace(definition.Description) ? definition.NormalizedId : definition.Description; // 설명
         ApplyTexts(title, description); // 카드 문구
+        // 안건준 추가 - 0623 : WeaponDefinition에 지정된 세그먼트 Lv1 아이콘 + 크기 조절 적용
+        if (definition.CardIconSprite != null)
+        {
+            ApplyCardIcon(definition.CardIconSprite, definition.CardIconSizeOffset);
+        }
         SetButtonInteractable(IsSelectableChoice); // 버튼 상태
     }
 
@@ -189,6 +176,23 @@ public class SegmentAddCard : MonoBehaviour
             return; // 이미 준비됨
         }
 
+        // 안건준 추가 - 0623 : 이름 기반 검색 우선 (SegmentUpgradeCard 프리팹의 Card_Text / DescText 대응)
+        if (titleText == null)
+        {
+            titleText = FindTextByName("Card_Text");
+        }
+
+        if (descriptionText == null)
+        {
+            descriptionText = FindTextByName("DescText");
+        }
+
+        // 이름으로 못 찾은 경우 인덱스 fallback
+        if (titleText != null && descriptionText != null)
+        {
+            return;
+        }
+
         TMP_Text[] texts = GetComponentsInChildren<TMP_Text>(true); // 하위 텍스트 검색
         if (titleText == null && texts.Length > 0)
         {
@@ -199,6 +203,28 @@ public class SegmentAddCard : MonoBehaviour
         {
             descriptionText = texts[1]; // 기존 카드 두 번째 텍스트
         }
+    }
+
+    // 안건준 추가 - 0623 : 자식 오브젝트 이름으로 TMP_Text 검색
+    private TMP_Text FindTextByName(string objectName)
+    {
+        Transform found = transform.Find(objectName); // 직계 자식 검색
+        if (found != null && found.TryGetComponent(out TMP_Text text))
+        {
+            return text;
+        }
+
+        // 직계 자식에 없으면 전체 하위 탐색
+        TMP_Text[] all = GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i].gameObject.name == objectName)
+            {
+                return all[i];
+            }
+        }
+
+        return null;
     }
 
     ////// 전찬우추가 - 없음/불가 카드는 실제 버튼도 막음
@@ -216,53 +242,18 @@ public class SegmentAddCard : MonoBehaviour
         }
     }
 
-    private void ApplyCardVisual(StatUpgrade.StatCardTier tier) // 등급에 따라 카드 색 변경
-    {
-        Image image = ResolveCardHighlightImage();
-        if (image == null)
-        {
-            return; // 표시 대상 없음
-        }
-
-        Color targetColor = normalCardColor;
-        if (tier == StatUpgrade.StatCardTier.Unique)
-        {
-            targetColor = uniqueCardColor;
-        }
-        else if (tier == StatUpgrade.StatCardTier.Rare)
-        {
-            targetColor = rareCardColor;
-        }
-
-        image.color = new Color(targetColor.r, targetColor.g, targetColor.b, image.color.a);
-    }
-
-    private Image ResolveCardHighlightImage()
-    {
-        if (cardHighlightImage != null)
-        {
-            return cardHighlightImage;
-        }
-
-        Transform imageTransform = transform.Find("Image");
-        if (imageTransform != null && imageTransform.TryGetComponent(out Image childImage))
-        {
-            cardHighlightImage = childImage;
-            return cardHighlightImage;
-        }
-
-        if (TryGetComponent(out Image rootImage))
-        {
-            cardHighlightImage = rootImage;
-        }
-
-        return cardHighlightImage;
-    }
-
     private Image ResolveCardIconImage()
     {
         if (cardIconImage != null)
         {
+            return cardIconImage;
+        }
+
+        // 안건준 추가 - 0623 : SegmentUpgradeCard 프리팹의 "Image" 오브젝트 우선 탐색
+        Transform imageTransform = transform.Find("Image");
+        if (imageTransform != null && imageTransform.TryGetComponent(out Image namedImage))
+        {
+            cardIconImage = namedImage;
             return cardIconImage;
         }
 
@@ -277,7 +268,7 @@ public class SegmentAddCard : MonoBehaviour
         for (int i = 0; i < images.Length; i++)
         {
             Image candidate = images[i];
-            if (candidate == cardHighlightImage)
+            if (candidate == cardIconImage)
             {
                 continue;
             }
@@ -288,4 +279,5 @@ public class SegmentAddCard : MonoBehaviour
 
         return null;
     }
+
 }

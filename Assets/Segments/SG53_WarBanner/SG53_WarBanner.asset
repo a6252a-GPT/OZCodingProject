@@ -29,4 +29,10 @@ MonoBehaviour:
     BodyPrefab: {fileID: 2894136110198890850, guid: 87dcfb70d87b2264d83db394c1d4c959, type: 3}
     HeadPrefab: {fileID: 411686866172217121, guid: e470e5354d059da4380a04168460b805, type: 3}
     AttackProfile: {fileID: 0}
-    Memo: "SP_SG53_WarBanner_Lv1 프로필 사용. 발동 중 앞뒤 3칸 아군 세그먼트의 최종 공격속도를 30% 증가시켜 쿨타임을 감소시킴."
+    Memo: "SP_SG53_WarBanner_Lv1 \uD504\uB85C\uD544 \uC0AC\uC6A9. \uBC1C\uB3D9 \uC911
+      \uC55E\uB4A4 3\uCE78 \uC544\uAD70 \uC138\uADF8\uBA3C\uD2B8\uC758 \uCD5C\uC885
+      \uACF5\uACA9\uC18D\uB3C4\uB97C 30% \uC99D\uAC00\uC2DC\uCF1C \uCFE8\uD0C0\uC784\uC744
+      \uAC10\uC18C\uC2DC\uD0B4."
+  CardIconSpritesPerLevel:
+  - {fileID: 21300000, guid: a081fcb270a7643438850390fb14c0d8, type: 3}
+  CardIconSizeOffset: 0

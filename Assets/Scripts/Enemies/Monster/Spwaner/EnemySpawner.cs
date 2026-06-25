@@ -135,8 +135,7 @@ namespace TeamProject01.Gameplay
 
         private Transform nexus; // Nexus Transform, Inspector에는 노출하지 않고 자동 탐색한다.
 
-        [Header("Reference")]
-        [SerializeField] private Transform monsterRoot; // 생성된 몬스터를 정리할 부모 Transform
+        private Transform monsterRoot; // 생성된 몬스터를 정리할 부모 Transform
 
         [Header("Spawn Gates")]
         [SerializeField] private Transform[] frontGates; // 앞쪽 스폰 게이트 목록
@@ -178,16 +177,13 @@ namespace TeamProject01.Gameplay
 
         private void Awake()
         {
-            if (nexus == null) // Nexus가 연결되어 있지 않다면
+            if(nexus == null)
             {
-                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 씬에서 Nexus_Core를 찾는다.
-                nexus = nexusObject != null ? nexusObject.transform : null; // 찾았다면 Transform을 저장한다.
+                GameObject nexusObject = GameObject.Find("Nexus_Core");
+                nexus = nexusObject != null ? nexusObject.transform : null;
             }
 
-            if (monsterRoot == null) // 몬스터 정리 부모가 없다면
-            {
-                monsterRoot = transform; // 자기 자신을 부모로 사용한다.
-            }
+            monsterRoot = MonsterRuntimeRoot.GetRootOrFallback(transform);
         }
 
         private void OnEnable()
