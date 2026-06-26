@@ -30,6 +30,9 @@ namespace TeamProject01.Gameplay
         {
             public string compositionId = "E01"; // Inspector에서 구분하기 위한 ID입니다.
 
+            [Min(1)]
+            public int minStage = 1; // 이 Stage부터 조합 후보에 포함됩니다.
+
             [Min(0)]
             public int weight = 100; // 여러 조합 후보 중 선택될 확률 가중치입니다.
 
@@ -168,7 +171,7 @@ namespace TeamProject01.Gameplay
                 return default;
             }
 
-            EliteComposition composition = PickComposition();
+            EliteComposition composition = PickComposition(stage);
 
             if (composition == null)
             {
@@ -201,7 +204,7 @@ namespace TeamProject01.Gameplay
             return Mathf.Clamp(result, 0, 100);
         }
 
-        private EliteComposition PickComposition()
+        private EliteComposition PickComposition(int stage)
         {
             if (eliteCompositions == null)
             {
@@ -223,7 +226,7 @@ namespace TeamProject01.Gameplay
             {
                 EliteComposition composition = eliteCompositions[i];
 
-                if (CanUseComposition(composition))
+                if (CanUseComposition(composition, stage))
                 {
                     totalWeight += composition.weight;
                 }
@@ -240,7 +243,7 @@ namespace TeamProject01.Gameplay
             {
                 EliteComposition composition = eliteCompositions[i];
 
-                if (!CanUseComposition(composition))
+                if (!CanUseComposition(composition, stage))
                 {
                     continue;
                 }
@@ -256,9 +259,14 @@ namespace TeamProject01.Gameplay
             return null;
         }
 
-        private bool CanUseComposition(EliteComposition composition)
+        private bool CanUseComposition(EliteComposition composition, int stage)
         {
             if (composition == null || !composition.IsAvailable())
+            {
+                return false;
+            }
+
+            if (stage < Mathf.Max(1, composition.minStage))
             {
                 return false;
             }

@@ -38,24 +38,7 @@ namespace TeamProject01.Gameplay.EditorTools
                 WaveInspectorUtility.DrawProperty(serializedObject, "specialWaveController", "특수 웨이브 컨트롤러 자리");
             }
 
-            DrawRuntimeState();
-
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private void DrawRuntimeState()
-        {
-            if (!Application.isPlaying)
-            {
-                return;
-            }
-
-            WaveController controller = (WaveController)target;
-
-            WaveInspectorUtility.DrawSection("런타임 상태");
-            EditorGUILayout.LabelField("현재 Stage", controller.CurrentStage.ToString());
-            EditorGUILayout.LabelField("다음 Stage까지 남은 시간", controller.RemainingStageSeconds.ToString("0.0"));
-            EditorGUILayout.LabelField("현재 웨이브 상태", controller.CurrentState.ToString());
         }
     }
 }

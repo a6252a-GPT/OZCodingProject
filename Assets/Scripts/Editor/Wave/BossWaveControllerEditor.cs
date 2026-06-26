@@ -18,8 +18,8 @@ namespace TeamProject01.Gameplay.EditorTools
 
             WaveInspectorUtility.DrawSection("보스 진행 설정", "보스는 등록된 순서대로 등장합니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "enableBossWave", "보스 웨이브 사용");
-            WaveInspectorUtility.DrawProperty(serializedObject, "bossStartStage", "보스 시작 Stage");
-            WaveInspectorUtility.DrawProperty(serializedObject, "bossIntervalStage", "보스 재등장 대기 Stage");
+            WaveInspectorUtility.DrawProperty(serializedObject, "bossStartStage", "첫 보스 Stage");
+            WaveInspectorUtility.DrawProperty(serializedObject, "bossIntervalStage", "보스 등장 간격 Stage");
             WaveInspectorUtility.DrawProperty(serializedObject, "blockAdditionalBossWhileAlive", "보스 생존 중 추가 등장 금지");
             WaveInspectorUtility.DrawProperty(serializedObject, "spawnChestAfterBossClear", "보스 처치 후 상자 생성");
 
@@ -28,14 +28,7 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "endBossStageOnBossClear", "보스 Stage는 처치 시 종료");
 
             DrawBossSequence();
-
-            WaveInspectorUtility.DrawSection("확장 설정", "나중에 보스 종류가 부족할 때 조합 보스로 이어갈 자리입니다.");
-            WaveInspectorUtility.DrawProperty(serializedObject, "enableBossCombination", "보스 조합 사용");
-
-            if (!serializedObject.FindProperty("enableBossCombination").boolValue)
-            {
-                EditorGUILayout.HelpBox("현재는 잠금 상태입니다. 보스가 더 필요해지면 이 옵션을 켜고 확장하면 됩니다.", MessageType.Info);
-            }
+            DrawBossCombinations();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -47,16 +40,86 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawArray(
                 bosses,
                 "보스 목록",
-                (element, index) => WaveInspectorUtility.GetIdNameLabel(element, "bossId", "displayName", index),
+                GetBossLabel,
                 DrawBossBody,
                 "+ 보스 추가",
                 "- 마지막 보스 삭제");
+        }
+
+        private static string GetBossLabel(SerializedProperty boss, int index)
+        {
+            SerializedProperty id = boss.FindPropertyRelative("bossId");
+            SerializedProperty name = boss.FindPropertyRelative("displayName");
+
+            string idValue = id != null && !string.IsNullOrWhiteSpace(id.stringValue) ? id.stringValue : $"B{index + 1:00}";
+            string nameValue = name != null && !string.IsNullOrWhiteSpace(name.stringValue) ? name.stringValue : "보스 이름 없음";
+
+            return $"{index + 1}. {idValue} - {nameValue}";
         }
 
         private static void DrawBossBody(SerializedProperty boss)
         {
             EditorGUILayout.PropertyField(boss.FindPropertyRelative("bossId"), new GUIContent("보스 ID"));
             EditorGUILayout.PropertyField(boss.FindPropertyRelative("displayName"), new GUIContent("보스 이름"));
+            EditorGUILayout.PropertyField(boss.FindPropertyRelative("prefab"), new GUIContent("보스 Prefab"));
+        }
+
+        private void DrawBossCombinations()
+        {
+            WaveInspectorUtility.DrawSection("보스 조합 설정", "체크하면 조합 시작 Stage 이후 보스 조합 목록을 순서대로 사용합니다.");
+
+            SerializedProperty enableCombination = serializedObject.FindProperty("enableBossCombination");
+            EditorGUILayout.PropertyField(enableCombination, new GUIContent("보스 조합 사용"));
+
+            using (new EditorGUI.DisabledScope(enableCombination == null || !enableCombination.boolValue))
+            {
+                WaveInspectorUtility.DrawProperty(serializedObject, "bossCombinationStartStage", "보스 조합 시작 Stage");
+
+                SerializedProperty combinations = serializedObject.FindProperty("bossCombinations");
+                WaveInspectorUtility.DrawArray(
+                    combinations,
+                    "보스 조합 목록",
+                    GetCombinationLabel,
+                    DrawCombinationBody,
+                    "+ 조합 추가",
+                    "- 마지막 조합 삭제");
+            }
+        }
+
+        private static string GetCombinationLabel(SerializedProperty combination, int index)
+        {
+            SerializedProperty id = combination.FindPropertyRelative("combinationId");
+            SerializedProperty name = combination.FindPropertyRelative("displayName");
+
+            string idValue = id != null && !string.IsNullOrWhiteSpace(id.stringValue) ? id.stringValue : $"BC{index + 1:00}";
+            string nameValue = name != null && !string.IsNullOrWhiteSpace(name.stringValue) ? name.stringValue : "조합 이름 없음";
+
+            return $"{idValue} - {nameValue}";
+        }
+
+        private static void DrawCombinationBody(SerializedProperty combination)
+        {
+            EditorGUILayout.PropertyField(combination.FindPropertyRelative("combinationId"), new GUIContent("조합 ID"));
+            EditorGUILayout.PropertyField(combination.FindPropertyRelative("displayName"), new GUIContent("조합 이름"));
+
+            SerializedProperty bosses = combination.FindPropertyRelative("bosses");
+            WaveInspectorUtility.DrawArray(
+                bosses,
+                "같이 나올 보스",
+                GetCombinationBossLabel,
+                DrawCombinationBossBody,
+                "+ 보스 추가",
+                "- 마지막 보스 삭제");
+        }
+
+        private static string GetCombinationBossLabel(SerializedProperty boss, int index)
+        {
+            SerializedProperty prefab = boss.FindPropertyRelative("prefab");
+            return prefab != null && prefab.objectReferenceValue != null ? prefab.objectReferenceValue.name : $"보스 {index + 1}";
+        }
+
+        private static void DrawCombinationBossBody(SerializedProperty boss)
+        {
             EditorGUILayout.PropertyField(boss.FindPropertyRelative("prefab"), new GUIContent("보스 Prefab"));
         }
     }

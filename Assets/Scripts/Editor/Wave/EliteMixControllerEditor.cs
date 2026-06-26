@@ -68,14 +68,17 @@ namespace TeamProject01.Gameplay.EditorTools
         {
             SerializedProperty id = composition.FindPropertyRelative("compositionId");
             SerializedProperty type = composition.FindPropertyRelative("combinationType");
+            SerializedProperty minStage = composition.FindPropertyRelative("minStage");
             string idValue = id != null && !string.IsNullOrWhiteSpace(id.stringValue) ? id.stringValue : $"Element {index}";
             string typeValue = type != null && !string.IsNullOrWhiteSpace(type.stringValue) ? type.stringValue : "성격 미지정";
-            return $"{idValue} - {typeValue}";
+            int minStageValue = minStage != null ? Mathf.Max(1, minStage.intValue) : 1;
+            return $"{idValue} - {typeValue} / Stage {minStageValue}+";
         }
 
         private static void DrawCompositionBody(SerializedProperty composition)
         {
             EditorGUILayout.PropertyField(composition.FindPropertyRelative("compositionId"), new GUIContent("조합 ID"));
+            EditorGUILayout.PropertyField(composition.FindPropertyRelative("minStage"), new GUIContent("최소 등장 Stage"));
             EditorGUILayout.PropertyField(composition.FindPropertyRelative("weight"), new GUIContent("선택 가중치"));
             EditorGUILayout.PropertyField(composition.FindPropertyRelative("combinationType"), new GUIContent("조합 성격"));
             DrawEliteRatios(composition.FindPropertyRelative("elites"));

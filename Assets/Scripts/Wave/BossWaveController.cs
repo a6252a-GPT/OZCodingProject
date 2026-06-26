@@ -14,6 +14,40 @@ namespace TeamProject01.Gameplay
             public EnemyController prefab; // Inspector에서 보스 Prefab을 직접 연결합니다.
         }
 
+        [Serializable]
+        public sealed class BossCombinationEntry
+        {
+            public EnemyController prefab; // 조합에 같이 등장할 보스 Prefab입니다.
+        }
+
+        [Serializable]
+        public sealed class BossCombination
+        {
+            public string combinationId = "BC01"; // Inspector에서 구분하기 위한 조합 ID입니다.
+            public string displayName = "보스 조합"; // Inspector에 보일 조합 이름입니다.
+            public BossCombinationEntry[] bosses = Array.Empty<BossCombinationEntry>(); // 같이 등장할 보스 목록입니다.
+
+            public bool IsAvailable()
+            {
+                if (bosses == null)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < bosses.Length; i++)
+                {
+                    BossCombinationEntry boss = bosses[i];
+
+                    if (boss != null && boss.prefab != null)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         [Header("참조")]
         [SerializeField] private EnemySpawner enemySpawner; // 실제 생성은 기존 EnemySpawner API에 맡깁니다.
         [SerializeField] private BonusChestWaveSpawner bonusChestWaveSpawner; // 보스 처치 후 상자 생성에 사용합니다.
@@ -38,12 +72,18 @@ namespace TeamProject01.Gameplay
             new BossEntry()
         };
 
-        [Header("확장 설정")]
-        [SerializeField] private bool enableBossCombination; // 추후 보스가 부족할 때 조합 보스로 확장하기 위한 자리입니다.
+        [Header("보스 조합")]
+        [SerializeField] private bool enableBossCombination; // 켜두면 일정 Stage 이후 보스 조합을 사용합니다.
+
+        [Min(1)]
+        [SerializeField] private int bossCombinationStartStage = 60; // 이 Stage부터 보스 조합을 사용할 수 있습니다.
+
+        [SerializeField] private BossCombination[] bossCombinations =
+        {
+            new BossCombination()
+        };
 
         private readonly List<EnemyController> activeBosses = new List<EnemyController>(); // 현재 살아있는 보스 목록입니다.
-        private int lastBossStage = -9999; // 마지막으로 보스를 스폰한 Stage입니다.
-        private int nextBossIndex; // 다음에 사용할 보스 순서입니다.
         private bool waitingBossClearReward; // 보스 처치 보상 상자를 한 번만 주기 위한 플래그입니다.
 
         public bool HasActiveBoss
@@ -74,9 +114,9 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            BossEntry boss = PickNextBoss();
+            EnemySpawner.ExternalSpawnEntry[] entries = BuildBossSpawnEntries(stage);
 
-            if (boss == null || boss.prefab == null)
+            if (entries == null || entries.Length == 0)
             {
                 return false;
             }
@@ -88,14 +128,11 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            EnemySpawner.ExternalSpawnEntry[] entries =
-            {
-                new EnemySpawner.ExternalSpawnEntry(boss.prefab, 1)
-            };
+            List<EnemyController> spawnedBosses = new List<EnemyController>(entries.Length);
 
-            List<EnemyController> spawnedBosses = new List<EnemyController>(1);
+            int bossDirectionCount = Mathf.Max(1, entries.Length);
 
-            if (!enemySpawner.TrySpawnExternalEntriesDistributed(entries, 1, 1, spawnedBosses))
+            if (!enemySpawner.TrySpawnExternalEntriesDistributed(entries, bossDirectionCount, 1, spawnedBosses))
             {
                 return false;
             }
@@ -110,18 +147,17 @@ namespace TeamProject01.Gameplay
                 }
             }
 
-            lastBossStage = stage;
             waitingBossClearReward = activeBosses.Count > 0;
-            AdvanceBossIndex();
             return activeBosses.Count > 0;
         }
 
         private void Update()
         {
-            bool hadActiveBoss = activeBosses.Count > 0;
             CleanupActiveBosses();
 
-            if (!waitingBossClearReward || !hadActiveBoss || activeBosses.Count > 0)
+            // WaveController가 먼저 HasActiveBoss를 확인하면 activeBosses가 이미 정리될 수 있습니다.
+            // 그래서 "이전에 보스가 있었는지"보다 보상 대기 플래그와 현재 생존 여부만 봅니다.
+            if (!waitingBossClearReward || activeBosses.Count > 0)
             {
                 return;
             }
@@ -151,42 +187,119 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
+            int safeInterval = Mathf.Max(1, bossIntervalStage);
+
+            if ((stage - bossStartStage) % safeInterval != 0)
+            {
+                return false;
+            }
+
             if (blockAdditionalBossWhileAlive && HasActiveBoss)
             {
                 return false;
             }
 
-            return stage - lastBossStage >= bossIntervalStage;
+            return true;
         }
 
-        private BossEntry PickNextBoss()
+        private EnemySpawner.ExternalSpawnEntry[] BuildBossSpawnEntries(int stage)
+        {
+            if (enableBossCombination && stage >= bossCombinationStartStage)
+            {
+                EnemySpawner.ExternalSpawnEntry[] combinationEntries = BuildBossCombinationEntries(stage);
+
+                if (combinationEntries.Length > 0)
+                {
+                    return combinationEntries;
+                }
+            }
+
+            BossEntry boss = PickSingleBossForStage(stage);
+
+            if (boss == null || boss.prefab == null)
+            {
+                return Array.Empty<EnemySpawner.ExternalSpawnEntry>();
+            }
+
+            return new[]
+            {
+                new EnemySpawner.ExternalSpawnEntry(boss.prefab, 1)
+            };
+        }
+
+        private BossEntry PickSingleBossForStage(int stage)
         {
             if (bossSequence == null || bossSequence.Length == 0)
             {
                 return null;
             }
 
-            int safeIndex = Mathf.Clamp(nextBossIndex, 0, bossSequence.Length - 1);
+            int bossWaveIndex = GetBossWaveIndex(stage);
+            int safeIndex = Mathf.Clamp(bossWaveIndex, 0, bossSequence.Length - 1);
             return bossSequence[safeIndex];
         }
 
-        private void AdvanceBossIndex()
+        private EnemySpawner.ExternalSpawnEntry[] BuildBossCombinationEntries(int stage)
         {
-            if (bossSequence == null || bossSequence.Length == 0)
+            BossCombination combination = PickBossCombination(stage);
+
+            if (combination == null || !combination.IsAvailable())
             {
-                nextBossIndex = 0;
-                return;
+                return Array.Empty<EnemySpawner.ExternalSpawnEntry>();
             }
 
-            if (nextBossIndex < bossSequence.Length - 1)
+            List<EnemySpawner.ExternalSpawnEntry> entries = new List<EnemySpawner.ExternalSpawnEntry>();
+
+            for (int i = 0; i < combination.bosses.Length; i++)
             {
-                nextBossIndex++;
+                BossCombinationEntry boss = combination.bosses[i];
+
+                if (boss != null && boss.prefab != null)
+                {
+                    entries.Add(new EnemySpawner.ExternalSpawnEntry(boss.prefab, 1));
+                }
             }
 
-            if (enableBossCombination)
+            return entries.ToArray();
+        }
+
+        private BossCombination PickBossCombination(int stage)
+        {
+            if (bossCombinations == null || bossCombinations.Length == 0)
             {
-                nextBossIndex = Mathf.Min(nextBossIndex, bossSequence.Length - 1);
+                return null;
             }
+
+            int combinationWaveIndex = Mathf.Max(0, (stage - bossCombinationStartStage) / Mathf.Max(1, bossIntervalStage));
+            int validIndex = 0;
+            BossCombination fallback = null;
+
+            for (int i = 0; i < bossCombinations.Length; i++)
+            {
+                BossCombination combination = bossCombinations[i];
+
+                if (combination == null || !combination.IsAvailable())
+                {
+                    continue;
+                }
+
+                fallback = combination;
+
+                if (validIndex == combinationWaveIndex)
+                {
+                    return combination;
+                }
+
+                validIndex++;
+            }
+
+            // 조합이 부족하면 마지막 유효 조합을 반복합니다.
+            return fallback;
+        }
+
+        private int GetBossWaveIndex(int stage)
+        {
+            return Mathf.Max(0, (stage - bossStartStage) / Mathf.Max(1, bossIntervalStage));
         }
 
         private void CleanupActiveBosses()

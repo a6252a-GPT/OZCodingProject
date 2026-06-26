@@ -506,29 +506,104 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EliteMixController
   eliteRatioSteps:
-  - startStage: 8
+  - startStage: 6
     eliteRatioPercent: 10
   - startStage: 12
-    eliteRatioPercent: 15
-  - startStage: 20
     eliteRatioPercent: 20
+  - startStage: 18
+    eliteRatioPercent: 30
   eliteCompositions:
   - compositionId: E01
-    weight: 100
-    combinationType: "\uC9C4\uD589\uBC29\uD574"
+    minStage: 6
+    weight: 18
+    combinationType: "\uC810\uD504+\uC790\uD3ED"
     elites:
     - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
-      ratioPercent: 100
+      ratioPercent: 70
+    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
+      ratioPercent: 30
   - compositionId: E02
-    weight: 100
-    combinationType: "\uAC15\uC81C\uBD84\uB9AC"
+    minStage: 6
+    weight: 16
+    combinationType: "\uC790\uD3ED+\uC810\uD504"
+    elites:
+    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
+      ratioPercent: 70
+  - compositionId: E03
+    minStage: 8
+    weight: 14
+    combinationType: "\uC131\uC7A5+\uC2AC\uB85C\uC6B0"
+    elites:
+    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 70
+  - compositionId: E04
+    minStage: 12
+    weight: 12
+    combinationType: "\uC131\uC7A5+\uC7A5\uC560\uBB3C"
+    elites:
+    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 70
+  - compositionId: E05
+    minStage: 16
+    weight: 10
+    combinationType: "\uC7A5\uC560\uBB3C+\uC2AC\uB85C\uC6B0"
+    elites:
+    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
+      ratioPercent: 70
+  - compositionId: E06
+    minStage: 15
+    weight: 9
+    combinationType: "\uB9C8\uBC95+\uC790\uD3ED"
+    elites:
+    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
+      ratioPercent: 70
+  - compositionId: E07
+    minStage: 18
+    weight: 8
+    combinationType: "\uC808\uB2E8+\uC131\uC7A5"
     elites:
     - prefab: {fileID: 5342407866216693720, guid: 65b75a732e1e5d844a4d9aeeaa5a0c6c, type: 3}
-      ratioPercent: 100
+      ratioPercent: 30
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 70
+  - compositionId: E08
+    minStage: 20
+    weight: 7
+    combinationType: "\uD3EC\uD0C8+\uC131\uC7A5+\uBC29\uC5B4"
+    elites:
+    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
+      ratioPercent: 10
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 60
+    - prefab: {fileID: 9194778320841374434, guid: e1261b4e636b2b040884415fbe7c845b, type: 3}
+      ratioPercent: 30
+  - compositionId: E09
+    minStage: 24
+    weight: 6
+    combinationType: "\uD3EC\uD0C8+\uC7A5\uC560\uBB3C+\uBC29\uC5B4"
+    elites:
+    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
+      ratioPercent: 10
+    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+      ratioPercent: 60
+    - prefab: {fileID: 9194778320841374434, guid: e1261b4e636b2b040884415fbe7c845b, type: 3}
+      ratioPercent: 30
   checkAliveEliteCombinations: 1
   blockedEliteCombinations:
-  - combinationA: "\uC9C4\uD589\uBC29\uD574"
-    combinationB: "\uAC15\uC81C\uBD84\uB9AC"
+  - combinationA: "\uD3EC\uD0C8+\uC131\uC7A5+\uBC29\uC5B4"
+    combinationB: "\uB9C8\uBC95+\uC790\uD3ED"
+  - combinationA: "\uB9C8\uBC95+\uC790\uD3ED"
+    combinationB: "\uD3EC\uD0C8+\uC7A5\uC560\uBB3C+\uBC29\uC5B4"
 --- !u!1 &21921460
 GameObject:
   m_ObjectHideFlags: 0
@@ -9134,7 +9209,7 @@ MonoBehaviour:
   groundHeightOffset: 0
   minChestSpacing: 14
   spawnPositionRetryCount: 16
-  chestSpawnCount: 5
+  chestSpawnCount: 6
   allowOnlyOneChoice: 1
   unselectedChestDestroyDelay: 0.2
   maxHighGradeCount: 2
@@ -19727,6 +19802,8 @@ MonoBehaviour:
     spawnScalePercent: 120
   - startStage: 12
     spawnScalePercent: 130
+  - startStage: 18
+    spawnScalePercent: 140
   normalCompositions:
   - compositionId: N01
     displayName: "\uAE30\uBCF8 \uADFC\uC811"
@@ -19759,9 +19836,9 @@ MonoBehaviour:
   spawnBatchCount: 4
   earlyGateCount: 2
   midGateStartStage: 10
-  midGateCount: 2
+  midGateCount: 4
   lateGateStartStage: 20
-  lateGateCount: 2
+  lateGateCount: 8
   frontRowCount: 5
 --- !u!1001 &734341155
 PrefabInstance:
@@ -47000,8 +47077,8 @@ MonoBehaviour:
   enemySpawner: {fileID: 354810648}
   bonusChestWaveSpawner: {fileID: 369269247}
   enableBossWave: 1
-  bossStartStage: 10
-  bossIntervalStage: 20
+  bossStartStage: 20
+  bossIntervalStage: 15
   blockAdditionalBossWhileAlive: 1
   spawnChestAfterBossClear: 1
   pauseNormalSpawnWhileBossAlive: 1
@@ -47011,6 +47088,11 @@ MonoBehaviour:
     displayName: "\uCD08\uBC18 \uBCF4\uC2A4"
     prefab: {fileID: 824607774837057934, guid: 94fe31a0770c6fa479eff15faa1be3e1, type: 3}
   enableBossCombination: 0
+  bossCombinationStartStage: 60
+  bossCombinations:
+  - combinationId: BC01
+    displayName: "\uBCF4\uC2A4 \uC870\uD569"
+    bosses: []
 --- !u!1001 &1719878355
 PrefabInstance:
   m_ObjectHideFlags: 0
