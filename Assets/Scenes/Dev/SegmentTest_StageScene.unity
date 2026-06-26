@@ -461,6 +461,74 @@ RectTransform:
   m_AnchoredPosition: {x: 34, y: -469}
   m_SizeDelta: {x: 190, y: 72}
   m_Pivot: {x: 0, y: 0.5}
+--- !u!1 &21880133
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 21880134}
+  - component: {fileID: 21880135}
+  m_Layer: 0
+  m_Name: EliteMixController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &21880134
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 21880133}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 935317433}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &21880135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 21880133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bf2db354564bea45b7cd34227a91701, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EliteMixController
+  eliteRatioSteps:
+  - startStage: 8
+    eliteRatioPercent: 10
+  - startStage: 12
+    eliteRatioPercent: 15
+  - startStage: 20
+    eliteRatioPercent: 20
+  eliteCompositions:
+  - compositionId: E01
+    weight: 100
+    combinationType: "\uC9C4\uD589\uBC29\uD574"
+    elites:
+    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
+      ratioPercent: 100
+  - compositionId: E02
+    weight: 100
+    combinationType: "\uAC15\uC81C\uBD84\uB9AC"
+    elites:
+    - prefab: {fileID: 5342407866216693720, guid: 65b75a732e1e5d844a4d9aeeaa5a0c6c, type: 3}
+      ratioPercent: 100
+  checkAliveEliteCombinations: 1
+  blockedEliteCombinations:
+  - combinationA: "\uC9C4\uD589\uBC29\uD574"
+    combinationB: "\uAC15\uC81C\uBD84\uB9AC"
 --- !u!1 &21921460
 GameObject:
   m_ObjectHideFlags: 0
@@ -9061,16 +9129,16 @@ MonoBehaviour:
   chestRoot: {fileID: 0}
   spawnAroundConvoy: 1
   fallbackCenter: {fileID: 0}
-  minSpawnRadius: 30
-  maxSpawnRadius: 40
+  minSpawnRadius: 20
+  maxSpawnRadius: 30
   groundHeightOffset: 0
   minChestSpacing: 14
   spawnPositionRetryCount: 16
-  chestSpawnCount: 3
+  chestSpawnCount: 5
   allowOnlyOneChoice: 1
   unselectedChestDestroyDelay: 0.2
-  maxHighGradeCount: 1
-  blockLevel2WhenLevel3Appears: 1
+  maxHighGradeCount: 2
+  blockLevel2WhenLevel3Appears: 0
   chestGrades:
   - displayName: "Lv1 \uC77C\uBC18 \uC0C1\uC790"
     prefab: {fileID: -2797154915781816065, guid: 511198219d384134c8311337315ae660, type: 3}
@@ -9102,11 +9170,11 @@ Transform:
   m_GameObject: {fileID: 369269246}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.20632, y: 1.54443, z: 2.20632}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 498879143}
+  m_Father: {fileID: 935317433}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &380573595
 PrefabInstance:
@@ -12568,8 +12636,7 @@ Transform:
   - {fileID: 688991101}
   - {fileID: 619712017}
   - {fileID: 1834090487}
-  - {fileID: 369269248}
-  - {fileID: 1289043423}
+  - {fileID: 935317433}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &500119960
@@ -19607,6 +19674,95 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 732973646}
   m_CullTransparentMesh: 1
+--- !u!1 &733128302
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 733128303}
+  - component: {fileID: 733128304}
+  m_Layer: 0
+  m_Name: NormalWaveSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &733128303
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 733128302}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 935317433}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &733128304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 733128302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33127e94bb9852c498421e5433dc8d35, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.NormalWaveSpawner
+  enemySpawner: {fileID: 354810648}
+  baseSpawnCount: 30
+  spawnScaleSteps:
+  - startStage: 1
+    spawnScalePercent: 100
+  - startStage: 6
+    spawnScalePercent: 120
+  - startStage: 12
+    spawnScalePercent: 130
+  normalCompositions:
+  - compositionId: N01
+    displayName: "\uAE30\uBCF8 \uADFC\uC811"
+    minStage: 1
+    weight: 100
+    monsters:
+    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+      ratioPercent: 100
+  - compositionId: N02
+    displayName: "\uADFC\uC811 \uC11E\uAE30"
+    minStage: 3
+    weight: 80
+    monsters:
+    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+      ratioPercent: 70
+    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
+      ratioPercent: 30
+  - compositionId: N03
+    displayName: "\uADFC\uC811 + \uC6D0\uAC70\uB9AC"
+    minStage: 5
+    weight: 70
+    monsters:
+    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+      ratioPercent: 65
+    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
+      ratioPercent: 20
+    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
+      ratioPercent: 15
+  spawnWindowPercent: 40
+  spawnBatchCount: 4
+  earlyGateCount: 2
+  midGateStartStage: 10
+  midGateCount: 2
+  lateGateStartStage: 20
+  lateGateCount: 2
+  frontRowCount: 5
 --- !u!1001 &734341155
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -25427,6 +25583,42 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4221184320157858624, guid: 7657dfb97efeffc4b9297e4a64fa5b29, type: 3}
   m_PrefabInstance: {fileID: 922737132}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &935317432
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 935317433}
+  m_Layer: 0
+  m_Name: WaveSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &935317433
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 935317432}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1289043423}
+  - {fileID: 733128303}
+  - {fileID: 21880134}
+  - {fileID: 1709839410}
+  - {fileID: 369269248}
+  m_Father: {fileID: 498879143}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &935683450
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -35327,7 +35519,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 498879143}
+  m_Father: {fileID: 935317433}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1289043424
 MonoBehaviour:
@@ -35341,153 +35533,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d48c88243dfe4ac69349ca4c29bf154c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WaveController
+  autoStart: 1
+  startStage: 1
+  stageDurationSeconds: 40
+  advanceWhenAllMonstersCleared: 1
+  clearCheckDelaySeconds: 1
   enemySpawner: {fileID: 354810648}
   disableSpawnerStageRulesUpdate: 1
-  stageDurationSeconds: 60
-  firstSpawnDelay: 5
-  baseSpawnInterval: 14
-  minSpawnInterval: 7
-  intervalReductionPerStage: 0.03
-  secondPoolThreatLevel: 7
-  thirdPoolThreatLevel: 15
-  maxPoolsPerSpawn: 3
-  monsterPools:
-  - waveType: 0
-    poolId: P01
-    displayName: "\uAE30\uBCF8 \uBB3C\uB7C9"
-    minThreatLevel: 1
-    weight: 120
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 1
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 2
-    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      count: 1
-  - waveType: 0
-    poolId: P02
-    displayName: "\uAE30\uBCF8 \uD63C\uD569"
-    minThreatLevel: 2
-    weight: 100
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 1
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 2
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 1
-    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      count: 1
-  - waveType: 0
-    poolId: P03
-    displayName: "\uC6D0\uAC70\uB9AC \uC555\uBC15"
-    minThreatLevel: 4
-    weight: 85
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 1
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 3
-  - waveType: 0
-    poolId: P04
-    displayName: "\uC774\uB3D9 \uBC29\uD574"
-    minThreatLevel: 5
-    weight: 70
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P05
-    displayName: "\uACBD\uB85C \uBC29\uD574"
-    minThreatLevel: 6
-    weight: 65
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P06
-    displayName: "\uC21C\uAC04 \uC704\uD611"
-    minThreatLevel: 7
-    weight: 60
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P07
-    displayName: "\uC131\uC7A5/\uBC84\uD504 \uC555\uBC15"
-    minThreatLevel: 9
-    weight: 50
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P08
-    displayName: "\uD6C4\uBC18 \uAE30\uBBF9"
-    minThreatLevel: 12
-    weight: 35
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 1
-    poolId: P09
-    displayName: "\uC5D8\uB9AC\uD2B8 \uC6E8\uC774\uBE0C"
-    minThreatLevel: 2
-    weight: 100
-    spawnGroupCount: 3
-    frontRowCount: 3
-    alwaysIncludeAsBasePool: 0
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 24
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 24
-  - waveType: 2
-    poolId: P10
-    displayName: "\uBCF4\uC2A4 \uC6E8\uC774\uBE0C"
-    minThreatLevel: 1
-    weight: 100
-    spawnGroupCount: 1
-    frontRowCount: 1
-    alwaysIncludeAsBasePool: 0
-    entries:
-    - prefab: {fileID: 824607774837057934, guid: 94fe31a0770c6fa479eff15faa1be3e1, type: 3}
-      count: 1
-  baseGateDirectionCount: 1
-  midGateDirectionThreatLevel: 15
-  midGateDirectionCount: 4
-  lateGateDirectionThreatLevel: 25
-  lateGateDirectionCount: 6
-  fullGateDirectionThreatLevel: 35
-  fullGateDirectionCount: 8
-  enableEliteWave: 0
-  eliteWaveStartStage: 2
-  eliteWaveInterval: 1
-  eliteBaseChance: 1
-  eliteChanceIncreasePerMiss: 0
-  eliteMaxChance: 1
-  enableBossWave: 0
-  bossWaveStartStage: 2
-  bossWaveInterval: 20
-  bossBaseChance: 1
-  bossChanceIncreasePerMiss: 0.05
-  bossMaxChance: 0.4
-  specialWaveSpawnRules: []
-  enableBonusChestAfterSpecialWave: 1
+  normalWaveSpawner: {fileID: 733128304}
+  eliteMixController: {fileID: 21880135}
+  bossWaveController: {fileID: 1709839411}
   bonusChestWaveSpawner: {fileID: 369269247}
-  enableSpecialWaveCountScaling: 1
-  specialWaveCountStageStep: 10
-  specialWaveCountIncreasePerStep: 0.5
-  specialWaveMaxCountMultiplier: 10
+  enableSpecialWaveExtension: 0
+  specialWaveController: {fileID: 0}
 --- !u!1001 &1289637939
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -46895,6 +46953,64 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1709839409
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1709839410}
+  - component: {fileID: 1709839411}
+  m_Layer: 0
+  m_Name: BossWaveController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1709839410
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1709839409}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 935317433}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1709839411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1709839409}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25fea55fe55654945ace8033622e4041, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.BossWaveController
+  enemySpawner: {fileID: 354810648}
+  bonusChestWaveSpawner: {fileID: 369269247}
+  enableBossWave: 1
+  bossStartStage: 10
+  bossIntervalStage: 20
+  blockAdditionalBossWhileAlive: 1
+  spawnChestAfterBossClear: 1
+  pauseNormalSpawnWhileBossAlive: 1
+  endBossStageOnBossClear: 1
+  bossSequence:
+  - bossId: B01
+    displayName: "\uCD08\uBC18 \uBCF4\uC2A4"
+    prefab: {fileID: 824607774837057934, guid: 94fe31a0770c6fa479eff15faa1be3e1, type: 3}
+  enableBossCombination: 0
 --- !u!1001 &1719878355
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -133,6 +133,29 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        public readonly struct ExternalSpawnDirectionSet // 외부 Wave 시스템이 한 Stage 동안 고정해서 사용할 방향 묶음
+        {
+            private readonly int[] directionIndexes; // EnemySpawner 내부 방향 enum을 밖에 직접 노출하지 않기 위한 저장값
+
+            public ExternalSpawnDirectionSet(int[] directionIndexes)
+            {
+                this.directionIndexes = directionIndexes;
+            }
+
+            public bool IsValid
+            {
+                get
+                {
+                    return directionIndexes != null && directionIndexes.Length > 0;
+                }
+            }
+
+            internal int[] GetDirectionIndexes()
+            {
+                return directionIndexes;
+            }
+        }
+
         private Transform nexus; // Nexus Transform, Inspector에는 노출하지 않고 자동 탐색한다.
 
         private Transform monsterRoot; // 생성된 몬스터를 정리할 부모 Transform
@@ -345,6 +368,21 @@ namespace TeamProject01.Gameplay
             return TrySpawnExternalEntriesDistributed(entries, directionCount, frontRowCount, null);
         }
 
+        public ExternalSpawnDirectionSet PickExternalSpawnDirections(int directionCount) // 한 Stage 동안 고정해서 사용할 방향 묶음을 뽑는다.
+        {
+            return new ExternalSpawnDirectionSet(ConvertToDirectionIndexes(PickRandomDirectionsForExternalWave(directionCount)));
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount) // 이미 뽑아둔 방향 묶음으로 외부 스폰을 처리한다.
+        {
+            return TrySpawnExternalEntriesDistributed(entries, directionSet, frontRowCount, null);
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, List<EnemyController> spawnedMonsters) // 생성 몬스터 기록까지 필요한 고정 방향 외부 스폰 입구
+        {
+            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters);
+        }
+
         public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, int directionCount, int frontRowCount, List<EnemyController> spawnedMonsters) // 생성된 몬스터 목록까지 필요한 외부 요청 입구
         {
             if (nexus == null) // Nexus가 아직 잡히지 않았다면
@@ -375,7 +413,39 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            SpawnDirection[] selectedDirections = PickRandomDirectionsForExternalWave(directionCount); // 이번 특수 웨이브에서 사용할 방향을 고른다.
+            SpawnDirection[] selectedDirections = PickRandomDirectionsForExternalWave(directionCount); // 이번 요청에서 사용할 방향을 고른다.
+            return TrySpawnExternalEntriesDistributed(entries, selectedDirections, frontRowCount, spawnedMonsters);
+        }
+
+        private bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, SpawnDirection[] selectedDirections, int frontRowCount, List<EnemyController> spawnedMonsters) // 선택된 방향 목록을 기준으로 몬스터를 분산 생성한다.
+        {
+            if (nexus == null) // Nexus가 아직 잡히지 않았다면
+            {
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 기존 Awake와 같은 기준으로 Nexus를 찾는다.
+                nexus = nexusObject != null ? nexusObject.transform : null; // 찾은 결과를 저장한다.
+            }
+
+            if (nexus == null) // Nexus가 없으면 스폰 기준이 아직 준비되지 않은 상태다.
+            {
+                return false;
+            }
+
+            if (monsterRoot == null) // 몬스터 정리 부모가 비어 있다면
+            {
+                monsterRoot = transform; // 기존 Awake와 같은 기준으로 자기 자신을 사용한다.
+            }
+
+            if (entries == null || entries.Length == 0) // 생성할 조합이 없다면
+            {
+                return false;
+            }
+
+            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+
+            if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
+            {
+                return false;
+            }
 
             if (selectedDirections == null || selectedDirections.Length == 0) // 사용할 방향이 없다면
             {
@@ -740,6 +810,40 @@ namespace TeamProject01.Gameplay
             }
 
             return selectedDirections; // 이번 웨이브 요청에서 사용할 방향 목록
+        }
+
+        private static int[] ConvertToDirectionIndexes(SpawnDirection[] directions) // 내부 방향 enum을 외부 저장용 숫자 배열로 바꾼다.
+        {
+            if (directions == null || directions.Length == 0)
+            {
+                return null;
+            }
+
+            int[] directionIndexes = new int[directions.Length];
+
+            for (int i = 0; i < directions.Length; i++)
+            {
+                directionIndexes[i] = (int)directions[i];
+            }
+
+            return directionIndexes;
+        }
+
+        private static SpawnDirection[] ConvertToSpawnDirections(int[] directionIndexes) // 외부 저장용 숫자 배열을 내부 방향 enum으로 되돌린다.
+        {
+            if (directionIndexes == null || directionIndexes.Length == 0)
+            {
+                return null;
+            }
+
+            SpawnDirection[] directions = new SpawnDirection[directionIndexes.Length];
+
+            for (int i = 0; i < directionIndexes.Length; i++)
+            {
+                directions[i] = (SpawnDirection)Mathf.Clamp(directionIndexes[i], 0, AllSpawnDirectionCount - 1);
+            }
+
+            return directions;
         }
 
         private Transform PickRandomGate(SpawnDirection direction) // 방향별 게이트 배열에서 하나 선택

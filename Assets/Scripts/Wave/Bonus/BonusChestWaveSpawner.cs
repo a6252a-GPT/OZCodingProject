@@ -85,6 +85,7 @@ namespace TeamProject01.Gameplay
         [Tooltip("상자가 너무 가까우면 위치를 다시 뽑는 횟수입니다.")]
         [InspectorName("위치 재시도 횟수")]
         [Range(1, 50)]
+        [HideInInspector]
         [SerializeField] private int spawnPositionRetryCount = 16; // 퍼진 위치를 찾기 위한 재시도 횟수입니다.
 
         [Header("상자 선택 설정")]

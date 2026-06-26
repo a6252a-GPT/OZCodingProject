@@ -694,7 +694,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyController
   grade: 2
-  countsAsMonster: 1
 --- !u!114 &1364493261038658167
 MonoBehaviour:
   m_ObjectHideFlags: 0

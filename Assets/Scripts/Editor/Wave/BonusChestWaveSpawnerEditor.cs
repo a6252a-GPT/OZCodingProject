@@ -26,7 +26,6 @@ namespace TeamProject01.Gameplay.EditorTools
             DrawProperty("maxSpawnRadius", "최대 생성 반경");
             DrawProperty("groundHeightOffset", "바닥 높이 보정");
             DrawProperty("minChestSpacing", "상자 간 최소 거리");
-            DrawProperty("spawnPositionRetryCount", "위치 재시도 횟수");
 
             DrawSectionTitle("상자 선택 설정");
             DrawHelp("보너스 웨이브마다 여러 상자를 보여주되, 하나만 열 수 있게 만드는 설정입니다.");
