@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using DG.Tweening;
@@ -366,12 +366,35 @@ public class CardUI : MonoBehaviour
             return;
         }
 
+        // 안건준 추가 - 0626 : 리롤 버튼 클릭 사운드 + DOTween 효과
+        cardSound?.PlayRerollClick();
+        PlayRerollButtonClickTween();
+
         remainingRerollCount = Mathf.Max(0, remainingRerollCount - 1); // 리롤 1회 소비
         StopAutoSelect(); // 재생성 중 자동 선택 중지
         ClearSpawnedCards(); // 현재 후보 제거
         SpawnCardsForCurrentPhase(); // 같은 단계의 선택지만 다시 생성
         RefreshRerollUi();
         TryStartAutoSelect(); // 자동궤도면 새 후보 기준 자동선택 재시작
+    }
+
+    private void PlayRerollButtonClickTween()
+    {
+        if (rerollButton == null)
+        {
+            return;
+        }
+
+        RectTransform rt = rerollButton.transform as RectTransform;
+        if (rt == null)
+        {
+            return;
+        }
+
+        rt.DOKill();
+        Sequence seq = DOTween.Sequence().SetUpdate(true);
+        seq.Append(rt.DOScale(Vector3.one * 1.2f, selectionSelectUpSeconds).SetEase(Ease.OutBack));
+        seq.Append(rt.DOScale(Vector3.one, selectionSelectDownSeconds));
     }
 
     private bool CanRerollCurrentChoices()
