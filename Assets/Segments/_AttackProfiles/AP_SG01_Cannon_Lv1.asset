@@ -18,8 +18,11 @@ MonoBehaviour:
   MoveType: 0
   ImpactType: 0
   SearchRange: 24
+  TargetPriorityMode: 0
   AttackAreaMode: 1
   SideConeAngle: 100
+  ClusterProbeRadius: 0.5
+  ClusterMinEnemyCount: 5
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.42
   BaseDamage: 10
@@ -33,10 +36,11 @@ MonoBehaviour:
   MonsterExplosionFeedbackMultiplier: 2
   MonsterPierceFeedbackMultiplier: 0.35
   MonsterContinuousFeedbackMultiplier: 0
-  ProjectilePrefab: {fileID: 3922023557786018810, guid: 47f001771f7ff6c43b11ca522e63ca7f, type: 3}
+  ProjectilePrefab: {fileID: 3922023557786018810, guid: 4e91739c6393cdf428835bc618ff8e7a, type: 3}
   ProjectileCount: 1
   SpreadAngle: 0
   FireProjectilesSequentially: 0
+  ProjectileVolleySize: 1
   ProjectileFireDelay: 0.18
   UseLoadedProjectileVisuals: 0
   LoadedProjectileReloadRatio: 0.5
@@ -45,7 +49,10 @@ MonoBehaviour:
   ProjectileHitRadius: 0.5
   ProjectileLifetime: 5
   PierceCount: 1
+  PiercingProjectileDamageRatio: 1
   ArcHeight: 3
+  UseVerticalImpactDrop: 0
+  VerticalImpactDropHeight: 10
   UseFlameMuzzleInfluence: 0
   FlameMuzzleInfluenceStrength: 0.3
   FlameMuzzleInfluenceRange: 0
@@ -57,6 +64,11 @@ MonoBehaviour:
   LandingRollSpinSpeed: 720
   ExplosionRadius: 3
   ExplosionLifetime: 0.35
+  AreaTelegraphPrefab: {fileID: 0}
+  AreaTelegraphGroundOffset: 0.025
+  AreaTelegraphAlpha: 0.35
+  SlowMoveSpeedMultiplier: 1
+  SlowDuration: 0
   LaserDuration: 0.5
   LaserTickInterval: 0.15
   ChainRange: 4

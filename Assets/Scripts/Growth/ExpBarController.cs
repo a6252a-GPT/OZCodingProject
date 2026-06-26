@@ -55,6 +55,21 @@ namespace TeamProject01.Gameplay
                     }
                 }
             }
+
+            ConfigureExpFillImage(); // 게이지는 이미지 크기 축소가 아니라 fillAmount로 자르기
+        }
+
+        private void ConfigureExpFillImage() // EXPBar 원본 비율 유지 + 좌측 기준 크롭
+        {
+            if (expFillImage == null)
+            {
+                return;
+            }
+
+            expFillImage.type = Image.Type.Filled; // fillAmount가 실제로 잘라내도록 설정
+            expFillImage.fillMethod = Image.FillMethod.Horizontal; // 좌우 게이지
+            expFillImage.fillOrigin = (int)Image.OriginHorizontal.Left; // 왼쪽부터 채움
+            expFillImage.preserveAspect = false; // RectTransform 비율은 씬에서 원본 비율로 관리
         }
 
         private void OnEnable() // 활성화 시 코어 구독 + 즉시 표시
@@ -166,6 +181,7 @@ namespace TeamProject01.Gameplay
 
             if (expFillImage != null)
             {
+                expFillImage.enabled = true;
                 expFillImage.fillAmount = clamped; // Image Filled 방식
                 return;
             }

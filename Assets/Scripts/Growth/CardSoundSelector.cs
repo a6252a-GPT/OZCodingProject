@@ -24,6 +24,7 @@ public class CardSoundSelector : MonoBehaviour
     [SerializeField] private Canvas           targetCanvas;
     [Tooltip("????????? TextMeshProUGUI ?????? (EffectFont ??\n????? ?? ??? ???")]
     [SerializeField] private TextMeshProUGUI  fontSource;
+    [SerializeField] private bool showRuntimePanel = false;
 
     [Header("??? ???????")]
     [SerializeField] private float panelWidth   = 280f;
@@ -89,6 +90,14 @@ public class CardSoundSelector : MonoBehaviour
             soundManager = GetComponent<CardSoundManager>();
         if (soundManager == null)
             soundManager = FindFirstObjectByType<CardSoundManager>();
+
+        if (!showRuntimePanel)
+        {
+            if (soundManager != null)
+                RestoreSavedClips();
+            enabled = false;
+            return;
+        }
 
         if (targetCanvas == null)
         {

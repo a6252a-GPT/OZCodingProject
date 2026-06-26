@@ -28,16 +28,21 @@ namespace TeamProject01.Gameplay
         [SerializeField, Range(0.01f, 1f)] private float lowHealthRatio = 0.3f;
 
         private NexusController subscribedNexus;
+        private RectSnapshot shieldFillSnapshot; // 씬에서 맞춘 실드 Fill 크기
+        private RectSnapshot healthFillSnapshot; // 씬에서 맞춘 체력 Fill 크기
 
         private void Awake()
         {
             ResolveReferences();
+            CaptureGaugeLayout();
             ConfigureVisuals();
+            RestoreGaugeLayout();
         }
 
         private void OnEnable()
         {
             ResolveReferences();
+            CaptureGaugeLayout();
             BindNexusEvents();
             RefreshNow();
         }
@@ -69,19 +74,21 @@ namespace TeamProject01.Gameplay
 
         public void RefreshNow()
         {
+            RestoreGaugeLayout();
+
             if (nexus == null)
             {
-                SetFillAmount(shieldFillImage, 0f);
-                SetFillAmount(healthFillImage, 0f);
+                SetGaugeRatio(shieldFillImage, 0f);
+                SetGaugeRatio(healthFillImage, 0f);
                 SetText(shieldText, "실드 0/0");
                 SetText(healthText, "체력 0/0");
                 return;
             }
 
-            SetFillAmount(shieldFillImage, nexus.ShieldRatio);
-            SetFillAmount(healthFillImage, nexus.HealthRatio);
+            SetGaugeRatio(shieldFillImage, nexus.ShieldRatio);
+            SetGaugeRatio(healthFillImage, nexus.HealthRatio);
 
-            if (healthFillImage != null)
+            if (healthFillImage != null && ShouldTintFill(healthFillImage))
             {
                 healthFillImage.color = nexus.HealthRatio <= lowHealthRatio ? lowHealthColor : healthColor;
             }
@@ -180,18 +187,21 @@ namespace TeamProject01.Gameplay
             ConfigureText(healthText);
         }
 
-        private static void ConfigureFill(Image image, Color color)
+        private void ConfigureFill(Image image, Color color)
         {
             if (image == null)
             {
                 return;
             }
 
-            image.sprite = null;
-            image.color = color;
-            image.type = Image.Type.Filled;
+            bool hasSprite = image.sprite != null;
+            image.color = hasSprite ? Color.white : color;
+            image.type = Image.Type.Filled; // 폭을 줄이지 않고 fillAmount로 원본을 자름
             image.fillMethod = Image.FillMethod.Horizontal;
             image.fillOrigin = (int)Image.OriginHorizontal.Left;
+            image.fillCenter = true;
+            image.preserveAspect = false;
+
             image.raycastTarget = false;
         }
 
@@ -213,12 +223,33 @@ namespace TeamProject01.Gameplay
             text.raycastTarget = false;
         }
 
-        private static void SetFillAmount(Image image, float amount)
+        private static void SetGaugeRatio(Image image, float amount)
         {
-            if (image != null)
+            if (image == null)
             {
-                image.fillAmount = amount;
+                return;
             }
+
+            float ratio = Mathf.Clamp01(amount);
+            image.enabled = true;
+            image.fillAmount = ratio;
+        }
+
+        private void CaptureGaugeLayout() // 에디터에서 맞춘 현재 크기를 런타임 기준으로 사용
+        {
+            shieldFillSnapshot.Capture(shieldFillImage != null ? shieldFillImage.rectTransform : null);
+            healthFillSnapshot.Capture(healthFillImage != null ? healthFillImage.rectTransform : null);
+        }
+
+        private void RestoreGaugeLayout() // 다른 갱신이 Fill Rect 크기를 건드려도 현재 씬 크기로 복구
+        {
+            shieldFillSnapshot.Restore();
+            healthFillSnapshot.Restore();
+        }
+
+        private static bool ShouldTintFill(Image image)
+        {
+            return image != null && image.sprite == null;
         }
 
         private static void SetText(Text text, string value)
@@ -226,6 +257,47 @@ namespace TeamProject01.Gameplay
             if (text != null)
             {
                 text.text = value;
+            }
+        }
+
+        private struct RectSnapshot
+        {
+            private RectTransform rect;
+            private Vector2 anchorMin;
+            private Vector2 anchorMax;
+            private Vector2 anchoredPosition;
+            private Vector2 sizeDelta;
+            private Vector2 pivot;
+            private bool captured;
+
+            public void Capture(RectTransform source)
+            {
+                if (source == null)
+                {
+                    return;
+                }
+
+                rect = source;
+                anchorMin = source.anchorMin;
+                anchorMax = source.anchorMax;
+                anchoredPosition = source.anchoredPosition;
+                sizeDelta = source.sizeDelta;
+                pivot = source.pivot;
+                captured = true;
+            }
+
+            public void Restore()
+            {
+                if (!captured || rect == null)
+                {
+                    return;
+                }
+
+                rect.anchorMin = anchorMin;
+                rect.anchorMax = anchorMax;
+                rect.anchoredPosition = anchoredPosition;
+                rect.sizeDelta = sizeDelta;
+                rect.pivot = pivot;
             }
         }
     }

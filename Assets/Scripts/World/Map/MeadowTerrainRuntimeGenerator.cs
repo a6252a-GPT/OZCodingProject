@@ -90,6 +90,7 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)] public float MainDirtHalfWidth = 1.9f; // 01 중심 반폭
         [Min(0f)] public float MainMidBlendWidth = 2.2f; // 01->02
         [Min(0f)] public float MainGrassBlendWidth = 2.4f; // 02->03
+        [Range(0.25f, 1.5f)] public float MainTrailWidthScale = 0.8f; // 큰 흙길 폭 배율
         [Min(1f)] public float EntryZoneDepth = 10f; // 시작 구역 깊이
         [Min(1f)] public float EntryZoneHalfWidth = 42f; // 시작 구역 폭
         [Min(0f)] public float MainControlJitter = 13f; // 메인 곡률 흔들림
@@ -608,8 +609,9 @@ namespace TeamProject01.Gameplay
                 end
             };
 
+            float widthScale = GetEffectiveMainTrailWidthScale();
             Vector2[] points = SampleCatmullRom(controls, 10);
-            return new TrailSpline(points, MainDirtHalfWidth, MainMidBlendWidth, MainGrassBlendWidth);
+            return new TrailSpline(points, MainDirtHalfWidth * widthScale, MainMidBlendWidth * widthScale, MainGrassBlendWidth * widthScale);
         }
 
         private Mesh CreateMeshImmediate(Vector2 center, List<TrailSpline> trails) // 동기 메시 생성
@@ -1975,6 +1977,16 @@ namespace TeamProject01.Gameplay
             return Mathf.Min(PathEdgeFlowerBoost, 0.28f);
         }
 
+        private float GetEffectiveMainTrailWidthScale() // 큰 흙길 전용 폭 배율
+        {
+            return Mathf.Clamp(MainTrailWidthScale, 0.25f, 1.5f);
+        }
+
+        private float GetEffectiveMainBlendOuterWidth() // 길가 장식 판정용 전이 반폭
+        {
+            return (MainMidBlendWidth + MainGrassBlendWidth) * GetEffectiveMainTrailWidthScale();
+        }
+
         private float GetEffectiveMeadowFlowerChance() // 일반 잔디 우선 비율 보장
         {
             return Mathf.Min(MeadowFlowerChance, 0.12f);
@@ -3080,7 +3092,7 @@ namespace TeamProject01.Gameplay
 
         private Vector2 GetDecorationFlowDirection(Vector2 origin, Vector2 center, IReadOnlyList<TrailSpline> trails, System.Random random, bool preferTrail) // 장식 흐름 방향
         {
-            if (preferTrail && TryGetNearestTrailFrame(origin, trails, out Vector2 trailDirection, out _, out float distance) && distance <= MainMidBlendWidth + MainGrassBlendWidth + 7.5f)
+            if (preferTrail && TryGetNearestTrailFrame(origin, trails, out Vector2 trailDirection, out _, out float distance) && distance <= GetEffectiveMainBlendOuterWidth() + 7.5f)
             {
                 return MaybeFlip(random, trailDirection); // 길가 패턴은 길 방향
             }
@@ -3378,7 +3390,7 @@ namespace TeamProject01.Gameplay
 
                 case DecorationZone.FlowerPathEdge:
                     if (centerDistance < NexusClearingRadius + 6.5f) { return false; }
-                    return blend.r < 0.22f && nearestTrail >= 0.6f && nearestTrail <= MainMidBlendWidth + MainGrassBlendWidth + 4.5f;
+                    return blend.r < 0.22f && nearestTrail >= 0.6f && nearestTrail <= GetEffectiveMainBlendOuterWidth() + 4.5f;
 
                 case DecorationZone.FlowerMeadow:
                     if (centerDistance < NexusClearingRadius + 9f) { return false; }
