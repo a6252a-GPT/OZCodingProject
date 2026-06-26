@@ -30,6 +30,8 @@ public class SegmentAddCard : MonoBehaviour
     [SerializeField] private Image cardIconImage; // 강화별 아이콘 표시 대상
 
     private StatUpgrade.StatCardTier weaponEnhancementTier = StatUpgrade.StatCardTier.Normal; // 현재 등급
+    private float baseTitleFontSize = -1f; // 제목 자동 축소 기준
+    private float baseDescriptionFontSize = -1f; // 설명 줄 수에 따른 폰트 복구 기준
 
     public StatUpgrade.StatCardTier WeaponEnhancementTier => weaponEnhancementTier; // 외부 등급 조회
 
@@ -161,13 +163,69 @@ public class SegmentAddCard : MonoBehaviour
         CacheTextReferences(); // 텍스트 참조 보강
         if (titleText != null)
         {
+            ApplySingleLineAutoSize(titleText, ref baseTitleFontSize, title);
             titleText.text = title; // 제목 갱신
         }
 
         if (descriptionText != null)
         {
-            descriptionText.text = description; // 설명 갱신
+            string displayDescription = SegmentCardTagPresenter.Apply(gameObject, description, descriptionText);
+            descriptionText.richText = true;
+            ApplyDescriptionAutoSize(descriptionText, displayDescription);
+            descriptionText.text = displayDescription; // 설명 갱신
         }
+    }
+
+    private void ApplyDescriptionAutoSize(TMP_Text target, string description)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (baseDescriptionFontSize <= 0f)
+        {
+            baseDescriptionFontSize = target.fontSize;
+        }
+
+        int lineCount = CountDescriptionLines(description);
+        float maxSize = lineCount >= 3 ? baseDescriptionFontSize * 0.86f : baseDescriptionFontSize;
+        ConfigureAutoSize(target, maxSize, true);
+    }
+
+    private void ApplySingleLineAutoSize(TMP_Text target, ref float baseFontSize, string text)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (baseFontSize <= 0f)
+        {
+            baseFontSize = target.fontSize;
+        }
+
+        ConfigureAutoSize(target, baseFontSize, false);
+    }
+
+    private static void ConfigureAutoSize(TMP_Text target, float maxSize, bool allowWrapping)
+    {
+        target.enableAutoSizing = true;
+        target.fontSizeMax = maxSize;
+        target.fontSizeMin = Mathf.Max(8f, maxSize * 0.62f);
+        target.fontSize = maxSize;
+        target.textWrappingMode = allowWrapping ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+    }
+
+    private static int CountDescriptionLines(string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return 0;
+        }
+
+        string normalized = description.Replace("\r\n", "\n").Replace('\r', '\n');
+        return Mathf.Max(1, normalized.Split('\n').Length);
     }
 
     ////// 전찬우추가 - 인스펙터 연결 없이 기존 카드 텍스트 2개를 자동 사용

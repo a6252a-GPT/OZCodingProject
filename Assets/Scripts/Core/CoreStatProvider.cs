@@ -210,6 +210,12 @@ namespace TeamProject01.Gameplay
             StatsChanged?.Invoke(CurrentStats); // HUD 갱신
         }
 
+        public void DebugAddExperience(int amount) // CoreTest 디버그 경험치 지급
+        {
+            AddExperience(Mathf.Max(0, amount)); // 보상과 같은 경험치 누적 경로 사용
+            StatsChanged?.Invoke(CurrentStats); // HUD/레벨업 UI 갱신
+        }
+
         public static CoreStatData GetCurrentOrDefault() // 공통 조회
         {
             return Active != null ? Active.CurrentStats : CoreStatData.Default; // 없으면 기본값

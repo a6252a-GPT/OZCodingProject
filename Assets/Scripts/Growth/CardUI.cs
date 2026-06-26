@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using DG.Tweening;
 using TeamProject01.Gameplay;
@@ -10,6 +11,13 @@ using UnityEngine.UI;
 
 public class CardUI : MonoBehaviour
 {
+    private const string DescriptionValueToken = "(N)";
+    private const string DescriptionValueColor = "#2F6BFF";
+    private const string CardUiPrefabReferencesResourcePath = "LevelCard/CardUiPrefabReferences";
+    private const string TierFrameNormalResourcePath = "LevelCard/TierFrames/CardFrame_Normal";
+    private const string TierFrameRareResourcePath = "LevelCard/TierFrames/CardFrame_Rare";
+    private const string TierFrameUniqueResourcePath = "LevelCard/TierFrames/CardFrame_Unique";
+
     [Header("Stat Upgrade")]
     [SerializeField] private GameObject[] statUpgradeCards = System.Array.Empty<GameObject>(); // 스탯 강화 카드 프리팹
 
@@ -17,6 +25,9 @@ public class CardUI : MonoBehaviour
     // 안건준 수정 - 0623 : 세그먼트 카드 공통 기본 프리팹 (SegmentUpgradeCard 드래그)
     [Header("세그먼트 카드 공통 기본 프리팹")]
     [SerializeField] private GameObject segmentCardBasePrefab; // 세그먼트 카드 공통 프리팹 (SegmentUpgradeCard)
+    [Header("세그먼트 선택카드 전용 프리팹")]
+    [SerializeField] private GameObject segmentChoiceCardPrefab; // 후보 선택 1단계 전용 프리팹
+    [SerializeField] private CardUiPrefabReferences prefabReferences; // Resources 중앙 참조
     // 안건준 추가 - 0623 : 세그먼트 카드 아이콘 크기 조절 (0=원본, -100=절반, +100=두배)
     [Header("세그먼트 카드 아이콘 크기 조절")]
     [Range(-100f, 100f)][SerializeField] private float segmentCardIconSizeOffset = 0f; // 세그먼트 아이콘 크기
@@ -191,6 +202,10 @@ public class CardUI : MonoBehaviour
     private string selectedSegmentWeaponStatId; // 카드 선택으로 갱신되는 디버그 표시 대상
     private CoreStatProvider segmentWeaponStatSubscribedCore; // 스탯 변경 구독 대상
     private Coroutine hideSegmentListCoroutine; // 안건준 추가 - 0622 — 코루틴 참조 (혹시 중복 방지용)
+    private CardUiPrefabReferences cachedPrefabReferences; // Resources fallback 캐시
+    private Sprite cachedTierFrameNormalSprite; // 일반 등급 카드 프레임
+    private Sprite cachedTierFrameRareSprite; // 레어 등급 카드 프레임
+    private Sprite cachedTierFrameUniqueSprite; // 유니크 등급 카드 프레임
 
     private enum LevelUpCardPhase
     {
@@ -587,7 +602,8 @@ public class CardUI : MonoBehaviour
             }
 
             entry.StatUpgrade.ApplySpawnTier(tier); // 등급·배율 반영
-            ApplyTierPrefixToCardDescription(entry.Root, tier, isReduction: false); // 표시용 등급 기호만 설명 앞에 붙임
+            ApplyTierCardFrame(entry.Root, tier); // 등급별 카드 프레임 교체
+            ApplyTierPrefixToCardDescription(entry.Root, tier, isReduction: false); // 등급 기호 제거 및 설명 정리
         }
 
         return entry;
@@ -619,7 +635,7 @@ public class CardUI : MonoBehaviour
     // 세그먼트 ADD 풀: 카탈로그 후보 3장 생성, 부족하면 없음 카드 표시
     private void SpawnSegmentCandidateCards()
     {
-        GameObject template = GetSegmentCardTemplate(0); // 세그먼트 카드 기본 프리팹
+        GameObject template = GetSegmentChoiceCardTemplate(); // 세그먼트 선택 전용 프리팹
         if (template == null)
         {
             Debug.LogWarning("[CardUI] Add Segment 카드 프리팹이 비어 있습니다.", this); // 템플릿 누락
@@ -636,7 +652,7 @@ public class CardUI : MonoBehaviour
         List<SegmentCatalogEntry> picked = PickRandomSegmentEntries(candidates, spawnCount); // 후보 랜덤 선택
         for (int i = 0; i < spawnCount; i++)
         {
-            GameObject prefab = GetSegmentCardTemplate(i); // 슬롯별 카드 템플릿
+            GameObject prefab = GetSegmentChoiceCardTemplate(); // 후보 선택 1단계 전용 템플릿
             SpawnedCardEntry entry = CreateSpawnedCard(prefab, cardSlots[i]); // 카드 생성
             if (entry == null)
             {
@@ -661,7 +677,7 @@ public class CardUI : MonoBehaviour
     // 무기 강화 1단계 - 강화 가능한 세그먼트 후보 3장
     private void SpawnWeaponEnhanceCandidateCards()
     {
-        GameObject template = GetSegmentCardTemplate(0); // 세그먼트 카드 기본 프리팹
+        GameObject template = GetSegmentChoiceCardTemplate(); // 세그먼트 선택 전용 프리팹
         if (template == null)
         {
             Debug.LogWarning("[CardUI] Add Segment 카드 프리팹이 비어 있습니다.", this);
@@ -685,7 +701,7 @@ public class CardUI : MonoBehaviour
         List<SegmentCatalogEntry> picked = PickWeightedWeaponEnhanceSegmentEntries(candidates, spawnCount, ownedCountsBySegmentId); // 보유 개수 가중치
         for (int i = 0; i < spawnCount; i++)
         {
-            GameObject prefab = GetSegmentCardTemplate(i); // 슬롯별 카드 템플릿
+            GameObject prefab = GetSegmentChoiceCardTemplate(); // 후보 선택 1단계 전용 템플릿
             SpawnedCardEntry entry = CreateSpawnedCard(prefab, cardSlots[i]); // 카드 생성
             if (entry == null)
             {
@@ -989,12 +1005,13 @@ public class CardUI : MonoBehaviour
         entry.SegmentId = targetSegmentId; // 대상 세그먼트
         entry.LevelDelta = Mathf.Max(1, levelDelta); // 소비 레벨
         entry.CanSelect = definition != null && definition.HasAnyStatBonus; // 선택 가능
-        string tieredDescription = BuildTierPrefixedWeaponDescription(definition, tier); // 표시용 등급 기호가 붙은 설명
+        string tieredDescription = BuildTierPrefixedWeaponDescription(definition, tier); // (N) 값 치환이 반영된 설명
         entry.SegmentAddCard?.ConfigureWeaponEnhancement(definition, entry.LevelDelta, tieredDescription); // 카드 문구·아이콘
         entry.SegmentAddCard?.ApplyWeaponEnhancementTier(tier); // 등급 저장
         // 건준수정 - 0621 ======
         entry.WeaponEnhancementTier = tier; // 적용 시 등급별 수치
         // 건준수정 - 0621 ======
+        ApplyTierCardFrame(entry.Root, tier); // 등급별 카드 프레임 교체
 
         // 안건준 추가 - 0623 : SegmentAddCard 텍스트 주입 후 실제 텍스트가 바뀌었는지 확인 — Card_Text / DescText / Image 직접 fallback
         if (definition != null && entry.Root != null)
@@ -1043,7 +1060,7 @@ public class CardUI : MonoBehaviour
         SegmentAddCard templatePresentation = GetSegmentCardPresentation(slotIndex); // addSegmentCards 템플릿
         WeaponDefinition.CardSpawnResolve resolve = definition.ResolveCardSpawn(tier, defaultTemplate, templatePresentation); // 프리팹 결정
         GameObject spawnPrefab = resolve.Prefab != null ? resolve.Prefab : defaultTemplate; // fallback
-        SpawnedCardEntry entry = CreateSpawnedCard(spawnPrefab, slot, defaultTemplate); // 생성
+        SpawnedCardEntry entry = CreateSpawnedCard(spawnPrefab, slot, defaultTemplate, skipStatUpgradeRoll: true); // 무기 강화 등급은 WeaponEnhancementTier만 사용
         if (entry == null)
         {
             return null; // 생성 실패
@@ -1160,6 +1177,87 @@ public class CardUI : MonoBehaviour
     private GameObject GetSegmentCardTemplate(int index)
     {
         return segmentCardBasePrefab; // SegmentUpgradeCard 공통 프리팹
+    }
+
+    private GameObject GetSegmentChoiceCardTemplate() // 후보 선택 1단계 전용 템플릿
+    {
+        if (segmentChoiceCardPrefab != null)
+        {
+            return segmentChoiceCardPrefab; // Inspector 지정 우선
+        }
+
+        CardUiPrefabReferences references = GetPrefabReferences();
+        if (references != null && references.SegmentChoiceCardPrefab != null)
+        {
+            return references.SegmentChoiceCardPrefab; // 이동된 프리팹 참조
+        }
+
+        return segmentCardBasePrefab; // 누락 시 기존 카드 유지
+    }
+
+    private CardUiPrefabReferences GetPrefabReferences()
+    {
+        if (prefabReferences != null)
+        {
+            return prefabReferences; // Inspector 지정 우선
+        }
+
+        if (cachedPrefabReferences == null)
+        {
+            cachedPrefabReferences = Resources.Load<CardUiPrefabReferences>(CardUiPrefabReferencesResourcePath); // 씬 수정 없는 fallback
+        }
+
+        return cachedPrefabReferences;
+    }
+
+    private void ApplyTierCardFrame(GameObject cardRoot, StatUpgrade.StatCardTier tier) // 스탯/무기 강화 카드 등급 프레임
+    {
+        if (cardRoot == null)
+        {
+            return; // 카드 없음
+        }
+
+        Sprite frameSprite = GetTierFrameSprite(tier); // 등급별 프레임
+        if (frameSprite == null)
+        {
+            return; // 에셋 누락 시 기존 프레임 유지
+        }
+
+        Image rootImage = cardRoot.GetComponent<Image>(); // 카드 루트 배경 이미지
+        if (rootImage == null)
+        {
+            return; // 루트 이미지가 없는 특수 카드
+        }
+
+        rootImage.sprite = frameSprite;
+        rootImage.type = Image.Type.Simple;
+        rootImage.preserveAspect = false;
+        rootImage.color = Color.white;
+    }
+
+    private Sprite GetTierFrameSprite(StatUpgrade.StatCardTier tier) // Resources 캐시 로드
+    {
+        switch (tier)
+        {
+            case StatUpgrade.StatCardTier.Unique:
+                if (cachedTierFrameUniqueSprite == null)
+                {
+                    cachedTierFrameUniqueSprite = Resources.Load<Sprite>(TierFrameUniqueResourcePath);
+                }
+                return cachedTierFrameUniqueSprite;
+            case StatUpgrade.StatCardTier.Rare:
+                if (cachedTierFrameRareSprite == null)
+                {
+                    cachedTierFrameRareSprite = Resources.Load<Sprite>(TierFrameRareResourcePath);
+                }
+                return cachedTierFrameRareSprite;
+            default:
+                if (cachedTierFrameNormalSprite == null)
+                {
+                    cachedTierFrameNormalSprite = Resources.Load<Sprite>(TierFrameNormalResourcePath);
+                }
+                return cachedTierFrameNormalSprite;
+        }
     }
 
     private GameObject ResolveSegmentActionCardPrefab(SegmentCardRole role, GameObject defaultTemplate) // 2차 액션 카드 — CardUI 교체 프리팹
@@ -1978,7 +2076,12 @@ public class CardUI : MonoBehaviour
         string description = string.IsNullOrWhiteSpace(definition.Description)
             ? definition.NormalizedId
             : definition.Description;
-        return BuildTierPrefixedDescription(description, tier, IsReductionWeaponEnhancement(definition, tier));
+        if (string.IsNullOrWhiteSpace(description) || !description.Contains(DescriptionValueToken))
+        {
+            description = BuildDefaultWeaponDescription(definition);
+        }
+
+        return BuildWeaponDescriptionWithValue(description, definition, tier);
     }
 
     private static void ApplyTierPrefixToCardDescription(GameObject root, StatUpgrade.StatCardTier tier, bool isReduction)
@@ -1989,6 +2092,7 @@ public class CardUI : MonoBehaviour
             return;
         }
 
+        descText.richText = true;
         descText.text = BuildTierPrefixedDescription(descText.text, tier, isReduction);
     }
 
@@ -1999,28 +2103,223 @@ public class CardUI : MonoBehaviour
             return string.Empty;
         }
 
-        string suffix = GetTierPrefix(tier, isReduction);
+        return StripTierSymbols(description);
+    }
+
+    private static string BuildWeaponDescriptionWithValue(string description, WeaponDefinition definition, StatUpgrade.StatCardTier tier)
+    {
         string body = StripTierSymbols(description);
-        return string.IsNullOrWhiteSpace(body) ? suffix : $"{body} {suffix}";
-    }
-
-    private static string GetTierPrefix(StatUpgrade.StatCardTier tier, bool isReduction)
-    {
-        int count = tier switch
+        if (string.IsNullOrWhiteSpace(body) || !body.Contains(DescriptionValueToken))
         {
-            StatUpgrade.StatCardTier.Unique => 3,
-            StatUpgrade.StatCardTier.Rare => 2,
-            _ => 1
-        };
+            return body;
+        }
 
-        return new string(isReduction ? '-' : '+', count);
+        List<string> values = BuildWeaponDescriptionValues(definition, tier);
+        if (values.Count == 0)
+        {
+            return body.Replace(DescriptionValueToken, string.Empty).Trim();
+        }
+
+        string[] lines = SplitDescriptionLines(body);
+        int valueIndex = 0;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (!lines[i].Contains(DescriptionValueToken))
+            {
+                continue;
+            }
+
+            string valueText = valueIndex < values.Count ? values[valueIndex] : string.Empty;
+            valueIndex++;
+            string replacement = string.IsNullOrWhiteSpace(valueText)
+                ? string.Empty
+                : $"<color={DescriptionValueColor}><b>{valueText}</b></color>";
+            lines[i] = lines[i].Replace(DescriptionValueToken, replacement);
+        }
+
+        return string.Join("\n", lines).Trim();
     }
 
-    private static bool IsReductionWeaponEnhancement(WeaponDefinition definition, StatUpgrade.StatCardTier tier)
+    private static string BuildDefaultWeaponDescription(WeaponDefinition definition)
     {
-        return definition != null
-            && (definition.GetCooldownReduction(tier) > 0.0001f
-                || definition.GetLaserTickInterval(tier) > 0.0001f);
+        if (definition == null)
+        {
+            return string.Empty;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        AppendDefaultWeaponDescriptionLine(builder, "공격력 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetBaseDamage(StatUpgrade.StatCardTier.Normal), definition.GetBaseDamage(StatUpgrade.StatCardTier.Rare), definition.GetBaseDamage(StatUpgrade.StatCardTier.Unique), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Normal), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Rare), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "관통피해율 (N) 증가", HasDescriptionTierValue(definition.GetSawPierceDamageRatio(StatUpgrade.StatCardTier.Normal), definition.GetSawPierceDamageRatio(StatUpgrade.StatCardTier.Rare), definition.GetSawPierceDamageRatio(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "투사체 속도 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetProjectileSpeed(StatUpgrade.StatCardTier.Normal), definition.GetProjectileSpeed(StatUpgrade.StatCardTier.Rare), definition.GetProjectileSpeed(StatUpgrade.StatCardTier.Unique), definition.GetProjectileSpeedPercent(StatUpgrade.StatCardTier.Normal), definition.GetProjectileSpeedPercent(StatUpgrade.StatCardTier.Rare), definition.GetProjectileSpeedPercent(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "사거리 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetSearchRange(StatUpgrade.StatCardTier.Normal), definition.GetSearchRange(StatUpgrade.StatCardTier.Rare), definition.GetSearchRange(StatUpgrade.StatCardTier.Unique), definition.GetSearchRangePercent(StatUpgrade.StatCardTier.Normal), definition.GetSearchRangePercent(StatUpgrade.StatCardTier.Rare), definition.GetSearchRangePercent(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "연쇄 단계 (N) 증가", HasDescriptionTierValue(definition.GetMaxChainDepth(StatUpgrade.StatCardTier.Normal), definition.GetMaxChainDepth(StatUpgrade.StatCardTier.Rare), definition.GetMaxChainDepth(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "연쇄 거리 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetChainRange(StatUpgrade.StatCardTier.Normal), definition.GetChainRange(StatUpgrade.StatCardTier.Rare), definition.GetChainRange(StatUpgrade.StatCardTier.Unique), definition.GetChainRangePercent(StatUpgrade.StatCardTier.Normal), definition.GetChainRangePercent(StatUpgrade.StatCardTier.Rare), definition.GetChainRangePercent(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "체인 피해 유지율 (N) 증가", HasDescriptionTierValue(definition.GetChainDamageFalloff(StatUpgrade.StatCardTier.Normal), definition.GetChainDamageFalloff(StatUpgrade.StatCardTier.Rare), definition.GetChainDamageFalloff(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "발사 수 (N) 증가", HasDescriptionTierValue(definition.GetProjectileCount(StatUpgrade.StatCardTier.Normal), definition.GetProjectileCount(StatUpgrade.StatCardTier.Rare), definition.GetProjectileCount(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "쿨타임 (N) 감소", HasDescriptionTierValue(definition.GetCooldownReduction(StatUpgrade.StatCardTier.Normal), definition.GetCooldownReduction(StatUpgrade.StatCardTier.Rare), definition.GetCooldownReduction(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "부채꼴 각도 (N) 증가", HasDescriptionTierValue(definition.GetSideConeAngle(StatUpgrade.StatCardTier.Normal), definition.GetSideConeAngle(StatUpgrade.StatCardTier.Rare), definition.GetSideConeAngle(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "지속시간 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetLaserDuration(StatUpgrade.StatCardTier.Normal), definition.GetLaserDuration(StatUpgrade.StatCardTier.Rare), definition.GetLaserDuration(StatUpgrade.StatCardTier.Unique), definition.GetLaserDurationPercent(StatUpgrade.StatCardTier.Normal), definition.GetLaserDurationPercent(StatUpgrade.StatCardTier.Rare), definition.GetLaserDurationPercent(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "틱 간격 (N) 감소", HasDescriptionTierValue(definition.GetLaserTickInterval(StatUpgrade.StatCardTier.Normal), definition.GetLaserTickInterval(StatUpgrade.StatCardTier.Rare), definition.GetLaserTickInterval(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "구르기 거리 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetLandingRollDistance(StatUpgrade.StatCardTier.Normal), definition.GetLandingRollDistance(StatUpgrade.StatCardTier.Rare), definition.GetLandingRollDistance(StatUpgrade.StatCardTier.Unique), definition.GetLandingRollDistancePercent(StatUpgrade.StatCardTier.Normal), definition.GetLandingRollDistancePercent(StatUpgrade.StatCardTier.Rare), definition.GetLandingRollDistancePercent(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "구르기 시간 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetLandingRollDuration(StatUpgrade.StatCardTier.Normal), definition.GetLandingRollDuration(StatUpgrade.StatCardTier.Rare), definition.GetLandingRollDuration(StatUpgrade.StatCardTier.Unique), definition.GetLandingRollDurationPercent(StatUpgrade.StatCardTier.Normal), definition.GetLandingRollDurationPercent(StatUpgrade.StatCardTier.Rare), definition.GetLandingRollDurationPercent(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "관통 수 (N) 증가", HasDescriptionTierValue(definition.GetPierceCount(StatUpgrade.StatCardTier.Normal), definition.GetPierceCount(StatUpgrade.StatCardTier.Rare), definition.GetPierceCount(StatUpgrade.StatCardTier.Unique)));
+        AppendDefaultWeaponDescriptionLine(builder, "폭발 반경 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetExplosionRadius(StatUpgrade.StatCardTier.Normal), definition.GetExplosionRadius(StatUpgrade.StatCardTier.Rare), definition.GetExplosionRadius(StatUpgrade.StatCardTier.Unique), definition.GetExplosionRadiusPercent(StatUpgrade.StatCardTier.Normal), definition.GetExplosionRadiusPercent(StatUpgrade.StatCardTier.Rare), definition.GetExplosionRadiusPercent(StatUpgrade.StatCardTier.Unique)));
+        string result = builder.ToString().Trim();
+        return string.IsNullOrWhiteSpace(result) ? definition.NormalizedId : result;
+    }
+
+    private static void AppendDefaultWeaponDescriptionLine(StringBuilder builder, string line, bool active)
+    {
+        if (!active)
+        {
+            return;
+        }
+
+        if (builder.Length > 0)
+        {
+            builder.AppendLine();
+        }
+
+        builder.Append(line);
+    }
+
+    private static List<string> BuildWeaponDescriptionValues(WeaponDefinition definition, StatUpgrade.StatCardTier tier)
+    {
+        List<string> values = new List<string>(4);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetBaseDamage(tier), definition.GetBaseDamagePercent(tier), out string baseDamageValue), baseDamageValue);
+        AddWeaponDescriptionValue(values, TryFormatPercentRate(definition.GetSawPierceDamageRatio(tier), out string pierceRatioValue), pierceRatioValue);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetProjectileSpeed(tier), definition.GetProjectileSpeedPercent(tier), out string projectileSpeedValue), projectileSpeedValue);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetSearchRange(tier), definition.GetSearchRangePercent(tier), "M", out string searchRangeValue), searchRangeValue);
+        AddWeaponDescriptionValue(values, TryFormatIntValue(definition.GetMaxChainDepth(tier), out string chainDepthValue), chainDepthValue);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetChainRange(tier), definition.GetChainRangePercent(tier), "M", out string chainRangeValue), chainRangeValue);
+        AddWeaponDescriptionValue(values, TryFormatPercentRate(definition.GetChainDamageFalloff(tier), out string chainFalloffValue), chainFalloffValue);
+        AddWeaponDescriptionValue(values, TryFormatIntValue(definition.GetProjectileCount(tier), out string projectileCountValue), projectileCountValue);
+        AddWeaponDescriptionValue(values, TryFormatPercentRate(definition.GetCooldownReduction(tier), out string cooldownValue), cooldownValue);
+        AddWeaponDescriptionValue(values, TryFormatFloatValue(definition.GetSideConeAngle(tier), out string sideConeValue), sideConeValue);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetLaserDuration(tier), definition.GetLaserDurationPercent(tier), out string laserDurationValue), laserDurationValue);
+        AddWeaponDescriptionValue(values, TryFormatPercentRate(definition.GetLaserTickInterval(tier), out string laserTickValue), laserTickValue);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetLandingRollDistance(tier), definition.GetLandingRollDistancePercent(tier), "M", out string rollDistanceValue), rollDistanceValue);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetLandingRollDuration(tier), definition.GetLandingRollDurationPercent(tier), out string rollDurationValue), rollDurationValue);
+        AddWeaponDescriptionValue(values, TryFormatIntValue(definition.GetPierceCount(tier), out string pierceCountValue), pierceCountValue);
+        AddWeaponDescriptionValue(values, TryFormatFlatOrPercentValue(definition.GetExplosionRadius(tier), definition.GetExplosionRadiusPercent(tier), "M", out string explosionRadiusValue), explosionRadiusValue);
+        return values;
+    }
+
+    private static void AddWeaponDescriptionValue(List<string> values, bool active, string valueText)
+    {
+        if (active)
+        {
+            values.Add(valueText);
+        }
+    }
+
+    private static string[] SplitDescriptionLines(string text)
+    {
+        return string.IsNullOrWhiteSpace(text)
+            ? System.Array.Empty<string>()
+            : text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+    }
+
+    private static bool HasDescriptionFlatOrPercentValue(float normal, float rare, float unique, float normalPercent, float rarePercent, float uniquePercent)
+    {
+        return HasDescriptionTierValue(normal, rare, unique) || HasDescriptionTierValue(normalPercent, rarePercent, uniquePercent);
+    }
+
+    private static bool HasDescriptionTierValue(float normal, float rare, float unique)
+    {
+        return Mathf.Abs(normal) > 0.0001f || Mathf.Abs(rare) > 0.0001f || Mathf.Abs(unique) > 0.0001f;
+    }
+
+    private static bool HasDescriptionTierValue(int normal, int rare, int unique)
+    {
+        return normal != 0 || rare != 0 || unique != 0;
+    }
+
+    private static bool TryResolveWeaponDescriptionValue(WeaponDefinition definition, StatUpgrade.StatCardTier tier, out string valueText)
+    {
+        valueText = string.Empty;
+        if (definition == null)
+        {
+            return false;
+        }
+
+        if (TryFormatFlatOrPercentValue(definition.GetBaseDamage(tier), definition.GetBaseDamagePercent(tier), out valueText)) return true;
+        if (TryFormatPercentRate(definition.GetSawPierceDamageRatio(tier), out valueText)) return true;
+        if (TryFormatFlatOrPercentValue(definition.GetProjectileSpeed(tier), definition.GetProjectileSpeedPercent(tier), out valueText)) return true;
+        if (TryFormatFlatOrPercentValue(definition.GetSearchRange(tier), definition.GetSearchRangePercent(tier), "M", out valueText)) return true;
+        if (TryFormatIntValue(definition.GetMaxChainDepth(tier), out valueText)) return true;
+        if (TryFormatFlatOrPercentValue(definition.GetChainRange(tier), definition.GetChainRangePercent(tier), "M", out valueText)) return true;
+        if (TryFormatPercentRate(definition.GetChainDamageFalloff(tier), out valueText)) return true;
+        if (TryFormatIntValue(definition.GetProjectileCount(tier), out valueText)) return true;
+        if (TryFormatPercentRate(definition.GetCooldownReduction(tier), out valueText)) return true;
+        if (TryFormatFloatValue(definition.GetSideConeAngle(tier), out valueText)) return true;
+        if (TryFormatFlatOrPercentValue(definition.GetLaserDuration(tier), definition.GetLaserDurationPercent(tier), out valueText)) return true;
+        if (TryFormatPercentRate(definition.GetLaserTickInterval(tier), out valueText)) return true;
+        if (TryFormatFlatOrPercentValue(definition.GetLandingRollDistance(tier), definition.GetLandingRollDistancePercent(tier), "M", out valueText)) return true;
+        if (TryFormatFlatOrPercentValue(definition.GetLandingRollDuration(tier), definition.GetLandingRollDurationPercent(tier), out valueText)) return true;
+        if (TryFormatIntValue(definition.GetPierceCount(tier), out valueText)) return true;
+        return TryFormatFlatOrPercentValue(definition.GetExplosionRadius(tier), definition.GetExplosionRadiusPercent(tier), "M", out valueText);
+    }
+
+    private static bool TryFormatFlatOrPercentValue(float flatValue, float percentValue, out string valueText)
+    {
+        return TryFormatFlatOrPercentValue(flatValue, percentValue, string.Empty, out valueText);
+    }
+
+    private static bool TryFormatFlatOrPercentValue(float flatValue, float percentValue, string flatSuffix, out string valueText)
+    {
+        if (TryFormatPercentRate(percentValue, out valueText))
+        {
+            return true;
+        }
+
+        if (!TryFormatFloatValue(flatValue, out valueText))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(flatSuffix))
+        {
+            valueText += flatSuffix;
+        }
+
+        return true;
+    }
+
+    private static bool TryFormatFloatValue(float value, out string valueText)
+    {
+        valueText = string.Empty;
+        if (Mathf.Abs(value) <= 0.0001f)
+        {
+            return false;
+        }
+
+        valueText = value.ToString("0.###", CultureInfo.InvariantCulture);
+        return true;
+    }
+
+    private static bool TryFormatIntValue(int value, out string valueText)
+    {
+        valueText = string.Empty;
+        if (value == 0)
+        {
+            return false;
+        }
+
+        valueText = value.ToString(CultureInfo.InvariantCulture);
+        return true;
+    }
+
+    private static bool TryFormatPercentRate(float value, out string valueText)
+    {
+        valueText = string.Empty;
+        if (value <= 0.0001f)
+        {
+            return false;
+        }
+
+        valueText = $"{(value * 100f).ToString("0.#", CultureInfo.InvariantCulture)}%";
+        return true;
     }
 
     private static string StripTierSymbols(string text)
@@ -3432,12 +3731,16 @@ public class CardUI : MonoBehaviour
 
         if (cardText != null && !string.IsNullOrWhiteSpace(title))
         {
+            ApplyDirectSingleLineSizing(cardText, title);
             cardText.text = title; // 세그먼트 이름 (캐논, 미사일 등)
         }
 
         if (descText != null && !string.IsNullOrWhiteSpace(desc))
         {
-            descText.text = desc; // WeaponDefinition Description
+            string displayDesc = SegmentCardTagPresenter.Apply(root, desc, descText);
+            descText.richText = true;
+            ApplyDirectDescriptionSizing(descText, displayDesc);
+            descText.text = displayDesc; // WeaponDefinition Description
         }
 
         // 안건준 추가 - 0623 : "Image" 오브젝트에 세그먼트 Lv1 아이콘 적용
@@ -3464,6 +3767,49 @@ public class CardUI : MonoBehaviour
                 Debug.LogWarning($"[CardUI] 'Image' 자식 오브젝트를 찾지 못했습니다. root={root.name}, 자식 수={root.transform.childCount}");
             }
         }
+    }
+
+    private static void ApplyDirectDescriptionSizing(TMP_Text descText, string description)
+    {
+        if (descText == null)
+        {
+            return;
+        }
+
+        float baseSize = descText.fontSizeMax > 0f ? Mathf.Max(descText.fontSizeMax, descText.fontSize) : descText.fontSize;
+        float maxSize = CountDescriptionLines(description) >= 3 ? baseSize * 0.86f : baseSize;
+        ConfigureDirectAutoSize(descText, maxSize, true);
+    }
+
+    private static void ApplyDirectSingleLineSizing(TMP_Text text, string value)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        float baseSize = text.fontSizeMax > 0f ? Mathf.Max(text.fontSizeMax, text.fontSize) : text.fontSize;
+        ConfigureDirectAutoSize(text, baseSize, false);
+    }
+
+    private static void ConfigureDirectAutoSize(TMP_Text text, float maxSize, bool allowWrapping)
+    {
+        text.enableAutoSizing = true;
+        text.fontSizeMax = maxSize;
+        text.fontSizeMin = Mathf.Max(8f, maxSize * 0.62f);
+        text.fontSize = maxSize;
+        text.textWrappingMode = allowWrapping ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+    }
+
+    private static int CountDescriptionLines(string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return 0;
+        }
+
+        string normalized = description.Replace("\r\n", "\n").Replace('\r', '\n');
+        return Mathf.Max(1, normalized.Split('\n').Length);
     }
 
     private IEnumerator AutoSelectRoutine()
@@ -3570,14 +3916,14 @@ public class CardUI : MonoBehaviour
             return StatUpgrade.StatCardTier.Normal;
         }
 
-        if (entry.StatUpgrade != null)
-        {
-            return entry.StatUpgrade.CurrentTier; // 스탯 카드 등급
-        }
-
         if (entry.SegmentRole == SegmentCardRole.EnhanceChoice)
         {
             return entry.WeaponEnhancementTier; // 무기 강화 카드 등급
+        }
+
+        if (entry.StatUpgrade != null)
+        {
+            return entry.StatUpgrade.CurrentTier; // 스탯 카드 등급
         }
 
         return StatUpgrade.StatCardTier.Normal; // 세그먼트 추가/레벨업 등 등급 없는 카드

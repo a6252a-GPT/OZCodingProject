@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG02_Missile
   DisplayName: "\uBBF8\uC0AC\uC77C"
-  Description: "\uACE1\uC0AC \uB85C\uCF13\uC774 \uB5A8\uC5B4\uC9C4 \uC9C0\uC810 \uC8FC\uBCC0\uC5D0
-    \uD3ED\uBC1C \uBC94\uC704 \uD53C\uD574\uB97C \uC8FC\uB294 \uACF5\uACA9 \uC138\uADF8\uBA3C\uD2B8"
+  Description: "<color=#9B3A2F><b>[밀리]</b></color> <color=#6B5B3A>[폭발]</color> 곡사 로켓을 발사해 착탄 지점 주변 적에게 폭발 피해를 줍니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

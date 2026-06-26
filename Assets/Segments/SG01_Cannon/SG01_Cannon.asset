@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG01_Cannon
   DisplayName: "\uCE90\uB17C"
-  Description: "\uCE90\uB17C"
+  Description: "<color=#9B3A2F><b>[밀리]</b></color> <color=#6B5B3A>[단일]</color> 가까운 적을 향해 포탄을 발사합니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

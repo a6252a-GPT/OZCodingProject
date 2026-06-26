@@ -10,7 +10,7 @@ public class LevelUpUi : MonoBehaviour
     [Header("투명도")]
     [SerializeField] private CanvasGroup panelCanvasGroup;
     [Header("타이틀")]
-    [SerializeField] private RectTransform levelUpText;
+    [SerializeField] private RectTransform titleVisual; // 정식 배치된 타이틀 이미지/텍스트 연출 대상
     [Header("디버그")]
     [SerializeField] private bool logCoreStats = true; // 코어 경험치 로그 출력 여부
 
@@ -33,15 +33,16 @@ public class LevelUpUi : MonoBehaviour
             panelCanvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
-        Transform title = transform.Find("LevelUpText");
+        Transform title = FindTitleTransform("LevelUpTitleImage") ?? FindTitleTransform("LevelUpText");
         if (title != null)
         {
-            levelUpText = title as RectTransform;
+            titleVisual = title as RectTransform;
         }
     }
 
     private void Start()
     {
+        ResolveTitleVisual(); // 씬에 정식 배치된 타이틀 확인
         CloseInstant();
         TrySubscribeCore(); // 코어 이벤트 연결
         LogCoreStats(); // 시작 시 1회 출력
@@ -165,6 +166,8 @@ public class LevelUpUi : MonoBehaviour
             SetOverlayPanelActive(!IsAutoOrbitActive()); // 안건준 추가 - 0622 : 자동모드면 Overlay Panel 숨김
         }
 
+        ResolveTitleVisual(); // 정식 타이틀 오브젝트 재확인
+
         // DOFade 가 timeScale=0 에서 충돌하거나 지연되는 문제 → 즉시 표시
         panelCanvasGroup.DOKill();
         panelCanvasGroup.alpha = 1f;
@@ -239,13 +242,40 @@ public class LevelUpUi : MonoBehaviour
 
     private void PlayTitleTween()
     {
-        if (levelUpText == null)
+        RectTransform target = ResolveTitleVisual();
+        if (target == null)
         {
             return;
         }
 
-        levelUpText.localScale = Vector3.zero;
-        levelUpText.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+        target.localScale = Vector3.zero;
+        target.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+    }
+
+    private RectTransform ResolveTitleVisual()
+    {
+        if (titleVisual != null)
+        {
+            return titleVisual;
+        }
+
+        Transform title = FindTitleTransform("LevelUpTitleImage") ?? FindTitleTransform("LevelUpText");
+        titleVisual = title as RectTransform; // 생성하지 않고 기존 오브젝트만 사용
+        return titleVisual;
+    }
+
+    private Transform FindTitleTransform(string objectName)
+    {
+        RectTransform[] children = GetComponentsInChildren<RectTransform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i] != null && children[i].name == objectName)
+            {
+                return children[i];
+            }
+        }
+
+        return null;
     }
 
     private void CloseInstant()

@@ -33,3 +33,5 @@ MonoBehaviour:
   - SegmentId: SG20_LightningObelisk
     Enhancements:
     - {fileID: 11400000, guid: 8b956271ff33f704cae44582ec7eed9a, type: 2}
+  - SegmentId: SG06_Ballista
+    Enhancements: []
