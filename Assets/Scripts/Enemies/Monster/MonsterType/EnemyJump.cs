@@ -15,6 +15,10 @@ namespace TeamProject01.Gameplay
         [Min(0.05f)]
         [SerializeField] private float jumpDuration = 0.5f; // 점프 시간
 
+        // 조성원추가-0626 - 착지 후 웅크린 자세를 유지하며 이동과 공격을 잠시 멈출 시간
+        [Min(0.0f)]
+        [SerializeField] private float landingRecoveryDuration = 0.25f;
+
         [Header("Segment Detection")]
         [Min(0.1f)]
         [SerializeField] private float segmentDetectDistance = 2.0f; // 앞쪽 세그먼트 감지 거리
@@ -40,6 +44,9 @@ namespace TeamProject01.Gameplay
         private NavMeshAgent navAgent;
         private Coroutine jumpRoutine;
         private float cooldownTimer;
+
+        // 조성원추가-0626 - 점프 애니메이션 Bridge가 현재 점프 상태를 읽을 수 있도록 공개한다.
+        public bool IsJumping { get; private set; }
 
         ////// 안건준추가-0622 - SegmentBlocker의 활성 목록을 읽기 위한 참조를 가져온다.
         private static FieldInfo activeBlockersField;
@@ -105,6 +112,9 @@ namespace TeamProject01.Gameplay
                 jumpRoutine = null;
             }
 
+            // 조성원추가-0626 - 비활성화될 때 점프 애니메이션 상태가 남지 않도록 해제한다.
+            IsJumping = false;
+
             SetEnemyMovementEnabled(true);
 
             if (navAgent != null &&
@@ -120,6 +130,9 @@ namespace TeamProject01.Gameplay
         ////// 안건준추가-0622 - Off-Mesh Link의 시작점에서 끝점까지 포물선으로 이동한다.
         private IEnumerator JumpOffMeshLink()
         {
+            // 조성원추가-0626 - 지형 점프가 시작됐다고 저장한다.
+            IsJumping = true;
+
             SetEnemyMovementEnabled(false);
 
             navAgent.isStopped = true;
@@ -143,13 +156,31 @@ namespace TeamProject01.Gameplay
                 navAgent.CompleteOffMeshLink();
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
-                navAgent.isStopped = false;
+
+                // 조성원수정-0626 - 착지 회복이 끝날 때까지 NavMeshAgent는 정지 상태를 유지한다.
+                navAgent.isStopped = true;
+            }
+
+            // 조성원추가-0626 - 착지 후 남은 웅크린 애니메이션 동안 이동하지 않는다.
+            if (landingRecoveryDuration > 0.0f)
+            {
+                yield return new WaitForSeconds(landingRecoveryDuration);
             }
 
             cooldownTimer = jumpCooldown;
-            jumpRoutine = null;
+
+            // 조성원추가-0626 - 착지 회복까지 끝난 뒤 점프 상태를 해제한다.
+            IsJumping = false;
 
             SetEnemyMovementEnabled(true);
+
+            // 조성원추가-0626 - 착지 회복이 끝난 뒤 NavMeshAgent 이동을 다시 허용한다.
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.isStopped = false;
+            }
+
+            jumpRoutine = null;
         }
 
         ////// 안건준추가-0622 - 몬스터 앞쪽에 점프할 세그먼트가 있는지 확인한다.
@@ -232,6 +263,9 @@ namespace TeamProject01.Gameplay
         ////// 안건준추가-0622 - EnemyMovement를 멈추고 세그먼트 너머로 점프한다.
         private IEnumerator JumpOverSegment(Vector3 landingPoint)
         {
+            // 조성원추가-0626 - 세그먼트 점프가 시작됐다고 저장한다.
+            IsJumping = true;
+
             SetEnemyMovementEnabled(false);
 
             bool canControlAgent = navAgent != null && navAgent.enabled && navAgent.isOnNavMesh;
@@ -260,15 +294,33 @@ namespace TeamProject01.Gameplay
 
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
-                navAgent.isStopped = false;
+
+                // 조성원수정-0626 - 착지 회복이 끝날 때까지 NavMeshAgent는 정지 상태를 유지한다.
+                navAgent.isStopped = true;
             }
 
             ApplyLandingShockwave(); // 세그먼트 점프 착지 지점에 충격파 발생
 
+            // 조성원추가-0626 - 착지 후 남은 웅크린 애니메이션 동안 이동하지 않는다.
+            if (landingRecoveryDuration > 0.0f)
+            {
+                yield return new WaitForSeconds(landingRecoveryDuration);
+            }
+
             cooldownTimer = jumpCooldown;
-            jumpRoutine = null;
+
+            // 조성원추가-0626 - 착지 회복까지 끝난 뒤 점프 상태를 해제한다.
+            IsJumping = false;
 
             SetEnemyMovementEnabled(true);
+
+            // 조성원추가-0626 - 착지 회복이 끝난 뒤 NavMeshAgent 이동을 다시 허용한다.
+            if (canControlAgent && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.isStopped = false;
+            }
+
+            jumpRoutine = null;
         }
 
         private void ApplyLandingShockwave() // 착지 주변의 연결 세그먼트를 바깥쪽으로 민다.

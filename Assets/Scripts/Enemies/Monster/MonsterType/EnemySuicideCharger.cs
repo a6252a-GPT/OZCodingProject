@@ -55,6 +55,10 @@ namespace TeamProject01.Gameplay
         private bool isCharging; // 자폭 준비 중인지 확인
         private bool hasExploded; // 이미 폭발했는지 확인
 
+        public bool IsMoving => enabled && !hasExploded && !isCharging && target != null;
+        public bool IsCharging => isCharging;
+        public event System.Action Exploded;
+
         private GameObject currentTelegraph; // 현재 생성된 폭발 범위 표시
 
         private Renderer[] bodyRenderers; // 몸 색을 바꿀 Renderer 목록
@@ -171,6 +175,8 @@ namespace TeamProject01.Gameplay
             hasExploded = true; // 폭발 완료 상태로 표시한다.
 
             TryKnockbackTarget(); // 폭발 범위 안에 PlayerConvoy가 있으면 넉백을 요청한다.
+
+            Exploded?.Invoke();
 
             DestroyTelegraph(); // 폭발 범위 표시를 제거한다.
             Destroy(gameObject); // 자폭 몬스터를 제거한다.

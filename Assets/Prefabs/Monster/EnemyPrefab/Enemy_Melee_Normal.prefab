@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 2871896729067683312}
   - component: {fileID: 4172602233752267069}
   - component: {fileID: 4161754835057380908}
+  - component: {fileID: -2533752562893233888}
   m_Layer: 0
   m_Name: Enemy_Melee_Normal
   m_TagString: Untagged
@@ -81,7 +82,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3c389b63cd4bd4345813d5ce647c01aa, type: 2}
+  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -296,6 +297,18 @@ MonoBehaviour:
   animator: {fileID: 5930545247153728800}
   deathDuration: 3
   hpBarRoot: {fileID: 2499099143148566352}
+--- !u!114 &-2533752562893233888
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708190925259269492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
 --- !u!1 &6280874183795697455
 GameObject:
   m_ObjectHideFlags: 0

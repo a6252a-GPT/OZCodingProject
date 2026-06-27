@@ -462,6 +462,7 @@ GameObject:
   - component: {fileID: 1706080961581110426}
   - component: {fileID: 3264274874489238810}
   - component: {fileID: 8186348228793072343}
+  - component: {fileID: -8517237803831464819}
   m_Layer: 0
   m_Name: Enemy_Ranged_Normal
   m_TagString: Untagged
@@ -520,7 +521,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ecca972de8c3fda4296f07fcfda6fa80, type: 2}
+  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -744,6 +745,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMeleeAnimatorBridge1
   animator: {fileID: 2564893586944209057}
+--- !u!114 &-8517237803831464819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8249173672585535282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
 --- !u!1001 &2523402107948124601
 PrefabInstance:
   m_ObjectHideFlags: 0

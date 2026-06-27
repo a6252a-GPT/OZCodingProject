@@ -15,6 +15,9 @@ namespace TeamProject01.Gameplay
         private EnemyRangedAttack enemyRangedAttack; // 원거리 공격 실행 이벤트를 받을 EnemyRangedAttack
         private EnemyHealth enemyHealth; // 몬스터의 현재 HP를 읽을 EnemyHealth
         private EnemySupportDebuffState supportDebuffState; // 동결 상태를 확인할 EnemySupportDebuffState
+        private EnemySegmentCutCaster segmentCutCaster; // 현재 절단 마법 시전 중인지 확인할 EnemySegmentCutCaster
+        private EnemySlowZoneThrower slowZoneThrower; // 장판 투척 준비 중인지 확인할 EnemySlowZoneThrower
+        private EnemySlowZoneThrowerAnimatorBridge slowZoneThrowerAnimatorBridge; // Throw 애니메이션 잠금 상태를 확인할 Bridge
 
         private float previousHp; // 직전 프레임의 HP
 
@@ -24,6 +27,9 @@ namespace TeamProject01.Gameplay
             enemyRangedAttack = GetComponent<EnemyRangedAttack>(); // 같은 GameObject의 EnemyRangedAttack을 찾는다.
             enemyHealth = GetComponent<EnemyHealth>(); // 같은 GameObject의 EnemyHealth를 찾는다.
             supportDebuffState = GetComponent<EnemySupportDebuffState>(); // 같은 GameObject의 동결 상태 Script Component를 찾는다.
+            segmentCutCaster = GetComponent<EnemySegmentCutCaster>(); // 같은 GameObject의 절단 마법 Script Component를 찾는다.
+            slowZoneThrower = GetComponent<EnemySlowZoneThrower>(); // 같은 GameObject의 장판 투척 Script Component를 찾는다.
+            slowZoneThrowerAnimatorBridge = GetComponent<EnemySlowZoneThrowerAnimatorBridge>(); // 같은 GameObject의 장판 투척 Animator Bridge를 찾는다.
 
             if (animator == null) // Inspector에서 Animator가 연결되지 않았다면
             {
@@ -64,19 +70,9 @@ namespace TeamProject01.Gameplay
                 enemyRangedAttack.AttackPerformed -= PlayAttack; // 비활성화될 때 공격 이벤트 연결을 해제한다.
             }
 
-            if (animator == null) // Animator가 없다면
+            if (!CanUseAnimator()) // Animator가 Parameter를 받을 수 없는 상태라면
             {
-                return; // 초기화할 Animator가 없으므로 종료한다.
-            }
-
-            if (!animator.isActiveAndEnabled) // Animator가 이미 비활성화되었다면
-            {
-                return; // 정지된 Animator에 Parameter를 전달하지 않는다.
-            }
-
-            if (animator.runtimeAnimatorController == null) // Animator Controller가 없다면
-            {
-                return; // Parameter를 처리할 Controller가 없으므로 종료한다.
+                return; // 초기화하지 않고 종료한다.
             }
 
             animator.SetBool(IsMovingParameter, false); // 비활성화될 때 이동 상태를 끈다.
@@ -86,9 +82,14 @@ namespace TeamProject01.Gameplay
 
         public void PlayAttack() // 원거리 공격이 실행될 때 공격 애니메이션을 재생하는 함수
         {
-            if (animator == null) // Animator가 없다면
+            if (enemyHealth != null && enemyHealth.IsDead) // 몬스터가 죽은 상태라면
             {
-                return; // 공격 애니메이션을 실행할 수 없으므로 종료한다.
+                return; // 죽은 몬스터는 공격 애니메이션을 실행하지 않는다.
+            }
+
+            if (!CanUseAnimator()) // Animator가 Parameter를 받을 수 없는 상태라면
+            {
+                return; // 공격 애니메이션을 실행하지 않는다.
             }
 
             animator.ResetTrigger(AttackParameter); // 이전 공격 Trigger가 남아 있다면 초기화한다.
@@ -97,9 +98,19 @@ namespace TeamProject01.Gameplay
 
         private void PlayHit() // 몬스터가 피해를 받았을 때 피격 애니메이션을 재생하는 함수
         {
-            if (animator == null) // Animator가 없다면
+            if (enemyHealth != null && enemyHealth.IsDead) // 몬스터가 죽은 상태라면
             {
-                return; // 피격 애니메이션을 실행할 수 없으므로 종료한다.
+                return; // 죽은 몬스터는 피격 애니메이션을 실행하지 않는다.
+            }
+
+            if (IsSlowZoneThrowing()) // 장판 투척 준비 또는 Throw 애니메이션 중이라면
+            {
+                return; // Throw 흐름을 끊지 않기 위해 Hit 애니메이션을 생략한다.
+            }
+
+            if (!CanUseAnimator()) // Animator가 Parameter를 받을 수 없는 상태라면
+            {
+                return; // 피격 애니메이션을 실행하지 않는다.
             }
 
             animator.ResetTrigger(HitParameter); // 이전 피격 Trigger가 남아 있다면 초기화한다.
@@ -108,13 +119,20 @@ namespace TeamProject01.Gameplay
 
         private void UpdateMovementAnimation() // 현재 몬스터 이동 상태를 Animator에 전달하는 함수
         {
-            if (animator == null || enemyMovement == null) // Animator 또는 EnemyMovement가 없다면
+            if (!CanUseAnimator() || enemyMovement == null) // Animator 또는 EnemyMovement가 없다면
             {
                 return; // 이동 상태를 계산할 수 없으므로 종료한다.
             }
 
+            if (enemyHealth != null && enemyHealth.IsDead) // 몬스터가 죽은 상태라면
+            {
+                animator.SetBool(IsMovingParameter, false); // 죽은 몬스터는 이동 애니메이션을 끈다.
+                return; // 더 계산하지 않는다.
+            }
+
             bool isFrozen = supportDebuffState != null && supportDebuffState.IsFrozen; // 현재 동결 상태인지 확인한다.
-            bool isMoving = enemyMovement.enabled && !enemyMovement.IsInStopRange && !isFrozen; // 이동 Script가 켜져 있고 공격 사거리 밖이며 동결되지 않았다면 이동 중이다.
+            bool isSlowZoneThrowing = IsSlowZoneThrowing(); // 장판 투척 준비 또는 Throw 애니메이션 중인지 확인한다.
+            bool isMoving = enemyMovement.enabled && !enemyMovement.IsInStopRange && !isFrozen && !isSlowZoneThrowing; // 이동 Script가 켜져 있고 공격 사거리 밖이며 동결/투척 중이 아니라면 이동 중이다.
 
             animator.SetBool(IsMovingParameter, isMoving); // 계산된 이동 상태를 Animator에 전달한다.
         }
@@ -130,10 +148,51 @@ namespace TeamProject01.Gameplay
 
             if (currentHp < previousHp && !enemyHealth.IsDead) // HP가 감소했지만 아직 죽지 않았다면
             {
-                PlayHit(); // 피격 애니메이션을 실행한다.
+                bool isCastingSegmentCut = segmentCutCaster != null && segmentCutCaster.IsCasting; // 현재 절단 마법 시전 중인지 확인한다.
+                bool isSlowZoneThrowing = IsSlowZoneThrowing(); // 현재 장판 투척 준비 또는 Throw 애니메이션 중인지 확인한다.
+
+                if (!isCastingSegmentCut && !isSlowZoneThrowing) // 절단 마법이나 장판 투척 중이 아닐 때만
+                {
+                    PlayHit(); // 피격 애니메이션을 실행한다.
+                }
             }
 
-            previousHp = currentHp; // 다음 프레임 비교를 위해 현재 HP를 저장한다.
+            previousHp = currentHp; // 피격 애니메이션을 생략해도 현재 HP로 갱신하여 나중에 Hit가 뒤늦게 실행되지 않게 한다.
+        }
+
+        private bool IsSlowZoneThrowing() // 장판 투척 준비 또는 Throw 애니메이션 중인지 확인하는 함수
+        {
+            if (slowZoneThrower != null && slowZoneThrower.IsPreparingThrow) // 실제 투사체 발사를 기다리는 중이라면
+            {
+                return true; // 장판 투척 중으로 판단한다.
+            }
+
+            if (slowZoneThrowerAnimatorBridge != null && slowZoneThrowerAnimatorBridge.IsThrowing) // Throw 애니메이션 잠금 시간이 남아 있다면
+            {
+                return true; // 장판 투척 중으로 판단한다.
+            }
+
+            return false; // 장판 투척 중이 아니다.
+        }
+
+        private bool CanUseAnimator() // Animator에 Parameter를 보내도 되는지 확인하는 함수
+        {
+            if (animator == null) // Animator가 없다면
+            {
+                return false; // 사용할 수 없다.
+            }
+
+            if (!animator.isActiveAndEnabled) // Animator가 비활성화되어 있다면
+            {
+                return false; // 사용할 수 없다.
+            }
+
+            if (animator.runtimeAnimatorController == null) // Animator Controller가 없다면
+            {
+                return false; // 사용할 수 없다.
+            }
+
+            return true; // Animator Parameter를 사용할 수 있다.
         }
     }
 }

@@ -33,12 +33,12 @@ namespace TeamProject01.Gameplay
 
         public static bool IsEnemyFrozen(EnemyController enemy) //조성원추가-0622 동결 몬스터 상태 확인
         {
-            if(enemy == null) //조성원추가-0622 확인할 몬스터가 없으면 동결상태가 아니다.
+            if (enemy == null) //조성원추가-0622 확인할 몬스터가 없으면 동결상태가 아니다.
             {
                 return false; //조성원추가-0622 동결되지 않음으로 반환
             }
 
-            if(!enemy.TryGetComponent(out EnemySupportDebuffState state)) //조성원추가-0622 디버프 상태 확인
+            if (!enemy.TryGetComponent(out EnemySupportDebuffState state)) //조성원추가-0622 디버프 상태 확인
             {
                 return false; //조성원추가-0622 디버프상태가 없다면 동결되지 않은것으로 반환
             }
@@ -50,6 +50,13 @@ namespace TeamProject01.Gameplay
             if (duration <= 0f)
             {
                 return;
+            }
+
+            EnemySuicideCharger suicideCharger = GetComponent<EnemySuicideCharger>(); // 조성원추가-0626 - 자폭 몬스터의 현재 충전 상태를 확인한다.
+
+            if (suicideCharger != null && suicideCharger.IsCharging) // 조성원추가-0626 - 이미 자폭 준비 중이라면
+            {
+                return; // 조성원추가-0626 - 동결 상태와 동결 시간을 적용하지 않아 자폭이 중단되지 않게 한다.
             }
 
             bool wasFrozen = IsFrozen;
@@ -76,6 +83,13 @@ namespace TeamProject01.Gameplay
             if (multiplier >= 1f || duration <= 0f)
             {
                 return;
+            }
+
+            EnemySuicideCharger suicideCharger = GetComponent<EnemySuicideCharger>(); // 조성원추가-0626 - 자폭 몬스터의 현재 충전 상태를 확인한다.
+
+            if (suicideCharger != null && suicideCharger.IsCharging) // 조성원추가-0626 - 이미 자폭 준비 중이라면
+            {
+                return; // 조성원추가-0626 - 이동속도 감소를 적용하지 않아 자폭 진행 상태를 유지한다.
             }
 
             moveSpeedSlowMultiplier = Mathf.Min(moveSpeedSlowMultiplier, Mathf.Clamp(multiplier, 0.05f, 1f));

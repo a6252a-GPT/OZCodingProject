@@ -85,9 +85,29 @@ namespace TeamProject01.Gameplay
             int finalAttackDamage = Mathf.Max(0, Mathf.RoundToInt(attackDamage * attackPowerMultiplier * hatchlingAttackPowerMultiplier)); // 버프 배율을 적용한 최종 피해량을 계산한다.
             float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier / hatchlingAttackSpeedMultiplier); // 공격속도 배율을 적용한 최종 공격 대기 시간을 계산한다.
 
+            FaceNexus(); // 조성원추가-0626 - 공격 애니메이션이 시작되기 전에 Nexus 방향을 바라보게 한다.
+
             AttackPerformed?.Invoke();
             NexusController.TryApplyDamage(nexus, finalAttackDamage); // 최종 피해량을 요청한다.
             attackTimer = finalAttackDelay; // 공격 후 다음 공격까지 대기 시간을 다시 설정한다.
+        }
+
+        private void FaceNexus() // 조성원추가-0626 - 현재 위치에서 Nexus를 바라보도록 회전시키는 함수
+        {
+            if (nexus == null) // 조성원추가-0626 - 바라볼 Nexus가 없다면
+            {
+                return; // 조성원추가-0626 - 회전하지 않고 종료한다.
+            }
+
+            Vector3 direction = nexus.position - transform.position; // 조성원추가-0626 - 몬스터에서 Nexus까지의 방향을 계산한다.
+            direction.y = 0.0f; // 조성원추가-0626 - 수평 방향으로만 회전하도록 높이 차이를 제거한다.
+
+            if (direction.sqrMagnitude <= 0.0001f) // 조성원추가-0626 - 회전 방향을 계산할 수 없을 정도로 가까우면
+            {
+                return; // 조성원추가-0626 - 잘못된 회전값을 적용하지 않고 종료한다.
+            }
+
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // 조성원추가-0626 - 공격 전에 몬스터 정면을 Nexus 방향으로 맞춘다.
         }
 
         public void Configure(Transform nexus, int attackDamage, float attackRange, float attackDelay) // Spawner나 Controller가 공격 초기값을 넣어주는 함수

@@ -8,6 +8,10 @@ namespace TeamProject01.Gameplay
         public static readonly int AttackParameter = Animator.StringToHash("Attack");
         public static readonly int HitParameter = Animator.StringToHash("Hit");
 
+        public static readonly int IsAttackingParameter = Animator.StringToHash("IsAttacking");
+
+        private static readonly int AttackState = Animator.StringToHash("Attack");
+
         [Header("Animator")]
         [SerializeField] private Animator animator;
 
@@ -15,8 +19,13 @@ namespace TeamProject01.Gameplay
         private EnemyMeleeAttack enemyMeleeAttack;
         private EnemyHealth enemyHealth;
         private EnemySupportDebuffState supportDebuffState;
+        private EnemyObstacleSummoner obstacleSummoner; 
 
         private float previousHp;
+
+        private bool isAttacking;
+
+        private bool attackStateEntered;
 
         private void Awake()
         {
@@ -24,6 +33,7 @@ namespace TeamProject01.Gameplay
             enemyMeleeAttack = GetComponent<EnemyMeleeAttack>();
             enemyHealth = GetComponent<EnemyHealth>();
             supportDebuffState = GetComponent<EnemySupportDebuffState>();
+            obstacleSummoner = GetComponent<EnemyObstacleSummoner>(); 
 
             if (animator == null)
             {
@@ -48,12 +58,24 @@ namespace TeamProject01.Gameplay
                 previousHp = enemyHealth.CurrentHp;
             }
 
+            isAttacking = false;
+
+            attackStateEntered = false;
+
+            if (animator != null)
+            {
+                animator.SetBool(IsAttackingParameter, false);
+            }
+
             UpdateMovementAnimation();
         }
 
         private void Update()
         {
             UpdateMovementAnimation();
+
+            UpdateAttackAnimation();
+
             UpdateHitAnimation();
         }
 
@@ -70,8 +92,15 @@ namespace TeamProject01.Gameplay
             }
 
             animator.SetBool(IsMovingParameter, false);
+
+            animator.SetBool(IsAttackingParameter, false);
+
             animator.ResetTrigger(AttackParameter);
             animator.ResetTrigger(HitParameter);
+
+            isAttacking = false;
+
+            attackStateEntered = false;
         }
 
         public void PlayAttack()
@@ -80,6 +109,12 @@ namespace TeamProject01.Gameplay
             {
                 return;
             }
+
+            isAttacking = true;
+
+            attackStateEntered = false;
+
+            animator.SetBool(IsAttackingParameter, true);
 
             animator.ResetTrigger(AttackParameter);
             animator.SetTrigger(AttackParameter);
@@ -96,6 +131,47 @@ namespace TeamProject01.Gameplay
             animator.SetTrigger(HitParameter);
         }
 
+        private void UpdateAttackAnimation()
+        {
+            if (animator == null)
+            {
+                return;
+            }
+
+            AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
+            bool currentStateIsAttack = currentState.shortNameHash == AttackState;
+
+            bool nextStateIsAttack = false;
+
+            if (animator.IsInTransition(0))
+            {
+                AnimatorStateInfo nextState = animator.GetNextAnimatorStateInfo(0);
+                nextStateIsAttack = nextState.shortNameHash == AttackState;
+            }
+
+            if (currentStateIsAttack || nextStateIsAttack)
+            {
+                attackStateEntered = true;
+
+                if (!isAttacking)
+                {
+                    isAttacking = true;
+                    animator.SetBool(IsAttackingParameter, true);
+                }
+
+                return;
+            }
+
+            if (!attackStateEntered)
+            {
+                return;
+            }
+
+            isAttacking = false;
+            attackStateEntered = false;
+            animator.SetBool(IsAttackingParameter, false);
+        }
+
         private void UpdateMovementAnimation()
         {
             if (animator == null || enemyMovement == null)
@@ -104,7 +180,8 @@ namespace TeamProject01.Gameplay
             }
 
             bool isFrozen = supportDebuffState != null && supportDebuffState.IsFrozen;
-            bool isMoving = enemyMovement.enabled && !enemyMovement.IsInStopRange && !isFrozen;
+            bool isSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; 
+            bool isMoving = enemyMovement.enabled && !enemyMovement.IsInStopRange && !isFrozen && !isSummoning;
 
             animator.SetBool(IsMovingParameter, isMoving);
         }
@@ -117,8 +194,9 @@ namespace TeamProject01.Gameplay
             }
 
             float currentHp = enemyHealth.CurrentHp;
+            bool isSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; 
 
-            if (currentHp < previousHp && !enemyHealth.IsDead)
+            if (currentHp < previousHp && !enemyHealth.IsDead && !isAttacking && !isSummoning) 
             {
                 PlayHit();
             }
