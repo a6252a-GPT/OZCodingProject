@@ -18118,10 +18118,26 @@ MonoBehaviour:
     spawnScalePercent: 100
   - startStage: 6
     spawnScalePercent: 120
+  - startStage: 8
+    spawnScalePercent: 160
   - startStage: 12
-    spawnScalePercent: 130
+    spawnScalePercent: 220
   - startStage: 18
     spawnScalePercent: 140
+  - startStage: 15
+    spawnScalePercent: 280
+  - startStage: 18
+    spawnScalePercent: 360
+  - startStage: 20
+    spawnScalePercent: 440
+  - startStage: 25
+    spawnScalePercent: 540
+  - startStage: 30
+    spawnScalePercent: 640
+  - startStage: 35
+    spawnScalePercent: 780
+  - startStage: 40
+    spawnScalePercent: 880
   difficultyScaleSteps:
   - startStage: 1
     healthScalePercent: 100
@@ -18193,12 +18209,18 @@ MonoBehaviour:
       ratioPercent: 15
   spawnWindowPercent: 40
   spawnBatchCount: 4
+  batchGateCount: 1
   earlyGateCount: 2
   midGateStartStage: 10
   midGateCount: 4
   lateGateStartStage: 20
   lateGateCount: 8
   frontRowCount: 5
+  useCongestionPush: 0
+  congestionCheckRadius: 8
+  congestionMonsterThreshold: 12
+  congestionPushDistance: 5
+  congestionMaxPushDistance: 20
 --- !u!1001 &603314269
 PrefabInstance:
   m_ObjectHideFlags: 0
