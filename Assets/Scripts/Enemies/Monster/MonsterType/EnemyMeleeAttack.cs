@@ -2,100 +2,110 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyMeleeAttack : MonoBehaviour //±Ù°Å¸® ¸ó½ºÅÍ
+    public sealed class EnemyMeleeAttack : MonoBehaviour //ê·¼ê±°ë¦¬ ëª¬ìŠ¤í„°
     {
-        private Transform nexus; // °ø°İ Å¸°ÙÀÌ µÇ´Â Nexus Transform
+        private Transform nexus; // ê³µê²© íƒ€ê²Ÿì´ ë˜ëŠ” Nexus Transform
 
         [Min(0)]
-        [SerializeField] private int attackDamage = 1; // ÇÇÇØ·®
+        [SerializeField] private int attackDamage = 1; // í”¼í•´ëŸ‰
 
         [Min(0.1f)]
-        [SerializeField] private float attackRange = 1.6f; // °ø°İÇÒ ¼ö ÀÖ´Â °Å¸®
+        [SerializeField] private float attackRange = 1.6f; // ê³µê²©í•  ìˆ˜ ìˆëŠ” ê±°ë¦¬
 
         [Min(0.1f)]
-        [SerializeField] private float attackDelay = 1.0f; // °ø°İ »çÀÌÀÇ ´ë±â ½Ã°£, °ø°İ¼Óµµ ¿ªÇÒ
+        [SerializeField] private float attackDelay = 1.0f; // ê³µê²© ì‚¬ì´ì˜ ëŒ€ê¸° ì‹œê°„, ê³µê²©ì†ë„ ì—­í• 
 
         public event System.Action AttackPerformed;
 
-        public float AttackRange // EnemyMovement°¡ ±Ù°Å¸® °ø°İ »ç°Å¸®¸¦ ÀĞ±â À§ÇÑ property
+        public float AttackRange // EnemyMovementê°€ ê·¼ê±°ë¦¬ ê³µê²© ì‚¬ê±°ë¦¬ë¥¼ ì½ê¸° ìœ„í•œ property
         {
             get
             {
-                return attackRange; // ±Ù°Å¸® °ø°İ °¡´É °Å¸®¸¦ ¹İÈ¯ÇÑ´Ù.
+                return attackRange; // ê·¼ê±°ë¦¬ ê³µê²© ê°€ëŠ¥ ê±°ë¦¬ë¥¼ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        private float attackTimer; // ´ÙÀ½ °ø°İ±îÁö ³²Àº ½Ã°£À» ÀúÀåÇÏ´Â º¯¼ö
+        private float attackTimer; // ë‹¤ìŒ ê³µê²©ê¹Œì§€ ë‚¨ì€ ì‹œê°„ì„ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
 
-        private EnemyBuffReceiver buffReceiver; // °°Àº GameObject¿¡ ºÙÀº ¹öÇÁ »óÅÂ Script Component ÂüÁ¶
-        private EnemyHatchlingGrowth hatchlingGrowth; // °°Àº GameObject¿¡ ºÙÀº ÇØÃú¸µ ¼ºÀå Script Component ÂüÁ¶
+        private EnemyBuffReceiver buffReceiver; // ê°™ì€ GameObjectì— ë¶™ì€ ë²„í”„ ìƒíƒœ Script Component ì°¸ì¡°
+        private EnemyHatchlingGrowth hatchlingGrowth; // ê°™ì€ GameObjectì— ë¶™ì€ í•´ì¸¨ë§ ì„±ì¥ Script Component ì°¸ì¡°
 
         private void Awake()
         {
-            buffReceiver = GetComponent<EnemyBuffReceiver>(); // °°Àº GameObject¿¡ ºÙÀº EnemyBuffReceiver Script Component¸¦ Ã£´Â´Ù.
-            hatchlingGrowth = GetComponent<EnemyHatchlingGrowth>(); // °°Àº GameObject¿¡ ºÙÀº EnemyHatchlingGrowth Script Component¸¦ Ã£´Â´Ù.
+            buffReceiver = GetComponent<EnemyBuffReceiver>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyBuffReceiver Script Componentë¥¼ ì°¾ëŠ”ë‹¤.
+            hatchlingGrowth = GetComponent<EnemyHatchlingGrowth>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyHatchlingGrowth Script Componentë¥¼ ì°¾ëŠ”ë‹¤.
 
-            if (nexus == null) // Inspector¿¡¼­ Nexus°¡ ¿¬°áµÇÁö ¾Ê¾Ò´Ù¸é
+            if (nexus == null) // Inspectorì—ì„œ Nexusê°€ ì—°ê²°ë˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                GameObject nexusObject = GameObject.Find("Nexus_Core"); // ¾À¿¡¼­ ÀÌ¸§ÀÌ Nexus_CoreÀÎ GameObject¸¦ Ã£´Â´Ù.
-                nexus = nexusObject != null ? nexusObject.transform : null; // Ã£¾Ò´Ù¸é TransformÀ» ÀúÀåÇÏ°í, ¸ø Ã£¾Ò´Ù¸é null·Î µĞ´Ù.
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // ì”¬ì—ì„œ ì´ë¦„ì´ Nexus_Coreì¸ GameObjectë¥¼ ì°¾ëŠ”ë‹¤.
+                nexus = nexusObject != null ? nexusObject.transform : null; // ì°¾ì•˜ë‹¤ë©´ Transformì„ ì €ì¥í•˜ê³ , ëª» ì°¾ì•˜ë‹¤ë©´ nullë¡œ ë‘”ë‹¤.
             }
         }
 
         private void Update()
         {
-            if (nexus == null) // °ø°İ ´ë»óÀÌ ¾ø´Ù¸é
+            if (nexus == null) // ê³µê²© ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return; // °ø°İÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ê³µê²©í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            attackTimer -= Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ °ø°İ ´ë±â ½Ã°£À» ÁÙÀÎ´Ù.
+            attackTimer -= Time.deltaTime; // ì§€ë‚œ ì‹œê°„ë§Œí¼ ê³µê²© ëŒ€ê¸° ì‹œê°„ì„ ì¤„ì¸ë‹¤.
 
-            if (attackTimer > 0f) // ¾ÆÁ÷ °ø°İ ´ë±â ½Ã°£ÀÌ ³²¾Æ ÀÖ´Ù¸é
+            if (attackTimer > 0f) // ì•„ì§ ê³µê²© ëŒ€ê¸° ì‹œê°„ì´ ë‚¨ì•„ ìˆë‹¤ë©´
             {
-                return; // ÀÌ¹ø ÇÁ·¹ÀÓ¿¡´Â °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ì´ë²ˆ í”„ë ˆì„ì—ëŠ” ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Vector3 offset = nexus.position - transform.position; // ÇöÀç ¸ó½ºÅÍ À§Ä¡¿¡¼­ Nexus±îÁöÀÇ ¹æÇâ°ú °Å¸® º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
-            offset.y = 0f; // 3D Æò¸é °Å¸®¸¸ »ç¿ëÇÒ °ÍÀÌ¹Ç·Î ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 offset = nexus.position - transform.position; // í˜„ì¬ ëª¬ìŠ¤í„° ìœ„ì¹˜ì—ì„œ Nexusê¹Œì§€ì˜ ë°©í–¥ê³¼ ê±°ë¦¬ ë²¡í„°ë¥¼ êµ¬í•œë‹¤.
+            offset.y = 0f; // 3D í‰ë©´ ê±°ë¦¬ë§Œ ì‚¬ìš©í•  ê²ƒì´ë¯€ë¡œ ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            if (offset.sqrMagnitude > attackRange * attackRange) // Nexus°¡ °ø°İ »ç°Å¸® ¹ÛÀÌ¶ó¸é
+            if (offset.sqrMagnitude > attackRange * attackRange) // Nexusê°€ ê³µê²© ì‚¬ê±°ë¦¬ ë°–ì´ë¼ë©´
             {
-                return; // °ø°İÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ê³µê²©í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            float attackPowerMultiplier = 1.0f; // ±âº» °ø°İ·Â ¹öÇÁ ¹èÀ²
-            float attackSpeedMultiplier = 1.0f; // ±âº» °ø°İ¼Óµµ ¹öÇÁ ¹èÀ²
+            float attackPowerMultiplier = 1.0f; // ê¸°ë³¸ ê³µê²©ë ¥ ë²„í”„ ë°°ìœ¨
+            float attackSpeedMultiplier = 1.0f; // ê¸°ë³¸ ê³µê²©ì†ë„ ë²„í”„ ë°°ìœ¨
 
-            if (buffReceiver != null) // ¹öÇÁ »óÅÂ Script Component°¡ ÀÖ´Ù¸é
+            if (buffReceiver != null) // ë²„í”„ ìƒíƒœ Script Componentê°€ ìˆë‹¤ë©´
             {
-                attackPowerMultiplier = buffReceiver.GetAttackPowerMultiplier(); // ÇöÀç °ø°İ·Â ¹öÇÁ ¹èÀ²À» °¡Á®¿Â´Ù.
-                attackSpeedMultiplier = buffReceiver.GetAttackSpeedMultiplier(); // ÇöÀç °ø°İ¼Óµµ ¹öÇÁ ¹èÀ²À» °¡Á®¿Â´Ù.
+                attackPowerMultiplier = buffReceiver.GetAttackPowerMultiplier(); // í˜„ì¬ ê³µê²©ë ¥ ë²„í”„ ë°°ìœ¨ì„ ê°€ì ¸ì˜¨ë‹¤.
+                attackSpeedMultiplier = buffReceiver.GetAttackSpeedMultiplier(); // í˜„ì¬ ê³µê²©ì†ë„ ë²„í”„ ë°°ìœ¨ì„ ê°€ì ¸ì˜¨ë‹¤.
             }
 
-            float hatchlingAttackPowerMultiplier = 1.0f; // ±âº» ¸ó½ºÅÍ ¼ºÀå °ø°İ·Â ¹èÀ²
-            float hatchlingAttackSpeedMultiplier = 1.0f; // ±âº» ¸ó½ºÅÍ ¼ºÀå °ø°İ¼Óµµ ¹èÀ²
+            float hatchlingAttackPowerMultiplier = 1.0f; // ê¸°ë³¸ ëª¬ìŠ¤í„° ì„±ì¥ ê³µê²©ë ¥ ë°°ìœ¨
+            float hatchlingAttackSpeedMultiplier = 1.0f; // ê¸°ë³¸ ëª¬ìŠ¤í„° ì„±ì¥ ê³µê²©ì†ë„ ë°°ìœ¨
 
-            if (hatchlingGrowth != null) // ¸ó½ºÅÍ ¼ºÀå Script Component°¡ ÀÖ´Ù¸é
+            if (hatchlingGrowth != null) // ëª¬ìŠ¤í„° ì„±ì¥ Script Componentê°€ ìˆë‹¤ë©´
             {
-                hatchlingAttackPowerMultiplier = hatchlingGrowth.AttackPowerMultiplier; // ÇöÀç ¸ó½ºÅÍ ¼ºÀå °ø°İ·Â ¹èÀ²À» °¡Á®¿Â´Ù.
-                hatchlingAttackSpeedMultiplier = hatchlingGrowth.AttackSpeedMultiplier; // ÇöÀç ¸ó½ºÅÍ ¼ºÀå °ø°İ¼Óµµ ¹èÀ²À» °¡Á®¿Â´Ù.
+                hatchlingAttackPowerMultiplier = hatchlingGrowth.AttackPowerMultiplier; // í˜„ì¬ ëª¬ìŠ¤í„° ì„±ì¥ ê³µê²©ë ¥ ë°°ìœ¨ì„ ê°€ì ¸ì˜¨ë‹¤.
+                hatchlingAttackSpeedMultiplier = hatchlingGrowth.AttackSpeedMultiplier; // í˜„ì¬ ëª¬ìŠ¤í„° ì„±ì¥ ê³µê²©ì†ë„ ë°°ìœ¨ì„ ê°€ì ¸ì˜¨ë‹¤.
             }
 
-            int finalAttackDamage = Mathf.Max(0, Mathf.RoundToInt(attackDamage * attackPowerMultiplier * hatchlingAttackPowerMultiplier)); // ¹öÇÁ ¹èÀ²À» Àû¿ëÇÑ ÃÖÁ¾ ÇÇÇØ·®À» °è»êÇÑ´Ù.
-            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier / hatchlingAttackSpeedMultiplier); // °ø°İ¼Óµµ ¹èÀ²À» Àû¿ëÇÑ ÃÖÁ¾ °ø°İ ´ë±â ½Ã°£À» °è»êÇÑ´Ù.
+            int finalAttackDamage = Mathf.Max(0, Mathf.RoundToInt(attackDamage * attackPowerMultiplier * hatchlingAttackPowerMultiplier)); // ë²„í”„ ë°°ìœ¨ì„ ì ìš©í•œ ìµœì¢… í”¼í•´ëŸ‰ì„ ê³„ì‚°í•œë‹¤.
+            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier / hatchlingAttackSpeedMultiplier); // ê³µê²©ì†ë„ ë°°ìœ¨ì„ ì ìš©í•œ ìµœì¢… ê³µê²© ëŒ€ê¸° ì‹œê°„ì„ ê³„ì‚°í•œë‹¤.
 
             AttackPerformed?.Invoke();
-            NexusController.TryApplyDamage(nexus, finalAttackDamage); // ÃÖÁ¾ ÇÇÇØ·®À» ¿äÃ»ÇÑ´Ù.
-            attackTimer = finalAttackDelay; // °ø°İ ÈÄ ´ÙÀ½ °ø°İ±îÁö ´ë±â ½Ã°£À» ´Ù½Ã ¼³Á¤ÇÑ´Ù.
+            NexusController.TryApplyDamage(nexus, finalAttackDamage); // ìµœì¢… í”¼í•´ëŸ‰ì„ ìš”ì²­í•œë‹¤.
+            attackTimer = finalAttackDelay; // ê³µê²© í›„ ë‹¤ìŒ ê³µê²©ê¹Œì§€ ëŒ€ê¸° ì‹œê°„ì„ ë‹¤ì‹œ ì„¤ì •í•œë‹¤.
         }
 
-        public void Configure(Transform nexus, int attackDamage, float attackRange, float attackDelay) // Spawner³ª Controller°¡ °ø°İ ÃÊ±â°ªÀ» ³Ö¾îÁÖ´Â ÇÔ¼ö
+        public void Configure(Transform nexus, int attackDamage, float attackRange, float attackDelay) // Spawnerë‚˜ Controllerê°€ ê³µê²© ì´ˆê¸°ê°’ì„ ë„£ì–´ì£¼ëŠ” í•¨ìˆ˜
         {
-            this.nexus = nexus; // ¸Å°³º¯¼ö nexus¸¦ ³»ºÎ nexus field¿¡ ÀúÀåÇÑ´Ù.
-            this.attackDamage = attackDamage; // ¸Å°³º¯¼ö attackDamage¸¦ ³»ºÎ attackDamage field¿¡ ÀúÀåÇÑ´Ù.
-            this.attackRange = attackRange; // ¸Å°³º¯¼ö attackRange¸¦ ³»ºÎ attackRange field¿¡ ÀúÀåÇÑ´Ù.
-            this.attackDelay = attackDelay; // ¸Å°³º¯¼ö attackDelay¸¦ ³»ºÎ attackDelay field¿¡ ÀúÀåÇÑ´Ù.
+            this.nexus = nexus; // ë§¤ê°œë³€ìˆ˜ nexusë¥¼ ë‚´ë¶€ nexus fieldì— ì €ì¥í•œë‹¤.
+            this.attackDamage = attackDamage; // ë§¤ê°œë³€ìˆ˜ attackDamageë¥¼ ë‚´ë¶€ attackDamage fieldì— ì €ì¥í•œë‹¤.
+            this.attackRange = attackRange; // ë§¤ê°œë³€ìˆ˜ attackRangeë¥¼ ë‚´ë¶€ attackRange fieldì— ì €ì¥í•œë‹¤.
+            this.attackDelay = attackDelay; // ë§¤ê°œë³€ìˆ˜ attackDelayë¥¼ ë‚´ë¶€ attackDelay fieldì— ì €ì¥í•œë‹¤.
+        }
+
+        public void ApplyAttackDamageMultiplier(float multiplier) // ì›¨ì´ë¸Œ ë‚œì´ë„ ë„¥ì„œìŠ¤ í”¼í•´ ë°°ìœ¨ ì ìš©
+        {
+            if (attackDamage <= 0 || multiplier <= 0f || Mathf.Approximately(multiplier, 1f))
+            {
+                return; // ì ìš© ì—†ìŒ
+            }
+
+            attackDamage = Mathf.Max(1, Mathf.RoundToInt(attackDamage * multiplier)); // ê¸°ë³¸ í”¼í•´ëŸ‰ ë°°ìœ¨
         }
     }
 }

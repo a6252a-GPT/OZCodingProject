@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -7,11 +8,17 @@ namespace TeamProject01.Gameplay
     public sealed class HudTooltipManager : MonoBehaviour
     {
         public static HudTooltipManager Instance { get; private set; }
+        private const int RoundedBackgroundSize = 32;
+        private const float RoundedBackgroundRadius = 7f;
+        private const float RoundedBackgroundBorder = 8f;
+        private static Sprite roundedBackgroundSprite;
 
         [SerializeField] private GameObject tooltipPanel;
-        [SerializeField] private Text titleText;
-        [SerializeField] private Text bodyText;
-        [SerializeField] private Text footerText;
+        [SerializeField] private TextMeshProUGUI titleText;
+        [SerializeField] private TextMeshProUGUI bodyText;
+        [SerializeField] private TextMeshProUGUI footerText;
+        [SerializeField] private TMP_FontAsset tooltipFont;
+        [SerializeField] private Sprite backgroundSprite;
         [SerializeField] private Vector2 screenOffset = new Vector2(18f, -18f);
         [SerializeField, Min(180f)] private float panelWidth = 300f;
 
@@ -168,6 +175,8 @@ namespace TeamProject01.Gameplay
             }
 
             background.color = new Color(0.03f, 0.035f, 0.045f, 0.96f);
+            background.sprite = backgroundSprite != null ? backgroundSprite : GetRoundedBackgroundSprite();
+            background.type = Image.Type.Sliced;
             background.raycastTarget = false;
 
             canvasGroup = tooltipPanel.GetComponent<CanvasGroup>();
@@ -201,9 +210,9 @@ namespace TeamProject01.Gameplay
             fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            titleText = EnsureText("TitleText", titleText, 17, FontStyle.Bold, new Color(1f, 0.9f, 0.55f, 1f));
-            bodyText = EnsureText("BodyText", bodyText, 14, FontStyle.Normal, new Color(0.9f, 0.94f, 1f, 1f));
-            footerText = EnsureText("FooterText", footerText, 13, FontStyle.Bold, new Color(0.55f, 0.78f, 1f, 1f));
+            titleText = EnsureText("TitleText", titleText, 17, FontStyles.Bold, new Color(1f, 0.9f, 0.55f, 1f));
+            bodyText = EnsureText("BodyText", bodyText, 14, FontStyles.Normal, new Color(0.9f, 0.94f, 1f, 1f));
+            footerText = EnsureText("FooterText", footerText, 13, FontStyles.Bold, new Color(0.55f, 0.78f, 1f, 1f));
             ConfigureRaycastBlocking();
         }
 
@@ -219,35 +228,88 @@ namespace TeamProject01.Gameplay
             return panel;
         }
 
-        private Text EnsureText(string childName, Text current, int fontSize, FontStyle style, Color color)
+        private static Sprite GetRoundedBackgroundSprite()
+        {
+            if (roundedBackgroundSprite != null)
+            {
+                return roundedBackgroundSprite;
+            }
+
+            Texture2D texture = new Texture2D(RoundedBackgroundSize, RoundedBackgroundSize, TextureFormat.RGBA32, false)
+            {
+                name = "HudTooltipRoundedBackgroundTexture",
+                hideFlags = HideFlags.HideAndDontSave,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+
+            Color32[] pixels = new Color32[RoundedBackgroundSize * RoundedBackgroundSize];
+            Color32 visible = new Color32(255, 255, 255, 255);
+            Color32 transparent = new Color32(255, 255, 255, 0);
+            for (int y = 0; y < RoundedBackgroundSize; y++)
+            {
+                for (int x = 0; x < RoundedBackgroundSize; x++)
+                {
+                    bool inside = IsInsideRoundedRect(
+                        x + 0.5f,
+                        y + 0.5f,
+                        RoundedBackgroundSize,
+                        RoundedBackgroundSize,
+                        RoundedBackgroundRadius);
+                    pixels[y * RoundedBackgroundSize + x] = inside ? visible : transparent;
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+
+            roundedBackgroundSprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, RoundedBackgroundSize, RoundedBackgroundSize),
+                new Vector2(0.5f, 0.5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect,
+                new Vector4(RoundedBackgroundBorder, RoundedBackgroundBorder, RoundedBackgroundBorder, RoundedBackgroundBorder));
+            roundedBackgroundSprite.name = "HudTooltipRoundedBackground_Runtime";
+            roundedBackgroundSprite.hideFlags = HideFlags.HideAndDontSave;
+            return roundedBackgroundSprite;
+        }
+
+        private static bool IsInsideRoundedRect(float x, float y, float width, float height, float radius)
+        {
+            float closestX = Mathf.Clamp(x, radius, width - radius);
+            float closestY = Mathf.Clamp(y, radius, height - radius);
+            float dx = x - closestX;
+            float dy = y - closestY;
+            return dx * dx + dy * dy <= radius * radius;
+        }
+
+        private TextMeshProUGUI EnsureText(string childName, TextMeshProUGUI current, int fontSize, FontStyles style, Color color)
         {
             if (current == null)
             {
                 Transform child = tooltipPanel.transform.Find(childName);
-                current = child != null ? child.GetComponent<Text>() : null;
+                current = child != null ? child.GetComponent<TextMeshProUGUI>() : null;
             }
 
             if (current == null)
             {
-                GameObject textObject = new GameObject(childName, typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+                GameObject textObject = new GameObject(childName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI), typeof(LayoutElement));
                 textObject.transform.SetParent(tooltipPanel.transform, false);
-                current = textObject.GetComponent<Text>();
+                current = textObject.GetComponent<TextMeshProUGUI>();
             }
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (font == null)
-            {
-                font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            }
+            RemoveLegacyText(current.gameObject);
 
-            current.font = font;
+            current.font = ResolveTooltipFont();
             current.fontSize = fontSize;
             current.fontStyle = style;
             current.color = color;
-            current.supportRichText = true;
-            current.alignment = TextAnchor.UpperLeft;
-            current.horizontalOverflow = HorizontalWrapMode.Wrap;
-            current.verticalOverflow = VerticalWrapMode.Overflow;
+            current.richText = true;
+            current.alignment = TextAlignmentOptions.TopLeft;
+            current.textWrappingMode = TextWrappingModes.Normal;
+            current.overflowMode = TextOverflowModes.Overflow;
             current.raycastTarget = false;
 
             LayoutElement layout = current.GetComponent<LayoutElement>();
@@ -259,6 +321,29 @@ namespace TeamProject01.Gameplay
             layout.preferredWidth = panelWidth - 24f;
             layout.flexibleWidth = 1f;
             return current;
+        }
+
+        private TMP_FontAsset ResolveTooltipFont()
+        {
+            return tooltipFont != null ? tooltipFont : TMP_Settings.defaultFontAsset;
+        }
+
+        private static void RemoveLegacyText(GameObject target)
+        {
+            Text legacyText = target != null ? target.GetComponent<Text>() : null;
+            if (legacyText == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(legacyText);
+            }
+            else
+            {
+                DestroyImmediate(legacyText);
+            }
         }
 
         private void RebuildLayout()
@@ -298,7 +383,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private static void SetText(Text text, string value)
+        private static void SetText(TextMeshProUGUI text, string value)
         {
             if (text == null)
             {

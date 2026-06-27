@@ -212,7 +212,9 @@ namespace TeamProject01.Gameplay
                 int index = i;
                 if (Slots[i] != null)
                 {
-                    Slots[i].BindButton(() => HandleSlotButton(index));
+                    Slots[i].BindButton(
+                        () => HandleSlotButton(index),
+                        () => TryUseSkill(index));
                 }
             }
         }
@@ -567,11 +569,31 @@ namespace TeamProject01.Gameplay
                 BuildTooltipFooter(skill, state, stats, unlocked));
         }
 
-        private static bool IsIconActive(SkillDefinition skill, SkillState state, CoreStatData stats, bool unlocked, bool coolingDown)
+        private bool IsIconActive(SkillDefinition skill, SkillState state, CoreStatData stats, bool unlocked, bool coolingDown)
         {
             if (!unlocked || coolingDown)
             {
                 return false;
+            }
+
+            if (skill.Kind == GoldActionSkillKind.NexusHeal)
+            {
+                return stats.Gold >= skill.BaseCost && CanPlayNexusHeal();
+            }
+
+            if (skill.RepeatPurchase)
+            {
+                if (IsMaxLevel(skill, state))
+                {
+                    return false;
+                }
+
+                if (skill.Kind == GoldActionSkillKind.NexusShieldUpgrade && !CanPlayShieldUpgrade())
+                {
+                    return false;
+                }
+
+                return stats.Gold >= GetRepeatPurchaseCost(skill, state);
             }
 
             if (state.Purchased)
@@ -671,59 +693,17 @@ namespace TeamProject01.Gameplay
         {
             List<string> lines = new List<string>
             {
-                GetSkillSummary(skill.Kind)
+                GetSkillSummary(skill.Kind),
+                BuildTooltipStatusLine(skill, state, stats, unlocked, coolingDown, remaining)
             };
-
-            if (!unlocked)
-            {
-                lines.Add($"상태: 잠김 - Lv{skill.UnlockLevel} 필요");
-            }
-            else if (coolingDown)
-            {
-                lines.Add($"상태: 쿨타임 {FormatSeconds(remaining)} 남음");
-            }
-            else if (skill.Kind == GoldActionSkillKind.NexusHeal)
-            {
-                if (!CanPlayNexusHeal())
-                {
-                    lines.Add("상태: 넥서스 체력 가득 참");
-                }
-                else
-                {
-                    lines.Add(stats.Gold >= skill.BaseCost ? "상태: 회복 가능" : "상태: 골드 부족");
-                }
-            }
-            else if (skill.RepeatPurchase)
-            {
-                int cost = GetRepeatPurchaseCost(skill, state);
-                if (skill.Kind == GoldActionSkillKind.NexusShieldUpgrade && !CanPlayShieldUpgrade())
-                {
-                    lines.Add("상태: Nexus_ManaWall_Shield 없음");
-                }
-                else
-                {
-                    lines.Add(stats.Gold >= cost ? "상태: 보호막 강화 가능" : "상태: 골드 부족");
-                }
-            }
-            else if (!state.Purchased)
-            {
-                lines.Add(stats.Gold >= skill.BaseCost ? "상태: 구매 가능" : "상태: 골드 부족");
-            }
-            else
-            {
-                lines.Add("상태: 사용 가능");
-                if (skill.CanUpgrade)
-                {
-                    lines.Add($"현재 강화: Lv{Mathf.Max(1, state.UpgradeLevel)}");
-                }
-            }
 
             if (unlocked)
             {
-                lines.Add($"스킬 레벨: Lv{GetCurrentSkillLevel(skill, state)}/{GetMaxLevel(skill)}"); // 현재 레벨
-                if (IsMaxLevel(skill, state) && skill.Kind != GoldActionSkillKind.NexusHeal)
+                lines.Add($"레벨: Lv{GetCurrentSkillLevel(skill, state)}/{GetMaxLevel(skill)}");
+                string costLine = BuildTooltipCostLine(skill, state);
+                if (!string.IsNullOrEmpty(costLine))
                 {
-                    lines.Add("상태: 최대 레벨"); // 강화 완료
+                    lines.Add(costLine);
                 }
             }
 
@@ -732,39 +712,109 @@ namespace TeamProject01.Gameplay
                 lines.Add($"쿨타임: {FormatSeconds(skill.CooldownSeconds)}");
             }
 
-            lines.Add("세부 효과 수치는 추후 기획 확정");
             return string.Join("\n", lines);
         }
 
         private string BuildTooltipFooter(SkillDefinition skill, SkillState state, CoreStatData stats, bool unlocked)
         {
-            string actionText;
             if (!unlocked)
             {
-                actionText = $"Lv{skill.UnlockLevel}부터 구매 가능";
-            }
-            else if (skill.Kind == GoldActionSkillKind.NexusHeal)
-            {
-                actionText = $"사용 비용 {skill.BaseCost}G";
-            }
-            else if (skill.RepeatPurchase)
-            {
-                actionText = IsMaxLevel(skill, state) ? "최대 레벨" : $"강화 비용 {GetRepeatPurchaseCost(skill, state)}G";
-            }
-            else if (!state.Purchased)
-            {
-                actionText = $"구매 비용 {skill.BaseCost}G";
-            }
-            else if (skill.CanUpgrade)
-            {
-                actionText = IsMaxLevel(skill, state) ? "최대 레벨" : $"다음 강화 {GetUpgradeCost(skill, state)}G";
-            }
-            else
-            {
-                actionText = "추가 구매 없음";
+                return $"보유 골드 {stats.Gold}G / Lv{skill.UnlockLevel} 해금";
             }
 
-            return $"보유 골드 {stats.Gold}G / {actionText}";
+            string inputText = $"아이콘/키 {skill.KeyNumber}: 사용";
+            if (skill.Kind == GoldActionSkillKind.NexusHeal)
+            {
+                return $"보유 골드 {stats.Gold}G / 아이콘/키 {skill.KeyNumber}: 회복";
+            }
+
+            if (skill.RepeatPurchase)
+            {
+                string actionText = IsMaxLevel(skill, state) ? "최대 레벨" : $"아이콘/키 {skill.KeyNumber}: 강화";
+                return $"보유 골드 {stats.Gold}G / {actionText}";
+            }
+
+            if (!state.Purchased)
+            {
+                return $"보유 골드 {stats.Gold}G / 버튼: 구매";
+            }
+
+            if (skill.CanUpgrade && !IsMaxLevel(skill, state))
+            {
+                return $"보유 골드 {stats.Gold}G / {inputText} / 버튼: 강화";
+            }
+
+            return $"보유 골드 {stats.Gold}G / {inputText}";
+        }
+
+        private string BuildTooltipStatusLine(SkillDefinition skill, SkillState state, CoreStatData stats, bool unlocked, bool coolingDown, float remaining)
+        {
+            if (!unlocked)
+            {
+                return $"상태: Lv{skill.UnlockLevel} 필요";
+            }
+
+            if (coolingDown)
+            {
+                return $"상태: 대기 {FormatSeconds(remaining)}";
+            }
+
+            if (skill.Kind == GoldActionSkillKind.NexusHeal)
+            {
+                if (!CanPlayNexusHeal())
+                {
+                    return "상태: 체력 가득 참";
+                }
+
+                return stats.Gold >= skill.BaseCost ? "상태: 회복 가능" : "상태: 골드 부족";
+            }
+
+            if (skill.RepeatPurchase)
+            {
+                if (IsMaxLevel(skill, state))
+                {
+                    return "상태: 최대 레벨";
+                }
+
+                if (skill.Kind == GoldActionSkillKind.NexusShieldUpgrade && !CanPlayShieldUpgrade())
+                {
+                    return "상태: 보호막 연결 필요";
+                }
+
+                return stats.Gold >= GetRepeatPurchaseCost(skill, state) ? "상태: 강화 가능" : "상태: 골드 부족";
+            }
+
+            if (!state.Purchased)
+            {
+                return stats.Gold >= skill.BaseCost ? "상태: 구매 가능" : "상태: 골드 부족";
+            }
+
+            return "상태: 사용 가능";
+        }
+
+        private string BuildTooltipCostLine(SkillDefinition skill, SkillState state)
+        {
+            if (skill.Kind == GoldActionSkillKind.NexusHeal)
+            {
+                return $"사용 비용: {skill.BaseCost}G";
+            }
+
+            if (skill.RepeatPurchase)
+            {
+                return IsMaxLevel(skill, state) ? string.Empty : $"강화 비용: {GetRepeatPurchaseCost(skill, state)}G";
+            }
+
+            if (!state.Purchased)
+            {
+                return $"구매 비용: {skill.BaseCost}G";
+            }
+
+            if (skill.CanUpgrade && !IsMaxLevel(skill, state))
+            {
+                return $"다음 강화: {GetUpgradeCost(skill, state)}G";
+            }
+
+            return string.Empty;
         }
 
         private string GetSkillSummary(GoldActionSkillKind kind)
@@ -772,17 +822,17 @@ namespace TeamProject01.Gameplay
             switch (kind)
             {
                 case GoldActionSkillKind.Meteor:
-                    return "광역 메테오: 1회 사용으로 2.5초 간격 3웨이브를 발동해 넥서스 주변 우선 운석비를 떨어뜨립니다.";
+                    return "넥서스 주변에 운석비를 내려 넓은 범위를 공격합니다.";
                 case GoldActionSkillKind.Shockwave:
-                    return "보호막 충격파: 넥서스 실드가 X/Z로 크게 퍼지며 주변 적을 대규모로 밀어냅니다.";
+                    return "보호막을 확장해 주변 적을 강하게 밀어냅니다.";
                 case GoldActionSkillKind.TimeStop:
-                    return "타임스탑: 넥서스 주변 전장 범위의 몬스터 이동과 공격을 일정 시간 정지시킵니다.";
+                    return "짧은 시간 동안 주변 적의 이동과 공격을 멈춥니다.";
                 case GoldActionSkillKind.NexusHeal:
-                    return "넥서스회복: 골드를 소모해 넥서스 체력을 회복하고 VFX_Heal_Cast를 넥서스에서 재생합니다.";
+                    return "골드를 써서 넥서스 체력을 회복합니다.";
                 case GoldActionSkillKind.NexusShieldUpgrade:
-                    return "넥서스보호막 업그레이드: VFX_Heal_Cast를 재생하고 보호막 ManaWall의 Y 스케일을 2씩 키웁니다.";
+                    return "골드를 써서 넥서스 보호막 크기를 키웁니다.";
                 default:
-                    return "HUD 액션: 세부 설명은 추후 확정됩니다.";
+                    return "전투 중 바로 쓰는 HUD 액션입니다.";
             }
         }
 

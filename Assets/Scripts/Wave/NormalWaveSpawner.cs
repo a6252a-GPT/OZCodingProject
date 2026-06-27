@@ -18,6 +18,22 @@ namespace TeamProject01.Gameplay
         }
 
         [Serializable]
+        public sealed class DifficultyScaleStep
+        {
+            [Min(1)]
+            public int startStage = 1; // 이 Stage부터 적용할 난이도 배율입니다.
+
+            [Min(1)]
+            public int healthScalePercent = 100; // 몬스터 최대 체력 배율입니다.
+
+            [Min(1)]
+            public int moveSpeedScalePercent = 100; // 몬스터 이동속도 배율입니다.
+
+            [Min(1)]
+            public int nexusDamageScalePercent = 100; // Nexus에 주는 피해 배율입니다.
+        }
+
+        [Serializable]
         public sealed class MonsterRatioEntry
         {
             public EnemyController prefab; // Project 창의 몬스터 Prefab을 Inspector에서 직접 연결합니다.
@@ -94,6 +110,21 @@ namespace TeamProject01.Gameplay
             new SpawnScaleStep { startStage = 1, spawnScalePercent = 100 },
             new SpawnScaleStep { startStage = 6, spawnScalePercent = 110 },
             new SpawnScaleStep { startStage = 12, spawnScalePercent = 130 }
+        };
+
+        [Header("난이도 배율")]
+        [SerializeField] private DifficultyScaleStep[] difficultyScaleSteps =
+        {
+            new DifficultyScaleStep { startStage = 1, healthScalePercent = 100, moveSpeedScalePercent = 100, nexusDamageScalePercent = 100 },
+            new DifficultyScaleStep { startStage = 8, healthScalePercent = 105, moveSpeedScalePercent = 104, nexusDamageScalePercent = 100 },
+            new DifficultyScaleStep { startStage = 12, healthScalePercent = 110, moveSpeedScalePercent = 107, nexusDamageScalePercent = 100 },
+            new DifficultyScaleStep { startStage = 15, healthScalePercent = 115, moveSpeedScalePercent = 110, nexusDamageScalePercent = 100 },
+            new DifficultyScaleStep { startStage = 18, healthScalePercent = 120, moveSpeedScalePercent = 112, nexusDamageScalePercent = 100 },
+            new DifficultyScaleStep { startStage = 20, healthScalePercent = 130, moveSpeedScalePercent = 115, nexusDamageScalePercent = 110 },
+            new DifficultyScaleStep { startStage = 25, healthScalePercent = 145, moveSpeedScalePercent = 118, nexusDamageScalePercent = 110 },
+            new DifficultyScaleStep { startStage = 30, healthScalePercent = 160, moveSpeedScalePercent = 121, nexusDamageScalePercent = 120 },
+            new DifficultyScaleStep { startStage = 35, healthScalePercent = 180, moveSpeedScalePercent = 124, nexusDamageScalePercent = 120 },
+            new DifficultyScaleStep { startStage = 40, healthScalePercent = 200, moveSpeedScalePercent = 127, nexusDamageScalePercent = 130 }
         };
 
         [Header("일반 몬스터 조합")]
@@ -186,14 +217,15 @@ namespace TeamProject01.Gameplay
 
             int gateCount = GetGateCountForStage(stage);
             EnemySpawner.ExternalSpawnDirectionSet directionSet = enemySpawner.PickExternalSpawnDirections(gateCount);
-            spawnRoutine = StartCoroutine(SpawnStageRoutine(stageDurationSeconds, totalEntries, directionSet));
+            spawnRoutine = StartCoroutine(SpawnStageRoutine(stage, stageDurationSeconds, totalEntries, directionSet));
         }
 
-        private IEnumerator SpawnStageRoutine(float stageDurationSeconds, List<CountEntry> totalEntries, EnemySpawner.ExternalSpawnDirectionSet directionSet)
+        private IEnumerator SpawnStageRoutine(int stage, float stageDurationSeconds, List<CountEntry> totalEntries, EnemySpawner.ExternalSpawnDirectionSet directionSet)
         {
             int safeBatchCount = Mathf.Max(1, spawnBatchCount);
             float spawnWindowSeconds = Mathf.Max(0.1f, stageDurationSeconds * (spawnWindowPercent / 100.0f));
-            EnemySpawner.ExternalSpawnCongestionOptions congestionOptions = BuildCongestionOptions();
+            WaveStageDifficulty difficulty = ResolveDifficultyForStage(stage);
+            List<EnemyController> spawnedBatchMonsters = new List<EnemyController>();
 
             for (int batchIndex = 0; batchIndex < safeBatchCount; batchIndex++)
             {
@@ -207,18 +239,24 @@ namespace TeamProject01.Gameplay
 
                 if (normalBatchEntries.Length > 0)
                 {
-                    enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions);
+                    spawnedBatchMonsters.Clear();
+
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, directionSet, frontRowCount, spawnedBatchMonsters))
+                    {
+                        ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
+                    }
                 }
 
                 EnemySpawner.ExternalSpawnEntry[] eliteBatchEntries = BuildBatchEntries(totalEntries, batchIndex, safeBatchCount, true);
 
                 if (eliteBatchEntries.Length > 0)
                 {
-                    List<EnemyController> spawnedElites = new List<EnemyController>();
+                    spawnedBatchMonsters.Clear();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spawnedElites))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, directionSet, frontRowCount, spawnedBatchMonsters))
                     {
-                        MarkSpawnedElites(spawnedElites, GetEliteCombinationType(totalEntries));
+                        ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
+                        MarkSpawnedElites(spawnedBatchMonsters, GetEliteCombinationType(totalEntries));
                     }
                 }
             }
@@ -272,6 +310,38 @@ namespace TeamProject01.Gameplay
             }
 
             return Mathf.Max(0, result);
+        }
+
+        private WaveStageDifficulty ResolveDifficultyForStage(int stage)
+        {
+            DifficultyScaleStep step = GetDifficultyStepForStage(stage);
+            int healthPercent = step != null ? step.healthScalePercent : 100;
+            int speedPercent = step != null ? step.moveSpeedScalePercent : 100;
+            int damagePercent = step != null ? step.nexusDamageScalePercent : 100;
+
+            return new WaveStageDifficulty(stage, healthPercent / 100.0f, speedPercent / 100.0f, damagePercent / 100.0f);
+        }
+
+        private DifficultyScaleStep GetDifficultyStepForStage(int stage)
+        {
+            DifficultyScaleStep result = null;
+
+            if (difficultyScaleSteps == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < difficultyScaleSteps.Length; i++)
+            {
+                DifficultyScaleStep step = difficultyScaleSteps[i];
+
+                if (step != null && stage >= step.startStage)
+                {
+                    result = step;
+                }
+            }
+
+            return result;
         }
 
         private int GetGateCountForStage(int stage)
@@ -488,6 +558,19 @@ namespace TeamProject01.Gameplay
                 }
 
                 marker.Initialize(eliteCombinationType);
+            }
+        }
+
+        private static void ApplyStageDifficulty(List<EnemyController> spawnedMonsters, WaveStageDifficulty difficulty)
+        {
+            if (spawnedMonsters == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < spawnedMonsters.Count; i++)
+            {
+                EnemyStageDifficultyApplier.Apply(spawnedMonsters[i], difficulty);
             }
         }
 

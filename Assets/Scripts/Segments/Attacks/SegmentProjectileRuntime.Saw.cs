@@ -51,7 +51,7 @@ namespace TeamProject01.Gameplay
 
         private void ApplySawPierceHits(Vector3 position, int excludedTargetId) // 톱날 경로 관통 피해
         {
-            float damageRatio = profile != null ? Mathf.Clamp01(profile.SawPierceDamageRatio) : 0.5f; // 관통 피해 비율
+            float damageRatio = profile != null ? weaponBonus.ResolveSawPierceDamageRatio(profile.SawPierceDamageRatio) : 0.5f; // 관통 피해 비율
             if (damageRatio <= 0f)
             {
                 return; // 관통 피해 없음
@@ -148,7 +148,7 @@ namespace TeamProject01.Gameplay
 
         private bool TryFindSawChainTarget(Vector3 origin, int excludedEnemyId, out EnemyController nextTarget) // 톱날 연쇄 대상 선택
         {
-            float range = profile != null ? Mathf.Max(0.1f, profile.ChainRange) : 0.1f; // 연쇄 사거리
+            float range = profile != null ? weaponBonus.ResolveChainRange(profile.ChainRange) : 0.1f; // 연쇄 사거리
             float aimHeight = profile != null ? profile.TargetAimHeight : 0.45f; // 조준 높이
             return SegmentTargetQuery.TryPickMidToLongRandomTarget(origin, range, GetSawTargetMinDistanceRatio(), excludedEnemyId, null, aimHeight, out nextTarget); // 공용 후보 선택
         }

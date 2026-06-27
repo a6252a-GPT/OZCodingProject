@@ -2,98 +2,99 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyRangedAttack : MonoBehaviour // ¿ø°Å¸® ¸ó½ºÅÍÀÇ Nexus °ø°İÀ» ´ã´çÇÏ´Â Script Component
+    public sealed class EnemyRangedAttack : MonoBehaviour // ì›ê±°ë¦¬ ëª¬ìŠ¤í„°ì˜ Nexus ê³µê²©ì„ ë‹´ë‹¹í•˜ëŠ” Script Component
     {
-        private enum RangedAttackType // ¿ø°Å¸® °ø°İ ¹æ½Ä
+        private enum RangedAttackType // ì›ê±°ë¦¬ ê³µê²© ë°©ì‹
         {
-            ProjectileArc, // Åõ»çÃ¼¸¦ ¹ß»çÇÏ´Â °ø°İ ¹æ½Ä
-            TargetImpact // Nexus °Ñ¸é¿¡ Áï½Ã ÀÓÆÑÆ®¸¦ »ı¼ºÇÏ´Â °ø°İ ¹æ½Ä
+            ProjectileArc, // íˆ¬ì‚¬ì²´ë¥¼ ë°œì‚¬í•˜ëŠ” ê³µê²© ë°©ì‹
+            TargetImpact // Nexus ê²‰ë©´ì— ì¦‰ì‹œ ì„íŒ©íŠ¸ë¥¼ ìƒì„±í•˜ëŠ” ê³µê²© ë°©ì‹
         }
 
-        private Transform nexus; // °ø°İ ´ë»óÀÌ µÇ´Â Nexus Transform
+        private Transform nexus; // ê³µê²© ëŒ€ìƒì´ ë˜ëŠ” Nexus Transform
 
-        [SerializeField] private Transform firePoint; // Åõ»çÃ¼°¡ ¹ß»çµÉ À§Ä¡
+        [SerializeField] private Transform firePoint; // íˆ¬ì‚¬ì²´ê°€ ë°œì‚¬ë  ìœ„ì¹˜
 
-        [SerializeField] private RangedAttackType attackType = RangedAttackType.ProjectileArc; // ¿ø°Å¸® °ø°İ ¹æ½Ä
+        [SerializeField] private RangedAttackType attackType = RangedAttackType.ProjectileArc; // ì›ê±°ë¦¬ ê³µê²© ë°©ì‹
 
-        [SerializeField] private EnemyProjectile projectilePrefab; // Åõ»çÃ¼ °ø°İ¿¡ »ç¿ëÇÒ EnemyProjectile Prefab
+        [SerializeField] private EnemyProjectile projectilePrefab; // íˆ¬ì‚¬ì²´ ê³µê²©ì— ì‚¬ìš©í•  EnemyProjectile Prefab
 
-        [SerializeField] private GameObject impactPrefab; // Áï½Ã ÀÓÆÑÆ® °ø°İ¿¡ »ç¿ëÇÒ Prefab
-
-        [Min(0.1f)]
-        [SerializeField] private float attackRange = 6.0f; // ¿ø°Å¸® ¸ó½ºÅÍ°¡ °ø°İÇÒ ¼ö ÀÖ´Â °Å¸®
+        [SerializeField] private GameObject impactPrefab; // ì¦‰ì‹œ ì„íŒ©íŠ¸ ê³µê²©ì— ì‚¬ìš©í•  Prefab
 
         [Min(0.1f)]
-        [SerializeField] private float attackDelay = 1.5f; // °ø°İ »çÀÌÀÇ ±âº» ´ë±â ½Ã°£
+        [SerializeField] private float attackRange = 6.0f; // ì›ê±°ë¦¬ ëª¬ìŠ¤í„°ê°€ ê³µê²©í•  ìˆ˜ ìˆëŠ” ê±°ë¦¬
 
         [Min(0.1f)]
-        [SerializeField] private float impactLifeTimeMin = 0.5f; // ÀÓÆÑÆ® ¿ÀºêÁ§Æ® ÃÖ¼Ò À¯Áö ½Ã°£
+        [SerializeField] private float attackDelay = 1.5f; // ê³µê²© ì‚¬ì´ì˜ ê¸°ë³¸ ëŒ€ê¸° ì‹œê°„
 
         [Min(0.1f)]
-        [SerializeField] private float impactLifeTimeMax = 1.0f; // ÀÓÆÑÆ® ¿ÀºêÁ§Æ® ÃÖ´ë À¯Áö ½Ã°£
+        [SerializeField] private float impactLifeTimeMin = 0.5f; // ì„íŒ©íŠ¸ ì˜¤ë¸Œì íŠ¸ ìµœì†Œ ìœ ì§€ ì‹œê°„
+
+        [Min(0.1f)]
+        [SerializeField] private float impactLifeTimeMax = 1.0f; // ì„íŒ©íŠ¸ ì˜¤ë¸Œì íŠ¸ ìµœëŒ€ ìœ ì§€ ì‹œê°„
 
         [Min(0.0f)]
-        [SerializeField] private float impactSurfaceOffset = 1.2f; // Nexus Áß½É¿¡¼­ °Ñ¸é ¹æÇâÀ¸·Î ÀÓÆÑÆ®¸¦ ¹Ğ¾î³¾ °Å¸®
+        [SerializeField] private float impactSurfaceOffset = 1.2f; // Nexus ì¤‘ì‹¬ì—ì„œ ê²‰ë©´ ë°©í–¥ìœ¼ë¡œ ì„íŒ©íŠ¸ë¥¼ ë°€ì–´ë‚¼ ê±°ë¦¬
 
-        [SerializeField] private float impactHeightOffset = 0.5f; // ÀÓÆÑÆ® »ı¼º À§Ä¡¸¦ À§·Î ¿Ã¸± ³ôÀÌ
+        [SerializeField] private float impactHeightOffset = 0.5f; // ì„íŒ©íŠ¸ ìƒì„± ìœ„ì¹˜ë¥¼ ìœ„ë¡œ ì˜¬ë¦´ ë†’ì´
 
         [Range(0.0f, 1.0f)]
-        [SerializeField] private float impactSideRandomAmount = 0.5f; // Nexus Á¤¸é ±âÁØ ÁÂ¿ì ·£´ı ¹üÀ§
+        [SerializeField] private float impactSideRandomAmount = 0.5f; // Nexus ì •ë©´ ê¸°ì¤€ ì¢Œìš° ëœë¤ ë²”ìœ„
 
         [Header("Animation Timing")]
-        [SerializeField] private bool waitForAnimationEvent; // Á¶¼º¿øÃß°¡-0624 - °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç ÀÌº¥Æ®°¡ ¿Ã ¶§±îÁö ½ÇÁ¦ ¹ß»ç¸¦ ±â´Ù¸±Áö ¼³Á¤ÇÑ´Ù.
+        [SerializeField] private bool waitForAnimationEvent; // ì¡°ì„±ì›ì¶”ê°€-0624 - ê³µê²© ì• ë‹ˆë©”ì´ì…˜ ì´ë²¤íŠ¸ê°€ ì˜¬ ë•Œê¹Œì§€ ì‹¤ì œ ë°œì‚¬ë¥¼ ê¸°ë‹¤ë¦´ì§€ ì„¤ì •í•œë‹¤.
 
-        // Á¶¼º¿ø»èÁ¦-0624 - Animation Event ´©¶ô ½Ã 2ÃÊ µÚ ÀÚµ¿ ¹ß»çÇÏ´ø Á¦ÇÑ½Ã°£ ¼³Á¤À» »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+        // ì¡°ì„±ì›ì‚­ì œ-0624 - Animation Event ëˆ„ë½ ì‹œ 2ì´ˆ ë’¤ ìë™ ë°œì‚¬í•˜ë˜ ì œí•œì‹œê°„ ì„¤ì •ì„ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
         // [Min(0.1f)]
         // [SerializeField] private float animationEventTimeout = 2.0f;
 
-        public float AttackRange // EnemyMovement°¡ ¿ø°Å¸® °ø°İ »ç°Å¸®¸¦ ÀĞ±â À§ÇÑ Property
+        public float AttackRange // EnemyMovementê°€ ì›ê±°ë¦¬ ê³µê²© ì‚¬ê±°ë¦¬ë¥¼ ì½ê¸° ìœ„í•œ Property
         {
             get
             {
-                return attackRange; // ¿ø°Å¸® °ø°İ °¡´É °Å¸®¸¦ ¹İÈ¯ÇÑ´Ù.
+                return attackRange; // ì›ê±°ë¦¬ ê³µê²© ê°€ëŠ¥ ê±°ë¦¬ë¥¼ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public event System.Action AttackPerformed; // Á¶¼º¿øÃß°¡-0624 - ¿ø°Å¸® °ø°İ ½ÃÀÛÀ» Animator Bridge¿¡ Àü´ŞÇÏ´Â ÀÌº¥Æ®
+        public event System.Action AttackPerformed; // ì¡°ì„±ì›ì¶”ê°€-0624 - ì›ê±°ë¦¬ ê³µê²© ì‹œì‘ì„ Animator Bridgeì— ì „ë‹¬í•˜ëŠ” ì´ë²¤íŠ¸
 
-        private float attackTimer; // ´ÙÀ½ °ø°İ±îÁö ³²Àº ½Ã°£
+        private float attackTimer; // ë‹¤ìŒ ê³µê²©ê¹Œì§€ ë‚¨ì€ ì‹œê°„
 
-        private bool attackPending; // Á¶¼º¿øÃß°¡-0624 - °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ½ÃÀÛµÇ°í ½ÇÁ¦ ¹ß»ç¸¦ ±â´Ù¸®´Â »óÅÂ
-        private float pendingAttackPowerMultiplier = 1.0f; // Á¶¼º¿øÃß°¡-0624 - ¹ß»ç ½Ã »ç¿ëÇÒ °ø°İ·Â ¹èÀ²
-        private float pendingAttackDelay; // Á¶¼º¿øÃß°¡-0624 - ½ÇÁ¦ ¹ß»ç ÈÄ Àû¿ëÇÒ ´ÙÀ½ °ø°İ ´ë±â½Ã°£
+        private bool attackPending; // ì¡°ì„±ì›ì¶”ê°€-0624 - ê³µê²© ì• ë‹ˆë©”ì´ì…˜ì´ ì‹œì‘ë˜ê³  ì‹¤ì œ ë°œì‚¬ë¥¼ ê¸°ë‹¤ë¦¬ëŠ” ìƒíƒœ
+        private float pendingAttackPowerMultiplier = 1.0f; // ì¡°ì„±ì›ì¶”ê°€-0624 - ë°œì‚¬ ì‹œ ì‚¬ìš©í•  ê³µê²©ë ¥ ë°°ìœ¨
+        private float pendingAttackDelay; // ì¡°ì„±ì›ì¶”ê°€-0624 - ì‹¤ì œ ë°œì‚¬ í›„ ì ìš©í•  ë‹¤ìŒ ê³µê²© ëŒ€ê¸°ì‹œê°„
 
-        // Á¶¼º¿ø»èÁ¦-0624 - Animation Event ´©¶ô ½Ã ÀÚµ¿ ¹ß»ç¿¡ »ç¿ëÇÏ´ø Á¦ÇÑ½Ã°£ º¯¼ö¸¦ »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+        // ì¡°ì„±ì›ì‚­ì œ-0624 - Animation Event ëˆ„ë½ ì‹œ ìë™ ë°œì‚¬ì— ì‚¬ìš©í•˜ë˜ ì œí•œì‹œê°„ ë³€ìˆ˜ë¥¼ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
         // private float pendingAttackTimeout;
 
-        private EnemyBuffReceiver buffReceiver; // °ø°İ·Â/°ø°İ¼Óµµ ¹öÇÁ¸¦ ÀĞ±â À§ÇÑ Script Component ÂüÁ¶
+        private EnemyBuffReceiver buffReceiver; // ê³µê²©ë ¥/ê³µê²©ì†ë„ ë²„í”„ë¥¼ ì½ê¸° ìœ„í•œ Script Component ì°¸ì¡°
+        private float stageAttackPowerMultiplier = 1.0f; // ì›¨ì´ë¸Œ ë‚œì´ë„ ë„¥ì„œìŠ¤ í”¼í•´ ë°°ìœ¨
 
         private void Awake()
         {
-            buffReceiver = GetComponent<EnemyBuffReceiver>(); // °°Àº GameObject¿¡ ºÙÀº EnemyBuffReceiver¸¦ Ã£´Â´Ù.
+            buffReceiver = GetComponent<EnemyBuffReceiver>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyBuffReceiverë¥¼ ì°¾ëŠ”ë‹¤.
 
-            if (nexus == null) // °ø°İ ´ë»ó Nexus°¡ ¾ÆÁ÷ ¾ø´Ù¸é
+            if (nexus == null) // ê³µê²© ëŒ€ìƒ Nexusê°€ ì•„ì§ ì—†ë‹¤ë©´
             {
-                GameObject nexusObject = GameObject.Find("Nexus_Core"); // ¾À¿¡¼­ Nexus_Core ¿ÀºêÁ§Æ®¸¦ Ã£´Â´Ù.
-                nexus = nexusObject != null ? nexusObject.transform : null; // Ã£¾Ò´Ù¸é TransformÀ» ÀúÀåÇÑ´Ù.
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // ì”¬ì—ì„œ Nexus_Core ì˜¤ë¸Œì íŠ¸ë¥¼ ì°¾ëŠ”ë‹¤.
+                nexus = nexusObject != null ? nexusObject.transform : null; // ì°¾ì•˜ë‹¤ë©´ Transformì„ ì €ì¥í•œë‹¤.
             }
         }
 
         private void OnDisable()
         {
-            CancelPendingAttack(); // Á¶¼º¿øÃß°¡-0624 - »ç¸ÁÇÏ°Å³ª ºñÈ°¼ºÈ­µÉ ¶§ ´ë±â ÁßÀÎ °ø°İÀ» Ãë¼ÒÇÑ´Ù.
+            CancelPendingAttack(); // ì¡°ì„±ì›ì¶”ê°€-0624 - ì‚¬ë§í•˜ê±°ë‚˜ ë¹„í™œì„±í™”ë  ë•Œ ëŒ€ê¸° ì¤‘ì¸ ê³µê²©ì„ ì·¨ì†Œí•œë‹¤.
         }
 
         private void Update()
         {
-            if (nexus == null) // Nexus°¡ ¾ø´Ù¸é
+            if (nexus == null) // Nexusê°€ ì—†ë‹¤ë©´
             {
-                return; // °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (attackPending) // Á¶¼º¿ø¼öÁ¤-0624 - Animation Event°¡ È£ÃâµÉ ¶§±îÁö ½ÇÁ¦ ¹ß»ç¸¦ °è¼Ó ±â´Ù¸°´Ù.
+            if (attackPending) // ì¡°ì„±ì›ìˆ˜ì •-0624 - Animation Eventê°€ í˜¸ì¶œë  ë•Œê¹Œì§€ ì‹¤ì œ ë°œì‚¬ë¥¼ ê³„ì† ê¸°ë‹¤ë¦°ë‹¤.
             {
-                // Á¶¼º¿ø»èÁ¦-0624 - 2ÃÊ µÚ ÀÚµ¿À¸·Î Åõ»çÃ¼¸¦ ¹ß»çÇÏ´ø Á¦ÇÑ½Ã°£ Ã³¸®¸¦ »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+                // ì¡°ì„±ì›ì‚­ì œ-0624 - 2ì´ˆ ë’¤ ìë™ìœ¼ë¡œ íˆ¬ì‚¬ì²´ë¥¼ ë°œì‚¬í•˜ë˜ ì œí•œì‹œê°„ ì²˜ë¦¬ë¥¼ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
                 // pendingAttackTimeout -= Time.deltaTime;
                 //
                 // if (pendingAttackTimeout <= 0.0f)
@@ -101,214 +102,220 @@ namespace TeamProject01.Gameplay
                 //     ReleasePendingAttack();
                 // }
 
-                return; // ¹ß»ç¸¦ ±â´Ù¸®´Â µ¿¾È »õ·Î¿î °ø°İÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return; // ë°œì‚¬ë¥¼ ê¸°ë‹¤ë¦¬ëŠ” ë™ì•ˆ ìƒˆë¡œìš´ ê³µê²©ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            attackTimer -= Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ °ø°İ ´ë±â ½Ã°£À» ÁÙÀÎ´Ù.
+            attackTimer -= Time.deltaTime; // ì§€ë‚œ ì‹œê°„ë§Œí¼ ê³µê²© ëŒ€ê¸° ì‹œê°„ì„ ì¤„ì¸ë‹¤.
 
-            if (attackTimer > 0.0f) // ¾ÆÁ÷ °ø°İ ´ë±â ½Ã°£ÀÌ ³²¾Æ ÀÖ´Ù¸é
+            if (attackTimer > 0.0f) // ì•„ì§ ê³µê²© ëŒ€ê¸° ì‹œê°„ì´ ë‚¨ì•„ ìˆë‹¤ë©´
             {
-                return; // ÀÌ¹ø ÇÁ·¹ÀÓ¿¡´Â °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ì´ë²ˆ í”„ë ˆì„ì—ëŠ” ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Vector3 offset = nexus.position - transform.position; // ¸ó½ºÅÍ¿¡¼­ Nexus±îÁöÀÇ ¹æÇâ°ú °Å¸®
-            offset.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 offset = nexus.position - transform.position; // ëª¬ìŠ¤í„°ì—ì„œ Nexusê¹Œì§€ì˜ ë°©í–¥ê³¼ ê±°ë¦¬
+            offset.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            if (offset.sqrMagnitude > attackRange * attackRange) // Nexus°¡ °ø°İ »ç°Å¸® ¹ÛÀÌ¶ó¸é
+            if (offset.sqrMagnitude > attackRange * attackRange) // Nexusê°€ ê³µê²© ì‚¬ê±°ë¦¬ ë°–ì´ë¼ë©´
             {
-                return; // °ø°İÇÏÁö ¾Ê´Â´Ù.
+                return; // ê³µê²©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            float attackSpeedMultiplier = 1.0f; // ±âº» °ø°İ¼Óµµ ¹èÀ²
+            float attackSpeedMultiplier = 1.0f; // ê¸°ë³¸ ê³µê²©ì†ë„ ë°°ìœ¨
 
-            if (buffReceiver != null) // ¹öÇÁ¸¦ ¹ŞÀ» ¼ö ÀÖ´Â ¸ó½ºÅÍ¶ó¸é
+            if (buffReceiver != null) // ë²„í”„ë¥¼ ë°›ì„ ìˆ˜ ìˆëŠ” ëª¬ìŠ¤í„°ë¼ë©´
             {
-                attackSpeedMultiplier = buffReceiver.GetAttackSpeedMultiplier(); // ÇöÀç °ø°İ¼Óµµ ¹öÇÁ ¹èÀ²À» °¡Á®¿Â´Ù.
+                attackSpeedMultiplier = buffReceiver.GetAttackSpeedMultiplier(); // í˜„ì¬ ê³µê²©ì†ë„ ë²„í”„ ë°°ìœ¨ì„ ê°€ì ¸ì˜¨ë‹¤.
             }
 
-            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier); // °ø°İ¼Óµµ ¹öÇÁ¸¦ Àû¿ëÇÑ ÃÖÁ¾ °ø°İ ´ë±â ½Ã°£
-            float attackPowerMultiplier = GetAttackPowerMultiplier(); // ÇöÀç °ø°İ·Â ¹öÇÁ ¹èÀ²À» °¡Á®¿Â´Ù.
+            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier); // ê³µê²©ì†ë„ ë²„í”„ë¥¼ ì ìš©í•œ ìµœì¢… ê³µê²© ëŒ€ê¸° ì‹œê°„
+            float attackPowerMultiplier = GetAttackPowerMultiplier(); // í˜„ì¬ ê³µê²©ë ¥ ë²„í”„ ë°°ìœ¨ì„ ê°€ì ¸ì˜¨ë‹¤.
 
-            BeginAttack(attackPowerMultiplier, finalAttackDelay); // Á¶¼º¿ø¼öÁ¤-0624 - ¾Ö´Ï¸ŞÀÌ¼ÇÀ» ¸ÕÀú ½ÃÀÛÇÏ°í ¼³Á¤¿¡ µû¶ó ½ÇÁ¦ ¹ß»ç¸¦ ±â´Ù¸°´Ù.
+            BeginAttack(attackPowerMultiplier, finalAttackDelay); // ì¡°ì„±ì›ìˆ˜ì •-0624 - ì• ë‹ˆë©”ì´ì…˜ì„ ë¨¼ì € ì‹œì‘í•˜ê³  ì„¤ì •ì— ë”°ë¼ ì‹¤ì œ ë°œì‚¬ë¥¼ ê¸°ë‹¤ë¦°ë‹¤.
         }
 
-        private void BeginAttack(float attackPowerMultiplier, float finalAttackDelay) // Á¶¼º¿øÃß°¡-0624 - °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç°ú ½ÇÁ¦ ¹ß»ç °úÁ¤À» ½ÃÀÛÇÏ´Â ÇÔ¼ö
+        private void BeginAttack(float attackPowerMultiplier, float finalAttackDelay) // ì¡°ì„±ì›ì¶”ê°€-0624 - ê³µê²© ì• ë‹ˆë©”ì´ì…˜ê³¼ ì‹¤ì œ ë°œì‚¬ ê³¼ì •ì„ ì‹œì‘í•˜ëŠ” í•¨ìˆ˜
         {
-            if (waitForAnimationEvent) // Animation Event ¹ß»ç ¹æ½ÄÀ» »ç¿ëÇÏ´Â ¸ó½ºÅÍ¶ó¸é
+            if (waitForAnimationEvent) // Animation Event ë°œì‚¬ ë°©ì‹ì„ ì‚¬ìš©í•˜ëŠ” ëª¬ìŠ¤í„°ë¼ë©´
             {
-                attackPending = true; // ½ÇÁ¦ ¹ß»ç¸¦ ±â´Ù¸®´Â »óÅÂ·Î º¯°æÇÑ´Ù.
-                pendingAttackPowerMultiplier = attackPowerMultiplier; // ÇöÀç °ø°İ·Â ¹èÀ²À» ÀúÀåÇÑ´Ù.
-                pendingAttackDelay = finalAttackDelay; // ½ÇÁ¦ ¹ß»ç ÈÄ »ç¿ëÇÒ °ø°İ ´ë±â½Ã°£À» ÀúÀåÇÑ´Ù.
+                attackPending = true; // ì‹¤ì œ ë°œì‚¬ë¥¼ ê¸°ë‹¤ë¦¬ëŠ” ìƒíƒœë¡œ ë³€ê²½í•œë‹¤.
+                pendingAttackPowerMultiplier = attackPowerMultiplier; // í˜„ì¬ ê³µê²©ë ¥ ë°°ìœ¨ì„ ì €ì¥í•œë‹¤.
+                pendingAttackDelay = finalAttackDelay; // ì‹¤ì œ ë°œì‚¬ í›„ ì‚¬ìš©í•  ê³µê²© ëŒ€ê¸°ì‹œê°„ì„ ì €ì¥í•œë‹¤.
 
-                // Á¶¼º¿ø»èÁ¦-0624 - Animation Event ´©¶ô ½Ã 2ÃÊ µÚ ¹ß»çÇÏ´ø Á¦ÇÑ½Ã°£ ¼³Á¤À» »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+                // ì¡°ì„±ì›ì‚­ì œ-0624 - Animation Event ëˆ„ë½ ì‹œ 2ì´ˆ ë’¤ ë°œì‚¬í•˜ë˜ ì œí•œì‹œê°„ ì„¤ì •ì„ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
                 // pendingAttackTimeout = animationEventTimeout;
             }
 
-            AttackPerformed?.Invoke(); // Åõ»çÃ¼º¸´Ù ¸ÕÀú °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀ» ½ÃÀÛÇÑ´Ù.
+            AttackPerformed?.Invoke(); // íˆ¬ì‚¬ì²´ë³´ë‹¤ ë¨¼ì € ê³µê²© ì• ë‹ˆë©”ì´ì…˜ì„ ì‹œì‘í•œë‹¤.
 
-            if (waitForAnimationEvent) // ½ÇÁ¦ ¹ß»ç¸¦ ¾Ö´Ï¸ŞÀÌ¼Ç ½ÃÁ¡±îÁö ±â´Ù·Á¾ß ÇÑ´Ù¸é
+            if (waitForAnimationEvent) // ì‹¤ì œ ë°œì‚¬ë¥¼ ì• ë‹ˆë©”ì´ì…˜ ì‹œì ê¹Œì§€ ê¸°ë‹¤ë ¤ì•¼ í•œë‹¤ë©´
             {
-                return; // ReleaseProjectile Animation Event°¡ È£ÃâµÉ ¶§±îÁö ¹ß»çÇÏÁö ¾Ê´Â´Ù.
+                return; // ReleaseProjectile Animation Eventê°€ í˜¸ì¶œë  ë•Œê¹Œì§€ ë°œì‚¬í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            ExecuteAttack(attackPowerMultiplier); // Animation Event¸¦ »ç¿ëÇÏÁö ¾Ê´Â ±âÁ¸ ¸ó½ºÅÍ´Â Áï½Ã ¹ß»çÇÑ´Ù.
-            attackTimer = finalAttackDelay; // ½ÇÁ¦ ¹ß»ç ÈÄ ´ÙÀ½ °ø°İ ´ë±â½Ã°£À» ¼³Á¤ÇÑ´Ù.
+            ExecuteAttack(attackPowerMultiplier); // Animation Eventë¥¼ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ” ê¸°ì¡´ ëª¬ìŠ¤í„°ëŠ” ì¦‰ì‹œ ë°œì‚¬í•œë‹¤.
+            attackTimer = finalAttackDelay; // ì‹¤ì œ ë°œì‚¬ í›„ ë‹¤ìŒ ê³µê²© ëŒ€ê¸°ì‹œê°„ì„ ì„¤ì •í•œë‹¤.
         }
 
-        public void ReleasePendingAttack() // °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ ¹ß»ç ÇÁ·¹ÀÓ¿¡¼­ È£ÃâÇÒ ÇÔ¼ö
+        public void ReleasePendingAttack() // ê³µê²© ì• ë‹ˆë©”ì´ì…˜ì˜ ë°œì‚¬ í”„ë ˆì„ì—ì„œ í˜¸ì¶œí•  í•¨ìˆ˜
         {
-            if (!attackPending) // ´ë±â ÁßÀÎ °ø°İÀÌ ¾ø´Ù¸é
+            if (!attackPending) // ëŒ€ê¸° ì¤‘ì¸ ê³µê²©ì´ ì—†ë‹¤ë©´
             {
-                return; // Áßº¹ ¹ß»ç¸¦ ¸·´Â´Ù.
+                return; // ì¤‘ë³µ ë°œì‚¬ë¥¼ ë§‰ëŠ”ë‹¤.
             }
 
-            float attackPowerMultiplier = pendingAttackPowerMultiplier; // ÀúÀåÇÑ °ø°İ·Â ¹èÀ²À» °¡Á®¿Â´Ù.
-            float finalAttackDelay = pendingAttackDelay; // ÀúÀåÇÑ °ø°İ ´ë±â½Ã°£À» °¡Á®¿Â´Ù.
+            float attackPowerMultiplier = pendingAttackPowerMultiplier; // ì €ì¥í•œ ê³µê²©ë ¥ ë°°ìœ¨ì„ ê°€ì ¸ì˜¨ë‹¤.
+            float finalAttackDelay = pendingAttackDelay; // ì €ì¥í•œ ê³µê²© ëŒ€ê¸°ì‹œê°„ì„ ê°€ì ¸ì˜¨ë‹¤.
 
-            attackPending = false; // ¹ß»ç ´ë±â »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
-            pendingAttackPowerMultiplier = 1.0f; // ÀúÀåÇÑ °ø°İ·Â ¹èÀ²À» ÃÊ±âÈ­ÇÑ´Ù.
-            pendingAttackDelay = 0.0f; // ÀúÀåÇÑ °ø°İ ´ë±â½Ã°£À» ÃÊ±âÈ­ÇÑ´Ù.
+            attackPending = false; // ë°œì‚¬ ëŒ€ê¸° ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
+            pendingAttackPowerMultiplier = 1.0f; // ì €ì¥í•œ ê³µê²©ë ¥ ë°°ìœ¨ì„ ì´ˆê¸°í™”í•œë‹¤.
+            pendingAttackDelay = 0.0f; // ì €ì¥í•œ ê³µê²© ëŒ€ê¸°ì‹œê°„ì„ ì´ˆê¸°í™”í•œë‹¤.
 
-            // Á¶¼º¿ø»èÁ¦-0624 - ÀÚµ¿ ¹ß»ç Á¦ÇÑ½Ã°£ ÃÊ±âÈ­¸¦ »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+            // ì¡°ì„±ì›ì‚­ì œ-0624 - ìë™ ë°œì‚¬ ì œí•œì‹œê°„ ì´ˆê¸°í™”ë¥¼ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             // pendingAttackTimeout = 0.0f;
 
-            if (nexus != null) // °ø°İ ´ë»ó Nexus°¡ ¾ÆÁ÷ Á¸ÀçÇÑ´Ù¸é
+            if (nexus != null) // ê³µê²© ëŒ€ìƒ Nexusê°€ ì•„ì§ ì¡´ì¬í•œë‹¤ë©´
             {
-                ExecuteAttack(attackPowerMultiplier); // ¾Ö´Ï¸ŞÀÌ¼Ç ¹ß»ç ½ÃÁ¡¿¡ ½ÇÁ¦ Åõ»çÃ¼³ª ÀÓÆÑÆ®¸¦ »ı¼ºÇÑ´Ù.
+                ExecuteAttack(attackPowerMultiplier); // ì• ë‹ˆë©”ì´ì…˜ ë°œì‚¬ ì‹œì ì— ì‹¤ì œ íˆ¬ì‚¬ì²´ë‚˜ ì„íŒ©íŠ¸ë¥¼ ìƒì„±í•œë‹¤.
             }
 
-            attackTimer = finalAttackDelay; // ½ÇÁ¦ ¹ß»ç ½ÃÁ¡ºÎÅÍ ´ÙÀ½ °ø°İ ´ë±â½Ã°£À» ½ÃÀÛÇÑ´Ù.
+            attackTimer = finalAttackDelay; // ì‹¤ì œ ë°œì‚¬ ì‹œì ë¶€í„° ë‹¤ìŒ ê³µê²© ëŒ€ê¸°ì‹œê°„ì„ ì‹œì‘í•œë‹¤.
         }
 
-        private void CancelPendingAttack() // ´ë±â ÁßÀÎ °ø°İÀ» ½ÇÁ¦ ¹ß»ç ¾øÀÌ Ãë¼ÒÇÏ´Â ÇÔ¼ö
+        private void CancelPendingAttack() // ëŒ€ê¸° ì¤‘ì¸ ê³µê²©ì„ ì‹¤ì œ ë°œì‚¬ ì—†ì´ ì·¨ì†Œí•˜ëŠ” í•¨ìˆ˜
         {
-            attackPending = false; // ¹ß»ç ´ë±â »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
-            pendingAttackPowerMultiplier = 1.0f; // ÀúÀåÇÑ °ø°İ·Â ¹èÀ²À» ÃÊ±âÈ­ÇÑ´Ù.
-            pendingAttackDelay = 0.0f; // ÀúÀåÇÑ °ø°İ ´ë±â½Ã°£À» ÃÊ±âÈ­ÇÑ´Ù.
+            attackPending = false; // ë°œì‚¬ ëŒ€ê¸° ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
+            pendingAttackPowerMultiplier = 1.0f; // ì €ì¥í•œ ê³µê²©ë ¥ ë°°ìœ¨ì„ ì´ˆê¸°í™”í•œë‹¤.
+            pendingAttackDelay = 0.0f; // ì €ì¥í•œ ê³µê²© ëŒ€ê¸°ì‹œê°„ì„ ì´ˆê¸°í™”í•œë‹¤.
 
-            // Á¶¼º¿ø»èÁ¦-0624 - ÀÚµ¿ ¹ß»ç Á¦ÇÑ½Ã°£ ÃÊ±âÈ­¸¦ »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+            // ì¡°ì„±ì›ì‚­ì œ-0624 - ìë™ ë°œì‚¬ ì œí•œì‹œê°„ ì´ˆê¸°í™”ë¥¼ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             // pendingAttackTimeout = 0.0f;
         }
 
-        private void ExecuteAttack(float attackPowerMultiplier) // ¼±ÅÃµÈ ¿ø°Å¸® °ø°İÀ» ½ÇÁ¦·Î »ı¼ºÇÏ´Â ÇÔ¼ö
+        private void ExecuteAttack(float attackPowerMultiplier) // ì„ íƒëœ ì›ê±°ë¦¬ ê³µê²©ì„ ì‹¤ì œë¡œ ìƒì„±í•˜ëŠ” í•¨ìˆ˜
         {
-            if (attackType == RangedAttackType.ProjectileArc) // Åõ»çÃ¼ °ø°İ ¹æ½ÄÀÌ¶ó¸é
+            if (attackType == RangedAttackType.ProjectileArc) // íˆ¬ì‚¬ì²´ ê³µê²© ë°©ì‹ì´ë¼ë©´
             {
-                ShootProjectile(attackPowerMultiplier); // Åõ»çÃ¼¸¦ ¹ß»çÇÑ´Ù.
-                return; // °ø°İ Ã³¸®¸¦ ³¡³½´Ù.
+                ShootProjectile(attackPowerMultiplier); // íˆ¬ì‚¬ì²´ë¥¼ ë°œì‚¬í•œë‹¤.
+                return; // ê³µê²© ì²˜ë¦¬ë¥¼ ëë‚¸ë‹¤.
             }
 
-            if (attackType == RangedAttackType.TargetImpact) // Áï½Ã ÀÓÆÑÆ® °ø°İ ¹æ½ÄÀÌ¶ó¸é
+            if (attackType == RangedAttackType.TargetImpact) // ì¦‰ì‹œ ì„íŒ©íŠ¸ ê³µê²© ë°©ì‹ì´ë¼ë©´
             {
-                SpawnTargetImpact(attackPowerMultiplier); // Nexus °Ñ¸é¿¡ ÀÓÆÑÆ®¸¦ »ı¼ºÇÑ´Ù.
+                SpawnTargetImpact(attackPowerMultiplier); // Nexus ê²‰ë©´ì— ì„íŒ©íŠ¸ë¥¼ ìƒì„±í•œë‹¤.
             }
         }
 
-        private float GetAttackPowerMultiplier() // °ø°İ·Â ¹öÇÁ ¹èÀ²À» °¡Á®¿À´Â ÇÔ¼ö
+        private float GetAttackPowerMultiplier() // ê³µê²©ë ¥ ë²„í”„ ë°°ìœ¨ì„ ê°€ì ¸ì˜¤ëŠ” í•¨ìˆ˜
         {
-            if (buffReceiver == null) // EnemyBuffReceiver°¡ ¾ø´Ù¸é
-            {
-                return 1.0f; // ±âº» ¹èÀ²À» ¹İÈ¯ÇÑ´Ù.
-            }
-
-            return buffReceiver.GetAttackPowerMultiplier(); // EnemyBuffReceiver¿¡¼­ °ø°İ·Â ¹öÇÁ ¹èÀ²À» °¡Á®¿Â´Ù.
+            float buffMultiplier = buffReceiver != null ? buffReceiver.GetAttackPowerMultiplier() : 1.0f; // ë²„í”„ ë°°ìœ¨
+            return buffMultiplier * stageAttackPowerMultiplier; // ë²„í”„ ë°°ìœ¨ê³¼ ì›¨ì´ë¸Œ ë‚œì´ë„ ë°°ìœ¨ì„ í•¨ê»˜ ì ìš©í•œë‹¤.
         }
 
-        private void ShootProjectile(float attackPowerMultiplier) // Nexus ¹æÇâÀ¸·Î Åõ»çÃ¼¸¦ ¹ß»çÇÏ´Â ÇÔ¼ö
+        private void ShootProjectile(float attackPowerMultiplier) // Nexus ë°©í–¥ìœ¼ë¡œ íˆ¬ì‚¬ì²´ë¥¼ ë°œì‚¬í•˜ëŠ” í•¨ìˆ˜
         {
-            if (projectilePrefab == null) // ¹ß»çÇÒ Åõ»çÃ¼ PrefabÀÌ ¾ø´Ù¸é
+            if (projectilePrefab == null) // ë°œì‚¬í•  íˆ¬ì‚¬ì²´ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; // Åõ»çÃ¼¸¦ ¸¸µé ¼ö ¾øÀ¸¹Ç·Î Á¾·áÇÑ´Ù.
+                return; // íˆ¬ì‚¬ì²´ë¥¼ ë§Œë“¤ ìˆ˜ ì—†ìœ¼ë¯€ë¡œ ì¢…ë£Œí•œë‹¤.
             }
 
-            Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position; // FirePoint°¡ ÀÖÀ¸¸é ±× À§Ä¡, ¾øÀ¸¸é ¸ó½ºÅÍ À§Ä¡¿¡¼­ ¹ß»çÇÑ´Ù.
+            Vector3 spawnPosition = firePoint != null ? firePoint.position : transform.position; // FirePointê°€ ìˆìœ¼ë©´ ê·¸ ìœ„ì¹˜, ì—†ìœ¼ë©´ ëª¬ìŠ¤í„° ìœ„ì¹˜ì—ì„œ ë°œì‚¬í•œë‹¤.
 
-            Vector3 offset = nexus.position - spawnPosition; // ¹ß»ç À§Ä¡¿¡¼­ Nexus±îÁöÀÇ ¹æÇâ
-            offset.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 offset = nexus.position - spawnPosition; // ë°œì‚¬ ìœ„ì¹˜ì—ì„œ Nexusê¹Œì§€ì˜ ë°©í–¥
+            offset.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            Quaternion spawnRotation = transform.rotation; // ±âº» È¸Àü°ªÀº ¸ó½ºÅÍ È¸Àü°ªÀ¸·Î µĞ´Ù.
+            Quaternion spawnRotation = transform.rotation; // ê¸°ë³¸ íšŒì „ê°’ì€ ëª¬ìŠ¤í„° íšŒì „ê°’ìœ¼ë¡œ ë‘”ë‹¤.
 
-            if (offset.sqrMagnitude > 0.0001f) // Nexus ¹æÇâÀ» °è»êÇÒ ¼ö ÀÖ´Ù¸é
+            if (offset.sqrMagnitude > 0.0001f) // Nexus ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ìˆë‹¤ë©´
             {
-                spawnRotation = Quaternion.LookRotation(offset.normalized, Vector3.up); // Åõ»çÃ¼°¡ Nexus ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+                spawnRotation = Quaternion.LookRotation(offset.normalized, Vector3.up); // íˆ¬ì‚¬ì²´ê°€ Nexus ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
             }
 
-            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monsters¸¦ Ã£°í, ¾øÀ¸¸é ÇöÀç ¸ó½ºÅÍÀÇ ºÎ¸ğ¸¦ »ç¿ëÇÑ´Ù.
+            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monstersë¥¼ ì°¾ê³ , ì—†ìœ¼ë©´ í˜„ì¬ ëª¬ìŠ¤í„°ì˜ ë¶€ëª¨ë¥¼ ì‚¬ìš©í•œë‹¤.
 
-            EnemyProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, runtimeRoot); // Åõ»çÃ¼ PrefabÀ» Monsters ¹Ø¿¡ »ı¼ºÇÑ´Ù.
-            projectile.Configure(nexus, attackPowerMultiplier); // ¸ñÇ¥ Nexus¿Í °ø°İ·Â ¹öÇÁ ¹èÀ²À» Åõ»çÃ¼¿¡ Àü´ŞÇÑ´Ù.
+            EnemyProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, runtimeRoot); // íˆ¬ì‚¬ì²´ Prefabì„ Monsters ë°‘ì— ìƒì„±í•œë‹¤.
+            projectile.Configure(nexus, attackPowerMultiplier); // ëª©í‘œ Nexusì™€ ê³µê²©ë ¥ ë²„í”„ ë°°ìœ¨ì„ íˆ¬ì‚¬ì²´ì— ì „ë‹¬í•œë‹¤.
         }
 
-        private void SpawnTargetImpact(float attackPowerMultiplier) // Nexus °Ñ¸é¿¡ Áï½Ã ÀÓÆÑÆ®¸¦ »ı¼ºÇÏ´Â ÇÔ¼ö
+        private void SpawnTargetImpact(float attackPowerMultiplier) // Nexus ê²‰ë©´ì— ì¦‰ì‹œ ì„íŒ©íŠ¸ë¥¼ ìƒì„±í•˜ëŠ” í•¨ìˆ˜
         {
-            if (impactPrefab == null) // ÀÓÆÑÆ® PrefabÀÌ ¾ø´Ù¸é
+            if (impactPrefab == null) // ì„íŒ©íŠ¸ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; // ÀÓÆÑÆ®¸¦ ¸¸µé ¼ö ¾øÀ¸¹Ç·Î Á¾·áÇÑ´Ù.
+                return; // ì„íŒ©íŠ¸ë¥¼ ë§Œë“¤ ìˆ˜ ì—†ìœ¼ë¯€ë¡œ ì¢…ë£Œí•œë‹¤.
             }
 
-            Vector3 directionToCaster = transform.position - nexus.position; // Nexus¿¡¼­ °ø°İ ¸ó½ºÅÍ ÂÊÀ¸·Î ÇâÇÏ´Â ¹æÇâ
-            directionToCaster.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 directionToCaster = transform.position - nexus.position; // Nexusì—ì„œ ê³µê²© ëª¬ìŠ¤í„° ìª½ìœ¼ë¡œ í–¥í•˜ëŠ” ë°©í–¥
+            directionToCaster.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            if (directionToCaster.sqrMagnitude <= 0.0001f) // ¹æÇâÀ» °è»êÇÏ±â ¾î·Á¿ï Á¤µµ·Î °¡±î¿ì¸é
+            if (directionToCaster.sqrMagnitude <= 0.0001f) // ë°©í–¥ì„ ê³„ì‚°í•˜ê¸° ì–´ë ¤ìš¸ ì •ë„ë¡œ ê°€ê¹Œìš°ë©´
             {
-                directionToCaster = -transform.forward; // ¸ó½ºÅÍÀÇ ¹İ´ë ¹æÇâÀ» ÀÓ½Ã ¹æÇâÀ¸·Î »ç¿ëÇÑ´Ù.
-                directionToCaster.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+                directionToCaster = -transform.forward; // ëª¬ìŠ¤í„°ì˜ ë°˜ëŒ€ ë°©í–¥ì„ ì„ì‹œ ë°©í–¥ìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
+                directionToCaster.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
             }
 
-            Vector3 centerDirection = directionToCaster.normalized; // Nexus °Ñ¸é Áß¾Ó ¹æÇâ
-            Vector3 sideDirection = Vector3.Cross(Vector3.up, centerDirection).normalized; // Áß¾Ó ¹æÇâ ±âÁØ ÁÂ¿ì ¹æÇâ
+            Vector3 centerDirection = directionToCaster.normalized; // Nexus ê²‰ë©´ ì¤‘ì•™ ë°©í–¥
+            Vector3 sideDirection = Vector3.Cross(Vector3.up, centerDirection).normalized; // ì¤‘ì•™ ë°©í–¥ ê¸°ì¤€ ì¢Œìš° ë°©í–¥
 
-            float randomSide = Random.Range(-impactSideRandomAmount, impactSideRandomAmount); // ÁÂ¿ì ·£´ı°ª
+            float randomSide = Random.Range(-impactSideRandomAmount, impactSideRandomAmount); // ì¢Œìš° ëœë¤ê°’
 
-            Vector3 surfaceDirection = centerDirection + sideDirection * randomSide; // Áß¾Ó ¹æÇâ¿¡ ÁÂ¿ì ·£´ı ¹æÇâÀ» ¼¯´Â´Ù.
-            surfaceDirection.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
-            surfaceDirection.Normalize(); // ÃÖÁ¾ ¹æÇâÀ» ±æÀÌ 1·Î ¸¸µç´Ù.
+            Vector3 surfaceDirection = centerDirection + sideDirection * randomSide; // ì¤‘ì•™ ë°©í–¥ì— ì¢Œìš° ëœë¤ ë°©í–¥ì„ ì„ëŠ”ë‹¤.
+            surfaceDirection.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
+            surfaceDirection.Normalize(); // ìµœì¢… ë°©í–¥ì„ ê¸¸ì´ 1ë¡œ ë§Œë“ ë‹¤.
 
-            Vector3 impactPosition = nexus.position + surfaceDirection * impactSurfaceOffset; // Nexus Áß½É¿¡¼­ °Ñ¸é ¹æÇâÀ¸·Î ¹Ğ¾î³½ À§Ä¡
-            impactPosition.y += impactHeightOffset; // ÀÓÆÑÆ® À§Ä¡¸¦ À§·Î ¿Ã¸°´Ù.
+            Vector3 impactPosition = nexus.position + surfaceDirection * impactSurfaceOffset; // Nexus ì¤‘ì‹¬ì—ì„œ ê²‰ë©´ ë°©í–¥ìœ¼ë¡œ ë°€ì–´ë‚¸ ìœ„ì¹˜
+            impactPosition.y += impactHeightOffset; // ì„íŒ©íŠ¸ ìœ„ì¹˜ë¥¼ ìœ„ë¡œ ì˜¬ë¦°ë‹¤.
 
-            Quaternion impactRotation = Quaternion.LookRotation(-surfaceDirection, Vector3.up); // ÀÓÆÑÆ®°¡ Nexus ÂÊÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            Quaternion impactRotation = Quaternion.LookRotation(-surfaceDirection, Vector3.up); // ì„íŒ©íŠ¸ê°€ Nexus ìª½ì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
 
-            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monsters¸¦ Ã£°í, ¾øÀ¸¸é ÇöÀç ¸ó½ºÅÍÀÇ ºÎ¸ğ¸¦ »ç¿ëÇÑ´Ù.
+            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monstersë¥¼ ì°¾ê³ , ì—†ìœ¼ë©´ í˜„ì¬ ëª¬ìŠ¤í„°ì˜ ë¶€ëª¨ë¥¼ ì‚¬ìš©í•œë‹¤.
 
-            GameObject impactObject = Instantiate(impactPrefab, impactPosition, impactRotation, runtimeRoot); // ÀÓÆÑÆ® ¿ÀºêÁ§Æ®¸¦ Monsters ¹Ø¿¡ »ı¼ºÇÑ´Ù.
+            GameObject impactObject = Instantiate(impactPrefab, impactPosition, impactRotation, runtimeRoot); // ì„íŒ©íŠ¸ ì˜¤ë¸Œì íŠ¸ë¥¼ Monsters ë°‘ì— ìƒì„±í•œë‹¤.
 
-            float randomLifeTime = GetRandomImpactLifeTime(); // ÀÓÆÑÆ® À¯Áö ½Ã°£À» ·£´ıÀ¸·Î Á¤ÇÑ´Ù.
+            float randomLifeTime = GetRandomImpactLifeTime(); // ì„íŒ©íŠ¸ ìœ ì§€ ì‹œê°„ì„ ëœë¤ìœ¼ë¡œ ì •í•œë‹¤.
 
-            EnemyImpactDebugVisual impactVisual = impactObject.GetComponent<EnemyImpactDebugVisual>(); // ÀÓÆÑÆ® ¿ÀºêÁ§Æ®¿¡¼­ ¿¬Ãâ Script Component¸¦ Ã£´Â´Ù.
+            EnemyImpactDebugVisual impactVisual = impactObject.GetComponent<EnemyImpactDebugVisual>(); // ì„íŒ©íŠ¸ ì˜¤ë¸Œì íŠ¸ì—ì„œ ì—°ì¶œ Script Componentë¥¼ ì°¾ëŠ”ë‹¤.
 
-            if (impactVisual != null) // ¿¬Ãâ Script Component°¡ ÀÖ´Ù¸é
+            if (impactVisual != null) // ì—°ì¶œ Script Componentê°€ ìˆë‹¤ë©´
             {
-                impactVisual.Configure(nexus, randomLifeTime, attackPowerMultiplier); // ¸ñÇ¥ Nexus, À¯Áö ½Ã°£, °ø°İ·Â ¹öÇÁ ¹èÀ²À» Àü´ŞÇÑ´Ù.
+                impactVisual.Configure(nexus, randomLifeTime, attackPowerMultiplier); // ëª©í‘œ Nexus, ìœ ì§€ ì‹œê°„, ê³µê²©ë ¥ ë²„í”„ ë°°ìœ¨ì„ ì „ë‹¬í•œë‹¤.
             }
-            else // ¿¬Ãâ Script Component°¡ ¾ø´Ù¸é
+            else // ì—°ì¶œ Script Componentê°€ ì—†ë‹¤ë©´
             {
-                Destroy(impactObject, randomLifeTime); // ÀÏÁ¤ ½Ã°£ µÚ Á¦°ÅÇÑ´Ù.
+                Destroy(impactObject, randomLifeTime); // ì¼ì • ì‹œê°„ ë’¤ ì œê±°í•œë‹¤.
             }
         }
 
-        private float GetRandomImpactLifeTime() // ÀÓÆÑÆ® À¯Áö ½Ã°£À» ·£´ıÀ¸·Î Á¤ÇÏ´Â ÇÔ¼ö
+        private float GetRandomImpactLifeTime() // ì„íŒ©íŠ¸ ìœ ì§€ ì‹œê°„ì„ ëœë¤ìœ¼ë¡œ ì •í•˜ëŠ” í•¨ìˆ˜
         {
-            float minLifeTime = Mathf.Min(impactLifeTimeMin, impactLifeTimeMax); // µÎ °ª Áß ÀÛÀº °ªÀ» ÃÖ¼Ò ½Ã°£À¸·Î »ç¿ëÇÑ´Ù.
-            float maxLifeTime = Mathf.Max(impactLifeTimeMin, impactLifeTimeMax); // µÎ °ª Áß Å« °ªÀ» ÃÖ´ë ½Ã°£À¸·Î »ç¿ëÇÑ´Ù.
+            float minLifeTime = Mathf.Min(impactLifeTimeMin, impactLifeTimeMax); // ë‘ ê°’ ì¤‘ ì‘ì€ ê°’ì„ ìµœì†Œ ì‹œê°„ìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
+            float maxLifeTime = Mathf.Max(impactLifeTimeMin, impactLifeTimeMax); // ë‘ ê°’ ì¤‘ í° ê°’ì„ ìµœëŒ€ ì‹œê°„ìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
 
-            return Random.Range(minLifeTime, maxLifeTime); // ÃÖ¼Ò~ÃÖ´ë »çÀÌÀÇ ·£´ı ½Ã°£À» ¹İÈ¯ÇÑ´Ù.
+            return Random.Range(minLifeTime, maxLifeTime); // ìµœì†Œ~ìµœëŒ€ ì‚¬ì´ì˜ ëœë¤ ì‹œê°„ì„ ë°˜í™˜í•œë‹¤.
         }
 
-        public void Configure(Transform nexus, EnemyProjectile projectilePrefab, float attackRange, float attackDelay) // ±âÁ¸ È£ÃâºÎ È£È¯¿ë ÃÊ±âÈ­ ÇÔ¼ö
+        public void Configure(Transform nexus, EnemyProjectile projectilePrefab, float attackRange, float attackDelay) // ê¸°ì¡´ í˜¸ì¶œë¶€ í˜¸í™˜ìš© ì´ˆê¸°í™” í•¨ìˆ˜
         {
-            this.nexus = nexus; // °ø°İ ´ë»ó Nexus¸¦ ÀúÀåÇÑ´Ù.
-            this.projectilePrefab = projectilePrefab; // ¹ß»çÇÒ Åõ»çÃ¼ PrefabÀ» ÀúÀåÇÑ´Ù.
-            this.attackRange = attackRange; // °ø°İ »ç°Å¸®¸¦ ÀúÀåÇÑ´Ù.
-            this.attackDelay = attackDelay; // °ø°İ ´ë±â ½Ã°£À» ÀúÀåÇÑ´Ù.
+            this.nexus = nexus; // ê³µê²© ëŒ€ìƒ Nexusë¥¼ ì €ì¥í•œë‹¤.
+            this.projectilePrefab = projectilePrefab; // ë°œì‚¬í•  íˆ¬ì‚¬ì²´ Prefabì„ ì €ì¥í•œë‹¤.
+            this.attackRange = attackRange; // ê³µê²© ì‚¬ê±°ë¦¬ë¥¼ ì €ì¥í•œë‹¤.
+            this.attackDelay = attackDelay; // ê³µê²© ëŒ€ê¸° ì‹œê°„ì„ ì €ì¥í•œë‹¤.
         }
 
-        public void Configure(Transform nexus, EnemyProjectile projectilePrefab, int unusedAttackDamage, float attackRange, float attackDelay) // ±âÁ¸ È£ÃâºÎ È£È¯¿ë ÃÊ±âÈ­ ÇÔ¼ö
+        public void Configure(Transform nexus, EnemyProjectile projectilePrefab, int unusedAttackDamage, float attackRange, float attackDelay) // ê¸°ì¡´ í˜¸ì¶œë¶€ í˜¸í™˜ìš© ì´ˆê¸°í™” í•¨ìˆ˜
         {
-            this.nexus = nexus; // °ø°İ ´ë»ó Nexus¸¦ ÀúÀåÇÑ´Ù.
-            this.projectilePrefab = projectilePrefab; // ¹ß»çÇÒ Åõ»çÃ¼ PrefabÀ» ÀúÀåÇÑ´Ù.
-            this.attackRange = attackRange; // °ø°İ »ç°Å¸®¸¦ ÀúÀåÇÑ´Ù.
-            this.attackDelay = attackDelay; // °ø°İ ´ë±â ½Ã°£À» ÀúÀåÇÑ´Ù.
+            this.nexus = nexus; // ê³µê²© ëŒ€ìƒ Nexusë¥¼ ì €ì¥í•œë‹¤.
+            this.projectilePrefab = projectilePrefab; // ë°œì‚¬í•  íˆ¬ì‚¬ì²´ Prefabì„ ì €ì¥í•œë‹¤.
+            this.attackRange = attackRange; // ê³µê²© ì‚¬ê±°ë¦¬ë¥¼ ì €ì¥í•œë‹¤.
+            this.attackDelay = attackDelay; // ê³µê²© ëŒ€ê¸° ì‹œê°„ì„ ì €ì¥í•œë‹¤.
+        }
+
+        public void ApplyAttackPowerMultiplier(float multiplier) // ì›¨ì´ë¸Œ ë‚œì´ë„ ë„¥ì„œìŠ¤ í”¼í•´ ë°°ìœ¨ ì ìš©
+        {
+            if (multiplier <= 0.0f || Mathf.Approximately(multiplier, 1.0f))
+            {
+                return; // ì ìš© ì—†ìŒ
+            }
+
+            stageAttackPowerMultiplier = Mathf.Max(0.01f, stageAttackPowerMultiplier * multiplier); // ëˆ„ì  ë°°ìœ¨
         }
     }
 }

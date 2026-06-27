@@ -16,11 +16,11 @@ MonoBehaviour:
   DisplayName: "\uC804\uAE30 \uAC15\uD654"
   Description: "\uD53C\uD574\uB7C9 \uC99D\uAC00"
   TargetSegmentId: SG20_LightningObelisk
-  BaseDamage: 0.1
+  BaseDamage: 1.5
   BaseDamageUsePercent: 0
-  BaseDamageRare: 0.2
-  BaseDamageUsePercentRare: 0
-  BaseDamageUnique: 0.1
+  BaseDamageRare: 0.08
+  BaseDamageUsePercentRare: 1
+  BaseDamageUnique: 0.15
   BaseDamageUsePercentUnique: 1
   SawPierceDamageRatio: 0
   SawPierceDamageRatioRare: 0
@@ -46,9 +46,9 @@ MonoBehaviour:
   ChainRangeUsePercentRare: 0
   ChainRangeUnique: 0
   ChainRangeUsePercentUnique: 0
-  ChainDamageFalloff: 0.03
-  ChainDamageFalloffRare: 0.05
-  ChainDamageFalloffUnique: 0.08
+  ChainDamageFalloff: 0.04
+  ChainDamageFalloffRare: 0.07
+  ChainDamageFalloffUnique: 0.1
   ProjectileCount: 0
   ProjectileCountRare: 0
   ProjectileCountUnique: 0

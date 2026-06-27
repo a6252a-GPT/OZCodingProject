@@ -2,19 +2,26 @@ using System.Collections;
 using DG.Tweening;
 using TeamProject01.Gameplay;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class LevelUpUi : MonoBehaviour
 {
+    private const string RewardTitleResourcePath = "UI/Reward/SelectRewardTitle";
+
     [Header("패널")]
     [SerializeField] private GameObject levelUpPanel;
     [Header("투명도")]
     [SerializeField] private CanvasGroup panelCanvasGroup;
     [Header("타이틀")]
-    [SerializeField] private RectTransform levelUpText;
+    [SerializeField] private RectTransform titleVisual; // 정식 배치된 타이틀 이미지/텍스트 연출 대상
+    [SerializeField] private Sprite levelUpTitleSprite; // 기본 레벨업 타이틀
+    [SerializeField] private Sprite rewardTitleSprite; // 보상/선택권 타이틀
     [Header("디버그")]
     [SerializeField] private bool logCoreStats = true; // 코어 경험치 로그 출력 여부
 
     private bool isOpen;
+    private bool useRewardTitle;
+    private Image cachedTitleImage;
     private float previousTimeScale = 1f;
     private bool skipPause; // 안건준 추가 - 0622 : 자동모드일 때 일시정지 스킵 플래그
     private float closeFadeDuration = 0.25f; // Close() 기본 페이드
@@ -33,15 +40,17 @@ public class LevelUpUi : MonoBehaviour
             panelCanvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
-        Transform title = transform.Find("LevelUpText");
+        Transform title = FindTitleTransform("LevelUpTitleImage") ?? FindTitleTransform("LevelUpText");
         if (title != null)
         {
-            levelUpText = title as RectTransform;
+            titleVisual = title as RectTransform;
         }
     }
 
     private void Start()
     {
+        ResolveTitleVisual(); // 씬에 정식 배치된 타이틀 확인
+        CacheTitleSprites(); // 기본/보상 타이틀 준비
         CloseInstant();
         TrySubscribeCore(); // 코어 이벤트 연결
         LogCoreStats(); // 시작 시 1회 출력
@@ -165,6 +174,9 @@ public class LevelUpUi : MonoBehaviour
             SetOverlayPanelActive(!IsAutoOrbitActive()); // 안건준 추가 - 0622 : 자동모드면 Overlay Panel 숨김
         }
 
+        ResolveTitleVisual(); // 정식 타이틀 오브젝트 재확인
+        ApplyTitleSprite(); // 레벨업/보상 타이틀 모드 반영
+
         // DOFade 가 timeScale=0 에서 충돌하거나 지연되는 문제 → 즉시 표시
         panelCanvasGroup.DOKill();
         panelCanvasGroup.alpha = 1f;
@@ -172,6 +184,12 @@ public class LevelUpUi : MonoBehaviour
         panelCanvasGroup.interactable = true;
 
         PlayTitleTween();
+    }
+
+    public void SetUseRewardTitle(bool useReward) // CardUI 모드별 타이틀 전환
+    {
+        useRewardTitle = useReward;
+        ApplyTitleSprite();
     }
 
     // 안건준 추가 - 0622 : Overlay Panel 활성/비활성 (LevelUpPanel 하위에서 이름으로 검색)
@@ -239,13 +257,86 @@ public class LevelUpUi : MonoBehaviour
 
     private void PlayTitleTween()
     {
-        if (levelUpText == null)
+        RectTransform target = ResolveTitleVisual();
+        if (target == null)
         {
             return;
         }
 
-        levelUpText.localScale = Vector3.zero;
-        levelUpText.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+        target.localScale = Vector3.zero;
+        target.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+    }
+
+    private RectTransform ResolveTitleVisual()
+    {
+        if (titleVisual != null)
+        {
+            return titleVisual;
+        }
+
+        Transform title = FindTitleTransform("LevelUpTitleImage") ?? FindTitleTransform("LevelUpText");
+        titleVisual = title as RectTransform; // 생성하지 않고 기존 오브젝트만 사용
+        return titleVisual;
+    }
+
+    private void CacheTitleSprites()
+    {
+        Image image = ResolveTitleImage();
+        if (image != null && levelUpTitleSprite == null)
+        {
+            levelUpTitleSprite = image.sprite; // 씬에 배치된 기본 레벨업 이미지 보관
+        }
+
+        if (rewardTitleSprite == null)
+        {
+            rewardTitleSprite = Resources.Load<Sprite>(RewardTitleResourcePath); // 보상 선택 이미지
+        }
+    }
+
+    private void ApplyTitleSprite()
+    {
+        CacheTitleSprites();
+        Image image = ResolveTitleImage();
+        if (image == null)
+        {
+            return; // 텍스트 타이틀 씬은 기존 표시 유지
+        }
+
+        Sprite target = useRewardTitle ? rewardTitleSprite : levelUpTitleSprite;
+        if (target == null)
+        {
+            return; // 연결 이미지 없음
+        }
+
+        image.sprite = target;
+        image.color = Color.white;
+        image.preserveAspect = true;
+    }
+
+    private Image ResolveTitleImage()
+    {
+        if (cachedTitleImage != null)
+        {
+            return cachedTitleImage;
+        }
+
+        RectTransform target = ResolveTitleVisual();
+        cachedTitleImage = target != null ? target.GetComponent<Image>() : null;
+        return cachedTitleImage;
+    }
+
+    private Transform FindTitleTransform(string objectName)
+    {
+        RectTransform[] children = GetComponentsInChildren<RectTransform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i] != null && children[i].name == objectName)
+            {
+                return children[i];
+            }
+        }
+
+        return null;
     }
 
     private void CloseInstant()

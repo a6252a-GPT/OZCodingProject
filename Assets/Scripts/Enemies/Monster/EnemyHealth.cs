@@ -2,75 +2,92 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyHealth : MonoBehaviour //¸ó½ºÅÍ »ç¸ÁÃ³¸®
+    public sealed class EnemyHealth : MonoBehaviour //ëª¬ìŠ¤í„° ì‚¬ë§ì²˜ë¦¬
     {
         [Min(1)]
-        [SerializeField] private float maxHp = 3f; // ÃÖ´ë Ã¼·Â
+        [SerializeField] private float maxHp = 3f; // ìµœëŒ€ ì²´ë ¥
 
         public float MaxHp
         {
             get
             {
-                return maxHp; // ÃÖ´ë Ã¼·Â ÀĞ±â°ª
+                return maxHp; // ìµœëŒ€ ì²´ë ¥ ì½ê¸°ê°’
             }
         }
 
-        public float CurrentHp { get; private set; } // ÇöÀç Ã¼·Â
-        public bool IsDead { get; private set; } // ¸ó½ºÅÍ°¡ Á×¾ú´ÂÁö È®ÀÎÇÏ´Â »óÅÂ°ª
+        public float CurrentHp { get; private set; } // í˜„ì¬ ì²´ë ¥
+        public bool IsDead { get; private set; } // ëª¬ìŠ¤í„°ê°€ ì£½ì—ˆëŠ”ì§€ í™•ì¸í•˜ëŠ” ìƒíƒœê°’
 
         private void Awake()
         {
-            CurrentHp = maxHp; // ½ÃÀÛ ÇöÀç Ã¼·ÂÀ» ÃÖ´ë Ã¼·ÂÀ¸·Î ¼³Á¤ÇÑ´Ù.
+            CurrentHp = maxHp; // ì‹œì‘ í˜„ì¬ ì²´ë ¥ì„ ìµœëŒ€ ì²´ë ¥ìœ¼ë¡œ ì„¤ì •í•œë‹¤.
         }
 
-        public void TakeDamage(float damage) // ¿ÜºÎ¿¡¼­ µé¾î¿Â ÇÇÇØ·®À» ¹Ş¾Æ Ã¼·ÂÀ» °¨¼Ò½ÃÅ°´Â ÇÔ¼ö
+        public void TakeDamage(float damage) // ì™¸ë¶€ì—ì„œ ë“¤ì–´ì˜¨ í”¼í•´ëŸ‰ì„ ë°›ì•„ ì²´ë ¥ì„ ê°ì†Œì‹œí‚¤ëŠ” í•¨ìˆ˜
         {
-            if (IsDead) // ÀÌ¹Ì Á×Àº ¸ó½ºÅÍ¶ó¸é
+            if (IsDead) // ì´ë¯¸ ì£½ì€ ëª¬ìŠ¤í„°ë¼ë©´
             {
-                return; // ´õ ÀÌ»ó ÇÇÇØ Ã³¸®¸¦ ÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ë” ì´ìƒ í”¼í•´ ì²˜ë¦¬ë¥¼ í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            if (damage <= 0f) // ÇÇÇØ·®ÀÌ 0 ÀÌÇÏ¶ó¸é
+            if (damage <= 0f) // í”¼í•´ëŸ‰ì´ 0 ì´í•˜ë¼ë©´
             {
-                return; // Ã¼·ÂÀ» ÁÙÀÌÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ì²´ë ¥ì„ ì¤„ì´ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            CurrentHp -= damage; // ÇöÀç Ã¼·Â¿¡¼­ µé¾î¿Â ÇÇÇØ·®À» »©°í, ±× °á°ú¸¦ ´Ù½Ã CurrentHp¿¡ ÀúÀåÇÑ´Ù.
+            CurrentHp -= damage; // í˜„ì¬ ì²´ë ¥ì—ì„œ ë“¤ì–´ì˜¨ í”¼í•´ëŸ‰ì„ ë¹¼ê³ , ê·¸ ê²°ê³¼ë¥¼ ë‹¤ì‹œ CurrentHpì— ì €ì¥í•œë‹¤.
 
-            if (CurrentHp <= 0f) // Ã¼·ÂÀÌ 0 ÀÌÇÏ°¡ µÇ¾ú´Ù¸é
+            if (CurrentHp <= 0f) // ì²´ë ¥ì´ 0 ì´í•˜ê°€ ë˜ì—ˆë‹¤ë©´
             {
-                CurrentHp = 0f; // Ã¼·ÂÀÌ À½¼ö·Î ³»·Á°¡Áö ¾Êµµ·Ï 0À¸·Î °íÁ¤ÇÑ´Ù.
+                CurrentHp = 0f; // ì²´ë ¥ì´ ìŒìˆ˜ë¡œ ë‚´ë ¤ê°€ì§€ ì•Šë„ë¡ 0ìœ¼ë¡œ ê³ ì •í•œë‹¤.
 
-                IsDead = true; // Á×Àº »óÅÂ·Î Ç¥½ÃÇØ¼­ ÀÌÈÄ Áßº¹ ÇÇÇØ³ª Áßº¹ »ç¸Á Ã³¸®¸¦ ¸·´Â´Ù.
+                IsDead = true; // ì£½ì€ ìƒíƒœë¡œ í‘œì‹œí•´ì„œ ì´í›„ ì¤‘ë³µ í”¼í•´ë‚˜ ì¤‘ë³µ ì‚¬ë§ ì²˜ë¦¬ë¥¼ ë§‰ëŠ”ë‹¤.
             }
         }
 
-        public void IncreaseMaxHpByPercentKeepingRatio(float increasePercent) // ÇöÀç Ã¼·Â ºñÀ²À» À¯ÁöÇÏ¸é¼­ ÃÖ´ë Ã¼·ÂÀ» Áõ°¡½ÃÅ°´Â ÇÔ¼ö
+        public void IncreaseMaxHpByPercentKeepingRatio(float increasePercent) // í˜„ì¬ ì²´ë ¥ ë¹„ìœ¨ì„ ìœ ì§€í•˜ë©´ì„œ ìµœëŒ€ ì²´ë ¥ì„ ì¦ê°€ì‹œí‚¤ëŠ” í•¨ìˆ˜
         {
-            if (IsDead) // ÀÌ¹Ì Á×Àº ¸ó½ºÅÍ¶ó¸é
+            if (IsDead) // ì´ë¯¸ ì£½ì€ ëª¬ìŠ¤í„°ë¼ë©´
             {
-                return; // ÃÖ´ë Ã¼·ÂÀ» Áõ°¡½ÃÅ°Áö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ìµœëŒ€ ì²´ë ¥ì„ ì¦ê°€ì‹œí‚¤ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            if (increasePercent <= 0f) // Áõ°¡À²ÀÌ 0 ÀÌÇÏ¶ó¸é
+            if (increasePercent <= 0f) // ì¦ê°€ìœ¨ì´ 0 ì´í•˜ë¼ë©´
             {
-                return; // ÃÖ´ë Ã¼·ÂÀ» Áõ°¡½ÃÅ°Áö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ìµœëŒ€ ì²´ë ¥ì„ ì¦ê°€ì‹œí‚¤ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            if (maxHp <= 0f) // ÃÖ´ë Ã¼·ÂÀÌ ºñÁ¤»ó °ªÀÌ¶ó¸é
+            if (maxHp <= 0f) // ìµœëŒ€ ì²´ë ¥ì´ ë¹„ì •ìƒ ê°’ì´ë¼ë©´
             {
-                return; // °è»êÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                return; // ê³„ì‚°í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            float hpRatio = CurrentHp / maxHp; // ÇöÀç Ã¼·ÂÀÌ ÃÖ´ë Ã¼·Â¿¡¼­ Â÷ÁöÇÏ´Â ºñÀ²À» °è»êÇÑ´Ù.
+            float hpRatio = CurrentHp / maxHp; // í˜„ì¬ ì²´ë ¥ì´ ìµœëŒ€ ì²´ë ¥ì—ì„œ ì°¨ì§€í•˜ëŠ” ë¹„ìœ¨ì„ ê³„ì‚°í•œë‹¤.
 
-            float increaseMultiplier = 1f + increasePercent; // Áõ°¡À²À» ¹èÀ²·Î ¹Ù²Û´Ù.
+            float increaseMultiplier = 1f + increasePercent; // ì¦ê°€ìœ¨ì„ ë°°ìœ¨ë¡œ ë°”ê¾¼ë‹¤.
 
-            maxHp *= increaseMultiplier; // ÃÖ´ë Ã¼·ÂÀ» Áõ°¡½ÃÅ²´Ù.
+            maxHp *= increaseMultiplier; // ìµœëŒ€ ì²´ë ¥ì„ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-            CurrentHp = maxHp * hpRatio; // ±âÁ¸ Ã¼·Â ºñÀ²¿¡ ¸ÂÃç ÇöÀç Ã¼·Âµµ °°ÀÌ Áõ°¡½ÃÅ²´Ù.
+            CurrentHp = maxHp * hpRatio; // ê¸°ì¡´ ì²´ë ¥ ë¹„ìœ¨ì— ë§ì¶° í˜„ì¬ ì²´ë ¥ë„ ê°™ì´ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-            CurrentHp = Mathf.Clamp(CurrentHp, 0f, maxHp); // ÇöÀç Ã¼·ÂÀÌ 0°ú ÃÖ´ë Ã¼·Â »çÀÌ¿¡ ÀÖµµ·Ï Á¦ÇÑÇÑ´Ù.
+            CurrentHp = Mathf.Clamp(CurrentHp, 0f, maxHp); // í˜„ì¬ ì²´ë ¥ì´ 0ê³¼ ìµœëŒ€ ì²´ë ¥ ì‚¬ì´ì— ìˆë„ë¡ ì œí•œí•œë‹¤.
+        }
+
+        public void ApplyMaxHpMultiplierKeepingRatio(float multiplier) // ì›¨ì´ë¸Œ ë‚œì´ë„ ì²´ë ¥ ë°°ìœ¨ ì ìš©
+        {
+            if (IsDead || multiplier <= 0f || Mathf.Approximately(multiplier, 1f))
+            {
+                return; // ì ìš© ì—†ìŒ
+            }
+
+            if (maxHp <= 0f)
+            {
+                return; // ë¹„ì •ìƒ ì²´ë ¥ ë°©ì§€
+            }
+
+            float hpRatio = CurrentHp / maxHp; // í˜„ì¬ ì²´ë ¥ ë¹„ìœ¨ ë³´ì¡´
+            maxHp = Mathf.Max(1f, maxHp * multiplier); // ìµœëŒ€ ì²´ë ¥ ë°°ìœ¨
+            CurrentHp = Mathf.Clamp(maxHp * hpRatio, 0f, maxHp); // í˜„ì¬ ì²´ë ¥ë„ ê°™ì€ ë¹„ìœ¨
         }
     }
 }

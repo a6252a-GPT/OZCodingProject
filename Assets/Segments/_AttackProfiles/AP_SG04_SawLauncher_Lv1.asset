@@ -22,7 +22,7 @@ MonoBehaviour:
   SideConeAngle: 100
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.5
-  BaseDamage: 8
+  BaseDamage: 14
   Cooldown: 4.2
   ApplyMonsterFeedback: 1
   MonsterKnockbackDistance: 0.25

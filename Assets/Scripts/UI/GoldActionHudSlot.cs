@@ -20,6 +20,7 @@ namespace TeamProject01.Gameplay
         private HudTooltipTrigger iconTooltipTrigger;
         private HudTooltipTrigger buttonTooltipTrigger;
         private HudTooltipTrigger buttonGraphicTooltipTrigger;
+        private Button iconButton;
 
         [Header("Colors")]
         public Color NormalTextColor = new Color(0.96f, 0.98f, 1f, 1f);
@@ -30,14 +31,25 @@ namespace TeamProject01.Gameplay
 
         public void BindButton(UnityEngine.Events.UnityAction action)
         {
+            BindButton(action, action);
+        }
+
+        public void BindButton(UnityEngine.Events.UnityAction buttonAction, UnityEngine.Events.UnityAction iconAction)
+        {
             if (ActionButton == null)
             {
+                BindIconButton(iconAction);
                 return;
             }
 
             EnsureButtonRaycastTarget();
             ActionButton.onClick.RemoveAllListeners();
-            ActionButton.onClick.AddListener(action);
+            if (buttonAction != null)
+            {
+                ActionButton.onClick.AddListener(buttonAction);
+            }
+
+            BindIconButton(iconAction);
         }
 
         public void Refresh(
@@ -72,6 +84,11 @@ namespace TeamProject01.Gameplay
             {
                 IconImage.color = iconActive && !coolingDown ? Color.white : DimmedIconColor;
                 IconImage.raycastTarget = true;
+            }
+
+            if (iconButton != null)
+            {
+                iconButton.interactable = iconActive && !coolingDown && !locked;
             }
 
             if (CooldownFill != null)
@@ -133,6 +150,40 @@ namespace TeamProject01.Gameplay
             }
 
             ActionButton.targetGraphic.raycastTarget = true;
+        }
+
+        private void BindIconButton(UnityEngine.Events.UnityAction iconAction)
+        {
+            Button button = EnsureIconButton();
+            if (button == null)
+            {
+                return;
+            }
+
+            button.onClick.RemoveAllListeners();
+            if (iconAction != null)
+            {
+                button.onClick.AddListener(iconAction);
+            }
+        }
+
+        private Button EnsureIconButton()
+        {
+            if (IconImage == null)
+            {
+                return null;
+            }
+
+            if (iconButton == null || iconButton.gameObject != IconImage.gameObject)
+            {
+                iconButton = IconImage.GetComponent<Button>() ?? IconImage.gameObject.AddComponent<Button>();
+            }
+
+            IconImage.raycastTarget = true;
+            iconButton.targetGraphic = IconImage;
+            iconButton.transition = Selectable.Transition.None;
+            iconButton.navigation = new Navigation { mode = Navigation.Mode.None };
+            return iconButton;
         }
 
         private static HudTooltipTrigger EnsureTooltipTrigger(GameObject target, ref HudTooltipTrigger cache)

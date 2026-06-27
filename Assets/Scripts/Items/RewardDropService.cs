@@ -7,12 +7,15 @@ namespace TeamProject01.Gameplay
     {
         private const string ExperiencePickupResourcePath = "RewardPickups/PF_RewardPickup_Exp";
         private const string GoldPickupResourcePath = "RewardPickups/PF_RewardPickup_Gold";
+        private const string SegmentChoiceTicketPickupResourcePath = "RewardPickups/PF_RewardPickup_SegmentChoiceTicket";
+        private const string SegmentChoiceTicketFallbackModelResourcePath = "RewardPickups/SegmentChoiceTicketModel/Source_SegmentChoiceTicket/MDL_SegmentChoiceTicket";
         private const float MinimumDropSpreadRadius = 1.08f;
 
         public static RewardDropService Active { get; private set; }
 
         public WorldRewardPickup ExperiencePickupPrefab;
         public WorldRewardPickup GoldPickupPrefab;
+        public WorldRewardPickup SegmentChoiceTicketPickupPrefab;
         public Transform DropRoot;
         [Min(0f)] public float DropSpreadRadius = 0.42f;
         [Min(0f)] public float GroundHeightOffset = 0.02f;
@@ -22,6 +25,7 @@ namespace TeamProject01.Gameplay
 
         private static WorldRewardPickup cachedExperiencePrefab;
         private static WorldRewardPickup cachedGoldPrefab;
+        private static WorldRewardPickup cachedSegmentChoiceTicketPrefab;
         private static int dropSerial;
         private readonly Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>> pickupPools = new Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>>();
         private Transform poolRoot;
@@ -56,6 +60,19 @@ namespace TeamProject01.Gameplay
             SpawnRewardDefault(reward, position);
         }
 
+        public static void SpawnSegmentChoiceTicket(int ticketCount, Vector3 position)
+        {
+            int safeCount = Mathf.Max(1, ticketCount);
+            if (Active != null)
+            {
+                Active.SpawnSegmentChoiceTicketInternal(safeCount, position);
+                return;
+            }
+
+            Vector3 basePosition = GroundService.ProjectToGround(position, 0.02f);
+            SpawnPickup(GetCachedSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, safeCount, 0, basePosition, basePosition + GetDefaultDropOffset(2), null, 0.02f);
+        }
+
         private void SpawnRewardInternal(RewardData reward, Vector3 position)
         {
             Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
@@ -68,6 +85,12 @@ namespace TeamProject01.Gameplay
             {
                 SpawnPickupFromPool(ResolveGoldPrefab(), RewardPickupKind.Gold, reward.Gold, reward.EnemyId, basePosition, basePosition + GetDropOffset(1), DropRoot, GroundHeightOffset);
             }
+        }
+
+        private void SpawnSegmentChoiceTicketInternal(int ticketCount, Vector3 position)
+        {
+            Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
+            SpawnPickupFromPool(ResolveSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, Mathf.Max(1, ticketCount), 0, basePosition, basePosition + GetDropOffset(2), DropRoot, GroundHeightOffset);
         }
 
         private static void SpawnRewardDefault(RewardData reward, Vector3 position)
@@ -92,6 +115,11 @@ namespace TeamProject01.Gameplay
         private WorldRewardPickup ResolveGoldPrefab()
         {
             return GoldPickupPrefab != null ? GoldPickupPrefab : GetCachedGoldPrefab();
+        }
+
+        private WorldRewardPickup ResolveSegmentChoiceTicketPrefab()
+        {
+            return SegmentChoiceTicketPickupPrefab != null ? SegmentChoiceTicketPickupPrefab : GetCachedSegmentChoiceTicketPrefab();
         }
 
         private Vector3 GetDropOffset(int index)
@@ -134,6 +162,16 @@ namespace TeamProject01.Gameplay
             return cachedGoldPrefab;
         }
 
+        private static WorldRewardPickup GetCachedSegmentChoiceTicketPrefab()
+        {
+            if (cachedSegmentChoiceTicketPrefab == null)
+            {
+                cachedSegmentChoiceTicketPrefab = LoadPickupPrefab(SegmentChoiceTicketPickupResourcePath);
+            }
+
+            return cachedSegmentChoiceTicketPrefab;
+        }
+
         private static WorldRewardPickup LoadPickupPrefab(string resourcePath)
         {
             GameObject prefab = Resources.Load<GameObject>(resourcePath);
@@ -145,6 +183,7 @@ namespace TeamProject01.Gameplay
             int count = Mathf.Max(0, InitialPoolSizePerKind);
             PrewarmPool(ResolveExperiencePrefab(), count);
             PrewarmPool(ResolveGoldPrefab(), count);
+            PrewarmPool(ResolveSegmentChoiceTicketPrefab(), count);
         }
 
         private void PrewarmPool(WorldRewardPickup prefab, int count)
@@ -275,6 +314,11 @@ namespace TeamProject01.Gameplay
 
         private static WorldRewardPickup CreateFallbackPickup(RewardPickupKind kind, Vector3 position, Transform parent, float groundHeightOffset)
         {
+            if (kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                return CreateSegmentChoiceTicketFallbackPickup(position, parent, groundHeightOffset); // 전용 모델 fallback
+            }
+
             PrimitiveType primitiveType = kind == RewardPickupKind.Experience ? PrimitiveType.Sphere : PrimitiveType.Cylinder;
             GameObject fallback = GameObject.CreatePrimitive(primitiveType);
             fallback.transform.SetParent(parent, true);
@@ -289,6 +333,112 @@ namespace TeamProject01.Gameplay
 
             WorldRewardPickup pickup = fallback.AddComponent<WorldRewardPickup>();
             return pickup;
+        }
+
+        private static WorldRewardPickup CreateSegmentChoiceTicketFallbackPickup(Vector3 position, Transform parent, float groundHeightOffset)
+        {
+            GameObject fallback = new GameObject("SegmentChoiceTicketFallbackPickup");
+            fallback.transform.SetParent(parent, true);
+            fallback.transform.position = GroundService.ProjectToGround(position, groundHeightOffset);
+
+            Transform modelRoot = CreateFallbackChild(fallback.transform, "ModelRoot", new Vector3(0f, 0.62f, 0f));
+            Transform idleVfxRoot = CreateFallbackChild(fallback.transform, "VFX_IdleRoot", new Vector3(0f, 0.62f, 0f));
+            Transform collectVfxRoot = CreateFallbackChild(fallback.transform, "VFX_CollectRoot", new Vector3(0f, 0.62f, 0f));
+            Transform magnetTrailRoot = CreateFallbackChild(fallback.transform, "VFX_MagnetTrailRoot", new Vector3(0f, 0.62f, 0f));
+            CreateFallbackTrigger(fallback.transform, new Vector3(0f, 0.62f, 0f), 0.7f);
+            CreateSegmentChoiceTicketFallbackModel(modelRoot);
+
+            WorldRewardPickup pickup = fallback.AddComponent<WorldRewardPickup>();
+            pickup.Kind = RewardPickupKind.SegmentChoiceTicket;
+            pickup.Amount = 1;
+            pickup.ModelRoot = modelRoot;
+            pickup.IdleVfxRoot = idleVfxRoot;
+            pickup.CollectVfxRoot = collectVfxRoot;
+            pickup.MagnetTrailVfxRoot = magnetTrailRoot;
+            pickup.HoverHeight = 0.7f;
+            pickup.HoverAmplitude = 0.13f;
+            pickup.HoverSpeed = 2.55f;
+            pickup.RotationSpeed = 95f;
+            pickup.GroundHeightOffset = groundHeightOffset;
+            pickup.DropPopHeight = 1.15f;
+            pickup.DropPopDuration = 0.42f;
+            pickup.CollectDistance = 0.6f;
+            return pickup;
+        }
+
+        private static Transform CreateFallbackChild(Transform parent, string name, Vector3 localPosition)
+        {
+            GameObject child = new GameObject(name);
+            child.transform.SetParent(parent, false);
+            child.transform.localPosition = localPosition;
+            return child.transform;
+        }
+
+        private static void CreateFallbackTrigger(Transform parent, Vector3 center, float radius)
+        {
+            GameObject trigger = new GameObject("TriggerCollider");
+            trigger.transform.SetParent(parent, false);
+            SphereCollider collider = trigger.AddComponent<SphereCollider>();
+            collider.isTrigger = true;
+            collider.center = center;
+            collider.radius = Mathf.Max(0.05f, radius);
+        }
+
+        private static void CreateSegmentChoiceTicketFallbackModel(Transform modelRoot)
+        {
+            GameObject modelPrefab = Resources.Load<GameObject>(SegmentChoiceTicketFallbackModelResourcePath);
+            if (modelPrefab == null)
+            {
+                CreatePrimitiveSegmentChoiceTicketModel(modelRoot); // 모델 import 전 fallback
+                return;
+            }
+
+            GameObject model = Instantiate(modelPrefab, modelRoot);
+            model.name = "SegmentChoiceTicket_Model";
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+            model.transform.localScale = Vector3.one;
+            FitFallbackModel(model.transform, 0.74f);
+        }
+
+        private static void CreatePrimitiveSegmentChoiceTicketModel(Transform modelRoot)
+        {
+            GameObject model = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            model.name = "SegmentChoiceTicket_TemporaryModel";
+            model.transform.SetParent(modelRoot, false);
+            model.transform.localScale = new Vector3(0.44f, 0.08f, 0.44f);
+
+            Collider collider = model.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
+        }
+
+        private static void FitFallbackModel(Transform model, float targetSize)
+        {
+            Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+            {
+                return;
+            }
+
+            Bounds bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            float largest = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+            if (largest <= 0.0001f)
+            {
+                return;
+            }
+
+            float scale = targetSize / largest;
+            Vector3 localCenter = model.InverseTransformPoint(bounds.center);
+            model.localScale = Vector3.one * scale;
+            model.localPosition -= localCenter * scale;
         }
     }
 }

@@ -22,7 +22,7 @@ MonoBehaviour:
   SideConeAngle: 76
   TargetAimHeight: 0.5
   AttackSpawnHeight: 0.5
-  BaseDamage: 0.085
+  BaseDamage: 0.55
   Cooldown: 3.65
   UseDamageTypeOverride: 1
   DamageTypeOverride: 2

@@ -13,6 +13,7 @@ namespace TeamProject01.Gameplay
         private SegmentAttackProfile profile; // 공격 데이터
         private EnemyController target; // 목표
         private DamageData damage; // 피해값
+        private WeaponStatBonusData weaponBonus; // 발사 시점 무기 강화 누적값
         private Transform hitVfxSocket; // 명중 VFX 기준점
         private Vector3 direction; // 직선 방향
         private Vector3 startPosition; // 곡사 시작
@@ -108,6 +109,7 @@ namespace TeamProject01.Gameplay
             this.profile = profile; // 프로필
             this.target = target; // 목표
             this.damage = damage; // 피해
+            this.weaponBonus = weaponBonus; // 발사 시점 강화값
             useVerticalImpactDrop = ShouldSpawnAsVerticalImpactDrop(useImpactPoint, profile); // 수직 낙하 여부
             this.flameInfluenceAnchor = profile != null
                 && profile.MoveType == SegmentAttackMoveType.ExpandingFlameSphere
@@ -120,13 +122,13 @@ namespace TeamProject01.Gameplay
             ApplyProjectileScale(); // 프로필 크기 적용
             lifeTimer = profile != null ? Mathf.Max(0.1f, profile.ProjectileLifetime) : 0.1f; // 수명
             effectiveProjectileSpeed = profile != null
-                ? Mathf.Max(0.1f, profile.ProjectileSpeed + weaponBonus.ProjectileSpeedBonus) // 기본+강화 속도
+                ? weaponBonus.ResolveProjectileSpeed(profile.ProjectileSpeed) // 기본+강화 속도
                 : 0.1f;
             remainingPierces = profile != null
-                ? Mathf.Max(1, profile.PierceCount + weaponBonus.PierceCountBonus) // 기본+강화 관통
+                ? weaponBonus.ResolvePierceCount(profile.PierceCount) // 기본+강화 관통
                 : 1;
             effectiveExplosionRadius = profile != null
-                ? Mathf.Max(0.1f, profile.ExplosionRadius + weaponBonus.ExplosionRadiusBonus) // 기본+강화 폭발
+                ? weaponBonus.ResolveExplosionRadius(profile.ExplosionRadius) // 기본+강화 폭발
                 : 0.1f;
             startPosition = transform.position; // 시작
             float targetAimHeight = profile != null ? profile.TargetAimHeight : 0.45f; // 조준 높이
@@ -140,7 +142,7 @@ namespace TeamProject01.Gameplay
             landingRollTimer = 0f; // 구르기 진행 초기화
             hitEnemyIds.Clear(); // 중복 초기화
             explosionEnemyIds.Clear(); // 중복 초기화
-            remainingSawBounces = profile != null ? Mathf.Max(0, profile.MaxChainDepth) : 0; // 톱날 연쇄 초기화
+            remainingSawBounces = profile != null ? weaponBonus.ResolveMaxChainDepth(profile.MaxChainDepth) : 0; // 톱날 연쇄 초기화
             currentSawTargetId = target != null ? target.EnemyId : 0; // 최초 목표 저장
             sawSpinAngle = 0f; // 톱날 회전 초기화
             flameSphereTimer = 0f; // 화염 구체 시간 초기화

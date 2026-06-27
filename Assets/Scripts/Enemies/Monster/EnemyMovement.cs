@@ -290,6 +290,16 @@ namespace TeamProject01.Gameplay
             this.groundHeight = groundHeight; // 바닥 높이 오프셋을 저장한다.
         }
 
+        public void ApplyMoveSpeedMultiplier(float multiplier) // 웨이브 난이도 이동속도 배율 적용
+        {
+            if (multiplier <= 0f || Mathf.Approximately(multiplier, 1f))
+            {
+                return; // 적용 없음
+            }
+
+            moveSpeed = Mathf.Max(0.01f, moveSpeed * multiplier); // 기본 이동속도 배율
+        }
+
 
         private bool IsFrozenBySupport() // 전찬우추가-0621 - 지원형 동결 여부
         {

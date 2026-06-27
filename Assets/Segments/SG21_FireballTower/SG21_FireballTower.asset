@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG21_FireballTower
   DisplayName: "\uD654\uC5FC\uAD6C\uD0C0\uC6CC"
-  Description: "\uC9C1\uC120 \uD654\uC5FC\uAD6C\uB97C \uBC1C\uC0AC\uD574 \uD3ED\uBC1C
-    \uBC94\uC704 \uD53C\uD574\uB97C \uC8FC\uB294 \uB9C8\uBC95 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
+  Description: "<color=#2F6BFF><b>[마법]</b></color> <color=#6B5B3A>[폭발]</color> 직선 화염구를 발사해 폭발 피해를 줍니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1
