@@ -12,19 +12,17 @@ namespace TeamProject01.Gameplay
         private Transform summonTarget; // 장애물 소환 기준이 되는 대상 Transform
 
         [Min(0.1f)]
-        [SerializeField] private float detectionRange = 10.0f; // 대상이 이 범위 안에 들어왔을 때만 장애물을 소환한다.
+        [SerializeField] private float detectionRange = 15.0f; // 대상이 이 범위 안에 들어왔을 때만 장애물을 소환한다.
 
-        [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphStartAlpha = 0.07f; // 범위 표시가 처음 생성될 때의 투명도
+        private float telegraphStartAlpha = 0.07f; // 범위 표시가 처음 생성될 때의 투명도
 
-        [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphEndAlpha = 1.0f; // 장애물이 나오기 직전 범위 표시의 투명도
+        private float telegraphEndAlpha = 1.0f; // 장애물이 나오기 직전 범위 표시의 투명도
 
         [Min(0.01f)]
-        [SerializeField] private float summonInterval = 5.0f; // 장애물을 몇 초마다 소환할지
+        [SerializeField] private float summonInterval = 5.0f; // 장애물을 실제로 생성한 뒤 다음 소환까지 기다릴 시간
 
         [Min(0.01f)]
-        [SerializeField] private float summonDelay = 2.0f; // 범위 표시 후 몇 초 뒤 장애물을 생성할지
+        [SerializeField] private float summonDelay = 5.0f; // 범위 표시 후 몇 초 뒤 장애물을 생성할지
 
         [Min(0.1f)]
         [SerializeField] private float forwardSummonDistance = 5.0f; // 소환 기준 대상 앞쪽으로 얼마나 떨어진 곳에 장애물을 소환할지
@@ -70,7 +68,7 @@ namespace TeamProject01.Gameplay
 
         private void OnEnable()
         {
-            summonTimer = summonInterval; // 처음 소환 대기 시간을 설정한다.
+            summonTimer = 0.0f; // 생성되거나 활성화되면 바로 첫 장애물 소환을 판단할 수 있게 한다.
             isSummoning = false; // 장애물 소환 대기 상태를 초기화한다.
             summonCoroutine = null; // 현재 실행 중인 Coroutine 참조를 초기화한다.
             currentTelegraph = null; // 현재 생성된 범위 표시 참조를 초기화한다.
@@ -101,13 +99,14 @@ namespace TeamProject01.Gameplay
             if (summonTarget == null) // 소환 기준 대상이 없다면
             {
                 CancelSummon(true); // 진행 중인 범위 표시와 장애물 소환을 취소한다.
+                summonTimer = 0.0f; // 소환하지 못했으므로 쿨타임을 시작하지 않고 바로 재시도 가능한 상태로 둔다.
                 return; // 기준이 없으므로 종료한다.
             }
 
             if (!IsTargetInDetectionRange()) // 소환 기준 대상이 감지 범위 안에 없다면
             {
                 CancelSummon(true); // 진행 중인 범위 표시와 장애물 소환을 취소한다.
-                summonTimer = summonInterval; // 대상이 범위 밖에 있을 때는 소환 타이머를 초기화한다.
+                summonTimer = 0.0f; // 범위 밖에서는 쿨타임을 돌리지 않고 초기 상태로 유지한다.
                 return; // 장애물을 소환하지 않는다.
             }
 
@@ -120,7 +119,7 @@ namespace TeamProject01.Gameplay
 
             if (isSummoning) // 이미 범위 표시 후 장애물 생성 대기 중이라면
             {
-                return; // 중복 소환을 막는다.
+                return; // 소환 준비 중에는 쿨타임을 줄이지 않고 중복 소환도 막는다.
             }
 
             summonTimer -= Time.deltaTime; // 지난 시간만큼 장애물 소환 대기 시간을 줄인다.
@@ -131,7 +130,6 @@ namespace TeamProject01.Gameplay
             }
 
             summonCoroutine = StartCoroutine(SummonObstacleRoutine()); // 범위 표시 후 장애물을 생성하는 Coroutine을 시작한다.
-            summonTimer = summonInterval; // 다음 장애물 소환 대기 시간을 다시 설정한다.
         }
 
         private IEnumerator SummonObstacleRoutine() // 범위 표시 후 장애물을 생성하는 Coroutine
@@ -156,12 +154,6 @@ namespace TeamProject01.Gameplay
 
             while (timer < summonDelay) // 범위 표시 시간이 끝나기 전까지 반복한다.
             {
-                if (summonTarget == null || !IsTargetInDetectionRange()) // 대상이 없거나 감지 범위 밖으로 나갔다면
-                {
-                    CancelSummon(false); // 진행 중인 범위 표시와 장애물 소환을 취소한다.
-                    yield break; // Coroutine을 즉시 종료한다.
-                }
-
                 timer += Time.deltaTime; // 지난 시간만큼 범위 표시 시간을 증가시킨다.
 
                 float progress = Mathf.Clamp01(timer / summonDelay); // 현재 진행도를 0에서 1 사이 값으로 계산한다.
@@ -170,12 +162,6 @@ namespace TeamProject01.Gameplay
                 SetTelegraphAlpha(telegraph, alpha); // 계산된 투명도를 범위 표시에 적용한다.
 
                 yield return null; // 다음 프레임까지 기다린다.
-            }
-
-            if (summonTarget == null || !IsTargetInDetectionRange()) // 장애물이 나오기 직전에 대상이 범위 밖으로 나갔다면
-            {
-                CancelSummon(false); // 진행 중인 범위 표시와 장애물 소환을 취소한다.
-                yield break; // 장애물을 생성하지 않고 종료한다.
             }
 
             if (telegraph != null) // 범위 표시가 아직 남아 있다면
@@ -189,6 +175,8 @@ namespace TeamProject01.Gameplay
             obstacle.Configure(obstacleRadius, obstacleLifeTime); // 장애물 반경과 유지 시간을 장애물에게 전달한다.
 
             spawnedObstacles.Add(obstacle); // 생성된 장애물을 현재 장애물 목록에 등록한다.
+
+            summonTimer = summonInterval; // 장애물이 실제로 생성된 뒤에 다음 소환 쿨타임을 시작한다.
 
             summonCoroutine = null; // 현재 Coroutine 참조를 비운다.
             isSummoning = false; // 장애물 소환 과정이 끝났다고 표시한다.

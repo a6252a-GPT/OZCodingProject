@@ -15,11 +15,11 @@ namespace TeamProject01.Gameplay
 
         [SerializeField] private GameObject areaTelegraphPrefab; // 착탄 예고 표시 Prefab, EnemyAreaTelegraph 사용
 
-        [SerializeField] private Transform projectileRoot; // 생성된 투사체를 정리할 부모 Transform
+        private Transform projectileRoot; // 생성된 투사체를 정리할 부모 Transform
 
-        [SerializeField] private Transform slowZoneRoot; // 생성된 장판을 정리할 부모 Transform
+        private Transform slowZoneRoot; // 생성된 장판을 정리할 부모 Transform
 
-        [SerializeField] private Transform telegraphRoot; // 생성된 범위 표시를 정리할 부모 Transform
+        private Transform telegraphRoot; // 생성된 범위 표시를 정리할 부모 Transform
 
         [Min(0.1f)]
         [SerializeField] private float throwRange = 10.0f; // 투척 사거리
