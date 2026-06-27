@@ -186,7 +186,7 @@ namespace TeamProject01.Gameplay
             return Mathf.Max(0, Mathf.RoundToInt(baseSpawnCount * scale));
         }
 
-        public void BeginStage(int stage, float stageDurationSeconds, int spawnCount, EliteMixController.EliteStagePlan elitePlan = default)
+        public void BeginStage(int stage, float stageDurationSeconds, int spawnCount, EliteMixController.EliteStagePlan elitePlan = default, WaveController waveTracker = null)
         {
             ResolveEnemySpawner();
             StopCurrentRoutine();
@@ -209,6 +209,7 @@ namespace TeamProject01.Gameplay
             }
 
             AddEliteEntries(totalEntries, elitePlan);
+            waveTracker?.BeginCurrentStageEnemyTracking(stage, GetTotalCount(totalEntries));
 
             if (totalEntries.Count == 0)
             {
@@ -217,14 +218,15 @@ namespace TeamProject01.Gameplay
 
             int gateCount = GetGateCountForStage(stage);
             EnemySpawner.ExternalSpawnDirectionSet directionSet = enemySpawner.PickExternalSpawnDirections(gateCount);
-            spawnRoutine = StartCoroutine(SpawnStageRoutine(stage, stageDurationSeconds, totalEntries, directionSet));
+            spawnRoutine = StartCoroutine(SpawnStageRoutine(stage, stageDurationSeconds, totalEntries, directionSet, waveTracker));
         }
 
-        private IEnumerator SpawnStageRoutine(int stage, float stageDurationSeconds, List<CountEntry> totalEntries, EnemySpawner.ExternalSpawnDirectionSet directionSet)
+        private IEnumerator SpawnStageRoutine(int stage, float stageDurationSeconds, List<CountEntry> totalEntries, EnemySpawner.ExternalSpawnDirectionSet directionSet, WaveController waveTracker)
         {
             int safeBatchCount = Mathf.Max(1, spawnBatchCount);
             float spawnWindowSeconds = Mathf.Max(0.1f, stageDurationSeconds * (spawnWindowPercent / 100.0f));
             WaveStageDifficulty difficulty = ResolveDifficultyForStage(stage);
+            EnemySpawner.ExternalSpawnCongestionOptions congestionOptions = BuildCongestionOptions();
             List<EnemyController> spawnedBatchMonsters = new List<EnemyController>();
 
             for (int batchIndex = 0; batchIndex < safeBatchCount; batchIndex++)
@@ -241,9 +243,10 @@ namespace TeamProject01.Gameplay
                 {
                     spawnedBatchMonsters.Clear();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, directionSet, frontRowCount, spawnedBatchMonsters))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spawnedBatchMonsters))
                     {
                         ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
+                        waveTracker?.RegisterCurrentStageEnemies(stage, spawnedBatchMonsters);
                     }
                 }
 
@@ -253,14 +256,16 @@ namespace TeamProject01.Gameplay
                 {
                     spawnedBatchMonsters.Clear();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, directionSet, frontRowCount, spawnedBatchMonsters))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spawnedBatchMonsters))
                     {
                         ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
                         MarkSpawnedElites(spawnedBatchMonsters, GetEliteCombinationType(totalEntries));
+                        waveTracker?.RegisterCurrentStageEnemies(stage, spawnedBatchMonsters);
                     }
                 }
             }
 
+            waveTracker?.CompleteCurrentStageEnemySpawning(stage);
             spawnRoutine = null;
         }
 
@@ -477,6 +482,23 @@ namespace TeamProject01.Gameplay
                     results.Add(new CountEntry(entry.Prefab, entry.Count, elitePlan.CombinationType));
                 }
             }
+        }
+
+        private static int GetTotalCount(List<CountEntry> entries)
+        {
+            int totalCount = 0;
+
+            if (entries == null)
+            {
+                return totalCount;
+            }
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                totalCount += Mathf.Max(0, entries[i].Count);
+            }
+
+            return totalCount;
         }
 
         private static EnemySpawner.ExternalSpawnEntry[] BuildBatchEntries(List<CountEntry> totalEntries, int batchIndex, int batchCount, bool eliteOnly)

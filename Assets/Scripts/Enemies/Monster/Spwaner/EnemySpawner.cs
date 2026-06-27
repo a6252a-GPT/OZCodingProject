@@ -213,7 +213,13 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float spawnGroundHeight = 0.72f; // 스폰 위치를 바닥 위로 올릴 높이
 
         [Range(1, 300)]
-        [SerializeField] private int maxActiveMonsters = 120; // 씬에 유지할 최대 몬스터 수
+        [SerializeField, HideInInspector] private int maxActiveMonsters = 120; // 기존 Stage Rules가 사용할 최대 활성 몬스터 수
+
+        [Header("Wave Spawn Limit")]
+        [SerializeField] private bool useWaveMaxActiveMonsterLimit = true; // WaveSystem 외부 스폰에 전용 최대 수 제한을 적용할지 정한다.
+
+        [Min(1)]
+        [SerializeField] private int waveMaxActiveMonsters = 3000; // WaveSystem 외부 스폰에서 허용할 최대 활성 몬스터 수
 
         [Min(0.0f)]
         [SerializeField] private float firstSpawnDelay = 1.0f; // 각 규칙이 켜진 뒤 첫 스폰까지 대기 시간
@@ -321,6 +327,16 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        private int GetExternalWaveSpawnCapacity() // WaveSystem 외부 스폰에서 사용할 남은 생성 가능 수
+        {
+            if (!useWaveMaxActiveMonsterLimit)
+            {
+                return int.MaxValue;
+            }
+
+            return Mathf.Max(0, waveMaxActiveMonsters - EnemyController.ActiveCount);
+        }
+
         public bool TrySpawnExternalEntries(ExternalSpawnEntry[] entries, int spawnGroupCount, int frontRowCount) // 외부 WaveController가 몬스터 조합 생성을 요청하는 입구
         {
             return TrySpawnExternalEntries(entries, spawnGroupCount, frontRowCount, spawnGroupCount); // 기존 호출은 요청 군단 수만큼 방향을 사용한다.
@@ -349,7 +365,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+            int capacity = GetExternalWaveSpawnCapacity(); // WaveSystem 외부 스폰 전용 생성 가능 수
 
             if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
             {
@@ -443,7 +459,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+            int capacity = GetExternalWaveSpawnCapacity(); // WaveSystem 외부 스폰 전용 생성 가능 수
 
             if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
             {
@@ -477,7 +493,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+            int capacity = GetExternalWaveSpawnCapacity(); // WaveSystem 외부 스폰 전용 생성 가능 수
 
             if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
             {
@@ -496,7 +512,7 @@ namespace TeamProject01.Gameplay
                 distributedEntries[i] = new List<ExternalSpawnEntry>();
             }
 
-            int distributedIndex = 0; // 다음 몬스터를 넣을 방향 순서
+            List<ExternalSpawnEntry> shuffledEntries = new List<ExternalSpawnEntry>(); // 몬스터 종류가 줄 단위로 뭉치지 않게 한 마리 단위 목록으로 모은다.
 
             for (int entryIndex = 0; entryIndex < entries.Length; entryIndex++) // 요청된 몬스터 조합을 순회한다.
             {
@@ -509,15 +525,21 @@ namespace TeamProject01.Gameplay
 
                 for (int countIndex = 0; countIndex < entry.Count; countIndex++) // 몬스터를 한 마리 단위로 나눠 담는다.
                 {
-                    int groupIndex = distributedIndex % distributedEntries.Length; // 선택된 방향들에 번갈아 분배한다.
-                    distributedEntries[groupIndex].Add(new ExternalSpawnEntry(entry.Prefab, 1)); // 해당 방향에 한 마리 추가한다.
-                    distributedIndex++; // 다음 방향으로 이동한다.
+                    shuffledEntries.Add(new ExternalSpawnEntry(entry.Prefab, 1)); // 나중에 섞을 수 있도록 임시 목록에 모은다.
                 }
             }
 
-            if (distributedIndex <= 0) // 실제로 나눠 담은 몬스터가 없다면
+            if (shuffledEntries.Count <= 0) // 실제로 나눠 담을 몬스터가 없다면
             {
                 return false;
+            }
+
+            ShuffleExternalSpawnEntries(shuffledEntries); // 기본몹/스켈레톤/원거리 몬스터가 줄 단위로 뭉치지 않도록 섞는다.
+
+            for (int shuffledIndex = 0; shuffledIndex < shuffledEntries.Count; shuffledIndex++) // 섞인 몬스터 목록을 순회한다.
+            {
+                int groupIndex = shuffledIndex % distributedEntries.Length; // 선택된 방향들에 번갈아 분배한다.
+                distributedEntries[groupIndex].Add(shuffledEntries[shuffledIndex]); // 해당 방향에 한 마리 추가한다.
             }
 
             int safeFrontRowCount = Mathf.Max(1, frontRowCount); // 한 줄에 배치할 몬스터 수
@@ -549,6 +571,22 @@ namespace TeamProject01.Gameplay
             }
 
             return spawnedAny;
+        }
+
+        private static void ShuffleExternalSpawnEntries(List<ExternalSpawnEntry> entries) // 외부 웨이브 몬스터 배치 순서를 섞는다.
+        {
+            if (entries == null || entries.Count <= 1) // 섞을 필요가 없다면
+            {
+                return; // 그대로 둔다.
+            }
+
+            for (int i = entries.Count - 1; i > 0; i--) // 뒤에서부터 하나씩 무작위 위치와 교환한다.
+            {
+                int swapIndex = Random.Range(0, i + 1); // 0부터 현재 위치까지 중 하나를 고른다.
+                ExternalSpawnEntry temp = entries[i]; // 현재 값을 임시 저장한다.
+                entries[i] = entries[swapIndex]; // 무작위 위치 값을 현재 위치로 옮긴다.
+                entries[swapIndex] = temp; // 임시 저장한 값을 무작위 위치로 옮긴다.
+            }
         }
 
         private void SpawnStageGroups(StageSpawnRule rule) // 현재 Stage Rule의 군단 스폰
@@ -655,7 +693,8 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            Vector3 groupCenter = gate.position + gate.forward * groupForwardOffset; // 게이트 앞쪽으로 민 군단 앞줄 중심 위치
+            Vector3 outwardDirection = GetSpawnOutwardDirection(gate); // 넥서스에서 게이트로 향하는 바깥 방향
+            Vector3 groupCenter = gate.position + outwardDirection * groupForwardOffset; // 바깥 방향으로 민 군단 앞줄 중심 위치
             groupCenter = ApplyCongestionPush(groupCenter, congestionOptions); // 스폰 위치가 이미 붐비면 넥서스 반대 방향으로 조금 더 밀어낸다.
             groupCenter = GroundService.ProjectToGround(groupCenter, spawnGroundHeight); // 바닥 높이에 맞춘다.
 
@@ -678,7 +717,7 @@ namespace TeamProject01.Gameplay
                         return spawnedAny; // 생성 중지
                     }
 
-                    Vector3 formationOffset = GetFormationOffset(formationIndex, totalMonsterCount, frontRowCount, gate); // 오와열 위치 오프셋을 계산한다.
+                    Vector3 formationOffset = GetExternalWaveFormationOffset(formationIndex, totalMonsterCount, frontRowCount, outwardDirection); // 외부 웨이브용 오와열 위치 오프셋을 계산한다.
                     Vector3 spawnPosition = groupCenter + formationOffset; // 최종 생성 위치를 계산한다.
                     spawnPosition = GroundService.ProjectToGround(spawnPosition, spawnGroundHeight); // 바닥 높이에 맞춘다.
 
@@ -792,6 +831,70 @@ namespace TeamProject01.Gameplay
 
             congestionCheckResults.Clear(); // 다음 검사에 남지 않게 비운다.
             return adjustedCenter;
+        }
+
+        private Vector3 GetSpawnOutwardDirection(Transform gate) // 넥서스에서 게이트로 향하는 외부 웨이브 스폰 방향 계산
+        {
+            if (gate == null)
+            {
+                return Vector3.forward;
+            }
+
+            Vector3 outwardDirection = nexus != null ? gate.position - nexus.position : gate.forward;
+            outwardDirection.y = 0.0f;
+
+            if (outwardDirection.sqrMagnitude <= 0.0001f)
+            {
+                outwardDirection = gate.forward;
+                outwardDirection.y = 0.0f;
+            }
+
+            if (outwardDirection.sqrMagnitude <= 0.0001f)
+            {
+                return Vector3.forward;
+            }
+
+            outwardDirection.Normalize();
+            return outwardDirection;
+        }
+
+        private Vector3 GetExternalWaveFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Vector3 outwardDirection) // 외부 웨이브 전용 오와열 배치 오프셋 계산
+        {
+            int rowIndex = unitIndex / frontRowCount;
+            int columnIndex = unitIndex % frontRowCount;
+
+            int rowStartIndex = rowIndex * frontRowCount;
+            int remainingCount = totalMonsterCount - rowStartIndex;
+            int rowCount = Mathf.Min(frontRowCount, Mathf.Max(0, remainingCount));
+
+            if (rowCount <= 0)
+            {
+                rowCount = frontRowCount;
+            }
+
+            float centeredColumn = columnIndex - (rowCount - 1) * 0.5f;
+            float sideOffset = centeredColumn * columnSpacing;
+            float backOffset = rowIndex * rowSpacing;
+
+            Vector3 forward = outwardDirection;
+            forward.y = 0.0f;
+
+            if (forward.sqrMagnitude <= 0.0001f)
+            {
+                forward = Vector3.forward;
+            }
+
+            forward.Normalize();
+
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+
+            if (right.sqrMagnitude <= 0.0001f)
+            {
+                right = Vector3.right;
+            }
+
+            right.Normalize();
+            return right * sideOffset + forward * backOffset;
         }
 
         private Vector3 GetFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Transform gate) // 오와열 배치 오프셋 계산

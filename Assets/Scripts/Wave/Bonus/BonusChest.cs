@@ -165,6 +165,7 @@ namespace TeamProject01.Gameplay
             RemoveOtherChoiceChests();
 
             opened = true;
+            rewardReadyTime = Time.time + Mathf.Max(0.0f, rewardDropDelay);
 
             if (animator == null)
             {

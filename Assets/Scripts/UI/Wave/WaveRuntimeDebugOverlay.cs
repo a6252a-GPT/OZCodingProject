@@ -19,7 +19,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private string stateLabel = "상태"; // 상태 줄 제목입니다.
         [SerializeField] private string nextStageTimeLabel = "다음 Stage까지"; // 일반 Stage 타이머 줄 제목입니다.
         [SerializeField] private string bossWaitText = "보스 처치 대기"; // 보스 Stage에서 타이머 대신 표시할 문구입니다.
-        [SerializeField] private string activeMonsterLabel = "현재 몬스터"; // 현재 몬스터 수 줄 제목입니다.
+        [SerializeField] private string activeMonsterLabel = "이번 웨이브 남은 적"; // 이번 Stage 기준 남은 몬스터 수 줄 제목입니다.
+        [SerializeField] private string fieldMonsterLabel = "현재 필드 적"; // 씬에 실제로 살아있는 전체 몬스터 수 줄 제목입니다.
         [SerializeField] private string normalStateText = "일반"; // 일반 상태 표시 문구입니다.
         [SerializeField] private string bossStateText = "보스"; // 보스 상태 표시 문구입니다.
         [SerializeField] private string specialStateText = "특수"; // 특수 상태 표시 문구입니다.
@@ -110,14 +111,17 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            int activeMonsters = EnemyController.ActiveCount;
+            int remainingStageEnemies = waveController.CurrentStageRemainingEnemyCount;
+            int targetStageEnemies = waveController.CurrentStageTargetEnemyCount;
+            int fieldMonsters = EnemyController.ActiveCount;
             bool isBossStage = waveController.CurrentState == WaveController.WaveRunState.Boss;
 
             SetText(headerText, string.Format(isBossStage ? bossStageHeaderFormat : normalStageHeaderFormat, waveController.CurrentStage));
             SetText(bodyText,
                 $"{stateLabel}: {GetStateText(waveController.CurrentState)}\n" +
                 $"{GetProgressLine()}\n" +
-                $"{activeMonsterLabel}: {activeMonsters}");
+                $"{activeMonsterLabel}: {FormatStageEnemyCount(remainingStageEnemies, targetStageEnemies)}\n" +
+                $"{fieldMonsterLabel}: {fieldMonsters}");
 
             bool showPopup = forcePopup || popupTimer > 0.0f;
 
@@ -144,6 +148,13 @@ namespace TeamProject01.Gameplay
             }
 
             return $"{nextStageTimeLabel}: {FormatTime(waveController.RemainingStageSeconds)}";
+        }
+
+        private static string FormatStageEnemyCount(int remainingCount, int targetCount)
+        {
+            int safeTargetCount = Mathf.Max(0, targetCount);
+            int safeRemainingCount = Mathf.Clamp(remainingCount, 0, safeTargetCount);
+            return $"{safeRemainingCount}/{safeTargetCount}";
         }
 
         private string GetStateText(WaveController.WaveRunState state)
