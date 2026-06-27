@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace TeamProject01.Gameplay
 {
@@ -16,8 +17,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private RectTransform statusRoot; // 패널 루트
         [SerializeField] private Image shieldFillImage; // 실드 Fill
         [SerializeField] private Image healthFillImage; // 체력 Fill
-        [SerializeField] private Text shieldText; // 실드 수치
-        [SerializeField] private Text healthText; // 체력 수치
+        [SerializeField] private TMP_Text shieldText; // 실드 수치
+        [SerializeField] private TMP_Text healthText; // 체력 수치
 
         [Header("Visual")]
         [SerializeField] private bool autoResolveChildren = true; // 하위 Shield/Health 자동 연결
@@ -111,8 +112,8 @@ namespace TeamProject01.Gameplay
             {
                 shieldFillImage = shieldFillImage != null ? shieldFillImage : FindStatusChild<Image>(ShieldBarName, FillName);
                 healthFillImage = healthFillImage != null ? healthFillImage : FindStatusChild<Image>(HealthBarName, FillName);
-                shieldText = shieldText != null ? shieldText : FindStatusChild<Text>(ShieldBarName, TextName);
-                healthText = healthText != null ? healthText : FindStatusChild<Text>(HealthBarName, TextName);
+                shieldText = shieldText != null ? shieldText : FindStatusChild<TMP_Text>(ShieldBarName, TextName);
+                healthText = healthText != null ? healthText : FindStatusChild<TMP_Text>(HealthBarName, TextName);
             }
 
             if (nexus == null)
@@ -123,8 +124,24 @@ namespace TeamProject01.Gameplay
 
         private T FindStatusChild<T>(string barName, string childName) where T : Component
         {
+            if (statusRoot == null)
+            {
+                return null;
+            }
+
             Transform child = statusRoot.Find($"{barName}/{childName}");
-            return child != null ? child.GetComponent<T>() : null;
+            if (child != null && child.TryGetComponent(out T directComponent))
+            {
+                return directComponent;
+            }
+
+            Transform bar = statusRoot.Find(barName);
+            if (bar == null)
+            {
+                return null;
+            }
+
+            return bar.GetComponentInChildren<T>(true);
         }
 
         private void BindNexusEvents()
@@ -205,20 +222,15 @@ namespace TeamProject01.Gameplay
             image.raycastTarget = false;
         }
 
-        private static void ConfigureText(Text text)
+        private static void ConfigureText(TMP_Text text)
         {
             if (text == null)
             {
                 return;
             }
 
-            if (text.font == null)
-            {
-                text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            }
-
-            text.fontStyle = FontStyle.Bold;
-            text.alignment = TextAnchor.MiddleCenter;
+            text.fontStyle = FontStyles.Bold;
+            text.alignment = TextAlignmentOptions.Center;
             text.color = new Color(0.92f, 1f, 1f, 1f);
             text.raycastTarget = false;
         }
@@ -252,7 +264,7 @@ namespace TeamProject01.Gameplay
             return image != null && image.sprite == null;
         }
 
-        private static void SetText(Text text, string value)
+        private static void SetText(TMP_Text text, string value)
         {
             if (text != null)
             {

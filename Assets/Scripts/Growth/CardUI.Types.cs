@@ -80,6 +80,21 @@ public partial class CardUI
         SegmentAction = 2 // 세그먼트 추가/레벨업
     }
 
+    private enum CardPanelMode
+    {
+        LevelUp = 0, // 경험치 레벨업 카드
+        RewardChoice = 1, // 상자/보상 선택 카드
+        SegmentTicketChoice = 2 // 세그먼트 선택권으로 열린 카드
+    }
+
+    private enum RewardChoiceKind
+    {
+        None = 0,
+        Gold = 1,
+        Experience = 2,
+        SegmentChoiceTicket = 3
+    }
+
     // 세그먼트 ADD 풀에서 후보/액션 카드 구분
     private enum SegmentCardRole
     {
@@ -141,6 +156,10 @@ public partial class CardUI
         // 건준수정 - 0621 ======
         public StatUpgrade.StatCardTier WeaponEnhancementTier = StatUpgrade.StatCardTier.Normal; // 레어/유니크 등급별 수치
         // 건준수정 - 0621 ======
+        public RewardChoiceKind RewardChoice = RewardChoiceKind.None; // 보상 선택 카드 종류
+        public StatUpgrade.StatCardTier RewardTier = StatUpgrade.StatCardTier.Normal; // 보상 카드 등급
+        public int RewardAmount; // 골드/경험치 지급량
+        public int RewardTicketCount; // 세그먼트 선택권 횟수
         public GameObject CardTooltipRoot; // 프리팹에 배치된 카드 툴팁 루트
         public CanvasGroup CardTooltipCanvasGroup; // 툴팁 페이드
         public TMP_Text CardTooltipText; // 카드 툴팁 텍스트

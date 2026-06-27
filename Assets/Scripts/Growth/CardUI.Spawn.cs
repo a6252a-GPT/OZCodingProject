@@ -43,7 +43,16 @@ public partial class CardUI
             return;
         }
 
-        currentSpawnPhase = ResolveLevelUpCardPhase(); // 스탯 → 무기강화 → 세그먼트 3종 순환
+        if (activePanelMode == CardPanelMode.RewardChoice)
+        {
+            SpawnRewardChoiceCards(); // 골드/경험치/세그먼트 선택권 3장 고정
+            RefreshRerollUi();
+            return;
+        }
+
+        currentSpawnPhase = activePanelMode == CardPanelMode.SegmentTicketChoice
+            ? LevelUpCardPhase.SegmentAction // 선택권은 기존 세그먼트 선택 흐름만 사용
+            : ResolveLevelUpCardPhase(); // 스탯 → 무기강화 → 세그먼트 3종 순환
         rerollAllowedForCurrentChoices = true; // 1차 랜덤 선택지만 리롤 가능
         SpawnCardsForCurrentPhase();
         RefreshRerollUi();
@@ -340,6 +349,7 @@ public partial class CardUI
             if (i < picked.Count)
             {
                 ConfigureSegmentCandidateEntry(entry, picked[i]); // 실제 후보 카드
+                ApplySegmentChoiceTicketOverrides(entry); // 선택권 모드면 레벨/경험치 소비 제거
             }
             else
             {
@@ -1099,7 +1109,7 @@ public partial class CardUI
         entry.SegmentRole = role; // 액션 역할
         entry.SegmentCatalogEntry = catalogEntry; // 대상 후보 저장
         entry.SegmentId = segId; // 대상 ID
-        entry.LevelDelta = Mathf.Max(1, levelDelta); // 소비 레벨
+        entry.LevelDelta = Mathf.Max(0, levelDelta); // 선택권 모드는 0으로 소비 없음
         entry.CanSelect = selectable; // 선택 가능 여부
         entry.SegmentAddCard?.ConfigureAction(segId, title, description, selectable); // 카드 문구 세팅
 

@@ -11,6 +11,8 @@ namespace TeamProject01.Gameplay
         private static readonly Color GoldOrbEmissionColor = new Color(0.75f, 0.38f, 0.04f, 1f);
         private static readonly Color ExperienceOrbColor = new Color(0.18f, 1f, 0.36f, 1f);
         private static readonly Color ExperienceOrbEmissionColor = new Color(0.04f, 0.65f, 0.2f, 1f);
+        private static readonly Color SegmentTicketOrbColor = new Color(0.44f, 0.82f, 1f, 1f);
+        private static readonly Color SegmentTicketOrbEmissionColor = new Color(0.12f, 0.38f, 0.95f, 1f);
 
         public RewardPickupKind Kind = RewardPickupKind.Experience; // 보상 종류
         [Min(0)] public int Amount = 1; // 보상 수치
@@ -224,6 +226,18 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
+            if (Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                if (!TryOpenSegmentChoiceTicket())
+                {
+                    return;
+                }
+
+                DamageFloatingSpawner.SpawnRewardGain(Kind, Amount, ResolveRewardFloatingFallbackPosition());
+                CompleteCollect();
+                return;
+            }
+
             RewardData reward = Kind == RewardPickupKind.Experience
                 ? RewardData.Create(Amount, 0, enemyId, transform.position)
                 : RewardData.Create(0, Amount, enemyId, transform.position);
@@ -234,6 +248,23 @@ namespace TeamProject01.Gameplay
             }
 
             DamageFloatingSpawner.SpawnRewardGain(Kind, Amount, ResolveRewardFloatingFallbackPosition());
+            CompleteCollect();
+        }
+
+        private bool TryOpenSegmentChoiceTicket()
+        {
+            CardUI cardUi = FindFirstObjectByType<CardUI>();
+            if (cardUi == null)
+            {
+                Debug.LogWarning("[WorldRewardPickup] CardUI가 없어 세그먼트 선택권을 열 수 없습니다.", this);
+                return false;
+            }
+
+            return cardUi.OpenSegmentChoiceTicket(Mathf.Max(1, Amount));
+        }
+
+        private void CompleteCollect()
+        {
             collected = true;
             SetVfxRootActive(IdleVfxRoot, false);
             SetVfxRootActive(CollectVfxRoot, true);
@@ -324,6 +355,12 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
+            if (Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                ApplySegmentTicketVisualColor();
+                return;
+            }
+
             if (Kind != RewardPickupKind.Gold || ModelRoot == null)
             {
                 if (Kind == RewardPickupKind.Gold)
@@ -356,6 +393,11 @@ namespace TeamProject01.Gameplay
         private void ApplyGoldVisualColor()
         {
             ApplyVisualColor(GoldOrbColor, GoldOrbEmissionColor);
+        }
+
+        private void ApplySegmentTicketVisualColor()
+        {
+            ApplyVisualColor(SegmentTicketOrbColor, SegmentTicketOrbEmissionColor);
         }
 
         private void ApplyVisualColor(Color baseColor, Color emissionColor)

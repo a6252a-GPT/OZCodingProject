@@ -79,6 +79,12 @@ public partial class CardUI : MonoBehaviour
     [SerializeField] private RectTransform[] cardSlots = System.Array.Empty<RectTransform>(); // 카드 생성 위치
     [Min(1)][SerializeField] private int cardsToSpawn = 3; // 한 번에 생성할 카드 수
 
+    [Header("보상 선택 카드")]
+    [Min(0)][SerializeField] private int rewardGoldBaseAmount = 100; // 일반 골드 보상
+    [Min(0)][SerializeField] private int rewardExperienceBaseAmount = 200; // 일반 경험치 보상
+    [Min(1)][SerializeField] private int rewardSegmentTicketBaseCount = 1; // 일반 세그먼트 선택권 수
+    [Min(0)][SerializeField] private int segmentTicketBonusRerollCount = 5; // 선택권 진입 리롤 보너스
+
     [Header("카드 연출")]
     [SerializeField] private float startYOffset = -80.0f; // 등장 시작 Y 오프셋
     [SerializeField] private float hoverScale = 1.09f; // 마우스 오버 배율
@@ -156,6 +162,11 @@ public partial class CardUI : MonoBehaviour
     private bool isProcessingSelection; // 선택 처리 중
     private bool rerollAllowedForCurrentChoices; // 현재 카드 묶음 리롤 가능 여부
     private int remainingRerollCount; // 이번 카드 선택창 남은 리롤
+    private CardPanelMode activePanelMode = CardPanelMode.LevelUp; // 현재 카드 패널 모드
+    private int segmentTicketChoicesRemaining; // 선택권으로 남은 세그먼트 선택 횟수
+    private int pendingRewardExperience; // 보상 선택 후 닫힘 완료 시 지급
+    private int pendingRewardGold; // 보상 선택 후 닫힘 완료 시 지급
+    private int pendingRewardSegmentTicketCount; // 보상 선택 후 이어서 열 선택권 수
     private static bool loggedWeaponEnhancementInitial; // 무기 강화 초기 디버그 1회
     private LevelUpCardPhase currentSpawnPhase = LevelUpCardPhase.StatUpgrade; // 이번 레벨업 카드 종류
     private string selectedSegmentWeaponStatId; // 카드 선택으로 갱신되는 디버그 표시 대상
@@ -173,8 +184,8 @@ public partial class CardUI : MonoBehaviour
         SetupRerollUi(); // 마법책 리롤 버튼 연결
 
         // TMP 줄바꿈 재귀 오류 방지 — 긴 텍스트가 들어가는 TMP에 word wrap 비활성
-        if (segmentListText       != null) segmentListText.enableWordWrapping       = false;
-        if (segmentWeaponStatText != null) segmentWeaponStatText.enableWordWrapping = false;
+        if (segmentListText       != null) segmentListText.textWrappingMode         = TextWrappingModes.NoWrap;
+        if (segmentWeaponStatText != null) segmentWeaponStatText.textWrappingMode   = TextWrappingModes.NoWrap;
         if (rerollCountText       != null) rerollCountText.textWrappingMode         = TextWrappingModes.NoWrap;
 
         // 안건준 추가 - 0624 : CardSoundManager 자동 연결 (없으면 자동 생성)
@@ -243,6 +254,7 @@ public partial class CardUI : MonoBehaviour
 
         if (!panelOpen && spawnedForCurrentOpen)
         {
+            CardPanelMode closingMode = activePanelMode; // 수동 닫힘 처리용
             ClearSpawnedCards(); // 패널 닫힘 → 카드 정리
             spawnedForCurrentOpen = false;
             isProcessingSelection = false;
@@ -252,15 +264,25 @@ public partial class CardUI : MonoBehaviour
             RefreshRerollUi(); // 버튼 숨김/비활성 갱신
             HideSegmentListUi(); // 안건준 추가 - 0622 — 팝업·리스트 모두 숨김
             StopAutoSelect(); // 안건준 추가 - 0622 : 패널 닫힐 때 자동선택 코루틴 정리
-            if (CoreStatProvider.Active != null && CoreStatProvider.Active.IsLevelUpChoicePending)
+            if (closingMode == CardPanelMode.LevelUp
+                && CoreStatProvider.Active != null
+                && CoreStatProvider.Active.IsLevelUpChoicePending)
             {
                 CoreStatProvider.Active.CancelLevelUpChoice(); // 선택 없이 닫힘 → 경험치 유지
+            }
+
+            if (closingMode != CardPanelMode.LevelUp)
+            {
+                ResetSpecialCardMode(); // 보상/선택권 수동 닫힘 정리
             }
         }
     }
 
     public void PlayLevelUpTween()
     {
+        activePanelMode = CardPanelMode.LevelUp; // 일반 경험치 레벨업 모드
+        ResolveLevelUpUi()?.SetUseRewardTitle(false);
+
         // 안건준 추가 - 0622 : 자동궤도 모드이고 자동선택이 켜져 있으면 일시정지 없이 열기
         if (autoSelectInAutoOrbit && IsAutoOrbitActive())
         {
@@ -270,6 +292,50 @@ public partial class CardUI : MonoBehaviour
         {
             ResolveLevelUpUi()?.Open();
         }
+    }
+
+    public bool OpenRewardChoice() // 상자 등 외부 보상 선택 진입점
+    {
+        return OpenSpecialCardPanel(CardPanelMode.RewardChoice, 0);
+    }
+
+    public bool OpenSegmentChoiceTicket(int ticketCount) // 월드드랍/보상카드 선택권 진입점
+    {
+        int safeCount = Mathf.Max(0, ticketCount);
+        if (safeCount <= 0)
+        {
+            return false;
+        }
+
+        return OpenSpecialCardPanel(CardPanelMode.SegmentTicketChoice, safeCount);
+    }
+
+    private bool OpenSpecialCardPanel(CardPanelMode mode, int ticketCount)
+    {
+        if (IsLevelUpPanelOpen() || isProcessingSelection)
+        {
+            return false; // 이미 카드 선택 중
+        }
+
+        LevelUpUi ui = ResolveLevelUpUi();
+        if (ui == null)
+        {
+            Debug.LogWarning("[CardUI] LevelUpUi가 없어 카드 패널을 열 수 없습니다.", this);
+            return false;
+        }
+
+        ClearSpawnedCards();
+        activePanelMode = mode;
+        segmentTicketChoicesRemaining = mode == CardPanelMode.SegmentTicketChoice ? Mathf.Max(1, ticketCount) : 0;
+        pendingRewardExperience = 0;
+        pendingRewardGold = 0;
+        pendingRewardSegmentTicketCount = 0;
+        spawnedForCurrentOpen = false;
+        isProcessingSelection = false;
+        currentSpawnPhase = LevelUpCardPhase.StatUpgrade;
+        ui.SetUseRewardTitle(mode != CardPanelMode.LevelUp); // 보상/선택권은 보상획득 타이틀
+        ui.Open();
+        return true;
     }
 
     private bool IsAutoOrbitActive()

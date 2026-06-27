@@ -156,7 +156,7 @@ namespace TeamProject01.Gameplay
         }
 
         // 안건준 추가 - 0622
-        public void IncreaseMaxHealth(int amount) // 최대 체력만 증가 (현재 체력은 그대로)
+        public void IncreaseMaxHealth(int amount) // 최대 체력 증가 + 증가분만큼 현재 체력 회복
         {
             if (amount <= 0) // 0 이하 보너스 무시
             {
@@ -164,8 +164,8 @@ namespace TeamProject01.Gameplay
             }
 
             MaxHealth = Mathf.Max(1, MaxHealth + amount); // 최대 체력 상승
-            CurrentHealth = Mathf.Clamp(CurrentHealth, 0, MaxHealth); // 현재 체력이 새 최대를 넘지 않도록 보정
-            HealthChanged?.Invoke(CurrentHealth, MaxHealth); // HUD 등 갱신 알림
+            CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + amount); // 증가분만큼 현재 체력도 채움
+            NotifyHealthChanged(); // HUD 등 갱신 알림
         }
 
         public static bool TryApplyDamage(Transform target, int amount) // 외부 피해 연결

@@ -16,6 +16,11 @@ public partial class CardUI
 
     private void TryStartAutoSelect()
     {
+        if (activePanelMode != CardPanelMode.LevelUp)
+        {
+            return; // 보상 선택/선택권 화면은 직접 선택 유지
+        }
+
         if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
         {
             return; // 자동모드가 아니거나 기능 꺼짐
@@ -28,6 +33,11 @@ public partial class CardUI
     // 안건준 추가 - 0622 : 세그먼트 추가/레벨업 2차 카드 자동선택
     private void TryStartAutoSelectSegmentAction(bool canAdd, bool canLevelUp)
     {
+        if (activePanelMode != CardPanelMode.LevelUp)
+        {
+            return; // 선택권으로 열린 세그먼트 선택은 자동선택하지 않음
+        }
+
         if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
         {
             return;
@@ -153,6 +163,11 @@ public partial class CardUI
         if (entry.SegmentRole == SegmentCardRole.EnhanceChoice)
         {
             return entry.WeaponEnhancementTier; // 무기 강화 카드 등급
+        }
+
+        if (entry.RewardChoice != RewardChoiceKind.None)
+        {
+            return entry.RewardTier; // 보상 선택 카드 등급
         }
 
         if (entry.StatUpgrade != null)

@@ -33,7 +33,14 @@ public partial class CardUI
 
     private void BeginRerollForPanelOpen()
     {
-        remainingRerollCount = ResolveMagicBookRerollCount(); // 현재 장착 마법책 수량
+        remainingRerollCount = activePanelMode == CardPanelMode.RewardChoice
+            ? 0
+            : ResolveMagicBookRerollCount(); // 현재 장착 마법책 수량
+        if (activePanelMode == CardPanelMode.SegmentTicketChoice)
+        {
+            remainingRerollCount += Mathf.Max(0, segmentTicketBonusRerollCount); // 선택권 보너스
+        }
+
         rerollAllowedForCurrentChoices = false; // 카드 생성 전에는 비활성
         RefreshRerollUi();
     }
@@ -95,6 +102,7 @@ public partial class CardUI
     private bool CanRerollCurrentChoices()
     {
         return remainingRerollCount > 0
+            && activePanelMode != CardPanelMode.RewardChoice
             && rerollAllowedForCurrentChoices
             && !isProcessingSelection
             && IsLevelUpPanelOpen(); // 선택 처리 중/패널 닫힘 방지
@@ -105,7 +113,7 @@ public partial class CardUI
         bool panelOpen = IsLevelUpPanelOpen(); // CanvasGroup 기준 표시 여부
         if (rerollUiRoot != null)
         {
-            rerollUiRoot.SetActive(panelOpen); // 패널이 열릴 때만 표시
+            rerollUiRoot.SetActive(panelOpen && activePanelMode != CardPanelMode.RewardChoice); // 보상 선택은 리롤 없음
         }
 
         if (rerollCountText != null)

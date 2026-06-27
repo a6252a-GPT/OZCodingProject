@@ -27,6 +27,12 @@ public partial class CardUI
         // 카드 선택 사운드
         cardSound?.PlayCardSelect();
 
+        if (selectedEntry.RewardChoice != RewardChoiceKind.None)
+        {
+            HandleRewardChoiceClicked(selectedEntry); // 보상 선택 카드
+            return;
+        }
+
         if (selectedEntry.SegmentRole == SegmentCardRole.Candidate)
         {
             HandleSegmentCandidateClicked(selectedEntry); // 세그먼트 후보 → 2단계 분기
@@ -135,7 +141,7 @@ public partial class CardUI
     {
         ForceHideAllCardTooltips(); // 추가/레벨업 2차 분기 전 툴팁 즉시 제거
         SegmentCatalogEntry catalogEntry = selectedEntry.SegmentCatalogEntry; // 후보 데이터 보관
-        int levelDelta = Mathf.Max(1, selectedEntry.LevelDelta); // 소비 레벨 보관
+        int levelDelta = Mathf.Max(0, selectedEntry.LevelDelta); // 선택권 모드는 0 소비
         Sequence sequence = DOTween.Sequence().SetUpdate(true); // 기존 선택 연출 재사용
 
         for (int i = 0; i < spawnedCards.Count; i++)
@@ -181,7 +187,7 @@ public partial class CardUI
     {
         ForceHideAllCardTooltips(); // 단일 자동 적용 전 툴팁 즉시 제거
         SegmentCatalogEntry catalogEntry = selectedEntry.SegmentCatalogEntry; // 실패 fallback용 후보 데이터
-        int levelDelta = Mathf.Max(1, selectedEntry.LevelDelta); // 소비 레벨 보관
+        int levelDelta = Mathf.Max(0, selectedEntry.LevelDelta); // 선택권 모드는 0 소비
         Sequence sequence = DOTween.Sequence().SetUpdate(true); // 후보 선택 연출 재사용
 
         for (int i = 0; i < spawnedCards.Count; i++)
@@ -227,7 +233,7 @@ public partial class CardUI
             return false;
         }
 
-        int levelDelta = Mathf.Max(1, selectedEntry.LevelDelta); // 소비 레벨
+        int levelDelta = Mathf.Max(0, selectedEntry.LevelDelta); // 선택권 모드는 0 소비
         if (actionRole == SegmentCardRole.AddAction)
         {
             int addCount = selectedEntry.SegmentAddCard != null ? selectedEntry.SegmentAddCard.SegmentAddCount : 1; // 카드 설정 우선
@@ -374,6 +380,32 @@ public partial class CardUI
 
     private void CloseLevelUpPanelAfterSuccessfulSelection()
     {
+        if (activePanelMode == CardPanelMode.RewardChoice)
+        {
+            CloseLevelUpPanelAfterSelection(() =>
+            {
+                StopAutoSelect();
+                ClearSpawnedCards();
+                spawnedForCurrentOpen = false;
+                isProcessingSelection = false;
+                ApplyPendingRewardChoiceAfterClosed(); // 지급 또는 선택권 화면 연속 오픈
+            });
+            return;
+        }
+
+        if (activePanelMode == CardPanelMode.SegmentTicketChoice)
+        {
+            CloseLevelUpPanelAfterSelection(() =>
+            {
+                StopAutoSelect();
+                ClearSpawnedCards();
+                spawnedForCurrentOpen = false;
+                isProcessingSelection = false;
+                HandleSegmentTicketChoiceCompletedAfterClose(); // x2/x3 선택권 연속 처리
+            });
+            return;
+        }
+
         // 안건준 수정 - 0622 : 패널이 완전히 닫힌 후 CompleteLevelUpChoice 호출 — 연속 레벨업 대응
         CloseLevelUpPanelAfterSelection(() =>
         {
