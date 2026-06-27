@@ -53,8 +53,8 @@ namespace TeamProject01.Gameplay
             return profile != null
                 && profile.MoveType == SegmentAttackMoveType.ArcProjectile
                 && profile.RollAfterArcLanding
-                && profile.LandingRollDistance > 0f
-                && profile.LandingRollDuration > 0f;
+                && weaponBonus.ResolveLandingRollDistance(profile.LandingRollDistance) > 0f
+                && weaponBonus.ResolveLandingRollDuration(profile.LandingRollDuration) > 0f;
         }
 
         // 곡사 도착 지점에서 바닥 구르기 상태로 전환
@@ -62,7 +62,7 @@ namespace TeamProject01.Gameplay
         {
             isRollingAfterArcLanding = true; // 구르기 상태 시작
             landingRollTimer = 0f; // 진행 시간 초기화
-            landingRollDuration = Mathf.Max(0.01f, profile.LandingRollDuration); // 프로필 시간 보정
+            landingRollDuration = weaponBonus.ResolveLandingRollDuration(profile.LandingRollDuration); // 프로필+강화 시간 보정
             landingRollDirection = ResolveLandingRollDirection(); // 수평 구르기 방향
             landingRollSpinAxis = Vector3.Cross(Vector3.up, landingRollDirection); // 굴러가는 축
             if (landingRollSpinAxis.sqrMagnitude <= 0.0001f)
@@ -72,7 +72,7 @@ namespace TeamProject01.Gameplay
 
             landingRollSpinAxis.Normalize(); // 회전축 정규화
             landingRollStartPosition = landingPosition; // 착지 위치
-            landingRollEndPosition = landingRollStartPosition + landingRollDirection * profile.LandingRollDistance; // 종료 위치
+            landingRollEndPosition = landingRollStartPosition + landingRollDirection * weaponBonus.ResolveLandingRollDistance(profile.LandingRollDistance); // 종료 위치
             transform.position = landingRollStartPosition; // 바닥 위치 보정
             ApplyLandingImpactDamage(landingRollStartPosition); // 착지 순간 작은 범위 피해
             if (landingRollDirection.sqrMagnitude > 0.0001f)

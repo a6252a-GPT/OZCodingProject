@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace TeamProject01.Gameplay
 {
@@ -16,8 +17,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private RectTransform statusRoot; // 패널 루트
         [SerializeField] private Image shieldFillImage; // 실드 Fill
         [SerializeField] private Image healthFillImage; // 체력 Fill
-        [SerializeField] private Text shieldText; // 실드 수치
-        [SerializeField] private Text healthText; // 체력 수치
+        [SerializeField] private TMP_Text shieldText; // 실드 수치
+        [SerializeField] private TMP_Text healthText; // 체력 수치
 
         [Header("Visual")]
         [SerializeField] private bool autoResolveChildren = true; // 하위 Shield/Health 자동 연결
@@ -28,16 +29,21 @@ namespace TeamProject01.Gameplay
         [SerializeField, Range(0.01f, 1f)] private float lowHealthRatio = 0.3f;
 
         private NexusController subscribedNexus;
+        private RectSnapshot shieldFillSnapshot; // 씬에서 맞춘 실드 Fill 크기
+        private RectSnapshot healthFillSnapshot; // 씬에서 맞춘 체력 Fill 크기
 
         private void Awake()
         {
             ResolveReferences();
+            CaptureGaugeLayout();
             ConfigureVisuals();
+            RestoreGaugeLayout();
         }
 
         private void OnEnable()
         {
             ResolveReferences();
+            CaptureGaugeLayout();
             BindNexusEvents();
             RefreshNow();
         }
@@ -69,19 +75,21 @@ namespace TeamProject01.Gameplay
 
         public void RefreshNow()
         {
+            RestoreGaugeLayout();
+
             if (nexus == null)
             {
-                SetFillAmount(shieldFillImage, 0f);
-                SetFillAmount(healthFillImage, 0f);
+                SetGaugeRatio(shieldFillImage, 0f);
+                SetGaugeRatio(healthFillImage, 0f);
                 SetText(shieldText, "실드 0/0");
                 SetText(healthText, "체력 0/0");
                 return;
             }
 
-            SetFillAmount(shieldFillImage, nexus.ShieldRatio);
-            SetFillAmount(healthFillImage, nexus.HealthRatio);
+            SetGaugeRatio(shieldFillImage, nexus.ShieldRatio);
+            SetGaugeRatio(healthFillImage, nexus.HealthRatio);
 
-            if (healthFillImage != null)
+            if (healthFillImage != null && ShouldTintFill(healthFillImage))
             {
                 healthFillImage.color = nexus.HealthRatio <= lowHealthRatio ? lowHealthColor : healthColor;
             }
@@ -104,8 +112,8 @@ namespace TeamProject01.Gameplay
             {
                 shieldFillImage = shieldFillImage != null ? shieldFillImage : FindStatusChild<Image>(ShieldBarName, FillName);
                 healthFillImage = healthFillImage != null ? healthFillImage : FindStatusChild<Image>(HealthBarName, FillName);
-                shieldText = shieldText != null ? shieldText : FindStatusChild<Text>(ShieldBarName, TextName);
-                healthText = healthText != null ? healthText : FindStatusChild<Text>(HealthBarName, TextName);
+                shieldText = shieldText != null ? shieldText : FindStatusChild<TMP_Text>(ShieldBarName, TextName);
+                healthText = healthText != null ? healthText : FindStatusChild<TMP_Text>(HealthBarName, TextName);
             }
 
             if (nexus == null)
@@ -116,8 +124,24 @@ namespace TeamProject01.Gameplay
 
         private T FindStatusChild<T>(string barName, string childName) where T : Component
         {
+            if (statusRoot == null)
+            {
+                return null;
+            }
+
             Transform child = statusRoot.Find($"{barName}/{childName}");
-            return child != null ? child.GetComponent<T>() : null;
+            if (child != null && child.TryGetComponent(out T directComponent))
+            {
+                return directComponent;
+            }
+
+            Transform bar = statusRoot.Find(barName);
+            if (bar == null)
+            {
+                return null;
+            }
+
+            return bar.GetComponentInChildren<T>(true);
         }
 
         private void BindNexusEvents()
@@ -180,52 +204,112 @@ namespace TeamProject01.Gameplay
             ConfigureText(healthText);
         }
 
-        private static void ConfigureFill(Image image, Color color)
+        private void ConfigureFill(Image image, Color color)
         {
             if (image == null)
             {
                 return;
             }
 
-            image.sprite = null;
-            image.color = color;
-            image.type = Image.Type.Filled;
+            bool hasSprite = image.sprite != null;
+            image.color = hasSprite ? Color.white : color;
+            image.type = Image.Type.Filled; // 폭을 줄이지 않고 fillAmount로 원본을 자름
             image.fillMethod = Image.FillMethod.Horizontal;
             image.fillOrigin = (int)Image.OriginHorizontal.Left;
+            image.fillCenter = true;
+            image.preserveAspect = false;
+
             image.raycastTarget = false;
         }
 
-        private static void ConfigureText(Text text)
+        private static void ConfigureText(TMP_Text text)
         {
             if (text == null)
             {
                 return;
             }
 
-            if (text.font == null)
-            {
-                text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            }
-
-            text.fontStyle = FontStyle.Bold;
-            text.alignment = TextAnchor.MiddleCenter;
+            text.fontStyle = FontStyles.Bold;
+            text.alignment = TextAlignmentOptions.Center;
             text.color = new Color(0.92f, 1f, 1f, 1f);
             text.raycastTarget = false;
         }
 
-        private static void SetFillAmount(Image image, float amount)
+        private static void SetGaugeRatio(Image image, float amount)
         {
-            if (image != null)
+            if (image == null)
             {
-                image.fillAmount = amount;
+                return;
             }
+
+            float ratio = Mathf.Clamp01(amount);
+            image.enabled = true;
+            image.fillAmount = ratio;
         }
 
-        private static void SetText(Text text, string value)
+        private void CaptureGaugeLayout() // 에디터에서 맞춘 현재 크기를 런타임 기준으로 사용
+        {
+            shieldFillSnapshot.Capture(shieldFillImage != null ? shieldFillImage.rectTransform : null);
+            healthFillSnapshot.Capture(healthFillImage != null ? healthFillImage.rectTransform : null);
+        }
+
+        private void RestoreGaugeLayout() // 다른 갱신이 Fill Rect 크기를 건드려도 현재 씬 크기로 복구
+        {
+            shieldFillSnapshot.Restore();
+            healthFillSnapshot.Restore();
+        }
+
+        private static bool ShouldTintFill(Image image)
+        {
+            return image != null && image.sprite == null;
+        }
+
+        private static void SetText(TMP_Text text, string value)
         {
             if (text != null)
             {
                 text.text = value;
+            }
+        }
+
+        private struct RectSnapshot
+        {
+            private RectTransform rect;
+            private Vector2 anchorMin;
+            private Vector2 anchorMax;
+            private Vector2 anchoredPosition;
+            private Vector2 sizeDelta;
+            private Vector2 pivot;
+            private bool captured;
+
+            public void Capture(RectTransform source)
+            {
+                if (source == null)
+                {
+                    return;
+                }
+
+                rect = source;
+                anchorMin = source.anchorMin;
+                anchorMax = source.anchorMax;
+                anchoredPosition = source.anchoredPosition;
+                sizeDelta = source.sizeDelta;
+                pivot = source.pivot;
+                captured = true;
+            }
+
+            public void Restore()
+            {
+                if (!captured || rect == null)
+                {
+                    return;
+                }
+
+                rect.anchorMin = anchorMin;
+                rect.anchorMax = anchorMax;
+                rect.anchoredPosition = anchoredPosition;
+                rect.sizeDelta = sizeDelta;
+                rect.pivot = pivot;
             }
         }
     }

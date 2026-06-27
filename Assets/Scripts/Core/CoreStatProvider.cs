@@ -13,6 +13,10 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float FlatDamageBonus; // 기본 공격력 고정 보너스
         [Header("코어 공격력 배율")]
         [Min(0f)] public float DamageMultiplier = 1f; // 공격력 배율
+        [Header("코어 밀리 공격력 배율 보너스")]
+        [Min(0f)] public float MeleeDamageMultiplierBonus; // 밀리 무기 공격력 보너스
+        [Header("코어 마법 공격력 배율 보너스")]
+        [Min(0f)] public float MagicDamageMultiplierBonus; // 마법 무기 공격력 보너스
         [Header("코어 공격속도 배율")]
         [Min(0.01f)] public float AttackSpeedMultiplier = 1f; // 공격속도 배율
         [Header("코어 회전력 보너스")]
@@ -119,6 +123,8 @@ namespace TeamProject01.Gameplay
             ApplyLevelDeltaIfNeeded(growth.LevelDelta); // 카드 선택 시 플레이어 레벨·경험치 소비
             // 건춘 추가 끝 =====
             DamageMultiplier = Mathf.Max(0f, DamageMultiplier + growth.DamageMultiplierBonus); // 공격력 누적
+            MeleeDamageMultiplierBonus = Mathf.Max(0f, MeleeDamageMultiplierBonus + growth.MeleeDamageMultiplierBonus); // 밀리 공격력 누적
+            MagicDamageMultiplierBonus = Mathf.Max(0f, MagicDamageMultiplierBonus + growth.MagicDamageMultiplierBonus); // 마법 공격력 누적
             AttackSpeedMultiplier = Mathf.Max(0.01f, AttackSpeedMultiplier + growth.AttackSpeedMultiplierBonus); // 공격속도 누적
             TurnSpeedBonus += growth.TurnSpeedBonus; // 회전력 누적
             CollisionForceBonus += growth.CollisionForceBonus; // 충돌힘 누적
@@ -179,6 +185,8 @@ namespace TeamProject01.Gameplay
             CurrentLevel = 1; // 기본 레벨
             FlatDamageBonus = 0f; // 기본 공격력 초기화
             DamageMultiplier = 1f; // 기본 공격력
+            MeleeDamageMultiplierBonus = 0f; // 밀리 공격력 초기화
+            MagicDamageMultiplierBonus = 0f; // 마법 공격력 초기화
             AttackSpeedMultiplier = 1f; // 기본 공격속도
             TurnSpeedBonus = 0f; // 회전력 초기화
             CollisionForceBonus = 0f; // 충돌힘 초기화
@@ -565,6 +573,34 @@ namespace TeamProject01.Gameplay
             return Active != null ? Active.GetSegmentUpgrade(segmentId) : SegmentUpgradeData.None; // 없으면 기본값
         }
 
+        public float GetWeaponCategoryDamageMultiplier(string segmentId) // 밀리/마법 공통 공격력 보정
+        {
+            switch (ResolveSegmentDamageCategory(segmentId))
+            {
+                case SegmentDamageCategory.Melee:
+                    return Mathf.Max(0f, 1f + MeleeDamageMultiplierBonus); // 밀리 보너스
+                case SegmentDamageCategory.Magic:
+                    return Mathf.Max(0f, 1f + MagicDamageMultiplierBonus); // 마법 보너스
+                default:
+                    return 1f; // 미분류/지원형
+            }
+        }
+
+        public static float GetWeaponCategoryDamageMultiplierOrDefault(string segmentId) // 전투 쪽 공통 조회
+        {
+            return Active != null ? Active.GetWeaponCategoryDamageMultiplier(segmentId) : 1f; // 코어 없으면 보정 없음
+        }
+
+        public bool IsMeleeWeaponSegment(string segmentId) // 공통 카드 UI용 밀리 분류 조회
+        {
+            return ResolveSegmentDamageCategory(segmentId) == SegmentDamageCategory.Melee;
+        }
+
+        public bool IsMagicWeaponSegment(string segmentId) // 공통 카드 UI용 마법 분류 조회
+        {
+            return ResolveSegmentDamageCategory(segmentId) == SegmentDamageCategory.Magic;
+        }
+
         internal static bool TryApplyReward(RewardData reward) // 보상 입구 내부용
         {
             if (Active == null || !reward.IsValid)
@@ -584,6 +620,134 @@ namespace TeamProject01.Gameplay
 
             TotalExperience += amount; // 총 경험치 누적
             CurrentExperience += amount; // 현재 경험치 누적
+        }
+
+        private enum SegmentDamageCategory
+        {
+            None,
+            Melee,
+            Magic
+        }
+
+        private SegmentDamageCategory ResolveSegmentDamageCategory(string segmentId) // 세그먼트 설명 태그/ID 기반 분류
+        {
+            string normalizedId = NormalizeSegmentIdForCategory(segmentId);
+            if (SegmentCatalogAsset != null
+                && !string.IsNullOrWhiteSpace(normalizedId)
+                && SegmentCatalogAsset.TryFind(normalizedId, out SegmentDefinition definition)
+                && definition != null)
+            {
+                SegmentDefinition categoryDefinition = ResolveSharedCategoryDefinition(definition);
+                if (TryResolveCategoryFromDescription(categoryDefinition.Description, out SegmentDamageCategory category))
+                {
+                    return category; // [밀리]/[마법] 태그 우선
+                }
+
+                normalizedId = NormalizeSegmentIdForCategory(categoryDefinition.UpgradeId); // 공유 ID fallback
+            }
+
+            return ResolveCategoryFromSegmentId(normalizedId); // ID 대역 fallback
+        }
+
+        private SegmentDefinition ResolveSharedCategoryDefinition(SegmentDefinition definition) // 스타터 공유 ID 보정
+        {
+            if (definition == null
+                || SegmentCatalogAsset == null
+                || string.IsNullOrWhiteSpace(definition.SharedUpgradeSegmentId))
+            {
+                return definition; // 공유 없음
+            }
+
+            return SegmentCatalogAsset.TryFind(definition.SharedUpgradeSegmentId, out SegmentDefinition sharedDefinition) && sharedDefinition != null
+                ? sharedDefinition
+                : definition; // 공유 대상 없으면 원본
+        }
+
+        private static bool TryResolveCategoryFromDescription(string description, out SegmentDamageCategory category)
+        {
+            category = SegmentDamageCategory.None;
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                return false; // 태그 없음
+            }
+
+            if (description.Contains("[밀리]", StringComparison.OrdinalIgnoreCase))
+            {
+                category = SegmentDamageCategory.Melee;
+                return true;
+            }
+
+            if (description.Contains("[마법]", StringComparison.OrdinalIgnoreCase))
+            {
+                category = SegmentDamageCategory.Magic;
+                return true;
+            }
+
+            return false; // 미분류
+        }
+
+        private static SegmentDamageCategory ResolveCategoryFromSegmentId(string segmentId)
+        {
+            string normalizedId = NormalizeSegmentIdForCategory(segmentId);
+            if (string.IsNullOrWhiteSpace(normalizedId))
+            {
+                return SegmentDamageCategory.None; // ID 없음
+            }
+
+            if (normalizedId.Contains("StarterMagic", StringComparison.OrdinalIgnoreCase)
+                || normalizedId.Contains("StarterSupport", StringComparison.OrdinalIgnoreCase))
+            {
+                return SegmentDamageCategory.Magic; // 스타터 마법 계열
+            }
+
+            if (normalizedId.Contains("StarterCannon", StringComparison.OrdinalIgnoreCase)
+                || normalizedId.Contains("StarterAttack", StringComparison.OrdinalIgnoreCase)
+                || normalizedId.Contains("StarterMobility", StringComparison.OrdinalIgnoreCase))
+            {
+                return SegmentDamageCategory.Melee; // 스타터 물리 계열
+            }
+
+            if (TryParseSegmentNumber(normalizedId, out int number))
+            {
+                if (number >= 1 && number <= 6)
+                {
+                    return SegmentDamageCategory.Melee; // SG01~06
+                }
+
+                if (number >= 20 && number < 50)
+                {
+                    return SegmentDamageCategory.Magic; // SG20~49
+                }
+            }
+
+            return SegmentDamageCategory.None; // 지원형/미분류
+        }
+
+        private static bool TryParseSegmentNumber(string segmentId, out int number)
+        {
+            number = 0;
+            if (string.IsNullOrWhiteSpace(segmentId) || segmentId.Length < 4 || !segmentId.StartsWith("SG", StringComparison.OrdinalIgnoreCase))
+            {
+                return false; // 형식 아님
+            }
+
+            int index = 2;
+            int value = 0;
+            bool hasDigit = false;
+            while (index < segmentId.Length && char.IsDigit(segmentId[index]))
+            {
+                value = value * 10 + (segmentId[index] - '0');
+                hasDigit = true;
+                index++;
+            }
+
+            number = value;
+            return hasDigit;
+        }
+
+        private static string NormalizeSegmentIdForCategory(string segmentId)
+        {
+            return string.IsNullOrWhiteSpace(segmentId) ? string.Empty : segmentId.Trim();
         }
 
         private bool CanApplyGrowth(GrowthStatData growth) // 적용 가능 확인

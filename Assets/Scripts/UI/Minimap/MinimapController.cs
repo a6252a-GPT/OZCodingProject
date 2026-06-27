@@ -359,13 +359,23 @@ namespace TeamProject01.Gameplay
                     continue;
                 }
 
-                Color color = pickup.Kind == RewardPickupKind.Gold
-                    ? new Color(1f, 0.78f, 0.14f, 0.96f)
-                    : new Color(0.22f, 1f, 0.36f, 0.96f);
+                Color color = ResolveRewardMarkerColor(pickup.Kind);
                 used = ShowMarker(rewardMarkers, used, "Reward", pickup.transform.position, center, rewardMarkerSize, color, false, 0f);
             }
 
             HideUnused(rewardMarkers, used);
+        }
+
+        private static Color ResolveRewardMarkerColor(RewardPickupKind kind)
+        {
+            if (kind == RewardPickupKind.Gold)
+            {
+                return new Color(1f, 0.78f, 0.14f, 0.96f);
+            }
+
+            return kind == RewardPickupKind.SegmentChoiceTicket
+                ? new Color(0.42f, 0.82f, 1f, 0.96f)
+                : new Color(0.22f, 1f, 0.36f, 0.96f);
         }
 
         private int ShowMarker(

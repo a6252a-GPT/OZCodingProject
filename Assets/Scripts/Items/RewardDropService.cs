@@ -7,12 +7,14 @@ namespace TeamProject01.Gameplay
     {
         private const string ExperiencePickupResourcePath = "RewardPickups/PF_RewardPickup_Exp";
         private const string GoldPickupResourcePath = "RewardPickups/PF_RewardPickup_Gold";
+        private const string SegmentChoiceTicketPickupResourcePath = "RewardPickups/PF_RewardPickup_SegmentChoiceTicket";
         private const float MinimumDropSpreadRadius = 1.08f;
 
         public static RewardDropService Active { get; private set; }
 
         public WorldRewardPickup ExperiencePickupPrefab;
         public WorldRewardPickup GoldPickupPrefab;
+        public WorldRewardPickup SegmentChoiceTicketPickupPrefab;
         public Transform DropRoot;
         [Min(0f)] public float DropSpreadRadius = 0.42f;
         [Min(0f)] public float GroundHeightOffset = 0.02f;
@@ -22,6 +24,7 @@ namespace TeamProject01.Gameplay
 
         private static WorldRewardPickup cachedExperiencePrefab;
         private static WorldRewardPickup cachedGoldPrefab;
+        private static WorldRewardPickup cachedSegmentChoiceTicketPrefab;
         private static int dropSerial;
         private readonly Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>> pickupPools = new Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>>();
         private Transform poolRoot;
@@ -56,6 +59,19 @@ namespace TeamProject01.Gameplay
             SpawnRewardDefault(reward, position);
         }
 
+        public static void SpawnSegmentChoiceTicket(int ticketCount, Vector3 position)
+        {
+            int safeCount = Mathf.Max(1, ticketCount);
+            if (Active != null)
+            {
+                Active.SpawnSegmentChoiceTicketInternal(safeCount, position);
+                return;
+            }
+
+            Vector3 basePosition = GroundService.ProjectToGround(position, 0.02f);
+            SpawnPickup(GetCachedSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, safeCount, 0, basePosition, basePosition + GetDefaultDropOffset(2), null, 0.02f);
+        }
+
         private void SpawnRewardInternal(RewardData reward, Vector3 position)
         {
             Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
@@ -68,6 +84,12 @@ namespace TeamProject01.Gameplay
             {
                 SpawnPickupFromPool(ResolveGoldPrefab(), RewardPickupKind.Gold, reward.Gold, reward.EnemyId, basePosition, basePosition + GetDropOffset(1), DropRoot, GroundHeightOffset);
             }
+        }
+
+        private void SpawnSegmentChoiceTicketInternal(int ticketCount, Vector3 position)
+        {
+            Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
+            SpawnPickupFromPool(ResolveSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, Mathf.Max(1, ticketCount), 0, basePosition, basePosition + GetDropOffset(2), DropRoot, GroundHeightOffset);
         }
 
         private static void SpawnRewardDefault(RewardData reward, Vector3 position)
@@ -92,6 +114,11 @@ namespace TeamProject01.Gameplay
         private WorldRewardPickup ResolveGoldPrefab()
         {
             return GoldPickupPrefab != null ? GoldPickupPrefab : GetCachedGoldPrefab();
+        }
+
+        private WorldRewardPickup ResolveSegmentChoiceTicketPrefab()
+        {
+            return SegmentChoiceTicketPickupPrefab != null ? SegmentChoiceTicketPickupPrefab : GetCachedSegmentChoiceTicketPrefab();
         }
 
         private Vector3 GetDropOffset(int index)
@@ -134,6 +161,16 @@ namespace TeamProject01.Gameplay
             return cachedGoldPrefab;
         }
 
+        private static WorldRewardPickup GetCachedSegmentChoiceTicketPrefab()
+        {
+            if (cachedSegmentChoiceTicketPrefab == null)
+            {
+                cachedSegmentChoiceTicketPrefab = LoadPickupPrefab(SegmentChoiceTicketPickupResourcePath);
+            }
+
+            return cachedSegmentChoiceTicketPrefab;
+        }
+
         private static WorldRewardPickup LoadPickupPrefab(string resourcePath)
         {
             GameObject prefab = Resources.Load<GameObject>(resourcePath);
@@ -145,6 +182,7 @@ namespace TeamProject01.Gameplay
             int count = Mathf.Max(0, InitialPoolSizePerKind);
             PrewarmPool(ResolveExperiencePrefab(), count);
             PrewarmPool(ResolveGoldPrefab(), count);
+            PrewarmPool(ResolveSegmentChoiceTicketPrefab(), count);
         }
 
         private void PrewarmPool(WorldRewardPickup prefab, int count)

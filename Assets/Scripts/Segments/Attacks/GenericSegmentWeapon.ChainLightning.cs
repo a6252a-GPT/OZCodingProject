@@ -24,7 +24,7 @@ namespace TeamProject01.Gameplay
 
         private IEnumerator ChainLightningRoutine(Vector3 fromPosition, int depth, DamageData baseDamage, HashSet<int> hitIds) // 체인 확산
         {
-            if (depth > Mathf.Max(0, AttackProfile.MaxChainDepth))
+            if (depth > GetEffectiveMaxChainDepth())
             {
                 yield break; // 최대 체인 단계 도달
             }
@@ -68,7 +68,7 @@ namespace TeamProject01.Gameplay
         private List<ChainCandidate> SelectChainTargets(Vector3 fromPosition, HashSet<int> hitIds) // 주변 체인 후보 선택
         {
             List<ChainCandidate> candidates = new List<ChainCandidate>(); // 전체 후보
-            float range = GetUpgrade().ApplyRange(Mathf.Max(0.1f, AttackProfile.ChainRange)); // 체인 거리
+            float range = GetEffectiveChainRange(); // 체인 거리
             Collider[] hits = Physics.OverlapSphere(fromPosition, range, ~0, QueryTriggerInteraction.Collide); // 주변 콜라이더
             for (int i = 0; i < hits.Length; i++)
             {
@@ -147,7 +147,7 @@ namespace TeamProject01.Gameplay
 
         private float CalculateChainDamage(float baseAmount, int depth) // 체인 단계별 피해
         {
-            float falloff = Mathf.Clamp01(AttackProfile.ChainDamageFalloff); // 감쇠율
+            float falloff = GetEffectiveChainDamageFalloff(); // 감쇠율
             float multiplier = Mathf.Pow(falloff, Mathf.Max(1, depth)); // depth 1부터 감쇠
             return Mathf.Max(0f, baseAmount * multiplier); // 최종 피해
         }

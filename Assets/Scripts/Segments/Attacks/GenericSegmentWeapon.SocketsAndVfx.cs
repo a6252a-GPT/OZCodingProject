@@ -163,8 +163,121 @@ namespace TeamProject01.Gameplay
             return Muzzle;
         }
 
+        private Transform ResolveProjectileMuzzle(int projectileIndex, Transform fallbackMuzzle) // 다중 포구 발사 위치
+        {
+            CacheProjectileMuzzles(); // 수동/자동 포구 목록 갱신
+            if (projectileMuzzleBuffer.Count <= 0)
+            {
+                return fallbackMuzzle != null ? fallbackMuzzle : ResolveMuzzle(); // 단일 포구 fallback
+            }
+
+            int index = ResolveProjectileMuzzleBufferIndex(projectileIndex); // 순차/짝발사 순서
+            return projectileMuzzleBuffer[index]; // 이번 탄 포구
+        }
+
+        private int ResolveProjectileMuzzleBufferIndex(int projectileIndex)
+        {
+            int muzzleCount = projectileMuzzleBuffer.Count; // 현재 다중 포구 수
+            int index = Mathf.Abs(projectileIndex) % muzzleCount; // 기본 순차 반복
+            if (ShouldUseCannonLv3PairedMuzzleOrder(muzzleCount))
+            {
+                return ResolveCannonLv3PairedMuzzleIndex(index); // 1+4, 2+5, 3+6
+            }
+
+            return index;
+        }
+
+        private bool ShouldUseCannonLv3PairedMuzzleOrder(int muzzleCount)
+        {
+            return muzzleCount == 6
+                && AttackProfile != null
+                && AttackProfile.FireProjectilesSequentially
+                && AttackProfile.ProjectileCount == 6
+                && AttackProfile.ProjectileVolleySize == 2
+                && string.Equals(GetEffectiveSegmentId(), "SG01_Cannon", System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int ResolveCannonLv3PairedMuzzleIndex(int sequentialIndex)
+        {
+            switch (sequentialIndex)
+            {
+                case 1:
+                    return 3; // 2번째 탄은 4번 포구
+                case 2:
+                    return 1; // 3번째 탄은 2번 포구
+                case 3:
+                    return 4; // 4번째 탄은 5번 포구
+                case 4:
+                    return 2; // 5번째 탄은 3번 포구
+                case 5:
+                    return 5; // 6번째 탄은 6번 포구
+                default:
+                    return 0; // 1번째 탄은 1번 포구
+            }
+        }
+
+        private void CacheProjectileMuzzles() // 다중 포구 목록 수집
+        {
+            projectileMuzzleBuffer.Clear();
+            if (ProjectileMuzzles != null)
+            {
+                for (int i = 0; i < ProjectileMuzzles.Length; i++)
+                {
+                    if (ProjectileMuzzles[i] != null)
+                    {
+                        projectileMuzzleBuffer.Add(ProjectileMuzzles[i]); // 인스펙터 연결 우선
+                    }
+                }
+            }
+
+            if (projectileMuzzleBuffer.Count > 0)
+            {
+                return; // 수동 연결 사용
+            }
+
+            Transform pivot = ResolveHeadYawPivot(); // 머리 기준
+            Transform root = pivot != null ? pivot : (Segment != null ? Segment.transform : transform); // 검색 루트
+            Transform muzzleRoot = FindChildRecursive(root, "Muzzles"); // SG01 Lv3 다중 포구 루트
+            if (muzzleRoot != null)
+            {
+                for (int i = 0; i < muzzleRoot.childCount; i++)
+                {
+                    Transform child = muzzleRoot.GetChild(i); // 계층 순서
+                    if (child != null && child.name.StartsWith("Muzzle_"))
+                    {
+                        projectileMuzzleBuffer.Add(child); // Muzzle_01~ 순서
+                    }
+                }
+            }
+
+            if (projectileMuzzleBuffer.Count > 0)
+            {
+                return; // 자동 포구 사용
+            }
+
+            for (int i = 1; i <= 12; i++)
+            {
+                Transform muzzle = FindChildRecursive(root, $"Muzzle_{i:00}"); // 이름 fallback
+                if (muzzle != null)
+                {
+                    projectileMuzzleBuffer.Add(muzzle);
+                }
+            }
+        }
+
         private Transform ResolveMuzzleVfxSocket(Transform muzzle) // 발사 VFX 기준점
         {
+            if (muzzle != null && muzzle.name.StartsWith("Muzzle_"))
+            {
+                Transform socket = FindChildRecursive(muzzle, "VFX_Muzzle"); // 다중 포구별 VFX
+                if (socket == null)
+                {
+                    socket = FindChildRecursive(muzzle, "MuzzleVFX"); // fallback
+                }
+
+                return socket; // 다중 포구는 전역 캐시를 오염시키지 않음
+            }
+
             if (MuzzleVfxSocket != null)
             {
                 return MuzzleVfxSocket; // 수동 연결
@@ -321,9 +434,43 @@ namespace TeamProject01.Gameplay
         private void PlayMuzzleVfx(Transform muzzle) // 발사 VFX
         {
             Transform socket = ResolveMuzzleVfxSocket(muzzle); // 기준점
+            Transform parent = socket != null ? socket : muzzle; // 부착 대상
+            if (parent != null)
+            {
+                GameObject attachedInstance = SegmentAttackVfxPlayer.PlayAttached(AttackProfile.MuzzleVfxPrefab, parent, Vector3.zero, Quaternion.identity, GetMuzzleVfxScale(), AttackProfile.MuzzleVfxLifetime); // 총구 추적
+                ConfigureAttachedMuzzleVfxParticles(attachedInstance); // 부착 이동 보정
+                return;
+            }
+
             Vector3 position = socket != null ? socket.position : (muzzle != null ? muzzle.position : transform.position + Vector3.up * AttackProfile.AttackSpawnHeight); // 위치
             Quaternion rotation = socket != null ? socket.rotation : (muzzle != null ? muzzle.rotation : transform.rotation); // 방향
-            SegmentAttackVfxPlayer.Play(AttackProfile.MuzzleVfxPrefab, position, rotation, AttackProfile.MuzzleVfxLifetime); // 공용 생성
+            GameObject instance = SegmentAttackVfxPlayer.Play(AttackProfile.MuzzleVfxPrefab, position, rotation, AttackProfile.MuzzleVfxLifetime); // 공용 생성
+            if (instance != null)
+            {
+                instance.transform.localScale = GetMuzzleVfxScale(); // 프로필 스케일
+            }
+        }
+
+        private static void ConfigureAttachedMuzzleVfxParticles(GameObject instance) // 부착형 파티클 보정
+        {
+            if (instance == null)
+            {
+                return; // 생성 없음
+            }
+
+            ParticleSystem[] particles = instance.GetComponentsInChildren<ParticleSystem>(true); // 하위 파티클
+            for (int i = 0; i < particles.Length; i++)
+            {
+                ParticleSystem particle = particles[i];
+                if (particle == null)
+                {
+                    continue;
+                }
+
+                ParticleSystem.MainModule main = particle.main;
+                main.simulationSpace = ParticleSystemSimulationSpace.Local; // 총구 이동 추적
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy; // 부모 스케일 반영
+            }
         }
 
         private void PlayHitVfx(Vector3 position) // 명중 VFX
