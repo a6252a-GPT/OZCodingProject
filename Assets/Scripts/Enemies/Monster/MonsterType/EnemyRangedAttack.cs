@@ -41,7 +41,10 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float impactSideRandomAmount = 0.5f; // Nexus 정면 기준 좌우 랜덤 범위
 
         [Header("Animation Timing")]
-        [SerializeField] private bool waitForAnimationEvent;
+        [SerializeField] private bool waitForAnimationEvent; // Animation Event가 올 때까지 실제 발사를 기다릴지 설정한다.
+
+        [Min(0.1f)]
+        [SerializeField] private float animationEventTimeout = 2.0f; // Animation Event가 누락됐을 때 대기 상태를 풀기까지 걸리는 시간
 
         public float AttackRange // EnemyMovement가 원거리 공격 사거리를 읽기 위한 Property
         {
@@ -51,17 +54,18 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        public event System.Action AttackPerformed;
+        public event System.Action AttackPerformed; // 원거리 공격 시작을 Animator Bridge에 전달하는 이벤트
 
         private float attackTimer; // 다음 공격까지 남은 시간
 
-        private bool attackPending;
-        private float pendingAttackPowerMultiplier = 1.0f;
-        private float pendingAttackDelay;
+        private bool attackPending; // 공격 애니메이션이 시작되고 실제 발사를 기다리는 상태
+        private float pendingAttackPowerMultiplier = 1.0f; // 발사 시 사용할 공격력 배율
+        private float pendingAttackDelay; // 실제 발사 후 적용할 다음 공격 대기시간
+        private float pendingAttackTimeout; // Animation Event를 기다릴 수 있는 남은 시간
 
         private EnemyBuffReceiver buffReceiver; // 공격력/공격속도 버프를 읽기 위한 Script Component 참조
 
-        private EnemySegmentCutCaster segmentCutCaster;
+        private EnemySegmentCutCaster segmentCutCaster; // 절단 마법 우선권을 확인할 Script Component
 
         private void Awake()
         {
@@ -96,19 +100,26 @@ namespace TeamProject01.Gameplay
                 segmentCutCaster.ProjectileLaunched -= HandleSegmentCutProjectileLaunched; // 비활성화될 때 발사 이벤트 연결을 해제한다.
             }
 
-            CancelPendingAttack();
+            CancelPendingAttack(); // 비활성화될 때 대기 중인 기본 공격을 정리한다.
         }
 
         private void Update()
         {
             if (nexus == null) // Nexus가 없다면
             {
+                CancelPendingAttack(); // 공격 대기 중이었다면 풀어준다.
                 return; // 공격하지 않는다.
             }
 
-            if (attackPending)
+            if (attackPending) // Animation Event가 호출될 때까지 실제 발사를 기다리는 중이라면
             {
                 FaceNexus(); // 기본 혈마법 발사를 기다리는 동안에도 Nexus 방향을 계속 바라본다.
+                pendingAttackTimeout -= Time.deltaTime; // 지난 시간만큼 Animation Event 대기 시간을 줄인다.
+
+                if (pendingAttackTimeout <= 0.0f) // Animation Event가 제한 시간 안에 오지 않았다면
+                {
+                    ReleasePendingAttack(); // 영구 대기에 빠지지 않도록 실제 발사 처리를 진행하고 대기 상태를 해제한다.
+                }
 
                 return; // 발사를 기다리는 동안 새로운 공격을 시작하지 않는다.
             }
@@ -120,7 +131,7 @@ namespace TeamProject01.Gameplay
                 return; // 이번 프레임에는 공격하지 않는다.
             }
 
-            if (segmentCutCaster != null && segmentCutCaster.ShouldPrioritizeCast)
+            if (segmentCutCaster != null && segmentCutCaster.ShouldPrioritizeCast) // 절단 마법이 기본 공격보다 우선되어야 한다면
             {
                 return; // 절단 마법이 우선인 동안에는 기본 공격을 시작하지 않는다.
             }
@@ -147,7 +158,7 @@ namespace TeamProject01.Gameplay
 
             FaceNexus(); // 기본 혈마법 공격 애니메이션을 시작하기 전에 Nexus 방향을 바라본다.
 
-            BeginAttack(attackPowerMultiplier, finalAttackDelay);
+            BeginAttack(attackPowerMultiplier, finalAttackDelay); // 원거리 공격을 시작한다.
         }
 
         private void FaceNexus() // 기본 혈마법 공격 중 Nexus 방향으로 몬스터를 회전시킨다.
@@ -190,6 +201,8 @@ namespace TeamProject01.Gameplay
                 pendingAttackPowerMultiplier = attackPowerMultiplier; // 현재 공격력 배율을 저장한다.
 
                 pendingAttackDelay = finalAttackDelay; // 실제 발사 후 사용할 공격 대기시간을 저장한다.
+
+                pendingAttackTimeout = animationEventTimeout; // Animation Event가 누락되어도 영구 대기하지 않도록 제한 시간을 설정한다.
             }
 
             AttackPerformed?.Invoke(); // 투사체보다 먼저 공격 애니메이션을 시작한다.
@@ -221,6 +234,8 @@ namespace TeamProject01.Gameplay
 
             pendingAttackDelay = 0.0f; // 저장한 공격 대기시간을 초기화한다.
 
+            pendingAttackTimeout = 0.0f; // Animation Event 대기 제한 시간을 초기화한다.
+
             if (nexus != null) // 공격 대상 Nexus가 아직 존재한다면
             {
                 FaceNexus(); // 실제 기본 혈마법 투사체가 발사되기 직전에 Nexus 방향을 다시 맞춘다.
@@ -238,6 +253,8 @@ namespace TeamProject01.Gameplay
             pendingAttackPowerMultiplier = 1.0f; // 저장한 공격력 배율을 초기화한다.
 
             pendingAttackDelay = 0.0f; // 저장한 공격 대기시간을 초기화한다.
+
+            pendingAttackTimeout = 0.0f; // Animation Event 대기 제한 시간을 초기화한다.
         }
 
         private void ExecuteAttack(float attackPowerMultiplier) // 선택된 원거리 공격을 실제로 생성하는 함수

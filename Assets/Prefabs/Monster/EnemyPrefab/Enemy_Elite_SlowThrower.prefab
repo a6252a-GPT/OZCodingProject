@@ -470,6 +470,7 @@ MonoBehaviour:
   impactHeightOffset: 0.5
   impactSideRandomAmount: 0.5
   waitForAnimationEvent: 1
+  animationEventTimeout: 2
 --- !u!114 &3145102882194568359
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -570,6 +571,9 @@ MonoBehaviour:
   animator: {fileID: 3104811170976160000}
   deathDuration: 3
   hpBarRoot: {fileID: 8930308574750165937}
+  useDirectDeathState: 1
+  deathStateFullPath: Base Layer.Death
+  deathCrossFadeDuration: 0.03
 --- !u!114 &5040398450297536752
 MonoBehaviour:
   m_ObjectHideFlags: 0
