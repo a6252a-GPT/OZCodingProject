@@ -19784,7 +19784,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.NormalWaveSpawner
   enemySpawner: {fileID: 354810648}
-  baseSpawnCount: 30
+  baseSpawnCount: 40
   spawnScaleSteps:
   - startStage: 1
     spawnScalePercent: 100
@@ -19793,13 +19793,21 @@ MonoBehaviour:
   - startStage: 8
     spawnScalePercent: 160
   - startStage: 12
-    spawnScalePercent: 200
+    spawnScalePercent: 220
   - startStage: 15
-    spawnScalePercent: 240
-  - startStage: 18
     spawnScalePercent: 280
+  - startStage: 18
+    spawnScalePercent: 360
   - startStage: 20
-    spawnScalePercent: 350
+    spawnScalePercent: 440
+  - startStage: 25
+    spawnScalePercent: 540
+  - startStage: 30
+    spawnScalePercent: 640
+  - startStage: 35
+    spawnScalePercent: 780
+  - startStage: 40
+    spawnScalePercent: 880
   normalCompositions:
   - compositionId: N01
     displayName: "\uAE30\uBCF8 \uADFC\uC811"
