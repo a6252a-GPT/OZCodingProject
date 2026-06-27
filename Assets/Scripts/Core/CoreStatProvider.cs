@@ -30,8 +30,17 @@ namespace TeamProject01.Gameplay
         [Header("")]
         [Min(0)] public int CurrentExperience; // 현재 레벨 경험치
         [Min(0)] public int TotalExperience; // 누적 경험치        
+        [HideInInspector]
         [Min(1)] public int BaseExperienceToLevelUp = 5; // 1레벨 필요 경험치
+        [HideInInspector]
         [Min(0)] public int ExtraExperiencePerLevel = 5; // 레벨당 증가량
+        [Header("코어 경험치 요구량")]
+        [Min(1)] public int ExperienceRequirementLevel1To5 = 30; // Lv1~5 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel6To10 = 90; // Lv6~10 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel11To20 = 320; // Lv11~20 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel21To30 = 560; // Lv21~30 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel31To40 = 850; // Lv31~40 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel41Plus = 1150; // Lv41+ 다음 레벨 필요 경험치
         public ConvoyController Convoy; // 세그먼트 추가 입구
         public SegmentCatalogAsset SegmentCatalogAsset; // 새 세그먼트 데이터에셋 목록
         // 건춘 추가 시작 =======
@@ -49,15 +58,15 @@ namespace TeamProject01.Gameplay
         private readonly List<SegmentUpgradeData> segmentUpgrades = new List<SegmentUpgradeData>(); // 세그먼트별 강화 누적
         // 건춘 추가 시작 =======
         private readonly List<WeaponStatBonusEntry> weaponStatBonuses = new List<WeaponStatBonusEntry>(); // 세그먼트 ID별 무기 강화 보너스 누적 저장
-        private int levelUpCardCycleIndex; // 레벨업 카드 순환 (0=스탯, 1=무기강화, 2=세그먼트)
+        private int levelUpCardCycleIndex; // 레벨업 카드 선택 완료 횟수(현재 카드 종류는 레벨 구간 기준)
 
-        public int LevelUpCardCycleIndex => levelUpCardCycleIndex; // CardUI에서 현재 순환 위치 조회
+        public int LevelUpCardCycleIndex => levelUpCardCycleIndex; // CardUI 호환/디버그용 선택 카운트
 
         public bool IsLevelUpChoicePending => pendingLevelUpChoiceCommitted; // 레벨업 카드 선택 UI 표시 중 여부
 
-        public void AdvanceLevelUpCardCycle() // 카드 1회 선택 완료 후 다음 종류로 이동
+        public void AdvanceLevelUpCardCycle() // 카드 1회 선택 완료 카운트 증가
         {
-            levelUpCardCycleIndex++; // 0→1→2→0 순환
+            levelUpCardCycleIndex++; // 레벨 구간 로테이션은 CardUI가 CurrentLevel로 판정
         }
 
         // 경험치 충족 시 카드 UI만 열고, 경험치/레벨은 카드 선택 시 소비
@@ -197,7 +206,7 @@ namespace TeamProject01.Gameplay
             segmentUpgrades.Clear(); // 세그먼트 강화 초기화
             // 건춘 추가 시작 =======
             weaponStatBonuses.Clear(); // 무기 강화 보너스 초기화
-            levelUpCardCycleIndex = 0; // 레벨업 카드 순환 초기화
+            levelUpCardCycleIndex = 0; // 레벨업 카드 선택 카운트 초기화
             pendingLevelUpChoiceCommitted = false; // 레벨업 카드 UI 상태 초기화
             // 건춘 추가 끝 =====
             StatsChanged?.Invoke(CurrentStats); // 변경 알림
@@ -464,6 +473,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
+            float profileBaseDamage = ResolveCurrentSegmentBaseDamage(normalizedSegmentId); // 유니크 현재 피해 계산 기준
             string requestedSegmentId = string.IsNullOrWhiteSpace(segmentId) ? string.Empty : segmentId.Trim(); // UI에서 고른 세그먼트
             if (!string.Equals(requestedSegmentId, normalizedSegmentId, StringComparison.OrdinalIgnoreCase))
             {
@@ -473,7 +483,7 @@ namespace TeamProject01.Gameplay
 
             int index = FindWeaponStatBonusIndex(normalizedSegmentId); // 기존 누적 검색
             WeaponStatBonusData bonus = index >= 0 ? weaponStatBonuses[index].Bonus : default; // 현재 누적값
-            bonus.AddDefinition(definition, tier); // WeaponDefinition 보너스 합산 (등급별 수치)
+            bonus.AddDefinition(definition, tier, profileBaseDamage); // WeaponDefinition 보너스 합산 (등급별 수치)
             // 건준수정 - 0621 ======
             if (index >= 0)
             {
@@ -503,6 +513,28 @@ namespace TeamProject01.Gameplay
         public static WeaponStatBonusData GetWeaponStatBonusOrDefault(string segmentId) // GenericSegmentWeapon 등에서 호출
         {
             return Active != null ? Active.GetWeaponStatBonus(segmentId) : default; // 코어 없으면 기본값
+        }
+
+        public float GetCommonBaseDamageBonus(string segmentId, float profileBaseDamage) // 공통 공격력은 기초 피해 기준 가산
+        {
+            float baseDamage = Mathf.Max(0f, profileBaseDamage); // 현재 세그먼트 레벨 기초 피해
+            float bonusRate = Mathf.Max(0f, DamageMultiplier - 1f); // 모든 무기 공격력 누적분
+            switch (ResolveSegmentDamageCategory(segmentId))
+            {
+                case SegmentDamageCategory.Melee:
+                    bonusRate += Mathf.Max(0f, MeleeDamageMultiplierBonus); // 밀리 기초 피해 보너스
+                    break;
+                case SegmentDamageCategory.Magic:
+                    bonusRate += Mathf.Max(0f, MagicDamageMultiplierBonus); // 마법 기초 피해 보너스
+                    break;
+            }
+
+            return baseDamage * Mathf.Max(0f, bonusRate); // 최종 곱이 아니라 기초값 가산
+        }
+
+        public static float GetCommonBaseDamageBonusOrDefault(string segmentId, float profileBaseDamage)
+        {
+            return Active != null ? Active.GetCommonBaseDamageBonus(segmentId, profileBaseDamage) : 0f; // 코어 없으면 보너스 없음
         }
         // 건춘 추가 끝 =====
 
@@ -943,6 +975,47 @@ namespace TeamProject01.Gameplay
             return prefab != null; // 최종 확인
         }
 
+        private float ResolveCurrentSegmentBaseDamage(string segmentId) // 현재 세그먼트 레벨의 기초 피해 조회
+        {
+            return TryGetCurrentSegmentAttackProfile(segmentId, out SegmentAttackProfile profile) && profile != null
+                ? Mathf.Max(0f, profile.BaseDamage)
+                : 0f; // 조회 실패 시 안전값
+        }
+
+        private bool TryGetCurrentSegmentAttackProfile(string segmentId, out SegmentAttackProfile profile)
+        {
+            profile = null; // 기본값
+            EnsureConvoyReference(); // 컨보이 보강
+            if (!TryFindSegmentDefinition(segmentId, out SegmentDefinition definition))
+            {
+                return false; // 정의 없음
+            }
+
+            int currentLevel = Convoy != null
+                ? Convoy.GetCurrentSegmentLevel(definition.NormalizedId, definition)
+                : 1; // 컨보이 없으면 Lv1
+
+            if (definition.TryGetLevel(currentLevel, out SegmentLevelDefinition levelDefinition) && levelDefinition.AttackProfile != null)
+            {
+                profile = levelDefinition.AttackProfile; // 레벨 정의 우선
+                return true;
+            }
+
+            if (!definition.TryGetSegmentPrefab(currentLevel, out GameObject prefab) || prefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
+            GenericSegmentWeapon weapon = prefab.GetComponentInChildren<GenericSegmentWeapon>(true); // 프리팹 fallback
+            if (weapon == null || weapon.AttackProfile == null)
+            {
+                return false; // 공격 데이터 없음
+            }
+
+            profile = weapon.AttackProfile;
+            return true;
+        }
+
         ////// 전찬우추가 - 카탈로그 데이터에셋에서 세그먼트 정의 찾기
         private bool TryFindSegmentDefinition(string segmentId, out SegmentDefinition definition)
         {
@@ -975,8 +1048,39 @@ namespace TeamProject01.Gameplay
 
         private int CalculateRequiredExperience(int level) // 필요 경험치 계산
         {
-            int levelIndex = Mathf.Max(0, level - 1); // 1레벨 기준
-            return Mathf.Max(1, BaseExperienceToLevelUp + ExtraExperiencePerLevel * levelIndex); // 선형 증가
+            int safeLevel = Mathf.Max(1, level); // 최소 레벨 보정
+
+            if (safeLevel <= 5)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel1To5, 30); // 초반 빠른 세그먼트 확보
+            }
+
+            if (safeLevel <= 10)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel6To10, 90); // 초반 성장 유지
+            }
+
+            if (safeLevel <= 20)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel11To20, 320); // 1차 빌드 형성 구간
+            }
+
+            if (safeLevel <= 30)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel21To30, 560); // 중반 성장 둔화
+            }
+
+            if (safeLevel <= 40)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel31To40, 850); // 후반 강화 비중 증가
+            }
+
+            return ResolveExperienceRequirement(ExperienceRequirementLevel41Plus, 1150); // Lv41 이후 마무리 구간
+        }
+
+        private static int ResolveExperienceRequirement(int configuredValue, int fallbackValue) // 경험치 구간값 보정
+        {
+            return configuredValue > 0 ? configuredValue : Mathf.Max(1, fallbackValue); // 신규 직렬화 0 방어
         }
     }
 }

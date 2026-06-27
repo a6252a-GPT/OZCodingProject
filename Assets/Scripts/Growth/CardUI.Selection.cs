@@ -415,7 +415,7 @@ public partial class CardUI
             spawnedForCurrentOpen = false; // 다음 오픈 시 새 카드 생성 허용
             isProcessingSelection = false; // 입력 잠금 해제
 
-            CoreStatProvider.Active?.CompleteLevelUpChoice(); // 순환 진행 + StatsChanged → 다음 레벨업 트리거
+            CoreStatProvider.Active?.CompleteLevelUpChoice(); // 선택 완료 + StatsChanged → 다음 레벨업 트리거
         });
     }
 

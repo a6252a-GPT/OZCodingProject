@@ -18,6 +18,9 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "baseSpawnCount", "기본 스폰 수");
             DrawScaleSteps();
 
+            WaveInspectorUtility.DrawSection("난이도 배율", "Stage별로 생성 직후 몬스터 체력/이동속도/Nexus 피해 배율을 적용합니다.");
+            DrawDifficultySteps();
+
             WaveInspectorUtility.DrawSection("일반 몬스터 조합", "현재 Stage에서 사용 가능한 조합 중 하나를 가중치로 고릅니다.");
             DrawCompositions();
 
@@ -71,6 +74,47 @@ namespace TeamProject01.Gameplay.EditorTools
 
             int value = EditorGUILayout.IntField($"{label} (%)", property.intValue);
             property.intValue = UnityEngine.Mathf.Max(0, value);
+        }
+
+        private void DrawDifficultySteps()
+        {
+            SerializedProperty steps = serializedObject.FindProperty("difficultyScaleSteps");
+            WaveInspectorUtility.DrawArray(
+                steps,
+                "난이도 배율 단계",
+                GetDifficultyStepLabel,
+                DrawDifficultyStepBody,
+                "+ 난이도 단계 추가",
+                "- 마지막 단계 삭제");
+        }
+
+        private static string GetDifficultyStepLabel(SerializedProperty step, int index)
+        {
+            int stageValue = step.FindPropertyRelative("startStage")?.intValue ?? 1;
+            int healthScale = step.FindPropertyRelative("healthScalePercent")?.intValue ?? 100;
+            int speedScale = step.FindPropertyRelative("moveSpeedScalePercent")?.intValue ?? 100;
+            int damageScale = step.FindPropertyRelative("nexusDamageScalePercent")?.intValue ?? 100;
+            return $"Stage {stageValue} - HP {healthScale}% / Speed {speedScale}% / Damage {damageScale}%";
+        }
+
+        private static void DrawDifficultyStepBody(SerializedProperty step)
+        {
+            EditorGUILayout.PropertyField(step.FindPropertyRelative("startStage"), new UnityEngine.GUIContent("시작 Stage"));
+            DrawPositiveScaleProperty(step.FindPropertyRelative("healthScalePercent"), "체력 배율");
+            DrawPositiveScaleProperty(step.FindPropertyRelative("moveSpeedScalePercent"), "이동속도 배율");
+            DrawPositiveScaleProperty(step.FindPropertyRelative("nexusDamageScalePercent"), "Nexus 피해 배율");
+        }
+
+        private static void DrawPositiveScaleProperty(SerializedProperty property, string label)
+        {
+            if (property == null)
+            {
+                EditorGUILayout.HelpBox($"{label} 항목을 찾을 수 없습니다.", MessageType.Warning);
+                return;
+            }
+
+            int value = EditorGUILayout.IntField($"{label} (%)", property.intValue);
+            property.intValue = UnityEngine.Mathf.Max(1, value);
         }
 
         private void DrawCompositions()

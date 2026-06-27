@@ -27,4 +27,4 @@ MonoBehaviour:
   TurnSpeedBonus: 0
   CollisionForceBonus: 0
   RejoinRangeBonus: 0
-  NexusHealthBonus: 5
+  NexusHealthBonus: 10

@@ -5,6 +5,11 @@ namespace TeamProject01.Gameplay
 {
     public sealed class BonusChestWaveSpawner : MonoBehaviour
     {
+        private const float Level2RewardRareChanceBonusPercent = 15.0f; // 희귀 상자 기본 레어 보너스
+        private const float Level2RewardUniqueChanceBonusPercent = 5.0f; // 희귀 상자 기본 유니크 보너스
+        private const float Level3RewardRareChanceBonusPercent = 30.0f; // 고급 상자 기본 레어 보너스
+        private const float Level3RewardUniqueChanceBonusPercent = 15.0f; // 고급 상자 기본 유니크 보너스
+
 #pragma warning disable CS0649
         [System.Serializable]
         private sealed class BonusChestGradeRule
@@ -22,25 +27,19 @@ namespace TeamProject01.Gameplay
             [Range(0.0f, 100.0f)]
             public float chancePercent = 86.0f;
 
-            [Tooltip("이 등급 상자가 줄 총 경험치입니다.")]
-            [InspectorName("총 경험치 보상")]
-            [Min(0)]
-            public int experienceReward = 12;
+            [Tooltip("끄면 등급 인덱스 기본값을 사용합니다. Lv1=0/0, Lv2=+15/+5, Lv3=+30/+15")]
+            [InspectorName("보상 확률 직접 지정")]
+            public bool overrideRewardChoiceTierChanceBonus;
 
-            [Tooltip("이 등급 상자가 줄 총 골드입니다.")]
-            [InspectorName("총 골드 보상")]
-            [Min(0)]
-            public int goldReward = 20;
+            [Tooltip("보상 선택 카드의 레어 등장 확률에 더할 값입니다.")]
+            [InspectorName("보상 레어 확률 보너스(%)")]
+            [Range(0.0f, 100.0f)]
+            public float rewardChoiceRareChanceBonusPercent;
 
-            [Tooltip("경험치 보상을 몇 조각으로 나눠 떨어뜨릴지 정합니다.")]
-            [InspectorName("경험치 드랍 개수")]
-            [Range(1, 40)]
-            public int experienceDropCount = 6;
-
-            [Tooltip("골드 보상을 몇 조각으로 나눠 떨어뜨릴지 정합니다.")]
-            [InspectorName("골드 드랍 개수")]
-            [Range(1, 60)]
-            public int goldDropCount = 8;
+            [Tooltip("보상 선택 카드의 유니크 등장 확률에 더할 값입니다.")]
+            [InspectorName("보상 유니크 확률 보너스(%)")]
+            [Range(0.0f, 100.0f)]
+            public float rewardChoiceUniqueChanceBonusPercent;
         }
 #pragma warning restore CS0649
 
@@ -113,36 +112,24 @@ namespace TeamProject01.Gameplay
         [InspectorName("Lv3 등장 시 Lv2 제외")]
         [SerializeField] private bool blockLevel2WhenLevel3Appears = true; // 고급 상자의 희소성을 지킵니다.
 
-        [Tooltip("상자 등급별 프리팹, 등장 확률, 보상량, 드랍 개수를 정합니다.")]
+        [Tooltip("상자 등급별 프리팹, 등장 확률, 보상 선택 등급 확률 보너스를 정합니다.")]
         [InspectorName("상자 등급 목록")]
         [SerializeField] private BonusChestGradeRule[] chestGrades =
         {
             new BonusChestGradeRule
             {
                 displayName = "Lv1 일반 상자",
-                chancePercent = 86.0f,
-                experienceReward = 12,
-                goldReward = 20,
-                experienceDropCount = 6,
-                goldDropCount = 8
+                chancePercent = 86.0f
             },
             new BonusChestGradeRule
             {
                 displayName = "Lv2 희귀 상자",
-                chancePercent = 12.0f,
-                experienceReward = 30,
-                goldReward = 50,
-                experienceDropCount = 10,
-                goldDropCount = 14
+                chancePercent = 12.0f
             },
             new BonusChestGradeRule
             {
                 displayName = "Lv3 고급 상자",
-                chancePercent = 2.0f,
-                experienceReward = 70,
-                goldReward = 110,
-                experienceDropCount = 16,
-                goldDropCount = 22
+                chancePercent = 2.0f
             }
         };
 
@@ -171,7 +158,7 @@ namespace TeamProject01.Gameplay
                     continue;
                 }
 
-                BonusChest spawnedChest = SpawnChest(grade, center, root, usedPositions);
+                BonusChest spawnedChest = SpawnChest(grade, selectedGradeIndex, center, root, usedPositions);
                 if (spawnedChest == null)
                 {
                     continue;
@@ -214,7 +201,7 @@ namespace TeamProject01.Gameplay
             return true;
         }
 
-        private BonusChest SpawnChest(BonusChestGradeRule grade, Vector3 center, Transform root, List<Vector3> usedPositions)
+        private BonusChest SpawnChest(BonusChestGradeRule grade, int gradeIndex, Vector3 center, Transform root, List<Vector3> usedPositions)
         {
             BonusChest prefab = grade.prefab != null ? grade.prefab : chestPrefab;
             if (prefab == null)
@@ -228,8 +215,40 @@ namespace TeamProject01.Gameplay
             BonusChest chest = Instantiate(prefab, position, rotation, root);
             chest.ConfigureOwner(this);
             chest.ConfigureChoiceGroup(root, allowOnlyOneChoice, unselectedChestDestroyDelay);
-            chest.ConfigureReward(grade.experienceReward, grade.goldReward, grade.experienceDropCount, grade.goldDropCount);
+            chest.ConfigureRewardChoiceTierBonus(
+                ResolveRewardChoiceRareChanceBonus(grade, gradeIndex),
+                ResolveRewardChoiceUniqueChanceBonus(grade, gradeIndex));
             return chest;
+        }
+
+        private static float ResolveRewardChoiceRareChanceBonus(BonusChestGradeRule grade, int gradeIndex)
+        {
+            if (grade != null && grade.overrideRewardChoiceTierChanceBonus)
+            {
+                return Mathf.Clamp(grade.rewardChoiceRareChanceBonusPercent, 0.0f, 100.0f);
+            }
+
+            return gradeIndex switch
+            {
+                1 => Level2RewardRareChanceBonusPercent,
+                2 => Level3RewardRareChanceBonusPercent,
+                _ => 0.0f
+            };
+        }
+
+        private static float ResolveRewardChoiceUniqueChanceBonus(BonusChestGradeRule grade, int gradeIndex)
+        {
+            if (grade != null && grade.overrideRewardChoiceTierChanceBonus)
+            {
+                return Mathf.Clamp(grade.rewardChoiceUniqueChanceBonusPercent, 0.0f, 100.0f);
+            }
+
+            return gradeIndex switch
+            {
+                1 => Level2RewardUniqueChanceBonusPercent,
+                2 => Level3RewardUniqueChanceBonusPercent,
+                _ => 0.0f
+            };
         }
 
         private int RollGradeIndex(int currentHighGradeCount, bool level3Appeared)

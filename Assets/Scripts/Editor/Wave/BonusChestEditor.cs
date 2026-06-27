@@ -14,18 +14,15 @@ namespace TeamProject01.Gameplay.EditorTools
             EditorGUILayout.Space(8.0f);
 
             DrawSectionTitle("상자 감지 설정");
-            DrawHelp("컨보이 머리가 열림 거리 안에 들어오면 상자가 열리고, 보상 드랍 거리 안에서 딜레이가 끝나면 보상이 떨어집니다.");
+            DrawHelp("컨보이 머리가 열림 거리 안에 들어오면 상자가 열리고, 보상 선택 거리 안에서 딜레이가 끝나면 보상 화면이 열립니다.");
             DrawProperty("openDistance", "열림 거리");
-            DrawProperty("collectDistance", "보상 드랍 거리");
+            DrawProperty("collectDistance", "보상 선택 거리");
 
-            DrawSectionTitle("보상 설정");
-            DrawHelp("총 보상량은 밸런스, 드랍 개수는 화면 연출입니다. 개수를 늘리면 보상이 우르르 떨어지는 느낌이 강해집니다.");
-            DrawProperty("experienceReward", "총 경험치 보상");
-            DrawProperty("goldReward", "총 골드 보상");
-            DrawProperty("experienceDropCount", "경험치 드랍 개수");
-            DrawProperty("goldDropCount", "골드 드랍 개수");
-            DrawProperty("rewardSpreadRadius", "보상 퍼짐 반경");
-            DrawProperty("rewardDropDelay", "보상 드랍 딜레이(초)");
+            DrawSectionTitle("보상 선택 설정");
+            DrawHelp("상자는 직접 경험치/골드를 드랍하지 않고 보상 선택 화면을 엽니다. 레어/유니크 보너스는 보상 카드 등급 확률에 더해집니다.");
+            DrawProperty("rewardChoiceRareChanceBonusPercent", "보상 레어 확률 보너스(%)");
+            DrawProperty("rewardChoiceUniqueChanceBonusPercent", "보상 유니크 확률 보너스(%)");
+            DrawProperty("rewardDropDelay", "보상 선택 딜레이(초)");
 
             DrawSectionTitle("애니메이션 설정");
             DrawHelp("상자가 자동으로 열리면 애니메이터 정지를 켜고, 너무 느리면 열림 애니메이션 속도를 올립니다.");

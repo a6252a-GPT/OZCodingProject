@@ -22,7 +22,7 @@ MonoBehaviour:
   LevelDelta: 1
   DamageMultiplierBonus: 0
   MeleeDamageMultiplierBonus: 0
-  MagicDamageMultiplierBonus: 0.08
+  MagicDamageMultiplierBonus: 0.1
   AttackSpeedMultiplierBonus: 0
   TurnSpeedBonus: 0
   CollisionForceBonus: 0

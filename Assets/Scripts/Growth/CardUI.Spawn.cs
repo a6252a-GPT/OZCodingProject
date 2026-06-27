@@ -52,7 +52,7 @@ public partial class CardUI
 
         currentSpawnPhase = activePanelMode == CardPanelMode.SegmentTicketChoice
             ? LevelUpCardPhase.SegmentAction // 선택권은 기존 세그먼트 선택 흐름만 사용
-            : ResolveLevelUpCardPhase(); // 스탯 → 무기강화 → 세그먼트 3종 순환
+            : ResolveLevelUpCardPhase(); // 레벨 구간별 세그먼트 선택/강화풀 로테이션
         rerollAllowedForCurrentChoices = true; // 1차 랜덤 선택지만 리롤 가능
         SpawnCardsForCurrentPhase();
         RefreshRerollUi();
@@ -62,6 +62,9 @@ public partial class CardUI
     {
         switch (currentSpawnPhase)
         {
+            case LevelUpCardPhase.Upgrade:
+                SpawnUpgradePoolCards(); // 공통 강화 + 보유 세그먼트 무기 강화 통합 풀
+                return;
             case LevelUpCardPhase.WeaponEnhance:
                 if (useSegmentSelectWeaponEnhanceFlow)
                 {
@@ -141,6 +144,207 @@ public partial class CardUI
         }
 
         PlaySpawnOpenTween(spawnedCards);
+    }
+
+    private void SpawnUpgradePoolCards()
+    {
+        List<WeightedUpgradePoolEntry> pool = BuildUpgradePoolEntries(); // 공통+무기 강화 통합 후보
+        int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
+        if (pool.Count == 0)
+        {
+            Debug.LogWarning("[CardUI] 강화풀 카드 후보가 비어 있습니다.", this);
+            return;
+        }
+
+        List<WeightedUpgradePoolEntry> picked = PickWeightedUpgradePoolEntries(pool, spawnCount); // 통합 풀에서 3장
+        for (int i = 0; i < spawnCount; i++)
+        {
+            RectTransform slot = cardSlots[i]; // 슬롯별 배치
+            if (slot == null || i >= picked.Count)
+            {
+                continue; // 슬롯/후보 없음
+            }
+
+            SpawnedCardEntry entry = CreateUpgradePoolCard(picked[i], slot, i); // 후보 종류별 카드 생성
+            if (entry == null)
+            {
+                continue; // 생성 실패
+            }
+
+            spawnedCards.Add(entry); // 생성 목록 등록
+        }
+
+        PlaySpawnOpenTween(spawnedCards); // 등장 연출
+    }
+
+    private List<WeightedUpgradePoolEntry> BuildUpgradePoolEntries()
+    {
+        List<WeightedUpgradePoolEntry> results = new List<WeightedUpgradePoolEntry>(); // 통합 후보
+        List<StatUpgradeDefinition> statDefinitions = BuildStatUpgradeDefinitionPool(); // 데이터 에셋 우선
+        if (statDefinitions.Count > 0)
+        {
+            for (int i = 0; i < statDefinitions.Count; i++)
+            {
+                StatUpgradeDefinition definition = statDefinitions[i]; // 공통 강화 데이터
+                if (definition == null)
+                {
+                    continue; // null 제외
+                }
+
+                results.Add(new WeightedUpgradePoolEntry
+                {
+                    Kind = UpgradePoolCardKind.StatDefinition,
+                    StatDefinition = definition,
+                    Weight = ResolveStatDefinitionWeight(definition)
+                });
+            }
+        }
+        else
+        {
+            GameObject[] statPrefabs = BuildStatUpgradeSourcePrefabs(); // 기존 프리팹 fallback
+            for (int i = 0; statPrefabs != null && i < statPrefabs.Length; i++)
+            {
+                GameObject prefab = statPrefabs[i]; // 공통 강화 프리팹
+                if (prefab == null)
+                {
+                    continue; // null 제외
+                }
+
+                results.Add(new WeightedUpgradePoolEntry
+                {
+                    Kind = UpgradePoolCardKind.StatPrefab,
+                    StatPrefab = prefab,
+                    Weight = ResolveStatPrefabWeight(prefab)
+                });
+            }
+        }
+
+        List<WeaponDefinition> weaponDefinitions = new List<WeaponDefinition>(); // 보유 세그먼트 무기 강화
+        BuildWeaponEnhancementPool(weaponDefinitions, ownedSegmentsOnly: true);
+        for (int i = 0; i < weaponDefinitions.Count; i++)
+        {
+            WeaponDefinition definition = weaponDefinitions[i]; // 무기 강화 데이터
+            if (definition == null || !definition.HasAnyStatBonus || !definition.HasTarget)
+            {
+                continue; // 적용 불가 제외
+            }
+
+            results.Add(new WeightedUpgradePoolEntry
+            {
+                Kind = UpgradePoolCardKind.WeaponEnhancement,
+                WeaponDefinition = definition,
+                Weight = baseCardSpawnWeight
+            });
+        }
+
+        return results;
+    }
+
+    private float ResolveStatDefinitionWeight(StatUpgradeDefinition definition)
+    {
+        float weight = baseCardSpawnWeight; // 기본 가중치
+        if (lastSelectedStatCardDefinition != null && definition == lastSelectedStatCardDefinition)
+        {
+            weight += selectedCardWeightBonus; // 직전 선택 공통 카드 보정
+        }
+
+        return weight;
+    }
+
+    private float ResolveStatPrefabWeight(GameObject prefab)
+    {
+        float weight = baseCardSpawnWeight; // 기본 가중치
+        if (lastSelectedStatCardPrefab != null && prefab == lastSelectedStatCardPrefab)
+        {
+            weight += selectedCardWeightBonus; // 직전 선택 공통 카드 보정
+        }
+
+        return weight;
+    }
+
+    private SpawnedCardEntry CreateUpgradePoolCard(WeightedUpgradePoolEntry candidate, RectTransform slot, int slotIndex)
+    {
+        switch (candidate.Kind)
+        {
+            case UpgradePoolCardKind.StatDefinition:
+                return CreateStatUpgradeCard(candidate.StatDefinition, slot); // 공통 강화 데이터
+            case UpgradePoolCardKind.StatPrefab:
+                return CreateStatUpgradeCard(candidate.StatPrefab, slot); // 공통 강화 프리팹
+            case UpgradePoolCardKind.WeaponEnhancement:
+                GameObject template = GetSegmentCardTemplate(slotIndex); // 세그먼트 강화 카드 양식
+                return CreateWeaponEnhancementCard(candidate.WeaponDefinition, template, slotIndex, slot, 1); // 보유 세그먼트 무기 강화
+            default:
+                return null;
+        }
+    }
+
+    private static List<WeightedUpgradePoolEntry> PickWeightedUpgradePoolEntries(List<WeightedUpgradePoolEntry> pool, int count)
+    {
+        List<WeightedUpgradePoolEntry> picked = new List<WeightedUpgradePoolEntry>(Mathf.Max(0, count)); // 선택 결과
+        if (pool == null || pool.Count == 0 || count <= 0)
+        {
+            return picked; // 후보 없음
+        }
+
+        List<WeightedUpgradePoolEntry> remaining = new List<WeightedUpgradePoolEntry>(pool); // 1차 중복 방지
+        while (picked.Count < count && remaining.Count > 0)
+        {
+            if (!TryPickWeightedUpgradePoolEntry(remaining, out int selectedIndex))
+            {
+                break; // 선택 실패
+            }
+
+            picked.Add(remaining[selectedIndex]); // 선택 후보 추가
+            remaining.RemoveAt(selectedIndex); // 같은 카드 우선 중복 방지
+        }
+
+        while (picked.Count < count && pool.Count > 0)
+        {
+            if (!TryPickWeightedUpgradePoolEntry(pool, out int selectedIndex))
+            {
+                break; // fallback 실패
+            }
+
+            picked.Add(pool[selectedIndex]); // 풀 부족 시 중복 허용
+        }
+
+        return picked;
+    }
+
+    private static bool TryPickWeightedUpgradePoolEntry(List<WeightedUpgradePoolEntry> pool, out int selectedIndex)
+    {
+        selectedIndex = -1;
+        if (pool == null || pool.Count == 0)
+        {
+            return false; // 후보 없음
+        }
+
+        float totalWeight = 0f;
+        for (int i = 0; i < pool.Count; i++)
+        {
+            totalWeight += Mathf.Max(0f, pool[i].Weight); // 음수 방지
+        }
+
+        if (totalWeight <= 0f)
+        {
+            selectedIndex = pool.Count - 1; // fallback
+            return true;
+        }
+
+        float roll = Random.Range(0f, totalWeight); // 0~합계 난수
+        float cumulative = 0f;
+        selectedIndex = pool.Count - 1; // 부동소수 오차 fallback
+        for (int i = 0; i < pool.Count; i++)
+        {
+            cumulative += Mathf.Max(0f, pool[i].Weight);
+            if (roll < cumulative)
+            {
+                selectedIndex = i;
+                return true;
+            }
+        }
+
+        return true;
     }
 
     private List<StatUpgradeDefinition> BuildStatUpgradeDefinitionPool()
@@ -312,11 +516,34 @@ public partial class CardUI
         return prefab.GetComponentInChildren<StatUpgrade>(true); // 자식 fallback
     }
 
-    private static LevelUpCardPhase ResolveLevelUpCardPhase() // CoreStatProvider 순환 인덱스 → 이번 카드 종류
+    private static LevelUpCardPhase ResolveLevelUpCardPhase() // 현재 레벨 → 이번 카드 종류
     {
         CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
-        int cycleIndex = core != null ? core.LevelUpCardCycleIndex : 0; // 레벨업 선택 완료 횟수
-        return (LevelUpCardPhase)(cycleIndex % 3); // 0=스탯, 1=무기강화, 2=세그먼트
+        int level = core != null ? Mathf.Max(1, core.CurrentLevel) : 1; // 선택 전 현재 레벨
+        if (level <= 5)
+        {
+            return LevelUpCardPhase.SegmentAction; // 1~5: 세그먼트 선택만
+        }
+
+        if (level <= 20)
+        {
+            int index = level - 6; // 6레벨부터 S/S/U 반복
+            return index % 3 < 2 ? LevelUpCardPhase.SegmentAction : LevelUpCardPhase.Upgrade;
+        }
+
+        if (level <= 30)
+        {
+            int index = level - 21; // 21레벨부터 S/U 반복
+            return index % 2 == 0 ? LevelUpCardPhase.SegmentAction : LevelUpCardPhase.Upgrade;
+        }
+
+        if (level <= 45)
+        {
+            int index = level - 31; // 31레벨부터 S/U/U 반복
+            return index % 3 == 0 ? LevelUpCardPhase.SegmentAction : LevelUpCardPhase.Upgrade;
+        }
+
+        return LevelUpCardPhase.Upgrade; // 46+: 강화풀만
     }
 
     // 세그먼트 ADD 풀: 카탈로그 후보 3장 생성, 부족하면 없음 카드 표시
@@ -336,7 +563,7 @@ public partial class CardUI
         }
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
-        List<SegmentCatalogEntry> picked = PickRandomSegmentEntries(candidates, spawnCount); // 후보 랜덤 선택
+        List<SegmentCatalogEntry> picked = PickSegmentChoiceEntriesWithOwnedGuarantee(candidates, spawnCount); // 보유 1장 확정 + 나머지 랜덤
         for (int i = 0; i < spawnCount; i++)
         {
             GameObject prefab = GetSegmentChoiceCardTemplate(); // 후보 선택 1단계 전용 템플릿
@@ -714,7 +941,7 @@ public partial class CardUI
                     $"CardIconSpritesPerLevel 또는 CardIconSprite 를 Inspector 에서 할당하세요. (TargetSegmentId={definition.TargetSegmentId})", definition);
             }
 
-            ApplyCardTextsDirectly(entry.Root, definition.DisplayName, tieredDescription, iconSprite, definition.CardIconSizeOffset);
+            ApplyCardTextsDirectly(entry.Root, definition.DisplayName, tieredDescription, iconSprite, definition.CardIconSizeOffset, iconSizeAlreadyApplied: entry.SegmentAddCard != null);
         }
 
         if (definition != null && !definition.HasAnyStatBonus)
@@ -1064,6 +1291,82 @@ public partial class CardUI
 
         int pickCount = Mathf.Min(Mathf.Max(0, count), shuffled.Count); // 선택 수 보정
         return shuffled.GetRange(0, pickCount); // 선택 결과
+    }
+
+    // 세그먼트 선택카드 3장 중 1장은 보유 세그먼트 후보로 확정
+    private List<SegmentCatalogEntry> PickSegmentChoiceEntriesWithOwnedGuarantee(List<SegmentCatalogEntry> candidates, int count)
+    {
+        List<SegmentCatalogEntry> results = new List<SegmentCatalogEntry>(Mathf.Max(0, count)); // 최종 선택
+        if (candidates == null || candidates.Count == 0 || count <= 0)
+        {
+            return results; // 후보 없음
+        }
+
+        List<SegmentCatalogEntry> validCandidates = BuildValidSegmentChoiceCandidates(candidates); // ID 있는 후보만
+        if (validCandidates.Count == 0)
+        {
+            return results; // 유효 후보 없음
+        }
+
+        HashSet<string> ownedSegmentIds = CollectOwnedSegmentIds(); // 현재 보유 세그먼트
+        if (ownedSegmentIds.Count > 0)
+        {
+            List<SegmentCatalogEntry> ownedCandidates = new List<SegmentCatalogEntry>(); // 보유 후보
+            for (int i = 0; i < validCandidates.Count; i++)
+            {
+                SegmentCatalogEntry entry = validCandidates[i]; // 후보
+                if (ownedSegmentIds.Contains(entry.NormalizedId))
+                {
+                    ownedCandidates.Add(entry); // 보유 세그먼트 후보 등록
+                }
+            }
+
+            if (ownedCandidates.Count > 0)
+            {
+                SegmentCatalogEntry ownedPick = ownedCandidates[Random.Range(0, ownedCandidates.Count)]; // 보유 1장 확정
+                results.Add(ownedPick);
+                RemoveSegmentCandidateById(validCandidates, ownedPick.NormalizedId); // 나머지 랜덤 중복 방지
+            }
+        }
+
+        List<SegmentCatalogEntry> randomPicks = PickRandomSegmentEntries(validCandidates, count - results.Count); // 남은 칸 랜덤
+        results.AddRange(randomPicks);
+        return results;
+    }
+
+    private static List<SegmentCatalogEntry> BuildValidSegmentChoiceCandidates(List<SegmentCatalogEntry> candidates)
+    {
+        List<SegmentCatalogEntry> valid = new List<SegmentCatalogEntry>(); // 유효 후보
+        if (candidates == null)
+        {
+            return valid; // 없음
+        }
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (candidates[i].HasId)
+            {
+                valid.Add(candidates[i]); // ID 있는 후보만 사용
+            }
+        }
+
+        return valid;
+    }
+
+    private static void RemoveSegmentCandidateById(List<SegmentCatalogEntry> candidates, string segmentId)
+    {
+        if (candidates == null || string.IsNullOrWhiteSpace(segmentId))
+        {
+            return; // 제거 대상 없음
+        }
+
+        for (int i = candidates.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(candidates[i].NormalizedId, segmentId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                candidates.RemoveAt(i); // 같은 ID 중복 제거
+            }
+        }
     }
 
     // 세그먼트 후보 카드 데이터 주입

@@ -75,9 +75,10 @@ public partial class CardUI
 
     private enum LevelUpCardPhase
     {
-        StatUpgrade = 0, // 스탯 강화
-        WeaponEnhance = 1, // 세그먼트 무기 강화 (A: 세그먼트 선택→강화 / B: 랜덤 강화)
-        SegmentAction = 2 // 세그먼트 추가/레벨업
+        Upgrade = 0, // 공통 강화 + 보유 세그먼트 무기 강화 통합 풀
+        StatUpgrade = 1, // 스탯 강화 단독 fallback
+        WeaponEnhance = 2, // 세그먼트 무기 강화 단독 fallback
+        SegmentAction = 3 // 세그먼트 추가/레벨업
     }
 
     private enum CardPanelMode
@@ -128,6 +129,22 @@ public partial class CardUI
     private struct WeightedSegmentCatalogEntry // A 모드 세그먼트 선택 가중치용
     {
         public SegmentCatalogEntry Entry; // 카탈로그 후보
+        public float Weight; // 등장 가중치
+    }
+
+    private enum UpgradePoolCardKind
+    {
+        StatDefinition = 0, // 데이터 에셋 기반 공통 강화
+        StatPrefab = 1, // 기존 프리팹 기반 공통 강화
+        WeaponEnhancement = 2 // 세그먼트 무기 강화
+    }
+
+    private struct WeightedUpgradePoolEntry // 공통+무기 강화 통합 풀 후보
+    {
+        public UpgradePoolCardKind Kind; // 후보 종류
+        public StatUpgradeDefinition StatDefinition; // 데이터 에셋 공통 강화
+        public GameObject StatPrefab; // 프리팹 공통 강화
+        public WeaponDefinition WeaponDefinition; // 무기 강화
         public float Weight; // 등장 가중치
     }
 

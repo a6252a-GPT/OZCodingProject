@@ -34,7 +34,7 @@ namespace TeamProject01.Gameplay.EditorTools
             DrawProperty("unselectedChestDestroyDelay", "미선택 상자 제거 대기(초)");
 
             DrawSectionTitle("등급 확률 설정");
-            DrawHelp("확률은 % 기준입니다. Lv2 이상 최대 등장 수로 과한 보상을 막습니다.");
+            DrawHelp("확률은 % 기준입니다. 상자 등급은 보상 선택 카드의 레어/유니크 등장 확률 보너스로 연결됩니다.");
             DrawProperty("maxHighGradeCount", "Lv2 이상 최대 등장 수");
             DrawProperty("blockLevel2WhenLevel3Appears", "Lv3 등장 시 Lv2 제외");
             DrawChestGrades();
@@ -128,10 +128,9 @@ namespace TeamProject01.Gameplay.EditorTools
                 DrawRelativeProperty(grade, "displayName", "등급 이름");
                 DrawRelativeProperty(grade, "prefab", "상자 프리팹");
                 DrawRelativeProperty(grade, "chancePercent", "등장 확률 (%)");
-                DrawRelativeProperty(grade, "experienceReward", "총 경험치 보상");
-                DrawRelativeProperty(grade, "goldReward", "총 골드 보상");
-                DrawRelativeProperty(grade, "experienceDropCount", "경험치 드랍 개수");
-                DrawRelativeProperty(grade, "goldDropCount", "골드 드랍 개수");
+                DrawRelativeProperty(grade, "overrideRewardChoiceTierChanceBonus", "보상 확률 직접 지정");
+                DrawRelativeProperty(grade, "rewardChoiceRareChanceBonusPercent", "보상 레어 확률 보너스 (%)");
+                DrawRelativeProperty(grade, "rewardChoiceUniqueChanceBonusPercent", "보상 유니크 확률 보너스 (%)");
                 EditorGUI.indentLevel--;
             }
 

@@ -32,7 +32,7 @@ public partial class CardUI
             return null;
         }
 
-        StatUpgrade.StatCardTier tier = StatUpgrade.RollTier(rareCardChancePercent, uniqueCardChancePercent);
+        StatUpgrade.StatCardTier tier = RollRewardChoiceTier();
         SpawnedCardEntry entry = CreateSpawnedCard(template, slot, template, skipStatUpgradeRoll: true);
         if (entry == null)
         {
@@ -65,6 +65,13 @@ public partial class CardUI
     {
         GameObject template = ResolveStatUpgradeTemplatePrefab(null); // 공통 강화 카드 기본 프리팹
         return template != null ? template : segmentCardBasePrefab;
+    }
+
+    private StatUpgrade.StatCardTier RollRewardChoiceTier()
+    {
+        float rareChance = Mathf.Clamp(rareCardChancePercent + pendingRewardRareChanceBonusPercent, 0.0f, 100.0f);
+        float uniqueChance = Mathf.Clamp(uniqueCardChancePercent + pendingRewardUniqueChanceBonusPercent, 0.0f, 100.0f);
+        return StatUpgrade.RollTier(rareChance, uniqueChance); // 상자 등급 보너스 반영
     }
 
     private static RewardChoiceKind ResolveRewardChoiceKind(int index)
@@ -242,7 +249,7 @@ public partial class CardUI
 
         spawnedForCurrentOpen = false;
         isProcessingSelection = false;
-        currentSpawnPhase = LevelUpCardPhase.StatUpgrade;
+        currentSpawnPhase = LevelUpCardPhase.Upgrade;
         ui.SetUseRewardTitle(activePanelMode != CardPanelMode.LevelUp);
         ui.Open();
         return true;
@@ -255,7 +262,14 @@ public partial class CardUI
         pendingRewardExperience = 0;
         pendingRewardGold = 0;
         pendingRewardSegmentTicketCount = 0;
+        ClearRewardChoiceTierChanceBonus();
         ResolveLevelUpUi()?.SetUseRewardTitle(false);
+    }
+
+    private void ClearRewardChoiceTierChanceBonus()
+    {
+        pendingRewardRareChanceBonusPercent = 0.0f;
+        pendingRewardUniqueChanceBonusPercent = 0.0f;
     }
 
     private void ApplySegmentChoiceTicketOverrides(SpawnedCardEntry entry)

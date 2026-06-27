@@ -733,31 +733,36 @@ public partial class CardUI
 
         SegmentUpgradeData segmentUpgrade = core.GetSegmentUpgrade(segmentId);
         float baseDamage = weaponBonus.ResolveBaseDamage(profile.BaseDamage);
-        float coreDamageMultiplier = Mathf.Max(0f, core.DamageMultiplier + globalDamageBonus);
-        float damage = (Mathf.Max(0f, baseDamage) + core.FlatDamageBonus) * coreDamageMultiplier;
+        float commonDamageBonus = CalculateCommonBaseDamageBonus(core, segmentId, profile.BaseDamage, globalDamageBonus, meleeDamageBonus, magicDamageBonus);
+        float damage = Mathf.Max(0f, baseDamage) + commonDamageBonus + core.FlatDamageBonus;
         damage = segmentUpgrade.ApplyDamage(damage);
-        damage *= ResolveCommonTooltipCategoryDamageMultiplier(core, segmentId, meleeDamageBonus, magicDamageBonus);
         return damage;
     }
 
-    private static float ResolveCommonTooltipCategoryDamageMultiplier(CoreStatProvider core, string segmentId, float meleeDamageBonus, float magicDamageBonus)
+    private static float CalculateCommonBaseDamageBonus(
+        CoreStatProvider core,
+        string segmentId,
+        float profileBaseDamage,
+        float globalDamageBonus,
+        float meleeDamageBonus,
+        float magicDamageBonus)
     {
         if (core == null)
         {
-            return 1f;
+            return 0f;
         }
 
+        float bonusRate = Mathf.Max(0f, core.DamageMultiplier - 1f + globalDamageBonus); // 모든 무기 공격력
         if (core.IsMeleeWeaponSegment(segmentId))
         {
-            return Mathf.Max(0f, 1f + core.MeleeDamageMultiplierBonus + meleeDamageBonus);
+            bonusRate += Mathf.Max(0f, core.MeleeDamageMultiplierBonus + meleeDamageBonus); // 밀리 기초 보너스
         }
-
-        if (core.IsMagicWeaponSegment(segmentId))
+        else if (core.IsMagicWeaponSegment(segmentId))
         {
-            return Mathf.Max(0f, 1f + core.MagicDamageMultiplierBonus + magicDamageBonus);
+            bonusRate += Mathf.Max(0f, core.MagicDamageMultiplierBonus + magicDamageBonus); // 마법 기초 보너스
         }
 
-        return 1f;
+        return Mathf.Max(0f, profileBaseDamage) * Mathf.Max(0f, bonusRate);
     }
 
     private static float CalculateCommonTooltipSegmentCooldown(CoreStatProvider core, string segmentId, SegmentAttackProfile profile, float cooldownBonus)
@@ -1191,7 +1196,7 @@ public partial class CardUI
 
         WeaponStatBonusData beforeBonus = core.GetWeaponStatBonus(segmentId);
         WeaponStatBonusData afterBonus = beforeBonus;
-        afterBonus.AddDefinition(entry.WeaponDefinition, entry.WeaponEnhancementTier);
+        afterBonus.AddDefinition(entry.WeaponDefinition, entry.WeaponEnhancementTier, profile.BaseDamage);
         float beforeDps = EstimateSingleTargetDps(core, segmentId, profile, beforeBonus);
         float afterDps = EstimateSingleTargetDps(core, segmentId, profile, afterBonus);
 

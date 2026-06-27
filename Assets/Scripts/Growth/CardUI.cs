@@ -167,8 +167,10 @@ public partial class CardUI : MonoBehaviour
     private int pendingRewardExperience; // 보상 선택 후 닫힘 완료 시 지급
     private int pendingRewardGold; // 보상 선택 후 닫힘 완료 시 지급
     private int pendingRewardSegmentTicketCount; // 보상 선택 후 이어서 열 선택권 수
+    private float pendingRewardRareChanceBonusPercent; // 상자 등급이 보상 카드 레어 확률에 더하는 값
+    private float pendingRewardUniqueChanceBonusPercent; // 상자 등급이 보상 카드 유니크 확률에 더하는 값
     private static bool loggedWeaponEnhancementInitial; // 무기 강화 초기 디버그 1회
-    private LevelUpCardPhase currentSpawnPhase = LevelUpCardPhase.StatUpgrade; // 이번 레벨업 카드 종류
+    private LevelUpCardPhase currentSpawnPhase = LevelUpCardPhase.Upgrade; // 이번 레벨업 카드 종류
     private string selectedSegmentWeaponStatId; // 카드 선택으로 갱신되는 디버그 표시 대상
     private CoreStatProvider segmentWeaponStatSubscribedCore; // 스탯 변경 구독 대상
     private Coroutine hideSegmentListCoroutine; // 안건준 추가 - 0622 — 코루틴 참조 (혹시 중복 방지용)
@@ -245,7 +247,7 @@ public partial class CardUI : MonoBehaviour
         if (panelOpen && !spawnedForCurrentOpen)
         {
             BeginRerollForPanelOpen(); // 마법책 개수만큼 이번 선택창 리롤 충전
-            SpawnLevelUpCards(); // 순환 순서에 맞는 카드 생성
+            SpawnLevelUpCards(); // 현재 레벨 구간에 맞는 카드 생성
             spawnedForCurrentOpen = true;
             ShowSegmentListPopupOnPanelOpen(); // 안건준 추가 - 0622 — 트리거 바만 표시
             TryStartAutoSelect(); // 안건준 추가 - 0622 : 자동모드면 자동선택 코루틴 시작
@@ -258,7 +260,7 @@ public partial class CardUI : MonoBehaviour
             ClearSpawnedCards(); // 패널 닫힘 → 카드 정리
             spawnedForCurrentOpen = false;
             isProcessingSelection = false;
-            currentSpawnPhase = LevelUpCardPhase.StatUpgrade; // 다음 오픈 시 재계산
+            currentSpawnPhase = LevelUpCardPhase.Upgrade; // 다음 오픈 시 재계산
             remainingRerollCount = 0; // 패널 닫힘 → 리롤 소멸
             rerollAllowedForCurrentChoices = false; // 다음 오픈 전까지 비활성
             RefreshRerollUi(); // 버튼 숨김/비활성 갱신
@@ -296,7 +298,21 @@ public partial class CardUI : MonoBehaviour
 
     public bool OpenRewardChoice() // 상자 등 외부 보상 선택 진입점
     {
-        return OpenSpecialCardPanel(CardPanelMode.RewardChoice, 0);
+        return OpenRewardChoice(0.0f, 0.0f);
+    }
+
+    public bool OpenRewardChoice(float rareChanceBonusPercent, float uniqueChanceBonusPercent) // 등급 상자용 보상 선택 진입점
+    {
+        pendingRewardRareChanceBonusPercent = Mathf.Clamp(rareChanceBonusPercent, 0.0f, 100.0f);
+        pendingRewardUniqueChanceBonusPercent = Mathf.Clamp(uniqueChanceBonusPercent, 0.0f, 100.0f);
+
+        bool opened = OpenSpecialCardPanel(CardPanelMode.RewardChoice, 0);
+        if (!opened)
+        {
+            ClearRewardChoiceTierChanceBonus(); // 열기 실패 시 다음 보상에 영향 방지
+        }
+
+        return opened;
     }
 
     public bool OpenSegmentChoiceTicket(int ticketCount) // 월드드랍/보상카드 선택권 진입점
@@ -307,6 +323,7 @@ public partial class CardUI : MonoBehaviour
             return false;
         }
 
+        ClearRewardChoiceTierChanceBonus(); // 선택권 직접 진입은 상자 보너스 없음
         return OpenSpecialCardPanel(CardPanelMode.SegmentTicketChoice, safeCount);
     }
 
@@ -332,7 +349,7 @@ public partial class CardUI : MonoBehaviour
         pendingRewardSegmentTicketCount = 0;
         spawnedForCurrentOpen = false;
         isProcessingSelection = false;
-        currentSpawnPhase = LevelUpCardPhase.StatUpgrade;
+        currentSpawnPhase = LevelUpCardPhase.Upgrade;
         ui.SetUseRewardTitle(mode != CardPanelMode.LevelUp); // 보상/선택권은 보상획득 타이틀
         ui.Open();
         return true;
@@ -874,9 +891,10 @@ public partial class CardUI : MonoBehaviour
             : definition.Description;
         if (string.IsNullOrWhiteSpace(description) || !description.Contains(DescriptionValueToken))
         {
-            description = BuildDefaultWeaponDescription(definition);
+            description = BuildDefaultWeaponDescription(definition, tier);
         }
 
+        description = ApplyUniqueDamageAmplifyWord(description, definition, tier);
         return BuildWeaponDescriptionWithValue(description, definition, tier);
     }
 
@@ -1027,7 +1045,7 @@ public partial class CardUI : MonoBehaviour
         return string.Join("\n", lines).Trim();
     }
 
-    private static string BuildDefaultWeaponDescription(WeaponDefinition definition)
+    private static string BuildDefaultWeaponDescription(WeaponDefinition definition, StatUpgrade.StatCardTier tier)
     {
         if (definition == null)
         {
@@ -1035,7 +1053,10 @@ public partial class CardUI : MonoBehaviour
         }
 
         StringBuilder builder = new StringBuilder();
-        AppendDefaultWeaponDescriptionLine(builder, "공격력 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetBaseDamage(StatUpgrade.StatCardTier.Normal), definition.GetBaseDamage(StatUpgrade.StatCardTier.Rare), definition.GetBaseDamage(StatUpgrade.StatCardTier.Unique), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Normal), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Rare), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Unique)));
+        string baseDamageLabel = ShouldUseUniqueDamageAmplifyLabel(definition, tier)
+            ? "공격력 (N) 증폭"
+            : "공격력 (N) 증가";
+        AppendDefaultWeaponDescriptionLine(builder, baseDamageLabel, HasDescriptionFlatOrPercentValue(definition.GetBaseDamage(StatUpgrade.StatCardTier.Normal), definition.GetBaseDamage(StatUpgrade.StatCardTier.Rare), definition.GetBaseDamage(StatUpgrade.StatCardTier.Unique), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Normal), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Rare), definition.GetBaseDamagePercent(StatUpgrade.StatCardTier.Unique)));
         AppendDefaultWeaponDescriptionLine(builder, "관통피해율 (N) 증가", HasDescriptionTierValue(definition.GetSawPierceDamageRatio(StatUpgrade.StatCardTier.Normal), definition.GetSawPierceDamageRatio(StatUpgrade.StatCardTier.Rare), definition.GetSawPierceDamageRatio(StatUpgrade.StatCardTier.Unique)));
         AppendDefaultWeaponDescriptionLine(builder, "투사체 속도 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetProjectileSpeed(StatUpgrade.StatCardTier.Normal), definition.GetProjectileSpeed(StatUpgrade.StatCardTier.Rare), definition.GetProjectileSpeed(StatUpgrade.StatCardTier.Unique), definition.GetProjectileSpeedPercent(StatUpgrade.StatCardTier.Normal), definition.GetProjectileSpeedPercent(StatUpgrade.StatCardTier.Rare), definition.GetProjectileSpeedPercent(StatUpgrade.StatCardTier.Unique)));
         AppendDefaultWeaponDescriptionLine(builder, "사거리 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetSearchRange(StatUpgrade.StatCardTier.Normal), definition.GetSearchRange(StatUpgrade.StatCardTier.Rare), definition.GetSearchRange(StatUpgrade.StatCardTier.Unique), definition.GetSearchRangePercent(StatUpgrade.StatCardTier.Normal), definition.GetSearchRangePercent(StatUpgrade.StatCardTier.Rare), definition.GetSearchRangePercent(StatUpgrade.StatCardTier.Unique)));
@@ -1053,6 +1074,30 @@ public partial class CardUI : MonoBehaviour
         AppendDefaultWeaponDescriptionLine(builder, "폭발 반경 (N) 증가", HasDescriptionFlatOrPercentValue(definition.GetExplosionRadius(StatUpgrade.StatCardTier.Normal), definition.GetExplosionRadius(StatUpgrade.StatCardTier.Rare), definition.GetExplosionRadius(StatUpgrade.StatCardTier.Unique), definition.GetExplosionRadiusPercent(StatUpgrade.StatCardTier.Normal), definition.GetExplosionRadiusPercent(StatUpgrade.StatCardTier.Rare), definition.GetExplosionRadiusPercent(StatUpgrade.StatCardTier.Unique)));
         string result = builder.ToString().Trim();
         return string.IsNullOrWhiteSpace(result) ? definition.NormalizedId : result;
+    }
+
+    private static string ApplyUniqueDamageAmplifyWord(string description, WeaponDefinition definition, StatUpgrade.StatCardTier tier)
+    {
+        if (string.IsNullOrWhiteSpace(description) || !ShouldUseUniqueDamageAmplifyLabel(definition, tier))
+        {
+            return description;
+        }
+
+        string result = description;
+        result = result.Replace("공격력 (N) 증가", "공격력 (N) 증폭");
+        result = result.Replace("피해량 (N) 증가", "피해량 (N) 증폭");
+        result = result.Replace("피해 (N) 증가", "피해 (N) 증폭");
+        result = result.Replace("데미지 (N) 증가", "데미지 (N) 증폭");
+        return result;
+    }
+
+    private static bool ShouldUseUniqueDamageAmplifyLabel(WeaponDefinition definition, StatUpgrade.StatCardTier tier)
+    {
+        return definition != null
+            && tier == StatUpgrade.StatCardTier.Unique
+            && definition.UsesCurrentBaseDamagePercent(tier)
+            && (Mathf.Abs(definition.GetBaseDamage(tier)) > 0.0001f
+                || Mathf.Abs(definition.GetBaseDamagePercent(tier)) > 0.0001f);
     }
 
     private static string BuildDefaultStatDescription(StatUpgrade statUpgrade)

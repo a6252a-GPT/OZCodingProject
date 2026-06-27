@@ -132,12 +132,14 @@ namespace TeamProject01.Gameplay
             waitingForBossClearStage = false;
             isRunning = true;
 
+            SegmentDpsDebugMeter.ResetRun(); // DPS 미터 전체 누적 초기화
             StartCurrentStage();
         }
 
         private void StartCurrentStage()
         {
             ResolveReferences();
+            SegmentDpsDebugMeter.BeginWave(currentStage); // 이번 웨이브 기록 초기화
 
             if (IsSpecialWaveActive)
             {
