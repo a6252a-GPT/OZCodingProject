@@ -45,7 +45,7 @@ MonoBehaviour:
   UseLoadedProjectileVisuals: 0
   LoadedProjectileReloadRatio: 0.5
   ProjectileScale: {x: 0, y: 0, z: 0}
-  ProjectileSpeed: 20
+  ProjectileSpeed: 26
   ProjectileHitRadius: 0.5
   ProjectileLifetime: 5
   PierceCount: 1

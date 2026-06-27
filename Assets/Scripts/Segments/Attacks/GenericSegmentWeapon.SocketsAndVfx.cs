@@ -6,7 +6,7 @@ namespace TeamProject01.Gameplay
     {
         private Vector3 GetFireDirection(EnemyController target, Vector3 spawnPosition) // 발사 방향
         {
-            if (target != null)
+            if (IsTargetUsable(target))
             {
                 Vector3 targetPosition = target.transform.position + Vector3.up * AttackProfile.TargetAimHeight; // 목표 중심
                 Vector3 direction = targetPosition - spawnPosition; // 포구 -> 목표

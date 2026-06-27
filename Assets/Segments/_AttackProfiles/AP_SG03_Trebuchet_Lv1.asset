@@ -22,12 +22,12 @@ MonoBehaviour:
   SideConeAngle: 100
   TargetAimHeight: 0.05
   AttackSpawnHeight: 0.65
-  BaseDamage: 15
-  Cooldown: 5.4
+  BaseDamage: 36
+  Cooldown: 5
   ApplyMonsterFeedback: 1
-  MonsterKnockbackDistance: 0.25
-  MonsterKnockbackDuration: 0.08
-  MonsterStaggerDuration: 0.06
+  MonsterKnockbackDistance: 1.15
+  MonsterKnockbackDuration: 0.16
+  MonsterStaggerDuration: 0.08
   MonsterExplosionFeedbackMultiplier: 2
   MonsterPierceFeedbackMultiplier: 0.35
   MonsterContinuousFeedbackMultiplier: 0
@@ -39,18 +39,19 @@ MonoBehaviour:
   UseLoadedProjectileVisuals: 1
   LoadedProjectileReloadRatio: 0.5
   ProjectileScale: {x: 0, y: 0, z: 0}
-  ProjectileSpeed: 13
+  ProjectileSpeed: 15.5
   ProjectileHitRadius: 0.65
   ProjectileLifetime: 7
   PierceCount: 1
   ArcHeight: 4.2
   RollAfterArcLanding: 1
-  LandingImpactRadius: 1.1
-  LandingRollDamageRadius: 0.75
-  LandingRollDistance: 2.2
-  LandingRollDuration: 1.5
-  LandingRollSpinSpeed: 900
-  ExplosionRadius: 2.8
+  LandingImpactRadius: 1.15
+  LandingRollDamageRadius: 0.65
+  LandingRollDamageRatio: 0.45
+  LandingRollDistance: 5.5
+  LandingRollDuration: 1.15
+  LandingRollSpinSpeed: 1080
+  ExplosionRadius: 1.15
   ExplosionLifetime: 0.35
   LaserDuration: 0.5
   LaserTickInterval: 0.15

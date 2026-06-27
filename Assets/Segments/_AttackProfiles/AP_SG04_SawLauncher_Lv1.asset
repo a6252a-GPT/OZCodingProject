@@ -22,8 +22,8 @@ MonoBehaviour:
   SideConeAngle: 100
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.5
-  BaseDamage: 14
-  Cooldown: 4.2
+  BaseDamage: 13
+  Cooldown: 4.25
   ApplyMonsterFeedback: 1
   MonsterKnockbackDistance: 0.25
   MonsterKnockbackDuration: 0.08
@@ -54,13 +54,13 @@ MonoBehaviour:
   ExplosionLifetime: 0.35
   LaserDuration: 0.5
   LaserTickInterval: 0.15
-  ChainRange: 14
+  ChainRange: 11
   MaxChainDepth: 2
   ChainBranchCount: 1
   ChainDelay: 0.06
   ChainLineVfxLifetime: 0.4
   ChainDamageFalloff: 0.5
-  SawPierceDamageRatio: 0.5
+  SawPierceDamageRatio: 0.42
   SawTargetMinDistanceRatio: 0.5
   SawSpinSpeed: 1440
   RequireAimBeforeFire: 1

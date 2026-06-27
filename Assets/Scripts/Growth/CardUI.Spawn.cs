@@ -563,7 +563,7 @@ public partial class CardUI
         }
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
-        List<SegmentCatalogEntry> picked = PickSegmentChoiceEntriesWithOwnedGuarantee(candidates, spawnCount); // 보유 1장 확정 + 나머지 랜덤
+        List<SegmentCatalogEntry> picked = PickSegmentChoiceEntriesWithOwnedChance(candidates, spawnCount); // 보유 50% + 지원형 0~1장 제한
         for (int i = 0; i < spawnCount; i++)
         {
             GameObject prefab = GetSegmentChoiceCardTemplate(); // 후보 선택 1단계 전용 템플릿
@@ -1293,8 +1293,8 @@ public partial class CardUI
         return shuffled.GetRange(0, pickCount); // 선택 결과
     }
 
-    // 세그먼트 선택카드 3장 중 1장은 보유 세그먼트 후보로 확정
-    private List<SegmentCatalogEntry> PickSegmentChoiceEntriesWithOwnedGuarantee(List<SegmentCatalogEntry> candidates, int count)
+    // 세그먼트 선택카드: 50% 확률 보유 Lv3 미만 1장 + 지원형 최대 1장
+    private List<SegmentCatalogEntry> PickSegmentChoiceEntriesWithOwnedChance(List<SegmentCatalogEntry> candidates, int count)
     {
         List<SegmentCatalogEntry> results = new List<SegmentCatalogEntry>(Mathf.Max(0, count)); // 최종 선택
         if (candidates == null || candidates.Count == 0 || count <= 0)
@@ -1308,30 +1308,117 @@ public partial class CardUI
             return results; // 유효 후보 없음
         }
 
-        HashSet<string> ownedSegmentIds = CollectOwnedSegmentIds(); // 현재 보유 세그먼트
-        if (ownedSegmentIds.Count > 0)
+        int supportPickCount = 0; // 지원형 표시 수
+        if (TryPickOwnedSegmentChoiceCandidate(validCandidates, out SegmentCatalogEntry ownedPick))
         {
-            List<SegmentCatalogEntry> ownedCandidates = new List<SegmentCatalogEntry>(); // 보유 후보
-            for (int i = 0; i < validCandidates.Count; i++)
+            results.Add(ownedPick); // 보유 후보 확정
+            if (IsSupportSegmentChoiceEntry(ownedPick))
             {
-                SegmentCatalogEntry entry = validCandidates[i]; // 후보
-                if (ownedSegmentIds.Contains(entry.NormalizedId))
-                {
-                    ownedCandidates.Add(entry); // 보유 세그먼트 후보 등록
-                }
+                supportPickCount++; // 지원형 슬롯 사용
             }
 
-            if (ownedCandidates.Count > 0)
+            RemoveSegmentCandidateById(validCandidates, ownedPick.NormalizedId); // 나머지 랜덤 중복 방지
+        }
+
+        while (results.Count < count && validCandidates.Count > 0)
+        {
+            if (!TryTakeRandomSegmentChoiceCandidate(validCandidates, supportPickCount, out SegmentCatalogEntry randomPick))
             {
-                SegmentCatalogEntry ownedPick = ownedCandidates[Random.Range(0, ownedCandidates.Count)]; // 보유 1장 확정
-                results.Add(ownedPick);
-                RemoveSegmentCandidateById(validCandidates, ownedPick.NormalizedId); // 나머지 랜덤 중복 방지
+                break; // 지원형 제한 등으로 더 뽑을 후보 없음
+            }
+
+            results.Add(randomPick); // 남은 칸 랜덤
+            if (IsSupportSegmentChoiceEntry(randomPick))
+            {
+                supportPickCount++; // 지원형 1장 제한 추적
+            }
+
+            RemoveSegmentCandidateById(validCandidates, randomPick.NormalizedId); // ID 중복 방지
+        }
+
+        return results;
+    }
+
+    private bool TryPickOwnedSegmentChoiceCandidate(List<SegmentCatalogEntry> candidates, out SegmentCatalogEntry picked)
+    {
+        picked = default; // 기본값
+        if (candidates == null || candidates.Count == 0 || Random.value >= Mathf.Clamp01(ownedSegmentChoiceGuaranteeChance))
+        {
+            return false; // 확정 확률 미발동
+        }
+
+        HashSet<string> ownedSegmentIds = CollectOwnedSegmentIds(); // 현재 보유 세그먼트
+        if (ownedSegmentIds.Count == 0)
+        {
+            return false; // 보유 없음
+        }
+
+        List<int> ownedCandidateIndexes = new List<int>(); // 보유 후보 인덱스
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            SegmentCatalogEntry entry = candidates[i]; // 후보
+            if (ownedSegmentIds.Contains(entry.NormalizedId) && IsOwnedSegmentChoiceGuaranteeLevelEligible(entry))
+            {
+                ownedCandidateIndexes.Add(i); // 보유 + Lv3 미만
             }
         }
 
-        List<SegmentCatalogEntry> randomPicks = PickRandomSegmentEntries(validCandidates, count - results.Count); // 남은 칸 랜덤
-        results.AddRange(randomPicks);
-        return results;
+        if (ownedCandidateIndexes.Count == 0)
+        {
+            return false; // 확정 가능한 보유 후보 없음
+        }
+
+        int selectedIndex = ownedCandidateIndexes[Random.Range(0, ownedCandidateIndexes.Count)]; // 보유 후보 랜덤
+        picked = candidates[selectedIndex];
+        return true;
+    }
+
+    private static bool TryTakeRandomSegmentChoiceCandidate(List<SegmentCatalogEntry> candidates, int supportPickCount, out SegmentCatalogEntry picked)
+    {
+        picked = default; // 기본값
+        if (candidates == null || candidates.Count == 0)
+        {
+            return false; // 후보 없음
+        }
+
+        List<int> availableIndexes = new List<int>(candidates.Count); // 제한 통과 후보
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            SegmentCatalogEntry entry = candidates[i]; // 후보
+            if (IsSupportSegmentChoiceEntry(entry) && supportPickCount >= MaxSupportSegmentChoiceCount)
+            {
+                continue; // 지원형은 0~1장만 허용
+            }
+
+            availableIndexes.Add(i); // 선택 가능
+        }
+
+        if (availableIndexes.Count == 0)
+        {
+            return false; // 제한으로 뽑을 후보 없음
+        }
+
+        int selectedIndex = availableIndexes[Random.Range(0, availableIndexes.Count)]; // 랜덤 후보
+        picked = candidates[selectedIndex];
+        candidates.RemoveAt(selectedIndex); // 선택 후보 제거
+        return true;
+    }
+
+    private static bool IsOwnedSegmentChoiceGuaranteeLevelEligible(SegmentCatalogEntry entry)
+    {
+        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
+        if (core == null || !core.TryGetSegmentModelLevelInfo(entry.NormalizedId, out int currentLevel, out _))
+        {
+            return true; // 조회 불가 시 기존 후보성을 유지
+        }
+
+        return currentLevel < OwnedSegmentChoiceGuaranteeExcludedLevel; // Lv3 제외
+    }
+
+    private static bool IsSupportSegmentChoiceEntry(SegmentCatalogEntry entry)
+    {
+        return !string.IsNullOrWhiteSpace(entry.Description)
+            && entry.Description.IndexOf("[지원]", System.StringComparison.OrdinalIgnoreCase) >= 0; // 카드 태그 기준
     }
 
     private static List<SegmentCatalogEntry> BuildValidSegmentChoiceCandidates(List<SegmentCatalogEntry> candidates)

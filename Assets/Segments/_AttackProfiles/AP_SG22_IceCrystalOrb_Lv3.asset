@@ -27,8 +27,8 @@ MonoBehaviour:
   ClusterMinEnemyCount: 5
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.72
-  BaseDamage: 14
-  Cooldown: 5.2
+  BaseDamage: 10.5
+  Cooldown: 6.1
   UseDamageTypeOverride: 1
   DamageTypeOverride: 4
   ApplyMonsterFeedback: 1
@@ -64,7 +64,7 @@ MonoBehaviour:
   LandingRollDistance: 0
   LandingRollDuration: 0.35
   LandingRollSpinSpeed: 720
-  ExplosionRadius: 4.68
+  ExplosionRadius: 3.8
   ExplosionLifetime: 0.35
   AreaTelegraphPrefab: {fileID: 7126986898149646117, guid: 2c2f8a10eb284724593677ee270d61d0, type: 3}
   AreaTelegraphGroundOffset: 0.025

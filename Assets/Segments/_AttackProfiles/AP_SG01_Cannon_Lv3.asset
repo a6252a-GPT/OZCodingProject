@@ -25,8 +25,8 @@ MonoBehaviour:
   ClusterMinEnemyCount: 5
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.42
-  BaseDamage: 10
-  Cooldown: 3.4
+  BaseDamage: 15
+  Cooldown: 3.15
   UseDamageTypeOverride: 0
   DamageTypeOverride: 1
   ApplyMonsterFeedback: 1
@@ -40,13 +40,13 @@ MonoBehaviour:
   ProjectileCount: 6
   SpreadAngle: 0
   FireProjectilesSequentially: 1
-  ProjectileVolleySize: 2
-  ProjectileFireDelay: 0.22
+  ProjectileVolleySize: 1
+  ProjectileFireDelay: 0.2
   UseLoadedProjectileVisuals: 0
   LoadedProjectileReloadRatio: 0.5
   ProjectileScale: {x: 0, y: 0, z: 0}
-  ProjectileSpeed: 24
-  ProjectileHitRadius: 0.5
+  ProjectileSpeed: 31.2
+  ProjectileHitRadius: 0.55
   ProjectileLifetime: 5
   PierceCount: 1
   PiercingProjectileDamageRatio: 1

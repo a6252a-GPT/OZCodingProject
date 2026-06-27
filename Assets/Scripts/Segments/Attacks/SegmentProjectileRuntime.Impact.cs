@@ -17,7 +17,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < hits.Length; i++)
             {
                 EnemyController enemy = hits[i].GetComponentInParent<EnemyController>(); // 몬스터
-                if (enemy == null || hitEnemyIds.Contains(enemy.EnemyId))
+                if (!SegmentTargetQuery.IsEnemyUsable(enemy) || hitEnemyIds.Contains(enemy.EnemyId))
                 {
                     continue; // 대상 아님/중복
                 }
@@ -46,7 +46,7 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            if (enemy != null)
+            if (SegmentTargetQuery.IsEnemyUsable(enemy))
             {
                 bool isPiercingHit = profile.MoveType == SegmentAttackMoveType.PiercingProjectile || profile.ImpactType == SegmentAttackImpactType.PierceDamage; // 관통탄 여부
                 DamageData hitDamage = isPiercingHit ? damage.WithAmount(damage.Amount * GetPiercingDamageRatio()) : damage; // 관통 피해 비율
@@ -96,7 +96,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < hits.Length; i++)
             {
                 EnemyController enemy = hits[i].GetComponentInParent<EnemyController>(); // 몬스터
-                if (enemy == null || hitIds.Contains(enemy.EnemyId))
+                if (!SegmentTargetQuery.IsEnemyUsable(enemy) || hitIds.Contains(enemy.EnemyId))
                 {
                     continue; // 대상 아님/중복
                 }
@@ -110,7 +110,7 @@ namespace TeamProject01.Gameplay
 
         private void ApplyExplosionDebuff(EnemyController enemy) // 폭발 부가 디버프
         {
-            if (enemy == null || profile == null || profile.SlowDuration <= 0f || profile.SlowMoveSpeedMultiplier >= 1f)
+            if (!SegmentTargetQuery.IsEnemyUsable(enemy) || profile == null || profile.SlowDuration <= 0f || profile.SlowMoveSpeedMultiplier >= 1f)
             {
                 return; // 감속 없음
             }
@@ -124,8 +124,19 @@ namespace TeamProject01.Gameplay
 
         private void ApplyLandingImpactDamage(Vector3 position) // 투석기 돌 착지 순간 작은 범위 피해
         {
-            float radius = profile.LandingImpactRadius > 0f ? profile.LandingImpactRadius : profile.ProjectileHitRadius; // 작은 착지 반경
+            float radius = GetLandingImpactRadius(); // 강화 반영 착지 반경
             ApplyExplosion(position, radius, explosionEnemyIds, true); // 착지 충격파
+        }
+
+        private float GetLandingImpactRadius() // 착지 충격 반경
+        {
+            float radius = profile.LandingImpactRadius > 0f ? profile.LandingImpactRadius : profile.ProjectileHitRadius; // 기본 착지 반경
+            if (profile.RollAfterArcLanding)
+            {
+                radius = Mathf.Max(radius, GetExplosionRadius()); // 투석기 폭발반경 강화 반영
+            }
+
+            return radius;
         }
 
         private void ApplyLandingRollDamage(Vector3 position) // 투석기 돌이 구르는 동안 주는 피해
@@ -136,12 +147,18 @@ namespace TeamProject01.Gameplay
                 return; // 피해 반경 없음
             }
 
-            DamageData rollDamage = DamageData.Create(damage.Amount, DamageType.Projectile, damage.SourceSegmentIndex, position, damage.SourceObject); // 구르기 피해
+            float damageRatio = profile != null ? Mathf.Clamp01(profile.LandingRollDamageRatio) : 1f; // 구르기 피해 배율
+            if (damageRatio <= 0f)
+            {
+                return; // 구르기 피해 없음
+            }
+
+            DamageData rollDamage = DamageData.Create(damage.Amount * damageRatio, DamageType.Projectile, damage.SourceSegmentIndex, position, damage.SourceObject); // 구르기 피해
             Collider[] hits = Physics.OverlapSphere(position, radius); // 돌 주변 검색
             for (int i = 0; i < hits.Length; i++)
             {
                 EnemyController enemy = hits[i].GetComponentInParent<EnemyController>(); // 몬스터
-                if (enemy == null || hitEnemyIds.Contains(enemy.EnemyId))
+                if (!SegmentTargetQuery.IsEnemyUsable(enemy) || hitEnemyIds.Contains(enemy.EnemyId))
                 {
                     continue; // 대상 아님/이미 구르기 피해 받음
                 }

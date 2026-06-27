@@ -118,11 +118,12 @@ namespace TeamProject01.Gameplay
                     Vector3 spawnPosition = GetProjectileSpawnPosition(projectileIndex, projectileMuzzle); // 장전 위치 우선
                     DamageData damage = CreateDamageData(spawnPosition); // 피해값
                     Vector3 projectileDirection = GetProjectileSequenceFireDirection(target, spawnPosition); // 타겟 사망 시 마지막 위치 유지
+                    bool useFallbackImpactPoint = TryGetProjectileSequenceFallbackImpactPoint(target, out Vector3 fallbackImpactPoint); // 곡사 fallback 착탄점
                     if (!useSustainedMuzzleVfx)
                     {
                         PlayMuzzleVfx(projectileMuzzle); // 탄별 포구 VFX
                     }
-                    FireSingleProjectile(target, spawnPosition, damage, localIndex, currentVolleySize, spread, projectileMuzzle, true, projectileDirection); // 묶음 내 산탄
+                    FireSingleProjectile(target, spawnPosition, damage, localIndex, currentVolleySize, spread, projectileMuzzle, true, projectileDirection, useFallbackImpactPoint, fallbackImpactPoint); // 묶음 내 산탄
                     HideLoadedProjectileVisual(projectileIndex); // 사용한 장전탄 숨김
                 }
 
@@ -142,7 +143,7 @@ namespace TeamProject01.Gameplay
             hasProjectileSequenceLastAimPoint = false; // fallback 위치 초기화
         }
 
-        private void FireSingleProjectile(EnemyController target, Vector3 spawnPosition, DamageData damage, int projectileIndex, int projectileCount, float spread, Transform muzzle, bool useDirectionOverride = false, Vector3 directionOverride = default) // 단일 투사체
+        private void FireSingleProjectile(EnemyController target, Vector3 spawnPosition, DamageData damage, int projectileIndex, int projectileCount, float spread, Transform muzzle, bool useDirectionOverride = false, Vector3 directionOverride = default, bool useImpactPointOverride = false, Vector3 impactPointOverride = default) // 단일 투사체
         {
             Vector3 baseDirection = useDirectionOverride && directionOverride.sqrMagnitude > 0.0001f
                 ? directionOverride.normalized
@@ -156,6 +157,12 @@ namespace TeamProject01.Gameplay
             if (ShouldUseResolvedImpactPoint())
             {
                 SegmentProjectileRuntime.SpawnAtPoint(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, resolvedImpactPoint, AttackProfile, damage, weaponBonus, flameInfluenceAnchor); // 지점 타격 투사체
+                return;
+            }
+
+            if (useImpactPointOverride)
+            {
+                SegmentProjectileRuntime.SpawnAtPoint(Segment.Owner.GetProjectileRoot(), AttackProfile.ProjectilePrefab, spawnPosition, direction, impactPointOverride, AttackProfile, damage, weaponBonus, flameInfluenceAnchor); // 마지막 조준 위치 타격
                 return;
             }
 
@@ -216,6 +223,23 @@ namespace TeamProject01.Gameplay
             }
 
             return GetProjectileFireDirection(target, spawnPosition); // 최후 fallback
+        }
+
+        private bool TryGetProjectileSequenceFallbackImpactPoint(EnemyController target, out Vector3 impactPoint) // 곡사 무기용 마지막 위치 fallback
+        {
+            impactPoint = default;
+            if (AttackProfile == null || AttackProfile.MoveType != SegmentAttackMoveType.ArcProjectile)
+            {
+                return false; // 직선/화염/톱날은 방향 fallback 사용
+            }
+
+            if (IsTargetUsable(target) || !hasProjectileSequenceLastAimPoint)
+            {
+                return false; // 살아있는 대상 또는 fallback 없음
+            }
+
+            impactPoint = projectileSequenceLastAimPoint; // 마지막 유효 조준점
+            return true;
         }
 
         private void UpdateProjectileSequenceAim(float deltaTime) // 발사 중 느린 재조준

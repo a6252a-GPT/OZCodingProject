@@ -21,6 +21,10 @@ namespace TeamProject01.Gameplay
         private IEnumerator FireTrebuchetMotionSequence(EnemyController initialTarget, SegmentTrebuchetFireMotion motion)
         {
             isFiringProjectileSequence = true; // 중복 발사 방지
+            hasProjectileSequenceLastAimPoint = false; // 이전 조준점 제거
+            projectileSequenceTarget = ResolveSequenceTarget(initialTarget); // 모션 시작 시점 대상
+            UpdateProjectileSequenceLastAimPoint(projectileSequenceTarget); // 모션 중 대상 사망 대비
+            UpdateProjectileSequencePreferredSide(projectileSequenceTarget); // 선호 방향 저장
             CacheLoadedProjectileVisuals(); // 표시 목록 갱신
             bool releasedProjectile = false; // 발사 콜백 실행 여부
             bool queuedThrowSway = false; // 팔로우스루 이후 실행할 흔들림 예약 여부
@@ -34,7 +38,10 @@ namespace TeamProject01.Gameplay
                     return; // 분리/비활성
                 }
 
-                EnemyController target = ResolveSequenceTarget(initialTarget); // 현재 대상
+                EnemyController target = ResolveSequenceTarget(projectileSequenceTarget); // 현재 대상
+                projectileSequenceTarget = target; // 다음 조준 기준
+                UpdateProjectileSequenceLastAimPoint(target); // 새 대상 또는 기존 조준점 유지
+                UpdateProjectileSequencePreferredSide(target); // 선호 방향 갱신
                 Transform muzzle = ResolveMuzzle(); // 포구
                 int count = Mathf.Max(1, AttackProfile.ProjectileCount); // 발사 수
                 float spread = Mathf.Max(0f, AttackProfile.SpreadAngle); // 산탄 각도
@@ -43,7 +50,8 @@ namespace TeamProject01.Gameplay
                 {
                     Vector3 spawnPosition = GetProjectileSpawnPosition(i, muzzle); // 숟가락 돌 위치 우선
                     DamageData damage = CreateDamageData(spawnPosition); // 피해값
-                    Vector3 fireDirection = GetFireDirection(target, spawnPosition); // 실제 발사 방향
+                    Vector3 fireDirection = GetProjectileSequenceFireDirection(target, spawnPosition); // 실제 발사 방향
+                    bool useFallbackImpactPoint = TryGetProjectileSequenceFallbackImpactPoint(target, out Vector3 fallbackImpactPoint); // 대상 없음 fallback
                     PlayMuzzleVfx(muzzle); // 발사 VFX
                     if (i == 0)
                     {
@@ -52,7 +60,7 @@ namespace TeamProject01.Gameplay
                         queuedThrowSwayMuzzle = muzzle; // 발사 순간 포구 저장
                     }
 
-                    FireSingleProjectile(target, spawnPosition, damage, i, count, spread, muzzle); // 투사체 생성
+                    FireSingleProjectile(target, spawnPosition, damage, i, count, spread, muzzle, true, fireDirection, useFallbackImpactPoint, fallbackImpactPoint); // 투사체 생성
                     HideLoadedProjectileVisual(i); // 숟가락 위 돌 숨김
                 }
 
@@ -73,6 +81,9 @@ namespace TeamProject01.Gameplay
 
             projectileSequenceRoutine = null; // 코루틴 해제
             isFiringProjectileSequence = false; // 발사 완료
+            projectileSequenceTarget = null; // 대상 초기화
+            projectileSequencePreferredSide = 0; // 선호 방향 초기화
+            hasProjectileSequenceLastAimPoint = false; // fallback 초기화
         }
 
         private void CacheTrebuchetFireMotion()

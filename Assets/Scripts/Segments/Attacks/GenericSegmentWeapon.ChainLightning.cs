@@ -8,7 +8,7 @@ namespace TeamProject01.Gameplay
     {
         private void FireChainLightning(EnemyController firstTarget, Transform startAnchor, Vector3 startPosition, DamageData damage) // 즉시 체인 번개
         {
-            if (firstTarget == null)
+            if (!IsTargetUsable(firstTarget))
             {
                 return; // 첫 대상 없음
             }
@@ -51,7 +51,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < targets.Count; i++)
             {
                 ChainCandidate target = targets[i];
-                if (target.Enemy == null)
+                if (!IsTargetUsable(target.Enemy))
                 {
                     continue; // 사라진 대상
                 }
@@ -79,7 +79,7 @@ namespace TeamProject01.Gameplay
                 }
 
                 EnemyController enemy = hit.GetComponentInParent<EnemyController>(); // 몬스터 확인
-                if (enemy == null || hitIds.Contains(enemy.EnemyId) || ContainsChainCandidate(candidates, enemy.EnemyId))
+                if (!SegmentTargetQuery.IsEnemyUsable(enemy) || hitIds.Contains(enemy.EnemyId) || ContainsChainCandidate(candidates, enemy.EnemyId))
                 {
                     continue; // 이미 맞았거나 중복 후보
                 }

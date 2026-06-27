@@ -105,6 +105,10 @@ public partial class CardUI : MonoBehaviour
     [Header("레벨업 UI")]
     [SerializeField] private LevelUpUi levelUpUi; // 비워두면 자동 검색
 
+    [Header("세그먼트 선택 후보")]
+    [Tooltip("세그먼트 선택 3장 중 보유 Lv3 미만 세그먼트 1장을 먼저 뽑을 확률")]
+    [Range(0f, 1f)][SerializeField] private float ownedSegmentChoiceGuaranteeChance = 0.5f; // 보유 Lv3 미만 확정 후보 확률
+
     [Header("세그먼트 무기 강화선택 조건")]
     [Tooltip("A모드 (체크): 세그먼트 선택 → 선택한 세그먼트의 강화 카드 선택 / B모드 (해제): 보유 세그먼트 강화만 랜덤 3장 (미보유 제외)")]
     [SerializeField] private bool useSegmentSelectWeaponEnhanceFlow = true; // A 기준 — 세그먼트 선택 후 강화
@@ -158,6 +162,8 @@ public partial class CardUI : MonoBehaviour
     private readonly Dictionary<string, int> rerollCountsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // 마법책 개수 집계용
     private readonly Dictionary<string, int> cardTooltipSegmentCountsById = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // 카드 툴팁용 보유 세그먼트 집계
     private const string MagicBookRerollSegmentId = "SG55_MagicBook"; // 마법책 세그먼트 ID
+    private const int OwnedSegmentChoiceGuaranteeExcludedLevel = 3; // Lv3은 보유 확정 후보에서 제외
+    private const int MaxSupportSegmentChoiceCount = 1; // 세그먼트 선택 3장 안 지원형 최대 수
     private bool spawnedForCurrentOpen; // 이번 패널 오픈에서 생성 완료 여부
     private bool isProcessingSelection; // 선택 처리 중
     private bool rerollAllowedForCurrentChoices; // 현재 카드 묶음 리롤 가능 여부

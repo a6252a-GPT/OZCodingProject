@@ -180,7 +180,7 @@ namespace TeamProject01.Gameplay
 
         private static bool IsTargetUsable(EnemyController target) // 살아있는 타겟인지 확인
         {
-            return target != null && !target.IsDead && target.isActiveAndEnabled; // 사망/비활성 제외
+            return SegmentTargetQuery.IsEnemyUsable(target); // 사망/비활성 제외
         }
 
         private float GetSawTargetMinDistanceRatio() // 톱날 중장거리 후보 기준

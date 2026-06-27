@@ -70,6 +70,7 @@ namespace TeamProject01.Gameplay
         public bool RollAfterArcLanding; // 곡사 도착 후 바로 터뜨리지 않고 바닥을 굴릴지 여부
         [Min(0f)] public float LandingImpactRadius = 1.1f; // 착지 순간 들어가는 작은 범위 피해
         [Min(0f)] public float LandingRollDamageRadius = 0.75f; // 구르는 동안 돌 주변 피해 반경
+        [Range(0f, 1f)] public float LandingRollDamageRatio = 1f; // 구르기 피해 배율
         // 착지 지점부터 굴러갈 거리
         [Min(0f)] public float LandingRollDistance = 0f; // 0이면 기존 곡사처럼 도착 즉시 명중 처리
         // 굴러가는 시간
