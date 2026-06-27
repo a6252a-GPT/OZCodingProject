@@ -29,6 +29,8 @@ public class CardUI : MonoBehaviour
     private const string CardTooltipValueColor = "#FFD75A";
     private const string CardTooltipNewColor = "#7DFFB2";
     private static readonly Vector2 CardTooltipHiddenAnchoredPosition = new Vector2(-10000f, -10000f);
+    private static readonly Vector2 CardTooltipHiddenSize = new Vector2(1f, 1f);
+    private const float CardTooltipFadeSeconds = 0.08f;
     private const string CardUiPrefabReferencesResourcePath = "LevelCard/CardUiPrefabReferences";
     private const string TierFrameNormalResourcePath = "LevelCard/TierFrames/CardFrame_Normal";
     private const string TierFrameRareResourcePath = "LevelCard/TierFrames/CardFrame_Rare";
@@ -36,6 +38,7 @@ public class CardUI : MonoBehaviour
 
     [Header("Stat Upgrade")]
     [SerializeField] private GameObject[] statUpgradeCards = System.Array.Empty<GameObject>(); // 스탯 강화 카드 프리팹
+    [SerializeField] private StatUpgradeCatalogAsset statUpgradeCatalogAsset; // 공통 강화 카드 데이터 카탈로그
 
     [Header("Add Segment")]
     // 안건준 수정 - 0623 : 세그먼트 카드 공통 기본 프리팹 (SegmentUpgradeCard 드래그)
@@ -70,6 +73,7 @@ public class CardUI : MonoBehaviour
     [Min(0f)][SerializeField] private float selectedCardWeightBonus = 50f; // 직전 선택 카드 추가 가중치
 
     private GameObject lastSelectedStatCardPrefab; // 직전 선택한 스탯 카드 프리팹 (다음 뽑기 가중치용)
+    private StatUpgradeDefinition lastSelectedStatCardDefinition; // 직전 선택한 스탯 카드 데이터 (다음 뽑기 가중치용)
 
     [Header("카드 생성 슬롯")]
     [SerializeField] private RectTransform[] cardSlots = System.Array.Empty<RectTransform>(); // 카드 생성 위치
@@ -504,15 +508,10 @@ public class CardUI : MonoBehaviour
             return;
         }
 
-        BringCardTooltipToFront(entry);
-        entry.RootTransform.DOKill();
-        entry.RootTransform.DOScale(entry.OriginalScale * hoverScale, 0.15f)
-            .SetEase(Ease.OutQuad)
-            .SetUpdate(true);
-
-        // 이팩트 컨테이너도 동일 배율로 확대
-        cardEffect?.OnCardHoverEnter(entry.Root, hoverScale);
-        ShowCardHoverTooltip(entry, eventData); // 카드 역할별 공통 호버 툴팁
+        entry.IsPointerOver = true;
+        StoreCardTooltipPointer(entry, eventData);
+        SetCardHoverVisual(entry, true);
+        TryShowCardHoverTooltip(entry); // 카드 역할별 공통 호버 툴팁
     }
 
     private void NotifySpawnedCardPointerMove(SpawnedCardEntry entry, PointerEventData eventData)
@@ -522,7 +521,11 @@ public class CardUI : MonoBehaviour
             return;
         }
 
-        UpdateCardHoverTooltipPosition(entry, eventData);
+        StoreCardTooltipPointer(entry, eventData);
+        if (!UpdateCardHoverTooltipPosition(entry))
+        {
+            TryShowCardHoverTooltip(entry);
+        }
     }
 
     private void NotifySpawnedCardPointerExit(SpawnedCardEntry entry)
@@ -532,14 +535,63 @@ public class CardUI : MonoBehaviour
             return;
         }
 
+        entry.IsPointerOver = false;
+        entry.HasTooltipPointer = false;
+        SetCardHoverVisual(entry, false); // 호버 비주얼 복원
+        HideCardHoverTooltip(entry, false); // 카드 호버 툴팁 닫기
+    }
+
+    private void SetCardHoverVisual(SpawnedCardEntry entry, bool active)
+    {
+        if (entry == null || entry.RootTransform == null)
+        {
+            return;
+        }
+
+        if (active == entry.IsHoverVisualActive)
+        {
+            return;
+        }
+
+        entry.IsHoverVisualActive = active;
+        BringCardTooltipToFront(entry);
         entry.RootTransform.DOKill();
-        entry.RootTransform.DOScale(entry.OriginalScale, 0.15f)
-            .SetEase(Ease.InQuad)
+        entry.RootTransform
+            .DOScale(active ? entry.OriginalScale * hoverScale : entry.OriginalScale, 0.15f)
+            .SetEase(active ? Ease.OutQuad : Ease.InQuad)
             .SetUpdate(true);
 
-        // 이팩트 컨테이너도 원래 크기로 복원
-        cardEffect?.OnCardHoverExit(entry.Root);
-        HideCardHoverTooltip(entry, false); // 카드 호버 툴팁 닫기
+        if (active)
+        {
+            cardEffect?.OnCardHoverEnter(entry.Root, hoverScale);
+        }
+        else
+        {
+            cardEffect?.OnCardHoverExit(entry.Root);
+        }
+    }
+
+    private static void StoreCardTooltipPointer(SpawnedCardEntry entry, PointerEventData eventData)
+    {
+        if (entry == null || eventData == null)
+        {
+            return;
+        }
+
+        entry.HasTooltipPointer = true;
+        entry.LastTooltipScreenPosition = eventData.position;
+        entry.LastTooltipCamera = eventData.pressEventCamera != null ? eventData.pressEventCamera : eventData.enterEventCamera;
+    }
+
+    private void TryShowCardHoverTooltip(SpawnedCardEntry entry)
+    {
+        if (entry == null || !entry.TooltipReady || !entry.IsPointerOver || !entry.HasTooltipPointer)
+        {
+            HideCardHoverTooltip(entry, true);
+            return;
+        }
+
+        ShowCardHoverTooltip(entry); // 위치/크기 계산 완료 후 표시
     }
 
     private static void CacheCardTooltip(SpawnedCardEntry entry)
@@ -561,11 +613,7 @@ public class CardUI : MonoBehaviour
         }
 
         entry.CardTooltipRoot = tooltipTransform.gameObject;
-        entry.CardTooltipCanvasGroup = tooltipTransform.GetComponent<CanvasGroup>();
-        if (entry.CardTooltipCanvasGroup == null)
-        {
-            entry.CardTooltipCanvasGroup = tooltipTransform.GetComponentInChildren<CanvasGroup>(true);
-        }
+        entry.CardTooltipCanvasGroup = ResolveCardTooltipCanvasGroup(tooltipTransform);
 
         Transform textTransform = FindDescendantByName(tooltipTransform, CardTooltipTextName);
         if (textTransform == null)
@@ -583,7 +631,30 @@ public class CardUI : MonoBehaviour
             entry.CardTooltipText = tooltipTransform.GetComponentInChildren<TMP_Text>(true);
         }
 
-        HideCardHoverTooltip(entry, true);
+        PrepareCardTooltipHidden(entry.CardTooltipRoot, entry.CardTooltipCanvasGroup, entry.CardTooltipText);
+    }
+
+    private static CanvasGroup ResolveCardTooltipCanvasGroup(Transform tooltipTransform)
+    {
+        if (tooltipTransform == null)
+        {
+            return null;
+        }
+
+        CanvasGroup canvasGroup = tooltipTransform.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = tooltipTransform.GetComponentInChildren<CanvasGroup>(true);
+        }
+
+        if (canvasGroup == null)
+        {
+            canvasGroup = tooltipTransform.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.interactable = false;
+        return canvasGroup;
     }
 
     private static Transform FindDescendantByName(Transform root, string objectName)
@@ -605,31 +676,43 @@ public class CardUI : MonoBehaviour
         return null;
     }
 
-    private void ShowCardHoverTooltip(SpawnedCardEntry entry, PointerEventData eventData)
+    private void ShowCardHoverTooltip(SpawnedCardEntry entry)
     {
         if (entry == null
             || entry.CardTooltipRoot == null
             || entry.CardTooltipText == null
             || !entry.CanSelect
+            || !entry.TooltipReady
+            || !entry.HasTooltipPointer
             || !TryBuildCardHoverTooltipText(entry, out string tooltipText))
         {
             HideCardHoverTooltip(entry, true);
             return;
         }
 
-        entry.CardTooltipText.text = tooltipText;
-        ApplyCardTooltipLayout(entry, tooltipText);
-        entry.CardTooltipRoot.SetActive(true);
-        BringCardTooltipToFront(entry);
-        UpdateCardHoverTooltipPosition(entry, eventData);
         if (entry.CardTooltipCanvasGroup == null)
         {
+            entry.CardTooltipCanvasGroup = ResolveCardTooltipCanvasGroup(entry.CardTooltipRoot.transform);
+        }
+
+        PrepareCardTooltipHidden(entry.CardTooltipRoot, entry.CardTooltipCanvasGroup, entry.CardTooltipText);
+        entry.CardTooltipText.text = tooltipText;
+        ApplyCardTooltipLayout(entry, tooltipText);
+        Canvas.ForceUpdateCanvases();
+        BringCardTooltipToFront(entry);
+        if (!UpdateCardHoverTooltipPosition(entry))
+        {
+            HideCardHoverTooltip(entry, true);
             return;
         }
 
+        entry.CardTooltipRoot.SetActive(true);
+        Canvas.ForceUpdateCanvases();
+        UpdateCardHoverTooltipPosition(entry); // 활성화 후 최종 위치 보정
+
         entry.CardTooltipCanvasGroup.DOKill();
         entry.CardTooltipCanvasGroup.alpha = 0f;
-        entry.CardTooltipCanvasGroup.DOFade(1f, 0.08f).SetUpdate(true);
+        entry.CardTooltipCanvasGroup.DOFade(1f, CardTooltipFadeSeconds).SetUpdate(true);
     }
 
     private static void ApplyCardTooltipLayout(SpawnedCardEntry entry, string tooltipText)
@@ -664,26 +747,28 @@ public class CardUI : MonoBehaviour
         tooltipRect.sizeDelta = new Vector2(width, height);
     }
 
-    private static void UpdateCardHoverTooltipPosition(SpawnedCardEntry entry, PointerEventData eventData)
+    private static bool UpdateCardHoverTooltipPosition(SpawnedCardEntry entry)
     {
-        if (entry == null || entry.CardTooltipRoot == null || entry.RootTransform == null || eventData == null)
+        if (entry == null || entry.CardTooltipRoot == null || entry.RootTransform == null || !entry.HasTooltipPointer)
         {
-            return;
+            return false;
         }
 
         RectTransform tooltipRect = entry.CardTooltipRoot.transform as RectTransform;
         if (tooltipRect == null)
         {
-            return;
+            return false;
         }
 
-        Camera eventCamera = eventData.pressEventCamera != null ? eventData.pressEventCamera : eventData.enterEventCamera;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(entry.RootTransform, eventData.position, eventCamera, out Vector2 localPoint))
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(entry.RootTransform, entry.LastTooltipScreenPosition, entry.LastTooltipCamera, out Vector2 localPoint))
         {
             tooltipRect.anchoredPosition = localPoint + CardTooltipCursorOffset;
             tooltipRect.SetAsLastSibling();
             tooltipRect.localScale = GetInverseTooltipScale(entry.RootTransform.localScale);
+            return true;
         }
+
+        return false;
     }
 
     private static void BringCardTooltipToFront(SpawnedCardEntry entry)
@@ -709,9 +794,20 @@ public class CardUI : MonoBehaviour
     private static Vector3 GetInverseTooltipScale(Vector3 rootScale)
     {
         return new Vector3(
-            Mathf.Approximately(rootScale.x, 0f) ? 1f : 1f / rootScale.x,
-            Mathf.Approximately(rootScale.y, 0f) ? 1f : 1f / rootScale.y,
+            ResolveInverseTooltipAxisScale(rootScale.x),
+            ResolveInverseTooltipAxisScale(rootScale.y),
             1f);
+    }
+
+    private static float ResolveInverseTooltipAxisScale(float scale)
+    {
+        float magnitude = Mathf.Abs(scale);
+        if (magnitude < 0.5f)
+        {
+            return 1f; // 카드 등장 중 scale 0 근처에서 툴팁이 커지는 것 방지
+        }
+
+        return Mathf.Clamp(1f / magnitude, 0.5f, 2f);
     }
 
     private static void HideCardHoverTooltip(SpawnedCardEntry entry, bool instant)
@@ -727,22 +823,24 @@ public class CardUI : MonoBehaviour
             {
                 entry.CardTooltipCanvasGroup.DOKill();
                 entry.CardTooltipCanvasGroup.alpha = 0f;
+                entry.CardTooltipCanvasGroup.blocksRaycasts = false;
+                entry.CardTooltipCanvasGroup.interactable = false;
             }
 
-            MoveCardTooltipOffscreen(entry.CardTooltipRoot);
-            entry.CardTooltipRoot.SetActive(false);
+            PrepareCardTooltipHidden(entry.CardTooltipRoot, entry.CardTooltipCanvasGroup, entry.CardTooltipText);
             return;
         }
 
         entry.CardTooltipCanvasGroup.DOKill();
-        entry.CardTooltipCanvasGroup.DOFade(0f, 0.08f)
+        entry.CardTooltipCanvasGroup.blocksRaycasts = false;
+        entry.CardTooltipCanvasGroup.interactable = false;
+        entry.CardTooltipCanvasGroup.DOFade(0f, CardTooltipFadeSeconds)
             .SetUpdate(true)
             .OnComplete(() =>
             {
                 if (entry.CardTooltipRoot != null)
                 {
-                    MoveCardTooltipOffscreen(entry.CardTooltipRoot);
-                    entry.CardTooltipRoot.SetActive(false);
+                    PrepareCardTooltipHidden(entry.CardTooltipRoot, entry.CardTooltipCanvasGroup, entry.CardTooltipText);
                 }
             });
     }
@@ -751,8 +849,24 @@ public class CardUI : MonoBehaviour
     {
         for (int i = 0; i < spawnedCards.Count; i++)
         {
+            ResetCardTooltipInteraction(spawnedCards[i]);
             HideCardHoverTooltip(spawnedCards[i], true);
         }
+    }
+
+    private static void ResetCardTooltipInteraction(SpawnedCardEntry entry)
+    {
+        if (entry == null)
+        {
+            return;
+        }
+
+        entry.TooltipReady = false;
+        entry.IsPointerOver = false;
+        entry.HasTooltipPointer = false;
+        entry.IsHoverVisualActive = false;
+        entry.LastTooltipCamera = null;
+        entry.LastTooltipScreenPosition = Vector2.zero;
     }
 
     private static void PrepareCardTooltipHidden(GameObject cardRoot)
@@ -773,26 +887,34 @@ public class CardUI : MonoBehaviour
             return;
         }
 
-        CanvasGroup canvasGroup = tooltipTransform.GetComponent<CanvasGroup>();
-        if (canvasGroup == null)
+        PrepareCardTooltipHidden(
+            tooltipTransform.gameObject,
+            ResolveCardTooltipCanvasGroup(tooltipTransform),
+            tooltipTransform.GetComponentInChildren<TMP_Text>(true));
+    }
+
+    private static void PrepareCardTooltipHidden(GameObject tooltipRoot, CanvasGroup canvasGroup, TMP_Text tooltipText)
+    {
+        if (tooltipRoot == null)
         {
-            canvasGroup = tooltipTransform.GetComponentInChildren<CanvasGroup>(true);
+            return;
         }
 
         if (canvasGroup != null)
         {
             canvasGroup.DOKill();
             canvasGroup.alpha = 0f;
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
         }
 
-        TMP_Text tooltipText = tooltipTransform.GetComponentInChildren<TMP_Text>(true);
         if (tooltipText != null)
         {
             tooltipText.text = string.Empty;
         }
 
-        MoveCardTooltipOffscreen(tooltipTransform.gameObject);
-        tooltipTransform.gameObject.SetActive(false);
+        MoveCardTooltipOffscreen(tooltipRoot);
+        tooltipRoot.SetActive(false);
     }
 
     private static void MoveCardTooltipOffscreen(GameObject tooltipRoot)
@@ -801,6 +923,7 @@ public class CardUI : MonoBehaviour
         if (tooltipRect != null)
         {
             tooltipRect.anchoredPosition = CardTooltipHiddenAnchoredPosition;
+            tooltipRect.sizeDelta = CardTooltipHiddenSize;
             tooltipRect.localScale = Vector3.one;
         }
     }
@@ -869,7 +992,14 @@ public class CardUI : MonoBehaviour
 
     private void SpawnStatUpgradeCards()
     {
-        GameObject[] sourcePrefabs = BuildStatUpgradeSourcePrefabs(); // 씬 카드 + 중앙 추가 카드
+        List<StatUpgradeDefinition> definitionPool = BuildStatUpgradeDefinitionPool(); // 데이터 에셋 카드 풀
+        if (definitionPool.Count > 0)
+        {
+            SpawnStatUpgradeDefinitionCards(definitionPool);
+            return;
+        }
+
+        GameObject[] sourcePrefabs = BuildStatUpgradeSourcePrefabs(); // 데이터 카탈로그 없을 때 기존 프리팹 fallback
         string poolName = "Stat Upgrade"; // 로그용 풀 이름
 
         if (sourcePrefabs == null || sourcePrefabs.Length == 0)
@@ -899,6 +1029,40 @@ public class CardUI : MonoBehaviour
         PlaySpawnOpenTween(spawnedCards); // 등장 연출
     }
 
+    private void SpawnStatUpgradeDefinitionCards(List<StatUpgradeDefinition> pool)
+    {
+        if (pool == null || pool.Count == 0)
+        {
+            Debug.LogWarning("[CardUI] Stat Upgrade 데이터 에셋 풀이 비어 있습니다.", this);
+            return;
+        }
+
+        int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length, pool.Count);
+        List<StatUpgradeDefinition> picked = PickWeightedStatDefinitions(pool, spawnCount); // 데이터 에셋 가중치 선택
+        for (int i = 0; i < picked.Count; i++)
+        {
+            SpawnedCardEntry entry = CreateStatUpgradeCard(picked[i], cardSlots[i]); // 데이터 에셋 기반 생성
+            if (entry != null)
+            {
+                spawnedCards.Add(entry);
+            }
+        }
+
+        PlaySpawnOpenTween(spawnedCards);
+    }
+
+    private List<StatUpgradeDefinition> BuildStatUpgradeDefinitionPool()
+    {
+        List<StatUpgradeDefinition> results = new List<StatUpgradeDefinition>();
+        StatUpgradeCatalogAsset catalog = GetStatUpgradeCatalog();
+        if (catalog != null)
+        {
+            catalog.AppendValidDefinitions(results);
+        }
+
+        return results;
+    }
+
     private GameObject[] BuildStatUpgradeSourcePrefabs() // 공통카드 풀 병합
     {
         List<GameObject> results = new List<GameObject>();
@@ -910,6 +1074,17 @@ public class CardUI : MonoBehaviour
         }
 
         return results.ToArray();
+    }
+
+    private StatUpgradeCatalogAsset GetStatUpgradeCatalog()
+    {
+        if (statUpgradeCatalogAsset != null)
+        {
+            return statUpgradeCatalogAsset; // 인스펙터 직접 연결
+        }
+
+        CardUiPrefabReferences references = GetPrefabReferences();
+        return references != null ? references.StatUpgradeCatalog : null; // Resources 중앙 참조
     }
 
     private static void AppendUniquePrefabs(List<GameObject> results, GameObject[] prefabs)
@@ -961,6 +1136,72 @@ public class CardUI : MonoBehaviour
         }
 
         return entry;
+    }
+
+    private SpawnedCardEntry CreateStatUpgradeCard(StatUpgradeDefinition definition, RectTransform slot)
+    {
+        if (definition == null || slot == null)
+        {
+            return null;
+        }
+
+        GameObject templatePrefab = ResolveStatUpgradeTemplatePrefab(definition);
+        if (templatePrefab == null)
+        {
+            Debug.LogWarning($"[CardUI] 공통 강화 카드 템플릿 프리팹이 없습니다. card={definition.name}", definition);
+            return null;
+        }
+
+        StatUpgrade.StatCardTier tier = StatUpgrade.RollTier(rareCardChancePercent, uniqueCardChancePercent);
+        SpawnedCardEntry entry = CreateSpawnedCard(templatePrefab, slot, templatePrefab, skipStatUpgradeRoll: true);
+        if (entry == null)
+        {
+            return null;
+        }
+
+        entry.StatUpgradeDefinition = definition;
+        if (entry.StatUpgrade != null)
+        {
+            entry.StatUpgrade.ConfigureFromDefinition(definition, tier); // 데이터 에셋 주입
+            ApplyTierCardFrame(entry.Root, tier);
+            ApplyStatUpgradeCardPresentation(entry.Root, entry.StatUpgrade, tier);
+            ApplyStatUpgradeCardIcon(entry.Root, definition);
+        }
+
+        return entry;
+    }
+
+    private GameObject ResolveStatUpgradeTemplatePrefab(StatUpgradeDefinition definition)
+    {
+        if (definition != null && definition.CardPrefabOverride != null)
+        {
+            return definition.CardPrefabOverride; // 카드별 예외 프리팹
+        }
+
+        StatUpgradeCatalogAsset catalog = GetStatUpgradeCatalog();
+        if (catalog != null && catalog.DefaultCardPrefab != null)
+        {
+            return catalog.DefaultCardPrefab; // 데이터 카탈로그 기본 템플릿
+        }
+
+        for (int i = 0; statUpgradeCards != null && i < statUpgradeCards.Length; i++)
+        {
+            if (statUpgradeCards[i] != null)
+            {
+                return statUpgradeCards[i]; // 기존 인스펙터 연결 fallback
+            }
+        }
+
+        GameObject[] fallbackPrefabs = GetPrefabReferences()?.ExtraStatUpgradeCards;
+        for (int i = 0; fallbackPrefabs != null && i < fallbackPrefabs.Length; i++)
+        {
+            if (fallbackPrefabs[i] != null)
+            {
+                return fallbackPrefabs[i]; // 중앙 프리팹 fallback
+            }
+        }
+
+        return null;
     }
 
     private static StatUpgrade GetStatUpgradePresentation(GameObject prefab) // statUpgradeCards 프리팹의 StatUpgrade (Instantiate 전)
@@ -2267,6 +2508,23 @@ public class CardUI : MonoBehaviour
         }
 
         WeaponStatBonusData weaponBonus = core.GetWeaponStatBonus(segmentId);
+        return CalculateTooltipSegmentDamage(core, segmentId, profile, weaponBonus, globalDamageBonus, meleeDamageBonus, magicDamageBonus);
+    }
+
+    private static float CalculateTooltipSegmentDamage(
+        CoreStatProvider core,
+        string segmentId,
+        SegmentAttackProfile profile,
+        WeaponStatBonusData weaponBonus,
+        float globalDamageBonus = 0f,
+        float meleeDamageBonus = 0f,
+        float magicDamageBonus = 0f)
+    {
+        if (core == null || profile == null)
+        {
+            return 0f;
+        }
+
         SegmentUpgradeData segmentUpgrade = core.GetSegmentUpgrade(segmentId);
         float baseDamage = weaponBonus.ResolveBaseDamage(profile.BaseDamage);
         float coreDamageMultiplier = Mathf.Max(0f, core.DamageMultiplier + globalDamageBonus);
@@ -2304,11 +2562,55 @@ public class CardUI : MonoBehaviour
         }
 
         WeaponStatBonusData weaponBonus = core.GetWeaponStatBonus(segmentId);
+        return CalculateTooltipSegmentCooldown(core, segmentId, profile, weaponBonus, cooldownBonus);
+    }
+
+    private static float CalculateTooltipSegmentCooldown(
+        CoreStatProvider core,
+        string segmentId,
+        SegmentAttackProfile profile,
+        WeaponStatBonusData weaponBonus,
+        float cooldownBonus = 0f)
+    {
+        if (core == null || profile == null)
+        {
+            return 0f;
+        }
+
         SegmentUpgradeData segmentUpgrade = core.GetSegmentUpgrade(segmentId);
         float cooldown = weaponBonus.ResolveCooldown(profile.Cooldown);
         float attackSpeedMultiplier = Mathf.Max(0.01f, core.AttackSpeedMultiplier + cooldownBonus);
         float coreInterval = Mathf.Max(0.05f, cooldown / attackSpeedMultiplier);
         return segmentUpgrade.ApplyFireInterval(coreInterval);
+    }
+
+    private static float CalculateTooltipSegmentSearchRange(
+        CoreStatProvider core,
+        string segmentId,
+        SegmentAttackProfile profile,
+        WeaponStatBonusData weaponBonus)
+    {
+        if (core == null || profile == null)
+        {
+            return 0f;
+        }
+
+        SegmentUpgradeData segmentUpgrade = core.GetSegmentUpgrade(segmentId);
+        return segmentUpgrade.ApplyRange(weaponBonus.ResolveSearchRange(profile.SearchRange));
+    }
+
+    private static float CalculateTooltipSegmentExplosionRadius(
+        CoreStatProvider core,
+        string segmentId,
+        SegmentAttackProfile profile,
+        WeaponStatBonusData weaponBonus)
+    {
+        if (core == null || profile == null)
+        {
+            return 0f;
+        }
+
+        return weaponBonus.ResolveExplosionRadius(profile.ExplosionRadius);
     }
 
     private static bool TryBuildSingleStatTooltipText(string summary, string label, float before, float after, string suffix, out string text)
@@ -2684,18 +2986,18 @@ public class CardUI : MonoBehaviour
         WeaponStatBonusData beforeBonus = core.GetWeaponStatBonus(segmentId);
         WeaponStatBonusData afterBonus = beforeBonus;
         afterBonus.AddDefinition(entry.WeaponDefinition, entry.WeaponEnhancementTier);
-        float beforeDps = EstimateSingleTargetDps(profile, beforeBonus);
-        float afterDps = EstimateSingleTargetDps(profile, afterBonus);
+        float beforeDps = EstimateSingleTargetDps(core, segmentId, profile, beforeBonus);
+        float afterDps = EstimateSingleTargetDps(core, segmentId, profile, afterBonus);
 
         StringBuilder builder = new StringBuilder(128);
         bool affectsDps = false;
-        affectsDps |= AppendTooltipFloatLine(builder, "공격력", beforeBonus.ResolveBaseDamage(profile.BaseDamage), afterBonus.ResolveBaseDamage(profile.BaseDamage), string.Empty);
-        AppendTooltipFloatLine(builder, "사거리", beforeBonus.ResolveSearchRange(profile.SearchRange), afterBonus.ResolveSearchRange(profile.SearchRange), "m");
+        affectsDps |= AppendTooltipFloatLine(builder, "공격력", CalculateTooltipSegmentDamage(core, segmentId, profile, beforeBonus), CalculateTooltipSegmentDamage(core, segmentId, profile, afterBonus), string.Empty);
+        AppendTooltipFloatLine(builder, "사거리", CalculateTooltipSegmentSearchRange(core, segmentId, profile, beforeBonus), CalculateTooltipSegmentSearchRange(core, segmentId, profile, afterBonus), "m");
         AppendTooltipFloatLine(builder, "투사체속도", beforeBonus.ResolveProjectileSpeed(profile.ProjectileSpeed), afterBonus.ResolveProjectileSpeed(profile.ProjectileSpeed), string.Empty);
         affectsDps |= AppendTooltipIntLine(builder, "발사 수", beforeBonus.ResolveProjectileCount(profile.ProjectileCount), afterBonus.ResolveProjectileCount(profile.ProjectileCount));
-        affectsDps |= AppendTooltipFloatLine(builder, "쿨타임", beforeBonus.ResolveCooldown(profile.Cooldown), afterBonus.ResolveCooldown(profile.Cooldown), "s");
+        affectsDps |= AppendTooltipFloatLine(builder, "쿨타임", CalculateTooltipSegmentCooldown(core, segmentId, profile, beforeBonus), CalculateTooltipSegmentCooldown(core, segmentId, profile, afterBonus), "s");
         AppendTooltipIntLine(builder, "관통 수", beforeBonus.ResolvePierceCount(profile.PierceCount), afterBonus.ResolvePierceCount(profile.PierceCount));
-        AppendTooltipFloatLine(builder, "폭발 반경", beforeBonus.ResolveExplosionRadius(profile.ExplosionRadius), afterBonus.ResolveExplosionRadius(profile.ExplosionRadius), "m");
+        AppendTooltipFloatLine(builder, "폭발 반경", CalculateTooltipSegmentExplosionRadius(core, segmentId, profile, beforeBonus), CalculateTooltipSegmentExplosionRadius(core, segmentId, profile, afterBonus), "m");
         AppendTooltipIntLine(builder, "연쇄 단계", beforeBonus.ResolveMaxChainDepth(profile.MaxChainDepth), afterBonus.ResolveMaxChainDepth(profile.MaxChainDepth));
         AppendTooltipFloatLine(builder, "연쇄 거리", beforeBonus.ResolveChainRange(profile.ChainRange), afterBonus.ResolveChainRange(profile.ChainRange), "m");
         AppendTooltipPercentLine(builder, "체인 유지", beforeBonus.ResolveChainDamageFalloff(profile.ChainDamageFalloff), afterBonus.ResolveChainDamageFalloff(profile.ChainDamageFalloff));
@@ -2776,22 +3078,22 @@ public class CardUI : MonoBehaviour
         return !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f;
     }
 
-    private static float EstimateSingleTargetDps(SegmentAttackProfile profile, WeaponStatBonusData bonus)
+    private static float EstimateSingleTargetDps(CoreStatProvider core, string segmentId, SegmentAttackProfile profile, WeaponStatBonusData bonus)
     {
-        if (profile == null)
+        if (core == null || profile == null)
         {
             return 0f;
         }
 
-        float cycleTime = EstimateDpsCycleTime(profile, bonus);
-        float castDamage = EstimateSingleTargetCastDamage(profile, bonus);
+        float cycleTime = EstimateDpsCycleTime(core, segmentId, profile, bonus);
+        float castDamage = EstimateSingleTargetCastDamage(core, segmentId, profile, bonus);
         return cycleTime > 0.0001f ? castDamage / cycleTime : 0f;
     }
 
-    private static float EstimateDpsCycleTime(SegmentAttackProfile profile, WeaponStatBonusData bonus)
+    private static float EstimateDpsCycleTime(CoreStatProvider core, string segmentId, SegmentAttackProfile profile, WeaponStatBonusData bonus)
     {
         int projectileCount = bonus.ResolveProjectileCount(profile.ProjectileCount);
-        float cooldown = bonus.ResolveCooldown(profile.Cooldown);
+        float cooldown = CalculateTooltipSegmentCooldown(core, segmentId, profile, bonus);
         if (profile.FireProjectilesSequentially && projectileCount > 1)
         {
             cooldown += Mathf.Max(0f, profile.ProjectileFireDelay) * (projectileCount - 1);
@@ -2800,10 +3102,10 @@ public class CardUI : MonoBehaviour
         return Mathf.Max(0.05f, cooldown);
     }
 
-    private static float EstimateSingleTargetCastDamage(SegmentAttackProfile profile, WeaponStatBonusData bonus)
+    private static float EstimateSingleTargetCastDamage(CoreStatProvider core, string segmentId, SegmentAttackProfile profile, WeaponStatBonusData bonus)
     {
         int projectileCount = bonus.ResolveProjectileCount(profile.ProjectileCount);
-        float damage = bonus.ResolveBaseDamage(profile.BaseDamage);
+        float damage = CalculateTooltipSegmentDamage(core, segmentId, profile, bonus);
         switch (profile.MoveType)
         {
             case SegmentAttackMoveType.Laser:
@@ -4084,11 +4386,105 @@ public class CardUI : MonoBehaviour
         }
 
         lastSelectedStatCardPrefab = sourcePrefab; // 다음 SpawnLevelUpCards에서 가중치 적용
+        lastSelectedStatCardDefinition = null; // 데이터 에셋 모드와 중복 추적 방지
+    }
+
+    private List<StatUpgradeDefinition> PickWeightedStatDefinitions(List<StatUpgradeDefinition> pool, int count) // 데이터 에셋 스탯 카드 가중치 선택
+    {
+        List<WeightedDefinitionEntry> remaining = new List<WeightedDefinitionEntry>(pool.Count);
+        for (int i = 0; i < pool.Count; i++)
+        {
+            StatUpgradeDefinition definition = pool[i];
+            if (definition == null)
+            {
+                continue;
+            }
+
+            float weight = baseCardSpawnWeight;
+            if (lastSelectedStatCardDefinition != null && definition == lastSelectedStatCardDefinition)
+            {
+                weight += selectedCardWeightBonus;
+            }
+
+            remaining.Add(new WeightedDefinitionEntry
+            {
+                Definition = definition,
+                Weight = weight
+            });
+        }
+
+        List<StatUpgradeDefinition> picked = new List<StatUpgradeDefinition>(count);
+        int pickCount = Mathf.Min(count, remaining.Count);
+        for (int pickIndex = 0; pickIndex < pickCount; pickIndex++)
+        {
+            if (!TryPickWeightedDefinition(remaining, out WeightedDefinitionEntry selected))
+            {
+                break;
+            }
+
+            picked.Add(selected.Definition);
+            remaining.Remove(selected);
+        }
+
+        return picked;
+    }
+
+    private static bool TryPickWeightedDefinition(List<WeightedDefinitionEntry> pool, out WeightedDefinitionEntry selected)
+    {
+        selected = default;
+        if (pool == null || pool.Count == 0)
+        {
+            return false;
+        }
+
+        float totalWeight = 0f;
+        for (int i = 0; i < pool.Count; i++)
+        {
+            totalWeight += pool[i].Weight;
+        }
+
+        if (totalWeight <= 0f)
+        {
+            selected = pool[pool.Count - 1];
+            return true;
+        }
+
+        float roll = Random.Range(0f, totalWeight);
+        float cumulative = 0f;
+        selected = pool[pool.Count - 1];
+        for (int i = 0; i < pool.Count; i++)
+        {
+            cumulative += pool[i].Weight;
+            if (roll < cumulative)
+            {
+                selected = pool[i];
+                return true;
+            }
+        }
+
+        return true;
+    }
+
+    private void RememberSelectedStatCardDefinition(StatUpgradeDefinition definition) // 직전 선택 데이터 에셋 저장
+    {
+        if (definition == null)
+        {
+            return;
+        }
+
+        lastSelectedStatCardDefinition = definition;
+        lastSelectedStatCardPrefab = null; // 기존 프리팹 fallback 가중치와 분리
     }
 
     private struct WeightedPrefabEntry // 가중치 뽑기용 임시 구조체
     {
         public GameObject Prefab; // 카드 프리팹
+        public float Weight; // 등장 가중치
+    }
+
+    private struct WeightedDefinitionEntry // 데이터 에셋 가중치 뽑기용 임시 구조체
+    {
+        public StatUpgradeDefinition Definition; // 카드 데이터
         public float Weight; // 등장 가중치
     }
 
@@ -4167,9 +4563,10 @@ public class CardUI : MonoBehaviour
         }
 
         entry.IsClickable = false;
+        ResetCardTooltipInteraction(entry);
+        HideCardHoverTooltip(entry, true);
         entry.RootTransform.DOKill();
         entry.CanvasGroup.DOKill();
-        entry.RootTransform.DOKill();
         entry.CanvasGroup.alpha = 0f;
         entry.CanvasGroup.blocksRaycasts = false;
         entry.CanvasGroup.interactable = false;
@@ -4184,14 +4581,68 @@ public class CardUI : MonoBehaviour
             return;
         }
 
-        entry.IsClickable = entry.CanSelect; // 없음/불가 카드는 호버/클릭 비활성
-        entry.CanvasGroup.blocksRaycasts = true;
-        entry.CanvasGroup.interactable = entry.CanSelect; // 선택 불가 카드 입력 차단
+        entry.IsClickable = false; // 오픈 트윈 중 툴팁/클릭 차단
+        entry.TooltipReady = false;
+        entry.CanvasGroup.blocksRaycasts = false;
+        entry.CanvasGroup.interactable = entry.CanSelect; // 입력은 막되 Button DisabledColor가 배경 알파를 낮추지 않게 유지
 
         Sequence sequence = DOTween.Sequence().SetUpdate(true);
         sequence.Join(entry.CanvasGroup.DOFade(1f, 0.25f));
         sequence.Join(entry.RootTransform.DOAnchorPos(entry.OriginalPosition, 0.35f).SetEase(Ease.OutCubic));
         sequence.Join(entry.RootTransform.DOScale(entry.OriginalScale, 0.35f).SetEase(Ease.OutBack));
+        sequence.OnComplete(() => FinalizeCardOpen(entry));
+    }
+
+    private void FinalizeCardOpen(SpawnedCardEntry entry)
+    {
+        if (entry == null || entry.Root == null || entry.RootTransform == null || entry.CanvasGroup == null)
+        {
+            return;
+        }
+
+        entry.RootTransform.localScale = entry.OriginalScale; // 툴팁 역스케일 계산 전 안정화
+        entry.IsClickable = entry.CanSelect;
+        entry.TooltipReady = entry.CanSelect;
+        entry.CanvasGroup.blocksRaycasts = entry.CanSelect;
+        entry.CanvasGroup.interactable = entry.CanSelect;
+
+        if (!entry.CanSelect)
+        {
+            HideCardHoverTooltip(entry, true);
+            return;
+        }
+
+        if (!IsMouseOverCard(entry, out Vector2 screenPosition, out Camera eventCamera))
+        {
+            return;
+        }
+
+        entry.IsPointerOver = true; // 마우스가 이미 카드 위에 있던 연속 레벨업 케이스
+        entry.HasTooltipPointer = true;
+        entry.LastTooltipScreenPosition = screenPosition;
+        entry.LastTooltipCamera = eventCamera;
+        SetCardHoverVisual(entry, true);
+        TryShowCardHoverTooltip(entry);
+    }
+
+    private static bool IsMouseOverCard(SpawnedCardEntry entry, out Vector2 screenPosition, out Camera eventCamera)
+    {
+        screenPosition = Input.mousePosition;
+        eventCamera = ResolveCardEventCamera(entry);
+        return entry != null
+            && entry.RootTransform != null
+            && RectTransformUtility.RectangleContainsScreenPoint(entry.RootTransform, screenPosition, eventCamera);
+    }
+
+    private static Camera ResolveCardEventCamera(SpawnedCardEntry entry)
+    {
+        Canvas canvas = entry?.RootTransform != null ? entry.RootTransform.GetComponentInParent<Canvas>() : null;
+        if (canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+        {
+            return null;
+        }
+
+        return canvas.worldCamera;
     }
 
     private Tween PlaySelectTween(SpawnedCardEntry entry)
@@ -4202,6 +4653,8 @@ public class CardUI : MonoBehaviour
         }
 
         entry.IsClickable = false;
+        ResetCardTooltipInteraction(entry);
+        HideCardHoverTooltip(entry, true);
         entry.RootTransform.DOKill();
 
         Sequence sequence = DOTween.Sequence().SetUpdate(true);
@@ -4218,6 +4671,8 @@ public class CardUI : MonoBehaviour
         }
 
         entry.IsClickable = false;
+        ResetCardTooltipInteraction(entry);
+        HideCardHoverTooltip(entry, true);
         entry.RootTransform.DOKill();
         entry.CanvasGroup.DOKill();
 
@@ -4262,7 +4717,14 @@ public class CardUI : MonoBehaviour
 
         if (selectedEntry.StatUpgrade != null) // 스탯 카드 선택 성공 시
         {
-            RememberSelectedStatCardPrefab(selectedEntry.SourcePrefab); // 다음 선택지에서 같은 카드 가중치 증가
+            if (selectedEntry.StatUpgradeDefinition != null)
+            {
+                RememberSelectedStatCardDefinition(selectedEntry.StatUpgradeDefinition); // 데이터 에셋 기준 가중치 증가
+            }
+            else
+            {
+                RememberSelectedStatCardPrefab(selectedEntry.SourcePrefab); // 기존 프리팹 fallback 가중치 증가
+            }
         }
 
         isProcessingSelection = true;
@@ -4921,6 +5383,7 @@ public class CardUI : MonoBehaviour
         public RectTransform RootTransform;
         public CanvasGroup CanvasGroup;
         public StatUpgrade StatUpgrade;
+        public StatUpgradeDefinition StatUpgradeDefinition; // 데이터 에셋 기반 공통 강화 카드
         public SegmentAddCard SegmentAddCard;
         public GameObject SourcePrefab; // 생성에 사용한 프리팹 (선택 가중치용)
         public Vector2 OriginalPosition;
@@ -4942,6 +5405,12 @@ public class CardUI : MonoBehaviour
         public GameObject CardTooltipRoot; // 프리팹에 배치된 카드 툴팁 루트
         public CanvasGroup CardTooltipCanvasGroup; // 툴팁 페이드
         public TMP_Text CardTooltipText; // 카드 툴팁 텍스트
+        public bool TooltipReady; // 오픈 트윈 완료 후에만 true
+        public bool IsPointerOver; // 현재 포인터가 카드 위인지
+        public bool HasTooltipPointer; // 툴팁 배치용 좌표 보유 여부
+        public bool IsHoverVisualActive; // 호버 확대 중복 방지
+        public Vector2 LastTooltipScreenPosition; // 마지막 포인터 화면 좌표
+        public Camera LastTooltipCamera; // 마지막 포인터 이벤트 카메라
         // 없음/불가 카드 클릭 차단
         public bool CanSelect = true;
     }
@@ -5160,6 +5629,46 @@ public class CardUI : MonoBehaviour
             ApplyStatCardTextStyle(descText, 20f); // 공통카드 설명은 줄바꿈 대신 축소
             descText.richText = true;
             descText.text = desc;
+        }
+    }
+
+    private static void ApplyStatUpgradeCardIcon(GameObject root, StatUpgradeDefinition definition)
+    {
+        if (root == null || definition == null)
+        {
+            return;
+        }
+
+        Transform imageTransform = root.transform.Find("Image");
+        if (imageTransform == null || !imageTransform.TryGetComponent(out Image img))
+        {
+            return;
+        }
+
+        Vector2 slotSize = img.rectTransform.sizeDelta; // 프리팹 아이콘 슬롯 크기 유지
+        Sprite icon = definition.CardIconSprite;
+        img.sprite = icon;
+        img.overrideSprite = null;
+        img.enabled = icon != null;
+        img.color = Color.white;
+        img.type = Image.Type.Simple;
+        img.preserveAspect = true;
+        if (icon == null)
+        {
+            return;
+        }
+
+        if (slotSize.sqrMagnitude <= 0.0001f)
+        {
+            img.SetNativeSize(); // 슬롯 정보가 없을 때만 fallback
+            slotSize = img.rectTransform.sizeDelta;
+        }
+
+        img.rectTransform.sizeDelta = slotSize; // 원본 PNG 크기 대신 기존 UI 크기 사용
+        if (!Mathf.Approximately(definition.CardIconSizeOffset, 0f))
+        {
+            float scale = Mathf.Max(0.01f, 1f + Mathf.Clamp(definition.CardIconSizeOffset, -100f, 100f) / 100f);
+            img.rectTransform.sizeDelta = slotSize * scale;
         }
     }
 

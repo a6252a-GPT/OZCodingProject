@@ -7,7 +7,7 @@ namespace TeamProject01.Gameplay
         private bool TryFindTarget(out EnemyController target) // 대상 탐색
         {
             hasResolvedImpactPoint = false; // 일반 타겟 기본값
-            float range = GetUpgrade().ApplyRange(AttackProfile.SearchRange); // 강화 사거리
+            float range = GetEffectiveSearchRange(); // 강화 사거리
             if (AttackProfile.MoveType == SegmentAttackMoveType.SawBounceProjectile)
             {
                 return TryFindLockedSawTarget(range, out target); // 톱날은 조준 대상 고정
@@ -115,13 +115,13 @@ namespace TeamProject01.Gameplay
         private bool IsPositionInSideCones(Vector3 worldPosition)
         {
             Transform reference = Segment != null ? Segment.transform : transform; // 머리 회전축이 아니라 세그먼트 바디 기준
-            return SegmentTargetQuery.IsPositionInSideCones(reference, transform.right, worldPosition, AttackProfile.SideConeAngle); // 공용 부채꼴 판정
+            return SegmentTargetQuery.IsPositionInSideCones(reference, transform.right, worldPosition, GetEffectiveSideConeAngle()); // 공용 부채꼴 판정
         }
 
         private bool IsPositionInSideCone(Vector3 worldPosition, int sideSign) // 세그먼트 바디 기준 한쪽 부채꼴 확인
         {
             Transform reference = Segment != null ? Segment.transform : transform; // 세그먼트 바디 기준
-            return SegmentTargetQuery.IsPositionInSideCone(reference, transform.right, worldPosition, AttackProfile.SideConeAngle, sideSign); // 한쪽 부채꼴
+            return SegmentTargetQuery.IsPositionInSideCone(reference, transform.right, worldPosition, GetEffectiveSideConeAngle(), sideSign); // 한쪽 부채꼴
         }
 
         private bool TryFindTargetInSideCone(int sideSign, out EnemyController target) // 한쪽 콘 안에서 가까운 대상 탐색
@@ -133,7 +133,7 @@ namespace TeamProject01.Gameplay
             }
 
             int normalizedSide = NormalizeSideSign(sideSign);
-            float range = GetUpgrade().ApplyRange(AttackProfile.SearchRange); // 강화 사거리
+            float range = GetEffectiveSearchRange(); // 강화 사거리
             return EnemyController.TryFindNearest(
                 transform.position,
                 range,

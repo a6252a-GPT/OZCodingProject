@@ -101,7 +101,7 @@ namespace TeamProject01.Gameplay
 
         private float GetExpandingFlameTickInterval() // 화염 피해 간격
         {
-            float interval = profile != null ? profile.LaserTickInterval : 0.2f; // 기존 지속 피해 간격 재사용
+            float interval = profile != null ? weaponBonus.ResolveLaserTickInterval(profile.LaserTickInterval) : 0.2f; // 기존 지속 피해 간격 재사용
             return Mathf.Max(0.02f, interval); // 최소값
         }
 

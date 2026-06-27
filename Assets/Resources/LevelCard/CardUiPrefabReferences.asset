@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: CardUiPrefabReferences
   m_EditorClassIdentifier: 
   segmentChoiceCardPrefab: {fileID: 1511448857506858134, guid: 76fa2678eb380c24bb632931f5597fd4, type: 3}
-  extraStatUpgradeCards:
-  - {fileID: 5529455165526054929, guid: a21f24dbe6af4234d8ab0d35b451cb79, type: 3}
-  - {fileID: 3768417143634273877, guid: 39928289bb1b60346987e8f31d764154, type: 3}
+  statUpgradeCatalog: {fileID: 11400000, guid: 34f8110b24d77af459d733e9b9a9f7cb, type: 2}
+  extraStatUpgradeCards: []

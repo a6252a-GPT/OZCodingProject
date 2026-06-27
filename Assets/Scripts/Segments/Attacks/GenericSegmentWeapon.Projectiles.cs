@@ -171,7 +171,7 @@ namespace TeamProject01.Gameplay
 
             if (IsTargetUsable(initialTarget))
             {
-                float range = GetUpgrade().ApplyRange(AttackProfile.SearchRange); // 사거리
+                float range = GetEffectiveSearchRange(); // 사거리
                 if (Vector3.Distance(transform.position, initialTarget.transform.position) <= range && IsTargetInAttackArea(initialTarget)) // 순차 발사 중에도 공격 범위 형태 유지
                 {
                     return initialTarget; // 기존 대상 유지

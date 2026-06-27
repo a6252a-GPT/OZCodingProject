@@ -17,18 +17,19 @@ namespace TeamProject01.Gameplay
 
         private IEnumerator ApplyLaserDamage(EnemyController target, DamageData damage) // 레이저 지속 피해
         {
-            float timer = Mathf.Max(0.05f, AttackProfile.LaserDuration); // 지속 시간
-            WaitForSeconds wait = new WaitForSeconds(Mathf.Max(0.02f, AttackProfile.LaserTickInterval)); // 피해 간격
+            float tickInterval = GetEffectiveLaserTickInterval(); // 강화 반영 피해 간격
+            float timer = GetEffectiveLaserDuration(); // 지속 시간
+            WaitForSeconds wait = new WaitForSeconds(tickInterval); // 피해 간격
             while (timer > 0f && target != null)
             {
                 Vector3 hitPosition = target.transform.position + Vector3.up * AttackProfile.TargetAimHeight; // 명중 위치
-                if (Vector3.Distance(transform.position, target.transform.position) <= GetUpgrade().ApplyRange(AttackProfile.SearchRange) && IsTargetInAttackArea(target)) // 레이저 지속 피해도 공격 범위 형태 유지
+                if (Vector3.Distance(transform.position, target.transform.position) <= GetEffectiveSearchRange() && IsTargetInAttackArea(target)) // 레이저 지속 피해도 공격 범위 형태 유지
                 {
                     SegmentHitResolver.ApplyDamageAndFeedback(target, damage, AttackProfile, hitPosition, transform.position, SegmentMonsterFeedbackKind.Continuous); // 지속 피해 + 피드백
                     PlayHitVfx(hitPosition); // 명중 VFX
                 }
 
-                timer -= AttackProfile.LaserTickInterval; // 시간 감소
+                timer -= tickInterval; // 시간 감소
                 yield return wait;
             }
 
