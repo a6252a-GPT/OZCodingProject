@@ -21,26 +21,6 @@ namespace TeamProject01.Gameplay
             [InspectorName("등장 확률(%)")]
             [Range(0.0f, 100.0f)]
             public float chancePercent = 86.0f;
-
-            [Tooltip("이 등급 상자가 줄 총 경험치입니다.")]
-            [InspectorName("총 경험치 보상")]
-            [Min(0)]
-            public int experienceReward = 12;
-
-            [Tooltip("이 등급 상자가 줄 총 골드입니다.")]
-            [InspectorName("총 골드 보상")]
-            [Min(0)]
-            public int goldReward = 20;
-
-            [Tooltip("경험치 보상을 몇 조각으로 나눠 떨어뜨릴지 정합니다.")]
-            [InspectorName("경험치 드랍 개수")]
-            [Range(1, 40)]
-            public int experienceDropCount = 6;
-
-            [Tooltip("골드 보상을 몇 조각으로 나눠 떨어뜨릴지 정합니다.")]
-            [InspectorName("골드 드랍 개수")]
-            [Range(1, 60)]
-            public int goldDropCount = 8;
         }
 #pragma warning restore CS0649
 
@@ -113,36 +93,24 @@ namespace TeamProject01.Gameplay
         [InspectorName("Lv3 등장 시 Lv2 제외")]
         [SerializeField] private bool blockLevel2WhenLevel3Appears = true; // 고급 상자의 희소성을 지킵니다.
 
-        [Tooltip("상자 등급별 프리팹, 등장 확률, 보상량, 드랍 개수를 정합니다.")]
+        [Tooltip("상자 등급별 프리팹과 등장 확률을 정합니다. 실제 보상 연결은 보상 시스템 담당 쪽에서 처리합니다.")]
         [InspectorName("상자 등급 목록")]
         [SerializeField] private BonusChestGradeRule[] chestGrades =
         {
             new BonusChestGradeRule
             {
                 displayName = "Lv1 일반 상자",
-                chancePercent = 86.0f,
-                experienceReward = 12,
-                goldReward = 20,
-                experienceDropCount = 6,
-                goldDropCount = 8
+                chancePercent = 86.0f
             },
             new BonusChestGradeRule
             {
                 displayName = "Lv2 희귀 상자",
-                chancePercent = 12.0f,
-                experienceReward = 30,
-                goldReward = 50,
-                experienceDropCount = 10,
-                goldDropCount = 14
+                chancePercent = 12.0f
             },
             new BonusChestGradeRule
             {
                 displayName = "Lv3 고급 상자",
-                chancePercent = 2.0f,
-                experienceReward = 70,
-                goldReward = 110,
-                experienceDropCount = 16,
-                goldDropCount = 22
+                chancePercent = 2.0f
             }
         };
 
@@ -228,7 +196,6 @@ namespace TeamProject01.Gameplay
             BonusChest chest = Instantiate(prefab, position, rotation, root);
             chest.ConfigureOwner(this);
             chest.ConfigureChoiceGroup(root, allowOnlyOneChoice, unselectedChestDestroyDelay);
-            chest.ConfigureReward(grade.experienceReward, grade.goldReward, grade.experienceDropCount, grade.goldDropCount);
             return chest;
         }
 

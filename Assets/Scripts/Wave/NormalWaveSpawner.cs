@@ -112,6 +112,9 @@ namespace TeamProject01.Gameplay
         [SerializeField] private int spawnBatchCount = 4; // 전체 수량을 몇 묶음으로 나누어 스폰할지입니다.
 
         [Range(1, 8)]
+        [SerializeField] private int batchGateCount = 1; // 한 묶음이 실제로 사용할 게이트 방향 수입니다.
+
+        [Range(1, 8)]
         [SerializeField] private int earlyGateCount = 2; // 초반에 사용할 랜덤 게이트 방향 수입니다.
 
         [Min(1)]
@@ -128,6 +131,21 @@ namespace TeamProject01.Gameplay
 
         [Min(1)]
         [SerializeField] private int frontRowCount = 5; // 한 게이트에서 앞줄에 몇 마리씩 세울지입니다.
+
+        [Header("스폰 혼잡 보정")]
+        [SerializeField] private bool useCongestionPush = false; // 켜면 스폰 예정 위치가 붐빌 때 넥서스 반대 방향으로 조금 더 멀리 생성합니다.
+
+        [Min(0.1f)]
+        [SerializeField] private float congestionCheckRadius = 8.0f; // 스폰 예정 위치 주변을 검사할 반경입니다.
+
+        [Min(1)]
+        [SerializeField] private int congestionMonsterThreshold = 12; // 이 수 이상 몬스터가 있으면 혼잡하다고 판단합니다.
+
+        [Min(0.0f)]
+        [SerializeField] private float congestionPushDistance = 5.0f; // 혼잡할 때 한 번에 뒤로 미는 거리입니다.
+
+        [Min(0.0f)]
+        [SerializeField] private float congestionMaxPushDistance = 20.0f; // 한 번 스폰에서 최대한 뒤로 밀 수 있는 거리입니다.
 
         private Coroutine spawnRoutine; // 현재 Stage의 일반 몬스터 스폰 루틴입니다.
 
@@ -175,6 +193,7 @@ namespace TeamProject01.Gameplay
         {
             int safeBatchCount = Mathf.Max(1, spawnBatchCount);
             float spawnWindowSeconds = Mathf.Max(0.1f, stageDurationSeconds * (spawnWindowPercent / 100.0f));
+            EnemySpawner.ExternalSpawnCongestionOptions congestionOptions = BuildCongestionOptions();
 
             for (int batchIndex = 0; batchIndex < safeBatchCount; batchIndex++)
             {
@@ -183,11 +202,12 @@ namespace TeamProject01.Gameplay
                     yield return new WaitForSeconds(spawnWindowSeconds / safeBatchCount);
                 }
 
+                EnemySpawner.ExternalSpawnDirectionSet batchDirectionSet = BuildBatchDirectionSet(directionSet, batchIndex);
                 EnemySpawner.ExternalSpawnEntry[] normalBatchEntries = BuildBatchEntries(totalEntries, batchIndex, safeBatchCount, false);
 
                 if (normalBatchEntries.Length > 0)
                 {
-                    enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, directionSet, frontRowCount);
+                    enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions);
                 }
 
                 EnemySpawner.ExternalSpawnEntry[] eliteBatchEntries = BuildBatchEntries(totalEntries, batchIndex, safeBatchCount, true);
@@ -196,7 +216,7 @@ namespace TeamProject01.Gameplay
                 {
                     List<EnemyController> spawnedElites = new List<EnemyController>();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, directionSet, frontRowCount, spawnedElites))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spawnedElites))
                     {
                         MarkSpawnedElites(spawnedElites, GetEliteCombinationType(totalEntries));
                     }
@@ -204,6 +224,21 @@ namespace TeamProject01.Gameplay
             }
 
             spawnRoutine = null;
+        }
+
+        private EnemySpawner.ExternalSpawnCongestionOptions BuildCongestionOptions()
+        {
+            if (!useCongestionPush)
+            {
+                return EnemySpawner.ExternalSpawnCongestionOptions.Disabled;
+            }
+
+            return new EnemySpawner.ExternalSpawnCongestionOptions(
+                true,
+                congestionCheckRadius,
+                congestionMonsterThreshold,
+                congestionPushDistance,
+                congestionMaxPushDistance);
         }
 
         private void StopCurrentRoutine()
@@ -398,6 +433,35 @@ namespace TeamProject01.Gameplay
             }
 
             return batchEntries.ToArray();
+        }
+
+        private EnemySpawner.ExternalSpawnDirectionSet BuildBatchDirectionSet(EnemySpawner.ExternalSpawnDirectionSet stageDirectionSet, int batchIndex)
+        {
+            int[] stageDirectionIndexes = stageDirectionSet.GetDirectionIndexes();
+
+            if (stageDirectionIndexes == null || stageDirectionIndexes.Length == 0)
+            {
+                return stageDirectionSet;
+            }
+
+            int safeBatchGateCount = Mathf.Clamp(batchGateCount, 1, stageDirectionIndexes.Length);
+
+            if (safeBatchGateCount >= stageDirectionIndexes.Length)
+            {
+                return stageDirectionSet;
+            }
+
+            // Stage 시작 때 뽑힌 후보 방향 안에서만 돌려 쓰기 때문에 초반 방향 제한은 유지됩니다.
+            int[] batchDirectionIndexes = new int[safeBatchGateCount];
+            int startIndex = Mathf.Abs(batchIndex * safeBatchGateCount) % stageDirectionIndexes.Length;
+
+            for (int i = 0; i < batchDirectionIndexes.Length; i++)
+            {
+                int directionIndex = (startIndex + i) % stageDirectionIndexes.Length;
+                batchDirectionIndexes[i] = stageDirectionIndexes[directionIndex];
+            }
+
+            return new EnemySpawner.ExternalSpawnDirectionSet(batchDirectionIndexes);
         }
 
         private static void MarkSpawnedElites(List<EnemyController> spawnedElites, string eliteCombinationType)

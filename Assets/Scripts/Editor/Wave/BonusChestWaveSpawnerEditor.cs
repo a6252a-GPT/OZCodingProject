@@ -128,10 +128,6 @@ namespace TeamProject01.Gameplay.EditorTools
                 DrawRelativeProperty(grade, "displayName", "등급 이름");
                 DrawRelativeProperty(grade, "prefab", "상자 프리팹");
                 DrawRelativeProperty(grade, "chancePercent", "등장 확률 (%)");
-                DrawRelativeProperty(grade, "experienceReward", "총 경험치 보상");
-                DrawRelativeProperty(grade, "goldReward", "총 골드 보상");
-                DrawRelativeProperty(grade, "experienceDropCount", "경험치 드랍 개수");
-                DrawRelativeProperty(grade, "goldDropCount", "골드 드랍 개수");
                 EditorGUI.indentLevel--;
             }
 
