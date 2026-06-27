@@ -27,7 +27,7 @@ MonoBehaviour:
   ClusterMinEnemyCount: 5
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.72
-  BaseDamage: 10
+  BaseDamage: 18
   Cooldown: 4.6
   UseDamageTypeOverride: 1
   DamageTypeOverride: 4

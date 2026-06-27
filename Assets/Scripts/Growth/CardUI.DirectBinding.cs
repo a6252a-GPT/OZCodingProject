@@ -11,6 +11,8 @@ using UnityEngine.UI;
 
 public partial class CardUI
 {
+    private static readonly Vector2 CommonCardIconSlotSize = new Vector2(130f, 130f); // 공통카드 Image 슬롯 기준 크기
+
     // 안건준 추가 - 0623 : 세그먼트 ID + 레벨로 SegmentDefinition 아이콘 스프라이트 조회
     private static Sprite GetSegmentIconSprite(string segmentId, int level)
     {
@@ -46,7 +48,7 @@ public partial class CardUI
     }
 
     // 안건준 추가 - 0623 : SegmentUpgradeCard 같은 커스텀 프리팹에 Card_Text / DescText / Image 직접 주입
-    private static void ApplyCardTextsDirectly(GameObject root, string title, string desc, Sprite iconSprite = null, float iconSizeOffset = 0f)
+    private static void ApplyCardTextsDirectly(GameObject root, string title, string desc, Sprite iconSprite = null, float iconSizeOffset = 0f, bool iconSizeAlreadyApplied = false)
     {
         if (root == null)
         {
@@ -89,17 +91,22 @@ public partial class CardUI
             Transform imageTransform = root.transform.Find("Image");
             if (imageTransform != null && imageTransform.TryGetComponent(out UnityEngine.UI.Image img))
             {
+                Vector2 slotSize = ResolveCommonCardIconSlotSize(img.rectTransform); // 공통카드 기준 슬롯 크기
                 img.sprite = iconSprite;
                 img.enabled = true;
                 img.color = Color.white;
                 img.type = UnityEngine.UI.Image.Type.Simple;
-                img.preserveAspect = false;
-                img.SetNativeSize(); // 원본 크기로 설정
-                // 크기 조절 적용 (0=원본, -50=절반, 100=두배)
-                if (!Mathf.Approximately(iconSizeOffset, 0f))
+                img.preserveAspect = true;
+                if (slotSize.sqrMagnitude <= 0.0001f)
                 {
-                    float scale = Mathf.Max(0.01f, 1f + Mathf.Clamp(iconSizeOffset, -100f, 100f) / 100f);
-                    img.rectTransform.sizeDelta *= scale;
+                    img.SetNativeSize(); // 슬롯 정보가 없을 때만 fallback
+                    slotSize = ResolveCommonCardIconSlotSize(img.rectTransform);
+                }
+
+                img.rectTransform.sizeDelta = slotSize; // 원본 PNG 크기 대신 기존 UI 슬롯 크기 사용
+                if (!iconSizeAlreadyApplied)
+                {
+                    img.rectTransform.sizeDelta = ApplyCommonCardIconSizeOffset(slotSize, iconSizeOffset);
                 }
             }
             else
@@ -158,7 +165,7 @@ public partial class CardUI
             return;
         }
 
-        Vector2 slotSize = img.rectTransform.sizeDelta; // 프리팹 아이콘 슬롯 크기 유지
+        Vector2 slotSize = ResolveCommonCardIconSlotSize(img.rectTransform); // 공통카드 기준 슬롯 크기
         Sprite icon = definition.CardIconSprite;
         img.sprite = icon;
         img.overrideSprite = null;
@@ -174,15 +181,41 @@ public partial class CardUI
         if (slotSize.sqrMagnitude <= 0.0001f)
         {
             img.SetNativeSize(); // 슬롯 정보가 없을 때만 fallback
-            slotSize = img.rectTransform.sizeDelta;
+            slotSize = ResolveCommonCardIconSlotSize(img.rectTransform);
         }
 
         img.rectTransform.sizeDelta = slotSize; // 원본 PNG 크기 대신 기존 UI 크기 사용
-        if (!Mathf.Approximately(definition.CardIconSizeOffset, 0f))
+        img.rectTransform.sizeDelta = ApplyCommonCardIconSizeOffset(slotSize, definition.CardIconSizeOffset);
+    }
+
+    private static Vector2 ResolveCommonCardIconSlotSize(RectTransform iconRect)
+    {
+        if (iconRect == null)
         {
-            float scale = Mathf.Max(0.01f, 1f + Mathf.Clamp(definition.CardIconSizeOffset, -100f, 100f) / 100f);
-            img.rectTransform.sizeDelta = slotSize * scale;
+            return CommonCardIconSlotSize; // 안전 fallback
         }
+
+        Vector2 slotSize = iconRect.sizeDelta;
+        if (slotSize.sqrMagnitude <= 0.0001f)
+        {
+            return CommonCardIconSlotSize; // stretch/미설정이면 공통카드 기준
+        }
+
+        return new Vector2(
+            Mathf.Max(Mathf.Abs(slotSize.x), CommonCardIconSlotSize.x),
+            Mathf.Max(Mathf.Abs(slotSize.y), CommonCardIconSlotSize.y)); // 작은 슬롯은 공통 크기로 보정
+    }
+
+    private static Vector2 ApplyCommonCardIconSizeOffset(Vector2 slotSize, float offset)
+    {
+        float positiveOffset = Mathf.Max(0f, Mathf.Clamp(offset, -100f, 100f)); // 과거 축소값(-80)은 공통 크기 이하로 줄이지 않음
+        if (Mathf.Approximately(positiveOffset, 0f))
+        {
+            return slotSize; // 공통카드 크기
+        }
+
+        float scale = 1f + positiveOffset / 100f;
+        return slotSize * scale;
     }
 
     private static void ApplyStatCardTextStyle(TMP_Text text, float maxFontSize)

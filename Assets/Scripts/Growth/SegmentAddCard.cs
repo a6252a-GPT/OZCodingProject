@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class SegmentAddCard : MonoBehaviour
 {
+    private static readonly Vector2 CommonCardIconSlotSize = new Vector2(130f, 130f); // 공통카드 Image 슬롯 기준 크기
+
     [Header("코어 세그먼트 추가")]
     [Min(1)][SerializeField] private int levelDelta = 1; // 선택 시 소비할 레벨 증가량
     ////// 전찬우수정 - 카탈로그 후보/액션 카드에서 세그먼트 ID를 런타임 주입받도록 변경
@@ -53,27 +55,50 @@ public class SegmentAddCard : MonoBehaviour
             return; // 표시 대상 없음
         }
 
+        Vector2 slotSize = ResolveCommonCardIconSlotSize(image.rectTransform); // 공통카드 기준 슬롯 크기
         image.sprite = icon;
         image.enabled = true;
-        // 안건준 수정 - 0623 : 스프라이트 원본 픽셀 크기 + 인스펙터 크기 조절값 적용
         image.color = Color.white;
         image.type = Image.Type.Simple;
-        image.preserveAspect = false;
-        image.SetNativeSize(); // 원본 크기로 먼저 설정
-        ApplyIconSizeOffset(image.rectTransform, sizeOffset); // 크기 조절 적용
-    }
-
-    // 안건준 추가 - 0623 : 원본 크기 기준으로 비율 조절 (0=원본, -50=절반, 100=두배)
-    private static void ApplyIconSizeOffset(RectTransform rt, float offset)
-    {
-        if (rt == null || Mathf.Approximately(offset, 0f))
+        image.preserveAspect = true;
+        if (slotSize.sqrMagnitude <= 0.0001f)
         {
-            return; // 조절 없음
+            image.SetNativeSize(); // 슬롯 정보가 없을 때만 fallback
+            slotSize = ResolveCommonCardIconSlotSize(image.rectTransform);
         }
 
-        float scale = 1f + Mathf.Clamp(offset, -100f, 100f) / 100f;
-        scale = Mathf.Max(0.01f, scale); // 최소 크기 보정
-        rt.sizeDelta *= scale;
+        image.rectTransform.sizeDelta = ApplyIconSizeOffset(slotSize, sizeOffset); // 슬롯 기준 크기 조절
+    }
+
+    // 슬롯 크기 기준으로 비율 조절 (0=슬롯 원본, -50=절반, 100=두배)
+    private static Vector2 ApplyIconSizeOffset(Vector2 slotSize, float offset)
+    {
+        float positiveOffset = Mathf.Max(0f, Mathf.Clamp(offset, -100f, 100f)); // 과거 축소값(-80)은 공통 크기 이하로 줄이지 않음
+        if (Mathf.Approximately(positiveOffset, 0f))
+        {
+            return slotSize; // 공통카드 크기
+        }
+
+        float scale = 1f + positiveOffset / 100f;
+        return slotSize * scale;
+    }
+
+    private static Vector2 ResolveCommonCardIconSlotSize(RectTransform iconRect)
+    {
+        if (iconRect == null)
+        {
+            return CommonCardIconSlotSize; // 안전 fallback
+        }
+
+        Vector2 slotSize = iconRect.sizeDelta;
+        if (slotSize.sqrMagnitude <= 0.0001f)
+        {
+            return CommonCardIconSlotSize; // stretch/미설정이면 공통카드 기준
+        }
+
+        return new Vector2(
+            Mathf.Max(Mathf.Abs(slotSize.x), CommonCardIconSlotSize.x),
+            Mathf.Max(Mathf.Abs(slotSize.y), CommonCardIconSlotSize.y)); // 작은 슬롯은 공통 크기로 보정
     }
 
     ////// 전찬우추가 - 세그먼트 카탈로그 후보 카드로 설정

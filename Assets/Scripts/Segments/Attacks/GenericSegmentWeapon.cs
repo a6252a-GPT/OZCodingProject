@@ -137,8 +137,8 @@ namespace TeamProject01.Gameplay
             CoreStatData coreStats = CoreStatProvider.GetCurrentOrDefault(); // 코어 스탯
             WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
             float baseDamage = weaponBonus.ResolveBaseDamage(AttackProfile.BaseDamage); // 프로필 + 무기 강화
-            float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(baseDamage)); // 최종 피해
-            damage *= CoreStatProvider.GetWeaponCategoryDamageMultiplierOrDefault(GetEffectiveSegmentId()); // 밀리/마법 공통 공격력
+            float commonDamage = CoreStatProvider.GetCommonBaseDamageBonusOrDefault(GetEffectiveSegmentId(), AttackProfile.BaseDamage); // 공통카드 기초 피해 보너스
+            float damage = GetUpgrade().ApplyDamage(baseDamage + commonDamage + coreStats.FlatDamageBonus); // 최종 피해
             damage *= SupportSegmentRuntimeBuffs.GetFinalDamageMultiplier(Segment.ChainIndex); // 지원형 최종 피해 버프
             return DamageData.Create(damage, GetDamageType(), Segment.ChainIndex, position, gameObject); // 전달값
         }

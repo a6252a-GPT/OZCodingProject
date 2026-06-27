@@ -20,7 +20,7 @@ MonoBehaviour:
   CardIconSprite: {fileID: 21300000, guid: e2b4ce0615d49e84b9d78c676def5697, type: 3}
   CardIconSizeOffset: 0
   LevelDelta: 1
-  DamageMultiplierBonus: 0.08
+  DamageMultiplierBonus: 0.05
   MeleeDamageMultiplierBonus: 0
   MagicDamageMultiplierBonus: 0
   AttackSpeedMultiplierBonus: 0

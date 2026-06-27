@@ -27,6 +27,13 @@ namespace TeamProject01.Gameplay
         public bool ShowLightningGroundVfx = true; // 바닥 번개 VFX 표시
         public bool ShowManaWallShieldVfx = true; // 보호막 ManaWall VFX 표시
 
+        [Header("Start Segment Choice Tickets")]
+        public bool SpawnSegmentChoiceTicketsOnStart = true; // 시작 시 선택권 드랍
+        [Min(0)] public int StartingSegmentChoiceTicketCount = 3; // 시작 선택권 개수
+        [Min(1)] public int StartingSegmentChoiceTicketAmount = 1; // 픽업당 선택권 횟수
+        [Min(0f)] public float StartingSegmentChoiceTicketMinRadius = 3.2f; // 최소 드랍 반경
+        [Min(0f)] public float StartingSegmentChoiceTicketMaxRadius = 6.2f; // 최대 드랍 반경
+
         public bool IsDead { get; private set; } // 사망 여부
         public float HealthRatio => MaxHealth <= 0 ? 0f : Mathf.Clamp01((float)CurrentHealth / MaxHealth); // HUD 비율
         public float ShieldRatio => MaxShield <= 0 ? 0f : Mathf.Clamp01((float)CurrentShield / MaxShield); // 보호막 HUD 비율
@@ -50,6 +57,11 @@ namespace TeamProject01.Gameplay
             ClampState(); // 상태 보정
             IsDead = CurrentHealth <= 0; // 초기 사망 상태
             ConfigureSceneVfx(); // 부착 VFX 설정
+        }
+
+        private void Start() // 시작 보상 드랍
+        {
+            SpawnStartingSegmentChoiceTickets(); // 테스트 선택권 배치
         }
 
         private void Update() // 보호막 회복
@@ -185,6 +197,31 @@ namespace TeamProject01.Gameplay
             return true; // 호출 성공
         }
 
+        private void SpawnStartingSegmentChoiceTickets() // 시작 선택권 드랍
+        {
+            if (!SpawnSegmentChoiceTicketsOnStart || StartingSegmentChoiceTicketCount <= 0 || Active != this)
+            {
+                return; // 처리 없음
+            }
+
+            int amount = Mathf.Max(1, StartingSegmentChoiceTicketAmount); // 픽업당 횟수
+            for (int i = 0; i < StartingSegmentChoiceTicketCount; i++)
+            {
+                Vector3 dropPosition = transform.position + CreateStartingSegmentChoiceTicketOffset(i, StartingSegmentChoiceTicketCount); // 넥서스 주변
+                RewardDropService.SpawnSegmentChoiceTicket(amount, dropPosition); // 기존 월드드랍 경로
+            }
+        }
+
+        private Vector3 CreateStartingSegmentChoiceTicketOffset(int index, int count) // 시작 선택권 위치
+        {
+            float maxRadius = Mathf.Max(StartingSegmentChoiceTicketMinRadius, StartingSegmentChoiceTicketMaxRadius); // 반경 보정
+            float minRadius = Mathf.Clamp(StartingSegmentChoiceTicketMinRadius, 0f, maxRadius); // 최소 보정
+            float radius = UnityEngine.Random.Range(minRadius, maxRadius); // 무작위 거리
+            float baseAngle = count > 0 ? 360f * index / count : 0f; // 균등 분산
+            float angle = baseAngle + UnityEngine.Random.Range(-42f, 42f); // 위치 흔들림
+            return Quaternion.Euler(0f, angle, 0f) * Vector3.forward * radius; // 수평 오프셋
+        }
+
         private void RegenerateShield() // 보호막 자동 회복
         {
             if (IsDead || MaxShield <= 0 || CurrentShield >= MaxShield || ShieldRegenPerSecond <= 0f)
@@ -221,6 +258,10 @@ namespace TeamProject01.Gameplay
             CurrentShield = Mathf.Clamp(CurrentShield, 0, MaxShield); // 현재 보호막 보정
             ShieldRegenDelay = Mathf.Max(0f, ShieldRegenDelay); // 대기 시간 보정
             ShieldRegenPerSecond = Mathf.Max(0f, ShieldRegenPerSecond); // 회복량 보정
+            StartingSegmentChoiceTicketCount = Mathf.Max(0, StartingSegmentChoiceTicketCount); // 시작 선택권 개수 보정
+            StartingSegmentChoiceTicketAmount = Mathf.Max(1, StartingSegmentChoiceTicketAmount); // 선택권 횟수 보정
+            StartingSegmentChoiceTicketMinRadius = Mathf.Max(0f, StartingSegmentChoiceTicketMinRadius); // 최소 반경 보정
+            StartingSegmentChoiceTicketMaxRadius = Mathf.Max(StartingSegmentChoiceTicketMinRadius, StartingSegmentChoiceTicketMaxRadius); // 최대 반경 보정
         }
 
         private void NotifyHealthChanged() // 체력 변경 알림

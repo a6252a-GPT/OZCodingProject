@@ -58,11 +58,11 @@ MonoBehaviour:
   SideConeAngle: 0
   SideConeAngleRare: 0
   SideConeAngleUnique: 0
-  LaserDuration: 0.1
+  LaserDuration: 0.4
   LaserDurationUsePercent: 0
-  LaserDurationRare: 0.2
+  LaserDurationRare: 0.7
   LaserDurationUsePercentRare: 0
-  LaserDurationUnique: 0.3
+  LaserDurationUnique: 1
   LaserDurationUsePercentUnique: 0
   LaserTickInterval: 0
   LaserTickIntervalRare: 0

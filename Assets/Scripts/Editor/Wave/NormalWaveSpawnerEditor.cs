@@ -1,0 +1,158 @@
+using UnityEditor;
+
+namespace TeamProject01.Gameplay.EditorTools
+{
+    [CustomEditor(typeof(NormalWaveSpawner))]
+    public sealed class NormalWaveSpawnerEditor : Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+
+            WaveInspectorUtility.DrawScriptField(target);
+
+            WaveInspectorUtility.DrawSection("참조");
+            WaveInspectorUtility.DrawProperty(serializedObject, "enemySpawner", "몬스터 스포너");
+
+            WaveInspectorUtility.DrawSection("수량 설정", "기본 수량에 Stage별 배율을 곱해서 일반 몬스터 총량을 계산합니다.");
+            WaveInspectorUtility.DrawProperty(serializedObject, "baseSpawnCount", "기본 스폰 수");
+            DrawScaleSteps();
+
+            WaveInspectorUtility.DrawSection("난이도 배율", "Stage별로 생성 직후 몬스터 체력/이동속도/Nexus 피해 배율을 적용합니다.");
+            DrawDifficultySteps();
+
+            WaveInspectorUtility.DrawSection("일반 몬스터 조합", "현재 Stage에서 사용 가능한 조합 중 하나를 가중치로 고릅니다.");
+            DrawCompositions();
+
+            WaveInspectorUtility.DrawSection("고급 설정", "초반에 집중해서 나오게 하는 시간/게이트 설정입니다.");
+            WaveInspectorUtility.DrawProperty(serializedObject, "spawnWindowPercent", "스폰 집중 비율 (%)");
+            WaveInspectorUtility.DrawProperty(serializedObject, "spawnBatchCount", "스폰 묶음 횟수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "earlyGateCount", "초반 사용 게이트 방향 수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "midGateStartStage", "중반 게이트 시작 Stage");
+            WaveInspectorUtility.DrawProperty(serializedObject, "midGateCount", "중반 사용 게이트 방향 수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "lateGateStartStage", "후반 게이트 시작 Stage");
+            WaveInspectorUtility.DrawProperty(serializedObject, "lateGateCount", "후반 사용 게이트 방향 수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "frontRowCount", "앞줄 배치 수");
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawScaleSteps()
+        {
+            SerializedProperty steps = serializedObject.FindProperty("spawnScaleSteps");
+            WaveInspectorUtility.DrawArray(
+                steps,
+                "스폰 수 증가 단계",
+                GetScaleStepLabel,
+                DrawScaleStepBody,
+                "+ 단계 추가",
+                "- 마지막 단계 삭제");
+        }
+
+        private static string GetScaleStepLabel(SerializedProperty step, int index)
+        {
+            SerializedProperty stage = step.FindPropertyRelative("startStage");
+            SerializedProperty scale = step.FindPropertyRelative("spawnScalePercent");
+            int stageValue = stage != null ? stage.intValue : 1;
+            int scaleValue = scale != null ? scale.intValue : 100;
+            return $"Stage {stageValue} - {scaleValue}%";
+        }
+
+        private static void DrawScaleStepBody(SerializedProperty step)
+        {
+            EditorGUILayout.PropertyField(step.FindPropertyRelative("startStage"), new UnityEngine.GUIContent("시작 Stage"));
+            DrawSpawnScaleProperty(step.FindPropertyRelative("spawnScalePercent"), "스폰 배율");
+        }
+
+        private static void DrawSpawnScaleProperty(SerializedProperty property, string label)
+        {
+            if (property == null)
+            {
+                EditorGUILayout.HelpBox($"{label} 항목을 찾을 수 없습니다.", MessageType.Warning);
+                return;
+            }
+
+            int value = EditorGUILayout.IntField($"{label} (%)", property.intValue);
+            property.intValue = UnityEngine.Mathf.Max(0, value);
+        }
+
+        private void DrawDifficultySteps()
+        {
+            SerializedProperty steps = serializedObject.FindProperty("difficultyScaleSteps");
+            WaveInspectorUtility.DrawArray(
+                steps,
+                "난이도 배율 단계",
+                GetDifficultyStepLabel,
+                DrawDifficultyStepBody,
+                "+ 난이도 단계 추가",
+                "- 마지막 단계 삭제");
+        }
+
+        private static string GetDifficultyStepLabel(SerializedProperty step, int index)
+        {
+            int stageValue = step.FindPropertyRelative("startStage")?.intValue ?? 1;
+            int healthScale = step.FindPropertyRelative("healthScalePercent")?.intValue ?? 100;
+            int speedScale = step.FindPropertyRelative("moveSpeedScalePercent")?.intValue ?? 100;
+            int damageScale = step.FindPropertyRelative("nexusDamageScalePercent")?.intValue ?? 100;
+            return $"Stage {stageValue} - HP {healthScale}% / Speed {speedScale}% / Damage {damageScale}%";
+        }
+
+        private static void DrawDifficultyStepBody(SerializedProperty step)
+        {
+            EditorGUILayout.PropertyField(step.FindPropertyRelative("startStage"), new UnityEngine.GUIContent("시작 Stage"));
+            DrawPositiveScaleProperty(step.FindPropertyRelative("healthScalePercent"), "체력 배율");
+            DrawPositiveScaleProperty(step.FindPropertyRelative("moveSpeedScalePercent"), "이동속도 배율");
+            DrawPositiveScaleProperty(step.FindPropertyRelative("nexusDamageScalePercent"), "Nexus 피해 배율");
+        }
+
+        private static void DrawPositiveScaleProperty(SerializedProperty property, string label)
+        {
+            if (property == null)
+            {
+                EditorGUILayout.HelpBox($"{label} 항목을 찾을 수 없습니다.", MessageType.Warning);
+                return;
+            }
+
+            int value = EditorGUILayout.IntField($"{label} (%)", property.intValue);
+            property.intValue = UnityEngine.Mathf.Max(1, value);
+        }
+
+        private void DrawCompositions()
+        {
+            SerializedProperty compositions = serializedObject.FindProperty("normalCompositions");
+            WaveInspectorUtility.DrawArray(
+                compositions,
+                "일반 몬스터 조합",
+                (element, index) => WaveInspectorUtility.GetIdNameLabel(element, "compositionId", "displayName", index),
+                DrawCompositionBody,
+                "+ 조합 추가",
+                "- 마지막 조합 삭제");
+        }
+
+        private static void DrawCompositionBody(SerializedProperty composition)
+        {
+            EditorGUILayout.PropertyField(composition.FindPropertyRelative("compositionId"), new UnityEngine.GUIContent("조합 ID"));
+            EditorGUILayout.PropertyField(composition.FindPropertyRelative("displayName"), new UnityEngine.GUIContent("조합 이름"));
+            EditorGUILayout.PropertyField(composition.FindPropertyRelative("minStage"), new UnityEngine.GUIContent("최소 등장 Stage"));
+            EditorGUILayout.PropertyField(composition.FindPropertyRelative("weight"), new UnityEngine.GUIContent("선택 가중치"));
+            DrawMonsterRatios(composition.FindPropertyRelative("monsters"));
+        }
+
+        private static void DrawMonsterRatios(SerializedProperty monsters)
+        {
+            WaveInspectorUtility.DrawArray(
+                monsters,
+                "몬스터 비율 목록",
+                (element, index) => $"몬스터 {index + 1}",
+                DrawMonsterRatioBody,
+                "+ 몬스터 추가",
+                "- 마지막 몬스터 삭제");
+        }
+
+        private static void DrawMonsterRatioBody(SerializedProperty monster)
+        {
+            EditorGUILayout.PropertyField(monster.FindPropertyRelative("prefab"), new UnityEngine.GUIContent("몬스터 Prefab"));
+            WaveInspectorUtility.DrawPercentProperty(monster.FindPropertyRelative("ratioPercent"), "비율");
+        }
+    }
+}

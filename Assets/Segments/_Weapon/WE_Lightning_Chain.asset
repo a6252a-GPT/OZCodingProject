@@ -40,11 +40,11 @@ MonoBehaviour:
   MaxChainDepth: 0
   MaxChainDepthRare: 0
   MaxChainDepthUnique: 0
-  ChainRange: 0.5
+  ChainRange: 1
   ChainRangeUsePercent: 0
-  ChainRangeRare: 1
+  ChainRangeRare: 1.5
   ChainRangeUsePercentRare: 0
-  ChainRangeUnique: 1.5
+  ChainRangeUnique: 2
   ChainRangeUsePercentUnique: 0
   ChainDamageFalloff: 0
   ChainDamageFalloffRare: 0

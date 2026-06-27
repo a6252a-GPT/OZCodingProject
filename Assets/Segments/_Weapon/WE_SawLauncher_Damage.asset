@@ -16,11 +16,11 @@ MonoBehaviour:
   DisplayName: "\uD1B1\uB0A0 \uAC15\uD654"
   Description: "\uD53C\uD574\uB7C9 \uC99D\uAC00"
   TargetSegmentId: SG04_SawLauncher
-  BaseDamage: 0.1
+  BaseDamage: 1.5
   BaseDamageUsePercent: 0
-  BaseDamageRare: 0.2
-  BaseDamageUsePercentRare: 0
-  BaseDamageUnique: 0.1
+  BaseDamageRare: 0.08
+  BaseDamageUsePercentRare: 1
+  BaseDamageUnique: 0.16
   BaseDamageUsePercentUnique: 1
   SawPierceDamageRatio: 0.02
   SawPierceDamageRatioRare: 0.04

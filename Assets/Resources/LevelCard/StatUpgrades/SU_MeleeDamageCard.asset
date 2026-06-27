@@ -21,7 +21,7 @@ MonoBehaviour:
   CardIconSizeOffset: 0
   LevelDelta: 1
   DamageMultiplierBonus: 0
-  MeleeDamageMultiplierBonus: 0.08
+  MeleeDamageMultiplierBonus: 0.1
   MagicDamageMultiplierBonus: 0
   AttackSpeedMultiplierBonus: 0
   TurnSpeedBonus: 0
