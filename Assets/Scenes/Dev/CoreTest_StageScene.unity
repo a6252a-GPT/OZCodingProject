@@ -44997,6 +44997,7 @@ MonoBehaviour:
   soundManager: {fileID: 1527344711}
   targetCanvas: {fileID: 0}
   fontSource: {fileID: 1072880085}
+  showRuntimePanel: 0
   panelWidth: 300
   panelHeight: 600
   tabHeight: 28

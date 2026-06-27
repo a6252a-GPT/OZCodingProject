@@ -60,7 +60,10 @@ namespace TeamProject01.Gameplay
 
             for (int i = 0; i < count; i++)
             {
-                FireSingleProjectile(target, spawnPosition, damage, i, count, spread, muzzle); // 개별 발사
+                Transform projectileMuzzle = ResolveProjectileMuzzle(i, muzzle); // 이번 탄 포구
+                Vector3 projectileSpawnPosition = GetProjectileSpawnPosition(i, projectileMuzzle); // 포구별 위치
+                DamageData projectileDamage = CreateDamageData(projectileSpawnPosition); // 위치 반영
+                FireSingleProjectile(target, projectileSpawnPosition, projectileDamage, i, count, spread, projectileMuzzle); // 개별 발사
                 HideLoadedProjectileVisual(i); // 장전 표시 숨김
             }
         }
@@ -68,7 +71,9 @@ namespace TeamProject01.Gameplay
         private IEnumerator FireProjectileSequence(EnemyController initialTarget) // 순차 투사체 발사
         {
             isFiringProjectileSequence = true; // 중복 발사 방지
+            hasProjectileSequenceLastAimPoint = false; // 이전 연사 위치 제거
             projectileSequenceTarget = ResolveSequenceTarget(initialTarget); // 첫 조준 대상
+            UpdateProjectileSequenceLastAimPoint(projectileSequenceTarget); // 첫 fallback 위치 저장
             UpdateProjectileSequencePreferredSide(projectileSequenceTarget); // 첫 발사 방향 기억
             CacheLoadedProjectileVisuals(); // 표시 목록 갱신
 
@@ -92,28 +97,32 @@ namespace TeamProject01.Gameplay
 
                 EnemyController target = ResolveSequenceTarget(projectileSequenceTarget); // 현재 대상
                 projectileSequenceTarget = target; // 다음 틱 조준용 저장
+                UpdateProjectileSequenceLastAimPoint(target); // 살아있는 타겟이면 마지막 사격 위치 갱신
                 UpdateProjectileSequencePreferredSide(target); // 이번 발사 콘 방향 기억
-                Transform muzzle = ResolveMuzzle(); // 포구
+                Transform muzzle = ResolveMuzzle(); // 조준 기준 포구
                 AimHeadAtTarget(target, Time.deltaTime, GetFiringHeadTurnSpeedMultiplier()); // 발사 순간에도 느리게 재조준
                 int startIndex = volleyIndex * volleySize; // 이번 묶음 시작
                 int currentVolleySize = Mathf.Min(volleySize, count - startIndex); // 마지막 묶음 보정
-                Vector3 leadSpawnPosition = GetProjectileSpawnPosition(startIndex, muzzle); // 대표 위치
-                Vector3 fireDirection = GetProjectileFireDirection(target, leadSpawnPosition); // 묶음 발사 방향
+                Transform leadMuzzle = ResolveProjectileMuzzle(startIndex, muzzle); // 이번 묶음 대표 포구
+                Vector3 leadSpawnPosition = GetProjectileSpawnPosition(startIndex, leadMuzzle); // 대표 위치
+                Vector3 fireDirection = GetProjectileSequenceFireDirection(target, leadSpawnPosition); // 묶음 발사 방향
                 if (useSustainedMuzzleVfx)
                 {
-                    UpdateSustainedMuzzleVfx(muzzle);
+                    UpdateSustainedMuzzleVfx(leadMuzzle);
                 }
-                else
-                {
-                    PlayMuzzleVfx(muzzle); // 발사 VFX
-                }
-                PlayFireRecoil(fireDirection, muzzle); // 순차 발사도 실제 발사 방향 반대로 반동 적용
+                PlayFireRecoil(fireDirection, leadMuzzle); // 순차 발사도 실제 발사 방향 반대로 반동 적용
                 for (int localIndex = 0; localIndex < currentVolleySize; localIndex++)
                 {
                     int projectileIndex = startIndex + localIndex; // 전체 장전 슬롯 번호
-                    Vector3 spawnPosition = GetProjectileSpawnPosition(projectileIndex, muzzle); // 장전 위치 우선
+                    Transform projectileMuzzle = ResolveProjectileMuzzle(projectileIndex, leadMuzzle); // 탄별 포구
+                    Vector3 spawnPosition = GetProjectileSpawnPosition(projectileIndex, projectileMuzzle); // 장전 위치 우선
                     DamageData damage = CreateDamageData(spawnPosition); // 피해값
-                    FireSingleProjectile(target, spawnPosition, damage, localIndex, currentVolleySize, spread, muzzle); // 묶음 내 산탄
+                    Vector3 projectileDirection = GetProjectileSequenceFireDirection(target, spawnPosition); // 타겟 사망 시 마지막 위치 유지
+                    if (!useSustainedMuzzleVfx)
+                    {
+                        PlayMuzzleVfx(projectileMuzzle); // 탄별 포구 VFX
+                    }
+                    FireSingleProjectile(target, spawnPosition, damage, localIndex, currentVolleySize, spread, projectileMuzzle, true, projectileDirection); // 묶음 내 산탄
                     HideLoadedProjectileVisual(projectileIndex); // 사용한 장전탄 숨김
                 }
 
@@ -130,11 +139,14 @@ namespace TeamProject01.Gameplay
             isFiringProjectileSequence = false; // 발사 완료
             projectileSequenceTarget = null; // 대상 초기화
             projectileSequencePreferredSide = 0; // 선호 방향 초기화
+            hasProjectileSequenceLastAimPoint = false; // fallback 위치 초기화
         }
 
-        private void FireSingleProjectile(EnemyController target, Vector3 spawnPosition, DamageData damage, int projectileIndex, int projectileCount, float spread, Transform muzzle) // 단일 투사체
+        private void FireSingleProjectile(EnemyController target, Vector3 spawnPosition, DamageData damage, int projectileIndex, int projectileCount, float spread, Transform muzzle, bool useDirectionOverride = false, Vector3 directionOverride = default) // 단일 투사체
         {
-            Vector3 baseDirection = GetProjectileFireDirection(target, spawnPosition); // 기준 방향
+            Vector3 baseDirection = useDirectionOverride && directionOverride.sqrMagnitude > 0.0001f
+                ? directionOverride.normalized
+                : GetProjectileFireDirection(target, spawnPosition); // 기준 방향
             float startAngle = projectileCount <= 1 ? 0f : -spread * 0.5f; // 시작 각도
             float step = projectileCount <= 1 ? 0f : spread / (projectileCount - 1); // 각도 간격
             float angle = startAngle + step * projectileIndex; // 이번 탄 각도
@@ -169,6 +181,43 @@ namespace TeamProject01.Gameplay
             return TryFindProjectileSequenceTargetBySide(out EnemyController target) ? target : null; // 새 대상 fallback
         }
 
+        private void UpdateProjectileSequenceLastAimPoint(EnemyController target) // 순차 발사 마지막 조준 위치 갱신
+        {
+            if (ShouldUseResolvedImpactPoint())
+            {
+                projectileSequenceLastAimPoint = resolvedImpactPoint; // 밀집 지점 타격 fallback
+                hasProjectileSequenceLastAimPoint = true;
+                return;
+            }
+
+            if (!IsTargetUsable(target))
+            {
+                return; // 갱신 대상 없음
+            }
+
+            projectileSequenceLastAimPoint = target.transform.position + Vector3.up * AttackProfile.TargetAimHeight; // 마지막 타겟 위치
+            hasProjectileSequenceLastAimPoint = true;
+        }
+
+        private Vector3 GetProjectileSequenceFireDirection(EnemyController target, Vector3 spawnPosition) // 순차 발사 방향
+        {
+            if (IsTargetUsable(target))
+            {
+                return GetProjectileFireDirection(target, spawnPosition); // 살아있는 타겟 우선
+            }
+
+            if (hasProjectileSequenceLastAimPoint)
+            {
+                Vector3 direction = projectileSequenceLastAimPoint - spawnPosition; // 마지막 사격 위치
+                if (direction.sqrMagnitude > 0.0001f)
+                {
+                    return direction.normalized;
+                }
+            }
+
+            return GetProjectileFireDirection(target, spawnPosition); // 최후 fallback
+        }
+
         private void UpdateProjectileSequenceAim(float deltaTime) // 발사 중 느린 재조준
         {
             if (AttackProfile == null || !AttackProfile.ContinueAimingDuringProjectileSequence)
@@ -177,6 +226,7 @@ namespace TeamProject01.Gameplay
             }
 
             projectileSequenceTarget = ResolveSequenceTarget(projectileSequenceTarget); // 죽은 대상이면 새 대상 검색
+            UpdateProjectileSequenceLastAimPoint(projectileSequenceTarget); // 새 타겟이 있으면 fallback 갱신
             UpdateProjectileSequencePreferredSide(projectileSequenceTarget); // 조준 방향 갱신
             AimHeadAtTarget(projectileSequenceTarget, deltaTime, GetFiringHeadTurnSpeedMultiplier()); // 느리게 따라감
             if (IsSustainedMuzzleVfxActive())

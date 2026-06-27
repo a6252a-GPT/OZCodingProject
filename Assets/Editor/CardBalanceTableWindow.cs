@@ -654,13 +654,14 @@ namespace TeamProject01.EditorTools
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                Header("카드", 190f, "공통 강화카드 프리팹 이름입니다.");
-                Header("에셋", 210f, "수정 대상 에셋입니다. 버튼을 누르면 Project 창에서 선택합니다.");
+                Header("상태", 54f, "기존 카드 또는 생성 전 신규 행입니다.");
+                Header("카드 이름", 150f, "공통 강화카드 표시 이름입니다.");
+                Header("에셋명", 160f, "수정 대상 에셋입니다. 버튼을 누르면 Project 창에서 선택합니다.");
+                Header("설명", 210f, "카드 설명입니다. (N)은 등급 수치로 자동 치환됩니다.");
                 Header("능력치", 126f, "이 카드가 올리는 능력치입니다.");
-                Header("일반수치", 82f, "일반 등급 수치입니다.");
-                Header("레어수치", 82f, "레어 등급 수치입니다.");
-                Header("유니크수치", 86f, "유니크 등급 수치입니다.");
-                Header("방식", 78f, "고정값, %, 비율, 개수 등 수치 해석 방식입니다.");
+                Header("일반수치", SegmentTierValueWidth, "일반 등급 수치와 수치 방식입니다.");
+                Header("레어수치", SegmentTierValueWidth, "레어 등급 수치와 수치 방식입니다.");
+                Header("유니크수치", SegmentTierValueWidth, "유니크 등급 수치와 수치 방식입니다.");
                 GUILayout.FlexibleSpace();
                 Header("작업", 206f, "행 단위 적용, 리셋, Ping, 삭제입니다.");
             }
@@ -688,12 +689,13 @@ namespace TeamProject01.EditorTools
             Rect rect = EditorGUILayout.BeginHorizontal(GUILayout.Height(RowHeight));
             DrawChangedRow(rect, row.IsDirty);
 
-            GUILayout.Label(row.CardName, GUILayout.Width(190f));
-            DrawPingButton(row.AssetName, row.TargetObject, 210f);
-            GUILayout.Label(row.StatLabel, GUILayout.Width(126f));
+            GUILayout.Label(row.TargetLabel, GUILayout.Width(54f));
+            row.DrawCardName(150f);
+            DrawPingButton(row.AssetName, row.TargetObject, 160f);
+            row.DrawDescription(210f);
+            row.DrawStatField(126f, Array.Empty<WeaponStatKind>());
 
-            row.DrawValues();
-            row.DrawMode(78f);
+            row.DrawSegmentValues();
             GUILayout.FlexibleSpace();
             DrawRowActions(row);
 
@@ -1009,12 +1011,14 @@ namespace TeamProject01.EditorTools
                     continue;
                 }
 
-                AddStatRow(prefab, statUpgrade, path, "공격력", "damageMultiplierBonus", "배율");
-                AddStatRow(prefab, statUpgrade, path, "공격속도", "attackSpeedMultiplierBonus", "배율");
-                AddStatRow(prefab, statUpgrade, path, "회전력", "turnSpeedBonus", "수치");
+                AddStatRow(prefab, statUpgrade, path, "무기 공격력", "damageMultiplierBonus", "배율");
+                AddStatRow(prefab, statUpgrade, path, "밀리 공격력", "meleeDamageMultiplierBonus", "배율");
+                AddStatRow(prefab, statUpgrade, path, "마법 공격력", "magicDamageMultiplierBonus", "배율");
+                AddStatRow(prefab, statUpgrade, path, "쿨타임 감소", "attackSpeedMultiplierBonus", "배율");
+                AddStatRow(prefab, statUpgrade, path, "핸들링", "turnSpeedBonus", "수치");
                 AddStatRow(prefab, statUpgrade, path, "충돌힘", "collisionForceBonus", "배율");
-                AddStatRow(prefab, statUpgrade, path, "재결합범위", "rejoinRangeBonus", "미터");
-                AddStatRow(prefab, statUpgrade, path, "넥서스체력", "nexusHealthBonus", "체력");
+                AddStatRow(prefab, statUpgrade, path, "재결합 범위", "rejoinRangeBonus", "미터");
+                AddStatRow(prefab, statUpgrade, path, "넥서스 체력", "nexusHealthBonus", "체력");
             }
         }
 
@@ -1295,6 +1299,7 @@ namespace TeamProject01.EditorTools
                 || Contains(row.TargetLabel, needle)
                 || Contains(row.CardName, needle)
                 || Contains(row.AssetName, needle)
+                || Contains(row.DescriptionText, needle)
                 || Contains(row.StatLabel, needle)
                 || Contains(row.ModeLabel, needle);
         }
@@ -2239,15 +2244,21 @@ namespace TeamProject01.EditorTools
 
         private sealed class StatBalanceRow : BalanceRow
         {
+            private const string DefaultCommonCardState = "기존";
             private readonly GameObject prefab;
             private readonly StatUpgrade statUpgrade;
             private readonly string propertyName;
             private readonly string modeLabel;
             private float original;
             private float working;
+            private string originalDisplayName;
+            private string workingDisplayName;
+            private string originalDescription;
+            private string workingDescription;
+            private string originalCardState;
 
             public StatBalanceRow(GameObject prefab, StatUpgrade statUpgrade, string assetPath, string statLabel, string propertyName, float value, string modeLabel)
-                : base(CardRowKind.Stat, "-", prefab != null ? prefab.name : string.Empty, assetPath, statLabel)
+                : base(CardRowKind.Stat, ResolveStatCardState(statUpgrade), ResolveStatCardName(prefab, statUpgrade, statLabel), assetPath, statLabel)
             {
                 this.prefab = prefab;
                 this.statUpgrade = statUpgrade;
@@ -2255,13 +2266,19 @@ namespace TeamProject01.EditorTools
                 this.modeLabel = modeLabel;
                 original = value;
                 working = value;
+                originalDisplayName = workingDisplayName = ResolveStatCardName(prefab, statUpgrade, statLabel);
+                originalDescription = workingDescription = ResolveStatCardDescription(statUpgrade, statLabel);
+                originalCardState = ResolveStatCardState(statUpgrade);
             }
 
             public override string ModeLabel => modeLabel;
+            public override string DescriptionText => workingDescription;
             public override UnityEngine.Object TargetObject => prefab;
             public override UnityEngine.Object ApplyTargetObject => statUpgrade;
             public override GameObject StatPrefab => prefab;
-            public override bool IsDirty => !Mathf.Approximately(original, working);
+            public override bool IsDirty => !Mathf.Approximately(original, working)
+                || !string.Equals(originalDisplayName, workingDisplayName, StringComparison.Ordinal)
+                || !string.Equals(originalDescription, workingDescription, StringComparison.Ordinal);
             public override string BeforeNormalText => FormatFloat(original);
             public override string BeforeRareText => FormatFloat(original * 2f);
             public override string BeforeUniqueText => FormatFloat(original * 3f);
@@ -2271,24 +2288,56 @@ namespace TeamProject01.EditorTools
             public override string BeforeModeText => modeLabel;
             public override string AfterModeText => ModeLabel;
 
-            public override void DrawValues()
+            public override void DrawCardName(float width)
             {
-                if (!IsEditing)
+                if (IsEditing)
                 {
-                    GUILayout.Label(AfterNormalText, GUILayout.Width(82f));
-                    GUILayout.Label(AfterRareText, GUILayout.Width(82f));
-                    GUILayout.Label(AfterUniqueText, GUILayout.Width(86f));
+                    workingDisplayName = EditorGUILayout.TextField(workingDisplayName ?? string.Empty, GUILayout.Width(width));
+                    CardName = workingDisplayName;
                     return;
                 }
 
-                working = EditorGUILayout.FloatField(working, GUILayout.Width(82f));
-                GUILayout.Label(FormatFloat(working * 2f), GUILayout.Width(82f));
-                GUILayout.Label(FormatFloat(working * 3f), GUILayout.Width(86f));
+                GUILayout.Label(workingDisplayName, GUILayout.Width(width));
+            }
+
+            public override void DrawDescription(float width)
+            {
+                if (IsEditing)
+                {
+                    workingDescription = EditorGUILayout.TextField(workingDescription ?? string.Empty, GUILayout.Width(width));
+                    return;
+                }
+
+                GUILayout.Label(workingDescription, GUILayout.Width(width));
+            }
+
+            public override void DrawValues()
+            {
+                DrawSegmentValues();
+            }
+
+            public override void DrawSegmentValues()
+            {
+                if (!IsEditing)
+                {
+                    DrawReadOnlyTierValue(AfterNormalText, modeLabel);
+                    DrawReadOnlyTierValue(AfterRareText, modeLabel);
+                    DrawReadOnlyTierValue(AfterUniqueText, modeLabel);
+                    return;
+                }
+
+                bool unusedPercentMode = false;
+                working = DrawEditableFloatTierValue(working, false, modeLabel, ref unusedPercentMode);
+                DrawReadOnlyTierValue(FormatFloat(working * 2f), modeLabel);
+                DrawReadOnlyTierValue(FormatFloat(working * 3f), modeLabel);
             }
 
             public override void ResetWorking()
             {
                 working = original;
+                workingDisplayName = originalDisplayName;
+                workingDescription = originalDescription;
+                CardName = workingDisplayName;
             }
 
             public override void ApplyWorking()
@@ -2299,17 +2348,120 @@ namespace TeamProject01.EditorTools
                 }
 
                 SerializedObject serialized = new SerializedObject(statUpgrade);
+                SetStringProperty(serialized, "cardState", originalCardState);
+                SetStringProperty(serialized, "displayName", workingDisplayName ?? string.Empty);
+                SetStringProperty(serialized, "description", workingDescription ?? string.Empty);
                 SerializedProperty property = serialized.FindProperty(propertyName);
                 if (property != null)
                 {
+                    working = Mathf.Max(0f, working);
                     property.floatValue = working;
-                    serialized.ApplyModifiedProperties();
                 }
+
+                serialized.ApplyModifiedProperties();
             }
 
             public override void AcceptWorkingAsOriginal()
             {
                 original = working;
+                originalDisplayName = workingDisplayName;
+                originalDescription = workingDescription;
+                CardName = workingDisplayName;
+            }
+
+            private static string ResolveStatCardState(StatUpgrade statUpgrade)
+            {
+                if (statUpgrade != null && !string.IsNullOrWhiteSpace(statUpgrade.CardState))
+                {
+                    return statUpgrade.CardState;
+                }
+
+                return DefaultCommonCardState;
+            }
+
+            private static string ResolveStatCardName(GameObject prefab, StatUpgrade statUpgrade, string statLabel)
+            {
+                if (statUpgrade != null && !string.IsNullOrWhiteSpace(statUpgrade.DisplayName))
+                {
+                    return statUpgrade.DisplayName;
+                }
+
+                string defaultName = BuildDefaultStatCardName(statLabel);
+                if (!string.IsNullOrWhiteSpace(defaultName))
+                {
+                    return defaultName;
+                }
+
+                return prefab != null ? prefab.name : string.Empty;
+            }
+
+            private static string ResolveStatCardDescription(StatUpgrade statUpgrade, string statLabel)
+            {
+                if (statUpgrade != null && !string.IsNullOrWhiteSpace(statUpgrade.Description))
+                {
+                    return statUpgrade.Description;
+                }
+
+                return BuildDefaultStatCardDescription(statLabel);
+            }
+
+            private static string BuildDefaultStatCardName(string statLabel)
+            {
+                switch (statLabel)
+                {
+                    case "무기 공격력":
+                        return "모든 무기 공격력 증가";
+                    case "밀리 공격력":
+                        return "모든 밀리 공격력 증가";
+                    case "마법 공격력":
+                        return "모든 마법 공격력 증가";
+                    case "쿨타임 감소":
+                        return "쿨타임 감소";
+                    case "핸들링":
+                        return "핸들링 강화";
+                    case "충돌힘":
+                        return "충돌힘 강화";
+                    case "재결합 범위":
+                        return "재결합 범위 강화";
+                    case "넥서스 체력":
+                        return "넥서스 체력 강화";
+                    default:
+                        return string.IsNullOrWhiteSpace(statLabel) ? string.Empty : $"{statLabel} 강화";
+                }
+            }
+
+            private static string BuildDefaultStatCardDescription(string statLabel)
+            {
+                switch (statLabel)
+                {
+                    case "무기 공격력":
+                        return "모든 무기 공격력 (N) 증가";
+                    case "밀리 공격력":
+                        return "모든 밀리 공격력 (N) 증가";
+                    case "마법 공격력":
+                        return "모든 마법 공격력 (N) 증가";
+                    case "쿨타임 감소":
+                        return "모든 세그먼트 쿨타임 (N) 감소";
+                    case "핸들링":
+                        return "핸들링 (N) 증가";
+                    case "충돌힘":
+                        return "충돌힘 (N) 증가";
+                    case "재결합 범위":
+                        return "재결합 범위 (N) 증가";
+                    case "넥서스 체력":
+                        return "넥서스 최대 체력 (N) 증가";
+                    default:
+                        return string.IsNullOrWhiteSpace(statLabel) ? string.Empty : $"{statLabel} (N) 증가";
+                }
+            }
+
+            private static void SetStringProperty(SerializedObject serialized, string propertyName, string value)
+            {
+                SerializedProperty property = serialized.FindProperty(propertyName);
+                if (property != null)
+                {
+                    property.stringValue = value ?? string.Empty;
+                }
             }
         }
 

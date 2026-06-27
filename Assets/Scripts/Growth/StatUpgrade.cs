@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class StatUpgrade : MonoBehaviour
 {
+    private const string DefaultCardState = "기존";
+
     public enum StatCardTier
     {
         Normal = 1, // 일반 (1배, 흰색)
@@ -11,12 +13,21 @@ public class StatUpgrade : MonoBehaviour
         Unique = 3 // 유니크 (3배, 초록색)
     }
 
+    [Header("카드 표시")]
+    [SerializeField] private string cardState = DefaultCardState; // 밸런스 테이블 표시 상태
+    [SerializeField] private string displayName; // 카드 이름
+    [TextArea(2, 4)][SerializeField] private string description; // 카드 설명, (N)=등급 수치
+
     [Header("코어 성장 연동")]
     [Min(1)][SerializeField] private int levelDelta = 1; // 선택 시 소비할 레벨 증가량
     [Header("공격력 배율 보너스")]
     [SerializeField] private float damageMultiplierBonus; // 공격력 배율 보너스
-    [Header("공격속도 배율 보너스")]
-    [SerializeField] private float attackSpeedMultiplierBonus; // 공격속도 배율 보너스
+    [Header("밀리 공격력 배율 보너스")]
+    [SerializeField] private float meleeDamageMultiplierBonus; // 밀리 공격력 배율 보너스
+    [Header("마법 공격력 배율 보너스")]
+    [SerializeField] private float magicDamageMultiplierBonus; // 마법 공격력 배율 보너스
+    [Header("쿨타임 감소 보너스")]
+    [SerializeField] private float attackSpeedMultiplierBonus; // 쿨타임 감소 보너스
     [Header("회전력 보너스")]
     [SerializeField] private float turnSpeedBonus; // 회전력 보너스
     [Header("충돌힘 보너스")]
@@ -32,6 +43,17 @@ public class StatUpgrade : MonoBehaviour
     public StatCardTier CurrentTier => currentTier; // 외부 등급 조회
     public bool IsRareUpgrade => currentTier == StatCardTier.Rare; // 레어 카드 여부
     public bool IsUniqueUpgrade => currentTier == StatCardTier.Unique; // 유니크 카드 여부
+    public string CardState => string.IsNullOrWhiteSpace(cardState) ? DefaultCardState : cardState.Trim(); // 밸런스 테이블 상태
+    public string DisplayName => displayName ?? string.Empty; // 카드 표시 이름
+    public string Description => description ?? string.Empty; // 카드 설명
+    public float DamageMultiplierBonus => damageMultiplierBonus; // 공격력 배율 보너스
+    public float MeleeDamageMultiplierBonus => meleeDamageMultiplierBonus; // 밀리 공격력 배율 보너스
+    public float MagicDamageMultiplierBonus => magicDamageMultiplierBonus; // 마법 공격력 배율 보너스
+    public float AttackSpeedMultiplierBonus => attackSpeedMultiplierBonus; // 쿨타임 감소 보너스
+    public float TurnSpeedBonus => turnSpeedBonus; // 회전력 보너스
+    public float CollisionForceBonus => collisionForceBonus; // 충돌힘 보너스
+    public float RejoinRangeBonus => rejoinRangeBonus; // 재결합 범위 보너스
+    public float NexusHealthBonus => nexusHealthBonus; // 넥서스 체력 보너스
 
     public readonly struct CardSpawnResolve // 생성 시 사용할 프리팹
     {
@@ -55,8 +77,13 @@ public class StatUpgrade : MonoBehaviour
             return; // 복사 대상 없음
         }
 
+        cardState = source.cardState;
+        displayName = source.displayName;
+        description = source.description;
         levelDelta = source.levelDelta;
         damageMultiplierBonus = source.damageMultiplierBonus;
+        meleeDamageMultiplierBonus = source.meleeDamageMultiplierBonus;
+        magicDamageMultiplierBonus = source.magicDamageMultiplierBonus;
         attackSpeedMultiplierBonus = source.attackSpeedMultiplierBonus;
         turnSpeedBonus = source.turnSpeedBonus;
         collisionForceBonus = source.collisionForceBonus;
@@ -91,7 +118,12 @@ public class StatUpgrade : MonoBehaviour
     public void ApplySpawnTier(StatCardTier tier) // 생성 후 등급·배율 반영
     {
         currentTier = tier; // 등급 저장
-        upgradeMultiplier = tier switch // 스탯 배율
+        upgradeMultiplier = GetTierMultiplier(tier); // 스탯 배율
+    }
+
+    public static float GetTierMultiplier(StatCardTier tier)
+    {
+        return tier switch
         {
             StatCardTier.Unique => 3f,
             StatCardTier.Rare => 2f,
@@ -107,7 +139,9 @@ public class StatUpgrade : MonoBehaviour
             attackSpeedMultiplierBonus * upgradeMultiplier,
             turnSpeedBonus * upgradeMultiplier,
             collisionForceBonus * upgradeMultiplier,
-            rejoinRangeBonus * upgradeMultiplier);
+            rejoinRangeBonus * upgradeMultiplier,
+            meleeDamageMultiplierBonus * upgradeMultiplier,
+            magicDamageMultiplierBonus * upgradeMultiplier);
     }
 
     public bool TryApplyToCore() // 코어에 성장값 적용

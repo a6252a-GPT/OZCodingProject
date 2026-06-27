@@ -86,7 +86,7 @@ MonoBehaviour:
   ContinueAimingDuringProjectileSequence: 0
   FiringHeadTurnSpeedMultiplier: 1
   UseMuzzleDirectionDuringProjectileSequence: 0
-  MuzzleVfxPrefab: {fileID: 0}
+  MuzzleVfxPrefab: {fileID: 3082853613590577020, guid: feda8b505230de04da9dd3eb1657e4d3, type: 3}
   MuzzleVfxLifetime: 1.5
   MuzzleVfxScale: {x: 1, y: 1, z: 1}
   HitVfxPrefab: {fileID: 868468853075218060, guid: 28aa90600df2fd9479eb5ccbc39a3fc1, type: 3}
