@@ -13,7 +13,6 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)]
         [SerializeField] private float lifeTime = 5.0f; // 투사체 최대 유지 시간
 
-
         [Range(0.01f, 1.0f)]
         [SerializeField] private float telegraphStartAlpha = 0.1f; // 착탄 예고 표시 시작 투명도
 
@@ -31,6 +30,7 @@ namespace TeamProject01.Gameplay
 
         private EnemySlowZone slowZonePrefab; // 착탄 시 생성할 슬로우 장판 Prefab
         private GameObject areaTelegraphPrefab; // 착탄 예고 범위 표시 Prefab
+        private EnemyHealth ownerHealth; // 이 투사체를 발사한 몬스터의 EnemyHealth
 
         private Transform slowZoneRoot; // 생성된 장판을 정리할 부모 Transform
         private Transform telegraphRoot; // 생성된 범위 표시를 정리할 부모 Transform
@@ -46,6 +46,13 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
+            if (ownerHealth != null && ownerHealth.IsDead) // 발사한 몬스터가 죽었다면
+            {
+                DestroyTelegraph(); // 남아있는 범위 표시를 제거한다.
+                Destroy(gameObject); // 죽은 몬스터의 투사체는 장판을 만들지 않고 제거한다.
+                return;
+            }
+
             lifeTimer += Time.deltaTime; // 지난 시간만큼 유지 시간을 증가시킨다.
 
             if (lifeTimer >= lifeTime) // 최대 유지 시간이 끝났다면
@@ -82,10 +89,18 @@ namespace TeamProject01.Gameplay
         }
 
         public void Configure(Vector3 targetPosition, EnemySlowZone slowZonePrefab, GameObject areaTelegraphPrefab, Transform slowZoneRoot, Transform telegraphRoot,
-                                float slowZoneRadius, float slowZoneLifeTime, float speedMultiplier, float telegraphGroundHeight, float slowZoneGroundHeight) //투사체를 생성한 뒤 필요한 값을 넣어주는 함수다.
+                              float slowZoneRadius, float slowZoneLifeTime, float speedMultiplier, float telegraphGroundHeight, float slowZoneGroundHeight) // 기존 호출을 유지하기 위한 Configure 함수
+        {
+            Configure(targetPosition, slowZonePrefab, areaTelegraphPrefab, slowZoneRoot, telegraphRoot, slowZoneRadius, slowZoneLifeTime, speedMultiplier, telegraphGroundHeight, slowZoneGroundHeight, null); // 시전자 정보 없이 설정한다.
+        }
+
+        public void Configure(Vector3 targetPosition, EnemySlowZone slowZonePrefab, GameObject areaTelegraphPrefab, Transform slowZoneRoot, Transform telegraphRoot,
+                              float slowZoneRadius, float slowZoneLifeTime, float speedMultiplier, float telegraphGroundHeight, float slowZoneGroundHeight, EnemyHealth ownerHealth) //투사체를 생성한 뒤 필요한 값을 넣어주는 함수다.
         {
             this.slowZonePrefab = slowZonePrefab;
             this.areaTelegraphPrefab = areaTelegraphPrefab;
+            this.ownerHealth = ownerHealth;
+
             this.slowZoneRoot = slowZoneRoot;
             this.telegraphRoot = telegraphRoot;
 
@@ -171,6 +186,11 @@ namespace TeamProject01.Gameplay
 
         private void CreateSlowZone()
         {
+            if (ownerHealth != null && ownerHealth.IsDead) // 착탄 직전에 시전자가 죽었다면
+            {
+                return; // 죽은 몬스터의 장판은 생성하지 않는다.
+            }
+
             if (slowZonePrefab == null) // 생성할 슬로우 장판 Prefab이 없다면
             {
                 return; // 만들 수 없으므로 종료한다.

@@ -41,11 +41,10 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float impactSideRandomAmount = 0.5f; // Nexus 정면 기준 좌우 랜덤 범위
 
         [Header("Animation Timing")]
-        [SerializeField] private bool waitForAnimationEvent; // 조성원추가-0624 - 공격 애니메이션 이벤트가 올 때까지 실제 발사를 기다릴지 설정한다.
+        [SerializeField] private bool waitForAnimationEvent; // Animation Event�� �� ������ ���� �߻縦 ��ٸ��� �����Ѵ�.
 
-        // 조성원삭제-0624 - Animation Event 누락 시 2초 뒤 자동 발사하던 제한시간 설정을 사용하지 않는다.
-        // [Min(0.1f)]
-        // [SerializeField] private float animationEventTimeout = 2.0f;
+        [Min(0.1f)]
+        [SerializeField] private float animationEventTimeout = 2.0f; // Animation Event�� �������� �� ��� ���¸� Ǯ����� �ɸ��� �ð�
 
         public float AttackRange // EnemyMovement가 원거리 공격 사거리를 읽기 위한 Property
         {
@@ -59,48 +58,69 @@ namespace TeamProject01.Gameplay
 
         private float attackTimer; // 다음 공격까지 남은 시간
 
-        private bool attackPending; // 조성원추가-0624 - 공격 애니메이션이 시작되고 실제 발사를 기다리는 상태
-        private float pendingAttackPowerMultiplier = 1.0f; // 조성원추가-0624 - 발사 시 사용할 공격력 배율
-        private float pendingAttackDelay; // 조성원추가-0624 - 실제 발사 후 적용할 다음 공격 대기시간
-
-        // 조성원삭제-0624 - Animation Event 누락 시 자동 발사에 사용하던 제한시간 변수를 사용하지 않는다.
-        // private float pendingAttackTimeout;
+        private bool attackPending; // ���� �ִϸ��̼��� ���۵ǰ� ���� �߻縦 ��ٸ��� ����
+        private float pendingAttackPowerMultiplier = 1.0f; // �߻� �� ����� ���ݷ� ����
+        private float pendingAttackDelay; // ���� �߻� �� ������ ���� ���� ���ð�
+        private float pendingAttackTimeout; // Animation Event�� ��ٸ� �� �ִ� ���� �ð�
 
         private EnemyBuffReceiver buffReceiver; // 공격력/공격속도 버프를 읽기 위한 Script Component 참조
         private float stageAttackPowerMultiplier = 1.0f; // 웨이브 난이도 넥서스 피해 배율
+
+        private EnemySegmentCutCaster segmentCutCaster; // ���� ���� �켱���� Ȯ���� Script Component
 
         private void Awake()
         {
             buffReceiver = GetComponent<EnemyBuffReceiver>(); // 같은 GameObject에 붙은 EnemyBuffReceiver를 찾는다.
 
-            if (nexus == null) // 공격 대상 Nexus가 아직 없다면
+            segmentCutCaster = GetComponent<EnemySegmentCutCaster>(); // ���� GameObject�� ���� ���� ���� Script Component�� ã�´�.
+
+            if (nexus == null) // ���� ��� Nexus�� ���� ���ٸ�
             {
-                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 씬에서 Nexus_Core 오브젝트를 찾는다.
-                nexus = nexusObject != null ? nexusObject.transform : null; // 찾았다면 Transform을 저장한다.
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // ������ Nexus_Core ������Ʈ�� ã�´�.
+
+                nexus = nexusObject != null ? nexusObject.transform : null; // ã�Ҵٸ� Transform�� �����Ѵ�.
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (segmentCutCaster != null)
+            {
+                segmentCutCaster.CastStarted += HandleSegmentCutCastStarted; // ���� ���� ������ ���۵Ǹ� �⺻ ������ ����Ѵ�.
+
+                segmentCutCaster.ProjectileLaunched += HandleSegmentCutProjectileLaunched; // ���� ����ü �߻� �� �Ϲ� �ൿ�� ��� �ٽ� ����Ѵ�.
             }
         }
 
         private void OnDisable()
         {
-            CancelPendingAttack(); // 조성원추가-0624 - 사망하거나 비활성화될 때 대기 중인 공격을 취소한다.
+            if (segmentCutCaster != null)
+            {
+                segmentCutCaster.CastStarted -= HandleSegmentCutCastStarted; // ��Ȱ��ȭ�� �� ���� ���� �̺�Ʈ ������ �����Ѵ�.
+
+                segmentCutCaster.ProjectileLaunched -= HandleSegmentCutProjectileLaunched; // ��Ȱ��ȭ�� �� �߻� �̺�Ʈ ������ �����Ѵ�.
+            }
+
+            CancelPendingAttack(); // ��Ȱ��ȭ�� �� ��� ���� �⺻ ������ �����Ѵ�.
         }
 
         private void Update()
         {
             if (nexus == null) // Nexus가 없다면
             {
-                return; // 공격하지 않는다.
+                CancelPendingAttack(); // ���� ��� ���̾��ٸ� Ǯ���ش�.
+                return; // �������� �ʴ´�.
             }
 
-            if (attackPending) // 조성원수정-0624 - Animation Event가 호출될 때까지 실제 발사를 계속 기다린다.
+            if (attackPending) // Animation Event�� ȣ��� ������ ���� �߻縦 ��ٸ��� ���̶��
             {
-                // 조성원삭제-0624 - 2초 뒤 자동으로 투사체를 발사하던 제한시간 처리를 사용하지 않는다.
-                // pendingAttackTimeout -= Time.deltaTime;
-                //
-                // if (pendingAttackTimeout <= 0.0f)
-                // {
-                //     ReleasePendingAttack();
-                // }
+                FaceNexus(); // �⺻ ������ �߻縦 ��ٸ��� ���ȿ��� Nexus ������ ��� �ٶ󺻴�.
+                pendingAttackTimeout -= Time.deltaTime; // ���� �ð���ŭ Animation Event ��� �ð��� ���δ�.
+
+                if (pendingAttackTimeout <= 0.0f) // Animation Event�� ���� �ð� �ȿ� ���� �ʾҴٸ�
+                {
+                    ReleasePendingAttack(); // ���� ��⿡ ������ �ʵ��� ���� �߻� ó���� �����ϰ� ��� ���¸� �����Ѵ�.
+                }
 
                 return; // 발사를 기다리는 동안 새로운 공격을 시작하지 않는다.
             }
@@ -112,8 +132,14 @@ namespace TeamProject01.Gameplay
                 return; // 이번 프레임에는 공격하지 않는다.
             }
 
-            Vector3 offset = nexus.position - transform.position; // 몬스터에서 Nexus까지의 방향과 거리
-            offset.y = 0.0f; // 높이 차이는 제거한다.
+            if (segmentCutCaster != null && segmentCutCaster.ShouldPrioritizeCast) // ���� ������ �⺻ ���ݺ��� �켱�Ǿ�� �Ѵٸ�
+            {
+                return; // ���� ������ �켱�� ���ȿ��� �⺻ ������ �������� �ʴ´�.
+            }
+
+            Vector3 offset = nexus.position - transform.position; // ���Ϳ��� Nexus������ ����� �Ÿ�
+
+            offset.y = 0.0f; // ���� ���̴� �����Ѵ�.
 
             if (offset.sqrMagnitude > attackRange * attackRange) // Nexus가 공격 사거리 밖이라면
             {
@@ -127,22 +153,57 @@ namespace TeamProject01.Gameplay
                 attackSpeedMultiplier = buffReceiver.GetAttackSpeedMultiplier(); // 현재 공격속도 버프 배율을 가져온다.
             }
 
-            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier); // 공격속도 버프를 적용한 최종 공격 대기 시간
-            float attackPowerMultiplier = GetAttackPowerMultiplier(); // 현재 공격력 버프 배율을 가져온다.
+            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier); // ���ݼӵ� ������ ������ ���� ���� ��� �ð�
 
-            BeginAttack(attackPowerMultiplier, finalAttackDelay); // 조성원수정-0624 - 애니메이션을 먼저 시작하고 설정에 따라 실제 발사를 기다린다.
+            float attackPowerMultiplier = GetAttackPowerMultiplier(); // ���� ���ݷ� ���� ������ �����´�.
+
+            FaceNexus(); // �⺻ ������ ���� �ִϸ��̼��� �����ϱ� ���� Nexus ������ �ٶ󺻴�.
+
+            BeginAttack(attackPowerMultiplier, finalAttackDelay); // ���Ÿ� ������ �����Ѵ�.
         }
 
-        private void BeginAttack(float attackPowerMultiplier, float finalAttackDelay) // 조성원추가-0624 - 공격 애니메이션과 실제 발사 과정을 시작하는 함수
+        private void FaceNexus() // �⺻ ������ ���� �� Nexus �������� ���͸� ȸ����Ų��.
+        {
+            if (nexus == null) // �ٶ� Nexus�� ���ٸ�
+            {
+                return; // ���� ������ �����Ѵ�.
+            }
+
+            Vector3 direction = nexus.position - transform.position; // ���Ϳ��� Nexus������ ������ ����Ѵ�.
+
+            direction.y = 0.0f; // ĳ���Ͱ� ���Ʒ��� ����� �ʵ��� ���� ������ �����Ѵ�.
+
+            if (direction.sqrMagnitude <= 0.0001f) // ��ȿ�� ������ ����� �� ���ٸ�
+            {
+                return; // ���� ������ �����Ѵ�.
+            }
+
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // Nexus�� �ٶ󺸵��� ���� ��Ʈ�� ȸ����Ų��.
+        }
+
+        private void HandleSegmentCutCastStarted()
+        {
+            CancelPendingAttack(); // ���� ������ ���۵Ǹ� �غ� ���̴� �⺻ ������ �߻����� �ʰ� ����Ѵ�.
+        }
+
+        private void HandleSegmentCutProjectileLaunched()
+        {
+            CancelPendingAttack(); // ���� ���� ������ ���� �ִ� �⺻ ���� ��� ���¸� �����Ѵ�.
+
+            attackTimer = 0.0f; // ���� �����Ӻ��� �̵� �Ǵ� �⺻ ������ ��� �Ǵ��ϰ� �Ѵ�.
+        }
+
+        private void BeginAttack(float attackPowerMultiplier, float finalAttackDelay)
         {
             if (waitForAnimationEvent) // Animation Event 발사 방식을 사용하는 몬스터라면
             {
-                attackPending = true; // 실제 발사를 기다리는 상태로 변경한다.
-                pendingAttackPowerMultiplier = attackPowerMultiplier; // 현재 공격력 배율을 저장한다.
-                pendingAttackDelay = finalAttackDelay; // 실제 발사 후 사용할 공격 대기시간을 저장한다.
+                attackPending = true; // ���� �߻縦 ��ٸ��� ���·� �����Ѵ�.
 
-                // 조성원삭제-0624 - Animation Event 누락 시 2초 뒤 발사하던 제한시간 설정을 사용하지 않는다.
-                // pendingAttackTimeout = animationEventTimeout;
+                pendingAttackPowerMultiplier = attackPowerMultiplier; // ���� ���ݷ� ������ �����Ѵ�.
+
+                pendingAttackDelay = finalAttackDelay; // ���� �߻� �� ����� ���� ���ð��� �����Ѵ�.
+
+                pendingAttackTimeout = animationEventTimeout; // Animation Event�� �����Ǿ ���� ������� �ʵ��� ���� �ð��� �����Ѵ�.
             }
 
             AttackPerformed?.Invoke(); // 투사체보다 먼저 공격 애니메이션을 시작한다.
@@ -152,8 +213,9 @@ namespace TeamProject01.Gameplay
                 return; // ReleaseProjectile Animation Event가 호출될 때까지 발사하지 않는다.
             }
 
-            ExecuteAttack(attackPowerMultiplier); // Animation Event를 사용하지 않는 기존 몬스터는 즉시 발사한다.
-            attackTimer = finalAttackDelay; // 실제 발사 후 다음 공격 대기시간을 설정한다.
+            ExecuteAttack(attackPowerMultiplier); // Animation Event�� ������� �ʴ� ���� ���ʹ� ��� �߻��Ѵ�.
+
+            attackTimer = finalAttackDelay; // ���� �߻� �� ���� ���� ���ð��� �����Ѵ�.
         }
 
         public void ReleasePendingAttack() // 공격 애니메이션의 발사 프레임에서 호출할 함수
@@ -163,19 +225,23 @@ namespace TeamProject01.Gameplay
                 return; // 중복 발사를 막는다.
             }
 
-            float attackPowerMultiplier = pendingAttackPowerMultiplier; // 저장한 공격력 배율을 가져온다.
-            float finalAttackDelay = pendingAttackDelay; // 저장한 공격 대기시간을 가져온다.
+            float attackPowerMultiplier = pendingAttackPowerMultiplier; // ������ ���ݷ� ������ �����´�.
 
-            attackPending = false; // 발사 대기 상태를 해제한다.
-            pendingAttackPowerMultiplier = 1.0f; // 저장한 공격력 배율을 초기화한다.
-            pendingAttackDelay = 0.0f; // 저장한 공격 대기시간을 초기화한다.
+            float finalAttackDelay = pendingAttackDelay; // ������ ���� ���ð��� �����´�.
 
-            // 조성원삭제-0624 - 자동 발사 제한시간 초기화를 사용하지 않는다.
-            // pendingAttackTimeout = 0.0f;
+            attackPending = false; // �߻� ��� ���¸� �����Ѵ�.
+
+            pendingAttackPowerMultiplier = 1.0f; // ������ ���ݷ� ������ �ʱ�ȭ�Ѵ�.
+
+            pendingAttackDelay = 0.0f; // ������ ���� ���ð��� �ʱ�ȭ�Ѵ�.
+
+            pendingAttackTimeout = 0.0f; // Animation Event ��� ���� �ð��� �ʱ�ȭ�Ѵ�.
 
             if (nexus != null) // 공격 대상 Nexus가 아직 존재한다면
             {
-                ExecuteAttack(attackPowerMultiplier); // 애니메이션 발사 시점에 실제 투사체나 임팩트를 생성한다.
+                FaceNexus(); // ���� �⺻ ������ ����ü�� �߻�Ǳ� ������ Nexus ������ �ٽ� �����.
+
+                ExecuteAttack(attackPowerMultiplier); // �ִϸ��̼� �߻� ������ ���� ����ü�� ����Ʈ�� �����Ѵ�.
             }
 
             attackTimer = finalAttackDelay; // 실제 발사 시점부터 다음 공격 대기시간을 시작한다.
@@ -183,12 +249,13 @@ namespace TeamProject01.Gameplay
 
         private void CancelPendingAttack() // 대기 중인 공격을 실제 발사 없이 취소하는 함수
         {
-            attackPending = false; // 발사 대기 상태를 해제한다.
-            pendingAttackPowerMultiplier = 1.0f; // 저장한 공격력 배율을 초기화한다.
-            pendingAttackDelay = 0.0f; // 저장한 공격 대기시간을 초기화한다.
+            attackPending = false; // �߻� ��� ���¸� �����Ѵ�.
 
-            // 조성원삭제-0624 - 자동 발사 제한시간 초기화를 사용하지 않는다.
-            // pendingAttackTimeout = 0.0f;
+            pendingAttackPowerMultiplier = 1.0f; // ������ ���ݷ� ������ �ʱ�ȭ�Ѵ�.
+
+            pendingAttackDelay = 0.0f; // ������ ���� ���ð��� �ʱ�ȭ�Ѵ�.
+
+            pendingAttackTimeout = 0.0f; // Animation Event ��� ���� �ð��� �ʱ�ȭ�Ѵ�.
         }
 
         private void ExecuteAttack(float attackPowerMultiplier) // 선택된 원거리 공격을 실제로 생성하는 함수

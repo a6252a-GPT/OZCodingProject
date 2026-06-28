@@ -57,6 +57,21 @@ namespace TeamProject01.Gameplay
             return false;
         }
 
+        public bool HasAvailableSegmentCutTarget()
+        {
+            CleanupReservedSegmentCutTargets();
+
+            for (int i = 0; i < segments.Count; i++) 
+            {
+                if (IsAvailableSegmentCutTarget(segments[i])) 
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool IsAttachedSegmentCutTarget(Transform targetSegment)
         {
             if (targetSegment == null)

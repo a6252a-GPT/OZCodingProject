@@ -9747,7 +9747,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyController
   grade: 0
-  countsAsMonster: 0
 --- !u!114 &8463168355006993251
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9760,7 +9759,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deb41073b7dba46abc3fa1481667f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHealth
-  maxHp: 10
+  maxHp: 5
 --- !u!114 &557402436768550136
 MonoBehaviour:
   m_ObjectHideFlags: 0

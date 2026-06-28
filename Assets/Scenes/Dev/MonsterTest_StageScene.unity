@@ -4927,6 +4927,7 @@ GameObject:
   - component: {fileID: 167586113}
   - component: {fileID: 167586111}
   - component: {fileID: 167586110}
+  - component: {fileID: 167586115}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -5096,6 +5097,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!81 &167586115
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 167586109}
+  m_Enabled: 0
 --- !u!1 &167652393
 GameObject:
   m_ObjectHideFlags: 0
@@ -42909,103 +42918,37 @@ MonoBehaviour:
   backRightGates:
   - {fileID: 1845376349}
   groupForwardOffset: 3
-  columnSpacing: 3.7
+  columnSpacing: 5
   rowSpacing: 5
   spawnGroundHeight: 0.72
-  maxActiveMonsters: 120
+  maxActiveMonsters: 10
   firstSpawnDelay: 1
   stageRules:
   - stageName: Stage 1
     startTime: 1
     spawnInterval: 10
     spawnGroupCount: 1
-    frontRowCount: 3
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 3
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      count: 1
-  - stageName: Stage 2
-    startTime: 30
-    spawnInterval: 15
-    spawnGroupCount: 1
-    frontRowCount: 3
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 3
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 3
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      count: 1
-  - stageName: Stage 3
-    startTime: 60
-    spawnInterval: 15
-    spawnGroupCount: 1
-    frontRowCount: 3
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 3
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 3
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 2
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      count: 1
-  - stageName: Stage 4
-    startTime: 90
-    spawnInterval: 15
-    spawnGroupCount: 1
     frontRowCount: 5
     monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 5
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 4
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 3
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      count: 2
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
+    - prefab: {fileID: 6409752787900454463, guid: 2ccdee97b4f0a9142be5618c8e0381d2, type: 3}
       count: 1
-  - stageName: Stage 5
-    startTime: 120
-    spawnInterval: 20
-    spawnGroupCount: 2
-    frontRowCount: 7
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 5
     - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 5
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 5
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      count: 3
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
-      count: 3
+      count: 1
+    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
+      count: 1
+    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+      count: 1
     - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
       count: 1
-    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
+    - prefab: {fileID: 8503523623773363453, guid: 5773da492ef404849a9e1800a588b739, type: 3}
       count: 1
-  - stageName: Stage 6
-    startTime: 140
-    spawnInterval: 25
-    spawnGroupCount: 2
-    frontRowCount: 7
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 8
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 7
     - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 5
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      count: 5
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
-      count: 5
-    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
       count: 1
     - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      count: 1
+    - prefab: {fileID: 5342407866216693720, guid: 65b75a732e1e5d844a4d9aeeaa5a0c6c, type: 3}
+      count: 1
+    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
       count: 1
 --- !u!4 &1577685709
 Transform:
@@ -44247,9 +44190,21 @@ MonoBehaviour:
     alwaysIncludeAsBasePool: 1
     entries:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 2
+      count: 1
     - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
       count: 1
+    - prefab: {fileID: 6409752787900454463, guid: 2ccdee97b4f0a9142be5618c8e0381d2, type: 3}
+      count: 1
+    - prefab: {fileID: 8503523623773363453, guid: 5773da492ef404849a9e1800a588b739, type: 3}
+      count: 1
+    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
+      count: 1
+    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+      count: 1
+    - prefab: {fileID: 5342407866216693720, guid: 65b75a732e1e5d844a4d9aeeaa5a0c6c, type: 3}
+      count: 1
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      count: 5
   - waveType: 0
     poolId: P02
     displayName: "\uAE30\uBCF8 \uD63C\uD569"
@@ -44360,12 +44315,12 @@ MonoBehaviour:
   eliteBaseChance: 1
   eliteChanceIncreasePerMiss: 0
   eliteMaxChance: 1
-  enableBossWave: 0
+  enableBossWave: 1
   bossWaveStartStage: 2
   bossWaveInterval: 20
   bossBaseChance: 1
-  bossChanceIncreasePerMiss: 0.05
-  bossMaxChance: 0.4
+  bossChanceIncreasePerMiss: 1
+  bossMaxChance: 1
   specialWaveSpawnRules: []
   enableBonusChestAfterSpecialWave: 1
   bonusChestWaveSpawner: {fileID: 185824096}

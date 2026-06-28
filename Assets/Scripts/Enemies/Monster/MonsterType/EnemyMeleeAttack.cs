@@ -85,12 +85,32 @@ namespace TeamProject01.Gameplay
             int finalAttackDamage = Mathf.Max(0, Mathf.RoundToInt(attackDamage * attackPowerMultiplier * hatchlingAttackPowerMultiplier)); // 버프 배율을 적용한 최종 피해량을 계산한다.
             float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier / hatchlingAttackSpeedMultiplier); // 공격속도 배율을 적용한 최종 공격 대기 시간을 계산한다.
 
+            FaceNexus(); // �������߰�-0626 - ���� �ִϸ��̼��� ���۵Ǳ� ���� Nexus ������ �ٶ󺸰� �Ѵ�.
+
             AttackPerformed?.Invoke();
             NexusController.TryApplyDamage(nexus, finalAttackDamage); // 최종 피해량을 요청한다.
             attackTimer = finalAttackDelay; // 공격 후 다음 공격까지 대기 시간을 다시 설정한다.
         }
 
-        public void Configure(Transform nexus, int attackDamage, float attackRange, float attackDelay) // Spawner나 Controller가 공격 초기값을 넣어주는 함수
+        private void FaceNexus() // �������߰�-0626 - ���� ��ġ���� Nexus�� �ٶ󺸵��� ȸ����Ű�� �Լ�
+        {
+            if (nexus == null) // �������߰�-0626 - �ٶ� Nexus�� ���ٸ�
+            {
+                return; // �������߰�-0626 - ȸ������ �ʰ� �����Ѵ�.
+            }
+
+            Vector3 direction = nexus.position - transform.position; // �������߰�-0626 - ���Ϳ��� Nexus������ ������ ����Ѵ�.
+            direction.y = 0.0f; // �������߰�-0626 - ���� �������θ� ȸ���ϵ��� ���� ���̸� �����Ѵ�.
+
+            if (direction.sqrMagnitude <= 0.0001f) // �������߰�-0626 - ȸ�� ������ ����� �� ���� ������ ������
+            {
+                return; // �������߰�-0626 - �߸��� ȸ������ �������� �ʰ� �����Ѵ�.
+            }
+
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // �������߰�-0626 - ���� ���� ���� ������ Nexus �������� �����.
+        }
+
+        public void Configure(Transform nexus, int attackDamage, float attackRange, float attackDelay) // Spawner�� Controller�� ���� �ʱⰪ�� �־��ִ� �Լ�
         {
             this.nexus = nexus; // 매개변수 nexus를 내부 nexus field에 저장한다.
             this.attackDamage = attackDamage; // 매개변수 attackDamage를 내부 attackDamage field에 저장한다.
