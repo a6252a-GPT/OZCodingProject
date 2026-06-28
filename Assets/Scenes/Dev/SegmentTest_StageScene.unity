@@ -18112,16 +18112,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.NormalWaveSpawner
   enemySpawner: {fileID: 0}
-  baseSpawnCount: 30
+  baseSpawnCount: 40
   spawnScaleSteps:
   - startStage: 1
     spawnScalePercent: 100
-  - startStage: 6
-    spawnScalePercent: 120
+  - startStage: 5
+    spawnScalePercent: 150
+  - startStage: 8
+    spawnScalePercent: 220
   - startStage: 12
-    spawnScalePercent: 130
-  - startStage: 18
-    spawnScalePercent: 140
+    spawnScalePercent: 350
+  - startStage: 16
+    spawnScalePercent: 550
+  - startStage: 20
+    spawnScalePercent: 800
+  - startStage: 25
+    spawnScalePercent: 1200
+  - startStage: 30
+    spawnScalePercent: 1600
+  - startStage: 35
+    spawnScalePercent: 2100
+  - startStage: 40
+    spawnScalePercent: 2500
   difficultyScaleSteps:
   - startStage: 1
     healthScalePercent: 100
@@ -18167,38 +18179,37 @@ MonoBehaviour:
   - compositionId: N01
     displayName: "\uAE30\uBCF8 \uADFC\uC811"
     minStage: 1
-    weight: 100
-    monsters:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      ratioPercent: 100
-  - compositionId: N02
-    displayName: "\uADFC\uC811 \uC11E\uAE30"
-    minStage: 3
     weight: 80
     monsters:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      ratioPercent: 70
+      ratioPercent: 60
     - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      ratioPercent: 30
-  - compositionId: N03
-    displayName: "\uADFC\uC811 + \uC6D0\uAC70\uB9AC"
-    minStage: 5
-    weight: 70
+      ratioPercent: 40
+  - compositionId: N02
+    displayName: "\uADFC\uC811+\uC6D0\uAC70\uB9AC"
+    minStage: 1
+    weight: 20
     monsters:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      ratioPercent: 65
+      ratioPercent: 60
     - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      ratioPercent: 20
+      ratioPercent: 40
     - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      ratioPercent: 15
+      ratioPercent: 10
   spawnWindowPercent: 40
   spawnBatchCount: 4
+  batchGateCount: 2
   earlyGateCount: 2
   midGateStartStage: 10
   midGateCount: 4
   lateGateStartStage: 20
   lateGateCount: 8
-  frontRowCount: 5
+  frontRowCount: 7
+  useCongestionPush: 0
+  congestionCheckRadius: 8
+  congestionMonsterThreshold: 12
+  congestionPushDistance: 5
+  congestionMaxPushDistance: 20
 --- !u!1001 &603314269
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -23110,7 +23121,7 @@ Transform:
   m_GameObject: {fileID: 774897611}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.92387956, z: 0, w: 0.38268343}
-  m_LocalPosition: {x: 25, y: 0, z: 5}
+  m_LocalPosition: {x: 25, y: 0, z: 25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -23131,7 +23142,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &775807973
 RectTransform:
   m_ObjectHideFlags: 0
@@ -31765,11 +31776,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EliteMixController
   eliteRatioSteps:
   - startStage: 6
-    eliteRatioPercent: 10
+    eliteRatioPercent: 5
   - startStage: 12
-    eliteRatioPercent: 20
+    eliteRatioPercent: 8
   - startStage: 18
-    eliteRatioPercent: 30
+    eliteRatioPercent: 10
+  - startStage: 18
+    eliteRatioPercent: 20
   eliteCompositions:
   - compositionId: E01
     minStage: 6
@@ -38082,6 +38095,8 @@ MonoBehaviour:
   rowSpacing: 5
   spawnGroundHeight: 0.72
   maxActiveMonsters: 120
+  useWaveMaxActiveMonsterLimit: 1
+  waveMaxActiveMonsters: 3000
   firstSpawnDelay: 1
   stageRules:
   - stageName: Stage 1

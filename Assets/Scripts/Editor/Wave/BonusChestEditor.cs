@@ -31,8 +31,6 @@ namespace TeamProject01.Gameplay.EditorTools
             DrawProperty("openAnimationSpeed", "열림 애니메이션 속도");
             DrawProperty("openAnimationStart", "열림 애니메이션 시작 지점");
             DrawProperty("pauseAnimatorUntilOpen", "열리기 전 애니메이터 정지");
-            DrawProperty("destroyAfterReward", "보상 후 상자 제거");
-            DrawProperty("destroyDelay", "제거 대기 시간(초)");
 
             serializedObject.ApplyModifiedProperties();
         }

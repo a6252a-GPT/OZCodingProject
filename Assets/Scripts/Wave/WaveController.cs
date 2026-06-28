@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
@@ -44,12 +45,26 @@ namespace TeamProject01.Gameplay
         private bool specialWaveActive; // 외부 특수 웨이브가 일반 스폰을 잠글 때 사용하는 값입니다.
         private bool waitingForBossClearStage; // 보스 처치로 종료되는 Stage인지 기록합니다.
 
+        private readonly List<EnemyController> currentStageEnemies = new List<EnemyController>(256); // 이번 Stage에서 WaveSystem이 직접 생성한 몬스터 목록입니다.
+        private int currentStageTargetEnemyCount; // 이번 Stage에 나올 예정이었던 몬스터 수입니다.
+        private int currentStageDefeatedEnemyCount; // 이번 Stage 몬스터 중 이미 처치된 수입니다.
+        private int currentStageTrackingStage; // 현재 추적 중인 Stage 번호입니다.
+
         public int CurrentStage => currentStage;
         public float StageDurationSeconds => stageDurationSeconds;
         public float RemainingStageSeconds => Mathf.Max(0.0f, stageDurationSeconds - elapsedStageSeconds);
         public bool IsSpecialWaveActive => enableSpecialWaveExtension && specialWaveActive;
         public bool IsWaitingForBossClearStage => waitingForBossClearStage;
         public bool UsesStageTimer => !waitingForBossClearStage;
+        public int CurrentStageTargetEnemyCount => currentStageTargetEnemyCount;
+        public int CurrentStageRemainingEnemyCount
+        {
+            get
+            {
+                RefreshCurrentStageEnemyProgress();
+                return Mathf.Max(0, currentStageTargetEnemyCount - currentStageDefeatedEnemyCount);
+            }
+        }
 
         public WaveRunState CurrentState
         {
@@ -72,6 +87,44 @@ namespace TeamProject01.Gameplay
         public void SetSpecialWaveActive(bool active)
         {
             specialWaveActive = enableSpecialWaveExtension && active;
+        }
+
+        public void BeginCurrentStageEnemyTracking(int stage, int targetEnemyCount)
+        {
+            currentStageTrackingStage = stage;
+            currentStageTargetEnemyCount = Mathf.Max(0, targetEnemyCount);
+            currentStageDefeatedEnemyCount = 0;
+            currentStageEnemies.Clear();
+        }
+
+        public void RegisterCurrentStageEnemies(int stage, List<EnemyController> spawnedEnemies)
+        {
+            if (stage != currentStageTrackingStage || spawnedEnemies == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < spawnedEnemies.Count; i++)
+            {
+                EnemyController enemy = spawnedEnemies[i];
+
+                if (enemy == null || currentStageEnemies.Contains(enemy))
+                {
+                    continue;
+                }
+
+                currentStageEnemies.Add(enemy);
+            }
+        }
+
+        public void CompleteCurrentStageEnemySpawning(int stage)
+        {
+            if (stage != currentStageTrackingStage)
+            {
+                return;
+            }
+
+            RefreshCurrentStageEnemyProgress();
         }
 
         private void Reset()
@@ -141,6 +194,8 @@ namespace TeamProject01.Gameplay
             ResolveReferences();
             SegmentDpsDebugMeter.BeginWave(currentStage); // 이번 웨이브 기록 초기화
 
+            BeginCurrentStageEnemyTracking(currentStage, 0);
+
             if (IsSpecialWaveActive)
             {
                 return;
@@ -174,7 +229,23 @@ namespace TeamProject01.Gameplay
                 : default;
 
             int normalSpawnCount = Mathf.Max(0, totalSpawnCount - elitePlan.TotalCount);
-            normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, elitePlan);
+            normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, elitePlan, this);
+        }
+
+        private void RefreshCurrentStageEnemyProgress()
+        {
+            for (int i = currentStageEnemies.Count - 1; i >= 0; i--)
+            {
+                EnemyController enemy = currentStageEnemies[i];
+
+                if (enemy != null && !enemy.IsDead)
+                {
+                    continue;
+                }
+
+                currentStageEnemies.RemoveAt(i);
+                currentStageDefeatedEnemyCount = Mathf.Min(currentStageTargetEnemyCount, currentStageDefeatedEnemyCount + 1);
+            }
         }
 
         private bool ShouldAdvanceByClear()

@@ -27,12 +27,20 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawSection("고급 설정", "초반에 집중해서 나오게 하는 시간/게이트 설정입니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "spawnWindowPercent", "스폰 집중 비율 (%)");
             WaveInspectorUtility.DrawProperty(serializedObject, "spawnBatchCount", "스폰 묶음 횟수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "batchGateCount", "묶음당 사용 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "earlyGateCount", "초반 사용 게이트 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "midGateStartStage", "중반 게이트 시작 Stage");
             WaveInspectorUtility.DrawProperty(serializedObject, "midGateCount", "중반 사용 게이트 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "lateGateStartStage", "후반 게이트 시작 Stage");
             WaveInspectorUtility.DrawProperty(serializedObject, "lateGateCount", "후반 사용 게이트 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "frontRowCount", "앞줄 배치 수");
+
+            WaveInspectorUtility.DrawSection("스폰 혼잡 보정", "켜면 스폰 예정 위치 주변에 몬스터가 많을 때 넥서스 반대 방향으로 더 멀리 생성합니다.");
+            WaveInspectorUtility.DrawProperty(serializedObject, "useCongestionPush", "혼잡 보정 사용");
+            WaveInspectorUtility.DrawProperty(serializedObject, "congestionCheckRadius", "혼잡 체크 반경");
+            WaveInspectorUtility.DrawProperty(serializedObject, "congestionMonsterThreshold", "혼잡 판단 몬스터 수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "congestionPushDistance", "혼잡 시 뒤로 밀 거리");
+            WaveInspectorUtility.DrawProperty(serializedObject, "congestionMaxPushDistance", "최대 뒤로 밀 거리");
 
             serializedObject.ApplyModifiedProperties();
         }
