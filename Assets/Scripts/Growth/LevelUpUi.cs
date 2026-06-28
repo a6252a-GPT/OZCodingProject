@@ -26,6 +26,7 @@ public class LevelUpUi : MonoBehaviour
     private bool useBackgroundBlur;
     private Image cachedTitleImage;
     private float previousTimeScale = 1f;
+    private bool pausedByPanel; // 패널이 직접 일시정지했는지 //안건준 추가 - 0628
     private bool skipPause; // 안건준 추가 - 0622 : 자동모드일 때 일시정지 스킵 플래그
     private float closeFadeDuration = 0.25f; // Close() 기본 페이드
     private CoreStatProvider subscribedCore; // 구독 중인 코어
@@ -169,15 +170,29 @@ public class LevelUpUi : MonoBehaviour
         skipPause = false;
     }
 
+    public bool IsPanelOpen => isOpen; // 닫히는 중(페이드) 포함 열림 상태 //안건준 추가 - 0628
+
+    public bool IsPanelVisible => isOpen
+        && panelCanvasGroup != null
+        && panelCanvasGroup.blocksRaycasts
+        && panelCanvasGroup.interactable
+        && panelCanvasGroup.alpha > 0.01f; // 카드 패널 실제 표시 여부 //안건준 추가 - 0628
+
     public void Open()
     {
-        if (isOpen || panelCanvasGroup == null)
+        if (panelCanvasGroup == null)
         {
             return;
         }
 
+        if (IsPanelVisible)
+        {
+            return; // 이미 열려 있음
+        }
+
         isOpen = true;
         bool shouldUseBackgroundBlur = useBackgroundBlur && backgroundBlurLayer != null;
+        pausedByPanel = false;
         // 안건준 추가 - 0622 : skipPause 플래그 또는 자동궤도 모드이면 일시정지 스킵
         if (!skipPause && !IsAutoOrbitActive())
         {
@@ -265,13 +280,21 @@ public class LevelUpUi : MonoBehaviour
 
     private void PauseGame()
     {
-        previousTimeScale = Time.timeScale > 0f ? Time.timeScale : 1f;
+        pausedByPanel = true;
+        previousTimeScale = Time.timeScale > 0f ? Time.timeScale : GameSpeedController.GetDesiredTimeScale();
         Time.timeScale = 0f;
     }
 
     private void ResumeGame()
     {
-        Time.timeScale = previousTimeScale > 0f ? previousTimeScale : 1f;
+        if (pausedByPanel)
+        {
+            Time.timeScale = previousTimeScale > 0f ? previousTimeScale : 1f;
+            pausedByPanel = false;
+            return;
+        }
+
+        GameSpeedController.ApplyDesiredTimeScale(); // 자동모드 2배속 유지 //안건준 수정 - 0628
     }
 
     public void Close()

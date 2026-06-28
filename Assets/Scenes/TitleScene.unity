@@ -13127,6 +13127,75 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &873723641
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 873723643}
+  - component: {fileID: 873723642}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &873723642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 873723641}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3308bcd07d294b4e999fc5b9a2af191, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  bgmSource: {fileID: 0}
+  sfxSource: {fileID: 0}
+  bgmClips:
+  - type: 1
+    clip: {fileID: 8300000, guid: 721df16119dbf4896b1b05487870e6a6, type: 3}
+    volume: 0.5
+  - type: 2
+    clip: {fileID: 0}
+    volume: 0.5
+  - type: 3
+    clip: {fileID: 0}
+    volume: 0
+  - type: 4
+    clip: {fileID: 8300000, guid: 0ee332a789321456988bfbd32d4debe0, type: 3}
+    volume: 0.5
+  - type: 5
+    clip: {fileID: 8300000, guid: a7a1d437f0b6f46f8bb6ed112a21d525, type: 3}
+    volume: 0.5
+  - type: 6
+    clip: {fileID: 0}
+    volume: 0.5
+  sfxClips:
+  - type: 0
+    clip: {fileID: 8300000, guid: 72ee2562b7c4aa0449b4cebbc53ddb4f, type: 3}
+    volume: 0.5
+--- !u!4 &873723643
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 873723641}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &878618282
 GameObject:
   m_ObjectHideFlags: 0
@@ -30980,3 +31049,4 @@ SceneRoots:
   - {fileID: 1355802671}
   - {fileID: 1561432266}
   - {fileID: 1045133497}
+  - {fileID: 873723643}

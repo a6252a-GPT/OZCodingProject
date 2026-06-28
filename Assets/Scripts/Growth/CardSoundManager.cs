@@ -53,7 +53,16 @@ public class CardSoundManager : MonoBehaviour
 
     private void Awake()
     {
-        _ = Src; // 미리 초기화
+        _ = Src;
+        EnsureSfxVolumeListener();
+    }
+
+    private void EnsureSfxVolumeListener()
+    {
+        if (GetComponent<SfxVolumeListener>() == null)
+        {
+            gameObject.AddComponent<SfxVolumeListener>();
+        }
     }
 
     // ─── 공개 API ─────────────────────────────
@@ -83,9 +92,6 @@ public class CardSoundManager : MonoBehaviour
     public void PreviewClip(AudioClip clip)
     {
         if (clip == null) return;
-        Src.Stop();
-        Src.clip   = clip;
-        Src.volume = previewVolume;
-        Src.Play();
+        Src.PlayOneShot(clip, previewVolume);
     }
 }

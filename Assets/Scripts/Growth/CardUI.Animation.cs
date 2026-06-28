@@ -55,6 +55,8 @@ public partial class CardUI
             sequence.AppendCallback(() => PlayOpenTween(cards[index]));
             sequence.AppendInterval(0.12f);
         }
+
+        sequence.OnComplete(TryStartAutoSelectAfterSpawn); // 등장 연출 후 자동선택 //안건준 수정 - 0628
     }
 
     private void HideInstant(SpawnedCardEntry entry)

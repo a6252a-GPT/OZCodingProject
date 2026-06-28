@@ -260,7 +260,6 @@ public partial class CardUI : MonoBehaviour
             SpawnLevelUpCards(); // 현재 레벨 구간에 맞는 카드 생성
             spawnedForCurrentOpen = true;
             ShowSegmentListPopupOnPanelOpen(); // 안건준 추가 - 0622 — 트리거 바만 표시
-            TryStartAutoSelect(); // 안건준 추가 - 0622 : 자동모드면 자동선택 코루틴 시작
             return;
         }
 

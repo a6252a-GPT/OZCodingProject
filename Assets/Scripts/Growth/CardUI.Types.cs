@@ -203,16 +203,31 @@ public partial class CardUI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerEnter(entry, eventData);
         }
 
         public void OnPointerMove(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerMove(entry, eventData);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerExit(entry, eventData);
         }
     }
@@ -230,21 +245,41 @@ public partial class CardUI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerEnter(entry, eventData);
         }
 
         public void OnPointerMove(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerMove(entry, eventData);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerExit(entry, eventData);
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
             {
                 return;
@@ -272,6 +307,26 @@ public partial class CardUI
         public void OnPointerExit(PointerEventData eventData)
         {
             manager?.NotifySegmentListHoverExit();
+        }
+    }
+
+    private sealed class RerollButtonHoverBridge : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        private CardUI manager;
+
+        public void Initialize(CardUI owner)
+        {
+            manager = owner;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            manager?.NotifyRerollButtonPointerEnter();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            manager?.NotifyRerollButtonPointerExit();
         }
     }
 }

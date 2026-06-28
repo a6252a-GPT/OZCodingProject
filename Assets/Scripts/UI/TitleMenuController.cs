@@ -9,8 +9,10 @@ namespace TeamProject01.Gameplay
 {
     public sealed class TitleMenuController : MonoBehaviour // 타이틀 메뉴
     {
-        private const string CurrentCoreTestScenePath = "Assets/Scenes/Dev/CoreTest_StageScene.unity"; // 최신 코어 테스트 씬
-        private const string LegacyCoreTestScenePath = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 이전 코어 테스트 씬
+        private const string StageScenePath = "Assets/Scenes/StageScene.unity"; // 기본 스테이지 씬 경로 //안건준 추가 - 0628
+        private const string StageSceneName = "StageScene"; // 빌드 로드용 씬 이름 //안건준 수정 - 0628
+        private const string LegacyCoreTestScenePath = "Assets/Scenes/Dev/CoreTest_StageScene.unity"; // 이전 코어 테스트 씬 (경로 보정용)
+        private const string LegacyCoreTestScenePathOld = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 더 이전 코어 테스트 씬 (경로 보정용)
 
         private Button runtimeMagicWormButton; // 런타임 마법형 버튼
         private bool mapCardButtonsWired; // 맵 카드 런타임 리스너 중복 방지
@@ -48,8 +50,8 @@ namespace TeamProject01.Gameplay
         }
 
         public MetaProgressionManager Meta; // 메타 데이터
-        public string TargetStageScenePath = CurrentCoreTestScenePath; // 현재 코어 테스트 대상
-        [HideInInspector][Min(0)] public int HighestReachedWave; // 이전 타이틀 필드 기록
+        public string TargetStageScenePath = StageScenePath; // 게임 시작 시 로드할 스테이지 씬 //안건준 수정 - 0628
+        [Min(0)] public int HighestReachedWave; // 최고 도달 웨이브
         [Min(0)] public int TemporaryUpgradeBaseCost = 50; // 임시 강화 기본 비용
 
         [Header("Panels")]
@@ -633,17 +635,19 @@ namespace TeamProject01.Gameplay
         {
             NormalizeTargetStageScenePath(); // 직렬화된 이전 값 보정
 #if UNITY_EDITOR
-            EditorSceneManager.LoadSceneInPlayMode(TargetStageScenePath, new LoadSceneParameters(LoadSceneMode.Single)); // 에디터 테스트
+            EditorSceneManager.LoadSceneInPlayMode(TargetStageScenePath, new LoadSceneParameters(LoadSceneMode.Single)); // 에디터에서 StageScene 경로로 로드 //안건준 수정 - 0628
 #else
-            SceneManager.LoadScene(TargetStageScenePath); // 빌드 로드
+            SceneManager.LoadScene(StageSceneName); // 빌드에서 StageScene 이름으로 로드 //안건준 수정 - 0628
 #endif
         }
 
-        private void NormalizeTargetStageScenePath() // 최신 코어 테스트 씬 경로 보정
+        private void NormalizeTargetStageScenePath() // 스테이지 씬 경로 보정
         {
-            if (string.IsNullOrWhiteSpace(TargetStageScenePath) || TargetStageScenePath == LegacyCoreTestScenePath)
+            if (string.IsNullOrWhiteSpace(TargetStageScenePath)
+                || TargetStageScenePath == LegacyCoreTestScenePath
+                || TargetStageScenePath == LegacyCoreTestScenePathOld)
             {
-                TargetStageScenePath = CurrentCoreTestScenePath; // 최신 씬 사용
+                TargetStageScenePath = StageScenePath; // 이전 테스트 씬 경로를 StageScene으로 통일 //안건준 수정 - 0628
             }
         }
 

@@ -1976,10 +1976,12 @@ MonoBehaviour:
   TextureWorldSize: 2.5
   VisualYOffset: 0.035
   UseDemoTerrainTemplateSurface: 1
+  SurfaceProfile: {fileID: 0}
   TerrainTemplate: {fileID: 15600000, guid: 6000f4686c9d0524fade434bf6f9a09d, type: 2}
   OverlayGeneratedTrailsOnDemoTerrain: 1
   RegenerateDemoTerrainHeights: 0
   ClearDemoDetailsOnTrails: 1
+  UseInstancedTerrainRendering: 0
   DemoTerrainEditPadding: 5
   UseHighQualityControlMap: 1
   ControlMapResolution: 1024
@@ -1997,6 +1999,7 @@ MonoBehaviour:
   MainDirtHalfWidth: 1.9
   MainMidBlendWidth: 2.2
   MainGrassBlendWidth: 2.4
+  MainTrailWidthScale: 0.8
   EntryZoneDepth: 10
   EntryZoneHalfWidth: 42
   MainControlJitter: 13
@@ -2053,6 +2056,7 @@ MonoBehaviour:
   FlowerAccentPrefabs: []
   MushroomPrefabs: []
   RockGroupPrefabs: []
+  DecorationCatalogAsset: {fileID: 0}
   SpawnPandazoleAddons: 1
   UsePandazoleEditorFallbacks: 1
   PandazoleFlowerPocketCount: 22
@@ -5531,9 +5535,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.HudTooltipManager
   tooltipPanel: {fileID: 1421900706}
-  titleText: {fileID: 1358870997}
-  bodyText: {fileID: 1976885696}
-  footerText: {fileID: 1060961233}
+  titleText: {fileID: 0}
+  bodyText: {fileID: 0}
+  footerText: {fileID: 0}
+  tooltipFont: {fileID: 0}
+  backgroundSprite: {fileID: 0}
   screenOffset: {x: 18, y: -18}
   panelWidth: 300
 --- !u!1001 &210560170
@@ -16911,6 +16917,7 @@ GameObject:
   - component: {fileID: 720475088}
   - component: {fileID: 720475086}
   - component: {fileID: 720475085}
+  - component: {fileID: 720475090}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -17080,6 +17087,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!81 &720475090
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 720475084}
+  m_Enabled: 1
 --- !u!1001 &722795166
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -34293,6 +34308,7 @@ MonoBehaviour:
   soundManager: {fileID: 1334073508}
   targetCanvas: {fileID: 0}
   fontSource: {fileID: 215212815}
+  showRuntimePanel: 0
   panelWidth: 300
   panelHeight: 600
   tabHeight: 28
@@ -34339,7 +34355,10 @@ MonoBehaviour:
   - {fileID: 5093926429036568398, guid: 922b7080113cbd34d8b277e8b5b6ad62, type: 3}
   - {fileID: 4273208215378241979, guid: 7a79283604a4e7c4eb4ac5619406ef66, type: 3}
   - {fileID: 7600267103908896176, guid: 24dd4616ba097ba4986e42138944d0d4, type: 3}
+  statUpgradeCatalogAsset: {fileID: 0}
   segmentCardBasePrefab: {fileID: 1511448857506858134, guid: 3a49d0b5d6d28734c8caac14b1e175c5, type: 3}
+  segmentChoiceCardPrefab: {fileID: 0}
+  prefabReferences: {fileID: 0}
   segmentCardIconSizeOffset: -80
   cardEffect: {fileID: 1334073506}
   cardSound: {fileID: 0}
@@ -34353,6 +34372,10 @@ MonoBehaviour:
   - {fileID: 1680805766}
   - {fileID: 31199494}
   cardsToSpawn: 3
+  rewardGoldBaseAmount: 100
+  rewardExperienceBaseAmount: 200
+  rewardSegmentTicketBaseCount: 1
+  segmentTicketBonusRerollCount: 5
   startYOffset: -80
   hoverScale: 1.09
   selectionCloseHoldSeconds: 0.15
@@ -34361,6 +34384,7 @@ MonoBehaviour:
   selectionPanelCloseFadeSeconds: 0.15
   levelUpPanelCanvasGroup: {fileID: 1334073511}
   levelUpUi: {fileID: 1334073510}
+  ownedSegmentChoiceGuaranteeChance: 0.5
   useSegmentSelectWeaponEnhanceFlow: 0
   weaponEnhanceSegmentBaseWeight: 100
   weaponEnhanceSegmentWeightPerOwned: 50
@@ -34394,7 +34418,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelUpUi
   levelUpPanel: {fileID: 1334073505}
   panelCanvasGroup: {fileID: 1334073511}
-  levelUpText: {fileID: 1914239910}
+  titleVisual: {fileID: 0}
+  levelUpTitleSprite: {fileID: 0}
+  rewardTitleSprite: {fileID: 0}
   logCoreStats: 1
 --- !u!225 &1334073511
 CanvasGroup:
@@ -39770,153 +39796,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d48c88243dfe4ac69349ca4c29bf154c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WaveController
+  autoStart: 1
+  startStage: 1
+  stageDurationSeconds: 60
+  advanceWhenAllMonstersCleared: 1
+  clearCheckDelaySeconds: 1
   enemySpawner: {fileID: 2140284234}
   disableSpawnerStageRulesUpdate: 1
-  stageDurationSeconds: 60
-  firstSpawnDelay: 5
-  baseSpawnInterval: 14
-  minSpawnInterval: 7
-  intervalReductionPerStage: 0.03
-  secondPoolThreatLevel: 7
-  thirdPoolThreatLevel: 15
-  maxPoolsPerSpawn: 3
-  monsterPools:
-  - waveType: 0
-    poolId: P01
-    displayName: "\uAE30\uBCF8 \uBB3C\uB7C9"
-    minThreatLevel: 1
-    weight: 120
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 1
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 2
-    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      count: 1
-  - waveType: 0
-    poolId: P02
-    displayName: "\uAE30\uBCF8 \uD63C\uD569"
-    minThreatLevel: 2
-    weight: 100
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 1
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 2
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 1
-    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      count: 1
-  - waveType: 0
-    poolId: P03
-    displayName: "\uC6D0\uAC70\uB9AC \uC555\uBC15"
-    minThreatLevel: 4
-    weight: 85
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 1
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 3
-  - waveType: 0
-    poolId: P04
-    displayName: "\uC774\uB3D9 \uBC29\uD574"
-    minThreatLevel: 5
-    weight: 70
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P05
-    displayName: "\uACBD\uB85C \uBC29\uD574"
-    minThreatLevel: 6
-    weight: 65
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P06
-    displayName: "\uC21C\uAC04 \uC704\uD611"
-    minThreatLevel: 7
-    weight: 60
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P07
-    displayName: "\uC131\uC7A5/\uBC84\uD504 \uC555\uBC15"
-    minThreatLevel: 9
-    weight: 50
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 0
-    poolId: P08
-    displayName: "\uD6C4\uBC18 \uAE30\uBBF9"
-    minThreatLevel: 12
-    weight: 35
-    spawnGroupCount: 1
-    frontRowCount: 5
-    alwaysIncludeAsBasePool: 0
-    entries: []
-  - waveType: 1
-    poolId: P09
-    displayName: "\uC5D8\uB9AC\uD2B8 \uC6E8\uC774\uBE0C"
-    minThreatLevel: 2
-    weight: 100
-    spawnGroupCount: 3
-    frontRowCount: 3
-    alwaysIncludeAsBasePool: 0
-    entries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 24
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 24
-  - waveType: 2
-    poolId: P10
-    displayName: "\uBCF4\uC2A4 \uC6E8\uC774\uBE0C"
-    minThreatLevel: 1
-    weight: 100
-    spawnGroupCount: 1
-    frontRowCount: 1
-    alwaysIncludeAsBasePool: 0
-    entries:
-    - prefab: {fileID: 824607774837057934, guid: 94fe31a0770c6fa479eff15faa1be3e1, type: 3}
-      count: 1
-  baseGateDirectionCount: 1
-  midGateDirectionThreatLevel: 15
-  midGateDirectionCount: 4
-  lateGateDirectionThreatLevel: 25
-  lateGateDirectionCount: 6
-  fullGateDirectionThreatLevel: 35
-  fullGateDirectionCount: 8
-  enableEliteWave: 0
-  eliteWaveStartStage: 2
-  eliteWaveInterval: 1
-  eliteBaseChance: 1
-  eliteChanceIncreasePerMiss: 0
-  eliteMaxChance: 1
-  enableBossWave: 0
-  bossWaveStartStage: 2
-  bossWaveInterval: 20
-  bossBaseChance: 1
-  bossChanceIncreasePerMiss: 0.05
-  bossMaxChance: 0.4
-  specialWaveSpawnRules: []
-  enableBonusChestAfterSpecialWave: 1
+  normalWaveSpawner: {fileID: 0}
+  eliteMixController: {fileID: 0}
+  bossWaveController: {fileID: 0}
   bonusChestWaveSpawner: {fileID: 1957143869}
-  enableSpecialWaveCountScaling: 1
-  specialWaveCountStageStep: 10
-  specialWaveCountIncreasePerStep: 0.5
-  specialWaveMaxCountMultiplier: 10
+  enableSpecialWaveExtension: 0
+  specialWaveController: {fileID: 0}
 --- !u!1001 &1491862806
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -44696,9 +44588,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.ExpBarController
   ExpSlider: {fileID: 1336222565}
+  expFillImage: {fileID: 0}
   LevelText: {fileID: 1462713998}
   LevelUpUi: {fileID: 1334073510}
   CardUi: {fileID: 0}
+  expNumText: {fileID: 0}
+  goldText: {fileID: 0}
+  gemText: {fileID: 0}
 --- !u!114 &1650237344
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46493,6 +46389,8 @@ MonoBehaviour:
   CurrentLevel: 1
   FlatDamageBonus: 0
   DamageMultiplier: 1
+  MeleeDamageMultiplierBonus: 0
+  MagicDamageMultiplierBonus: 0
   AttackSpeedMultiplier: 1
   TurnSpeedBonus: 0
   CollisionForceBonus: 0
@@ -46502,6 +46400,12 @@ MonoBehaviour:
   TotalExperience: 0
   BaseExperienceToLevelUp: 5
   ExtraExperiencePerLevel: 5
+  ExperienceRequirementLevel1To5: 30
+  ExperienceRequirementLevel6To10: 90
+  ExperienceRequirementLevel11To20: 320
+  ExperienceRequirementLevel21To30: 560
+  ExperienceRequirementLevel31To40: 850
+  ExperienceRequirementLevel41Plus: 1150
   Convoy: {fileID: 0}
   SegmentCatalogAsset: {fileID: 11400000, guid: bf871c57c4a7aff49b7e7f24dc632e0e, type: 2}
   WeaponCatalogAsset: {fileID: 0}
@@ -46620,11 +46524,6 @@ MonoBehaviour:
   offscreenIndicatorInset: 15
   offscreenDistanceInset: 24
   offscreenDistanceFontSize: 12
-  showNexusStatusBars: 1
-  nexusStatusOffset: {x: 0, y: -8}
-  nexusStatusWidth: 190
-  nexusStatusBarHeight: 14
-  nexusStatusFontSize: 11
 --- !u!1001 &1708799947
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -52128,6 +52027,11 @@ MonoBehaviour:
   ConfigureAttachedNexusVfx: 1
   ShowLightningGroundVfx: 1
   ShowManaWallShieldVfx: 1
+  SpawnSegmentChoiceTicketsOnStart: 1
+  StartingSegmentChoiceTicketCount: 3
+  StartingSegmentChoiceTicketAmount: 1
+  StartingSegmentChoiceTicketMinRadius: 3.2
+  StartingSegmentChoiceTicketMaxRadius: 6.2
 --- !u!23 &1940521438
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -52643,24 +52547,21 @@ MonoBehaviour:
   - displayName: "Lv1 \uC77C\uBC18 \uC0C1\uC790"
     prefab: {fileID: -2797154915781816065, guid: 511198219d384134c8311337315ae660, type: 3}
     chancePercent: 0
-    experienceReward: 12
-    goldReward: 20
-    experienceDropCount: 6
-    goldDropCount: 8
+    overrideRewardChoiceTierChanceBonus: 0
+    rewardChoiceRareChanceBonusPercent: 0
+    rewardChoiceUniqueChanceBonusPercent: 0
   - displayName: "Lv2 \uD76C\uADC0 \uC0C1\uC790"
     prefab: {fileID: 3466024493924604102, guid: 21e1a44ae31baec42bce7d17f5ff3d6f, type: 3}
     chancePercent: 50
-    experienceReward: 30
-    goldReward: 50
-    experienceDropCount: 10
-    goldDropCount: 14
+    overrideRewardChoiceTierChanceBonus: 0
+    rewardChoiceRareChanceBonusPercent: 0
+    rewardChoiceUniqueChanceBonusPercent: 0
   - displayName: "Lv3 \uACE0\uAE09 \uC0C1\uC790"
     prefab: {fileID: -4449904733654359422, guid: 69beb7d8398acdb44b9866760561cce2, type: 3}
     chancePercent: 50
-    experienceReward: 70
-    goldReward: 110
-    experienceDropCount: 40
-    goldDropCount: 22
+    overrideRewardChoiceTierChanceBonus: 0
+    rewardChoiceRareChanceBonusPercent: 0
+    rewardChoiceUniqueChanceBonusPercent: 0
 --- !u!4 &1957143870
 Transform:
   m_ObjectHideFlags: 0
@@ -58718,6 +58619,8 @@ MonoBehaviour:
   rowSpacing: 5
   spawnGroundHeight: 0.72
   maxActiveMonsters: 120
+  useWaveMaxActiveMonsterLimit: 1
+  waveMaxActiveMonsters: 3000
   firstSpawnDelay: 1
   stageRules:
   - stageName: Stage 1

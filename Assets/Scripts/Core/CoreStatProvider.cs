@@ -74,18 +74,13 @@ namespace TeamProject01.Gameplay
         // 경험치 충족 시 카드 UI만 열고, 경험치/레벨은 카드 선택 시 소비
         public bool TryBeginLevelUpChoice() // 레벨업 카드 UI 오픈 허용
         {
-            if (pendingLevelUpChoiceCommitted)
-            {
-                return true; // 이미 UI 표시 중
-            }
-
             if (!CanLevelUp || !CanApplyLevelDelta(1))
             {
                 return false; // 경험치 부족 등 레벨업 불가
             }
 
-            pendingLevelUpChoiceCommitted = true; // UI 중복 오픈 방지 (경험치는 아직 미소비)
-            return true; // ExpBarController에서 패널 오픈 가능
+            pendingLevelUpChoiceCommitted = true; // UI 중복 오픈 방지 (경험치는 카드 선택 시 소비)
+            return true;
         }
 
         public void CompleteLevelUpChoice() // 카드 선택·적용 완료 후 호출

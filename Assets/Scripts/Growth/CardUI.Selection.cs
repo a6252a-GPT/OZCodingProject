@@ -165,9 +165,9 @@ public partial class CardUI
         sequence.AppendInterval(0.25f); // 전환 여유
         sequence.OnComplete(() =>
         {
-            SpawnSegmentActionCards(catalogEntry, levelDelta, canAdd, canLevelUp); // 2차 카드 생성
-            isProcessingSelection = false; // 다시 클릭 허용
-            TryStartAutoSelectSegmentAction(canAdd, canLevelUp); // 안건준 추가 - 0622 : 자동모드면 추가/레벨업 자동선택
+            ScheduleAutoSelectSegmentAction(canAdd, canLevelUp);
+            SpawnSegmentActionCards(catalogEntry, levelDelta, canAdd, canLevelUp);
+            isProcessingSelection = false;
         });
     }
 
@@ -442,7 +442,7 @@ public partial class CardUI
                     levelUpPanelCanvasGroup.interactable = false;
                     if (Time.timeScale <= 0f)
                     {
-                        Time.timeScale = 1f; // LevelUpUi 없을 때 일시정지 해제
+                        Time.timeScale = TeamProject01.Gameplay.GameSpeedController.GetDesiredTimeScale();
                     }
 
                     onClosed?.Invoke(); // 닫힌 후 콜백
@@ -452,7 +452,7 @@ public partial class CardUI
 
         if (Time.timeScale <= 0f)
         {
-            Time.timeScale = 1f; // fallback
+            Time.timeScale = TeamProject01.Gameplay.GameSpeedController.GetDesiredTimeScale();
         }
 
         onClosed?.Invoke(); // 즉시 호출

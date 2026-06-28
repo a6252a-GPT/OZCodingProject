@@ -317,27 +317,11 @@ public class CardEffect : MonoBehaviour
     }
 
     /// <summary>
-    /// 모든 이팩트를 duration 동안 scale=0 으로 축소 후 제거.
-    /// 카드 페이드 애니메이션과 동시에 호출해 타이밍을 맞춘다.
+    /// 모든 이팩트를 즉시 제거. (카드 선택 시 축소 연출 없이 바로 사라짐)
     /// </summary>
     public void FadeAllEffects(float duration = 0.2f)
     {
-        foreach (KeyValuePair<GameObject, GameObject> kvp in activeEffects)
-        {
-            if (kvp.Value == null) continue;
-            kvp.Value.transform.DOKill();
-            kvp.Value.transform
-                .DOScale(Vector3.zero, duration)
-                .SetEase(Ease.InQuad)
-                .SetUpdate(true)
-                .OnComplete(() =>
-                {
-                    if (kvp.Value != null) Destroy(kvp.Value);
-                });
-        }
-        activeEffects.Clear();
-        activeTiers.Clear();
-        activeBaseSizes.Clear();
+        ClearAll();
     }
 
     public void ClearAll()
