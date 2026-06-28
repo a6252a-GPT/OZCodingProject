@@ -134,9 +134,8 @@ public partial class CardUI
         remainingRerollCount = Mathf.Max(0, remainingRerollCount - 1); // 리롤 1회 소비
         StopAutoSelect(); // 재생성 중 자동 선택 중지
         ClearSpawnedCards(); // 현재 후보 제거
-        SpawnCardsForCurrentPhase(); // 같은 단계의 선택지만 다시 생성
+        SpawnCardsForCurrentPhase();
         RefreshRerollUi();
-        TryStartAutoSelect(); // 자동궤도면 새 후보 기준 자동선택 재시작
     }
 
     private void PlayRerollButtonClickTween()

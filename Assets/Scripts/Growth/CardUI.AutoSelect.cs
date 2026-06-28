@@ -1,41 +1,45 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 using DG.Tweening;
 using TeamProject01.Gameplay;
-using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 public partial class CardUI
 {
-    // 안건준 추가 - 0622 ======
-    // 자동모드 카드 자동선택 ─────────────────────────────────────────────────
+    internal bool IsAutoSelectInProgress => autoSelectRoutine != null;
+
+    private bool pendingAutoSelectSegmentAction;
+    private bool pendingAutoSelectCanAdd;
+    private bool pendingAutoSelectCanLevelUp;
+
+    internal void ScheduleAutoSelectSegmentAction(bool canAdd, bool canLevelUp)
+    {
+        pendingAutoSelectSegmentAction = true;
+        pendingAutoSelectCanAdd = canAdd;
+        pendingAutoSelectCanLevelUp = canLevelUp;
+    }
 
     private void TryStartAutoSelect()
     {
         if (activePanelMode != CardPanelMode.LevelUp)
         {
-            return; // 보상 선택/선택권 화면은 직접 선택 유지
+            return;
         }
 
         if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
         {
-            return; // 자동모드가 아니거나 기능 꺼짐
+            return;
         }
 
         StopAutoSelect();
         autoSelectRoutine = StartCoroutine(AutoSelectRoutine());
     }
 
-    // 안건준 추가 - 0622 : 세그먼트 추가/레벨업 2차 카드 자동선택
     private void TryStartAutoSelectSegmentAction(bool canAdd, bool canLevelUp)
     {
         if (activePanelMode != CardPanelMode.LevelUp)
         {
-            return; // 선택권으로 열린 세그먼트 선택은 자동선택하지 않음
+            return;
         }
 
         if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
@@ -56,16 +60,109 @@ public partial class CardUI
         }
     }
 
+    private void TryStartAutoSelectAfterSpawn()
+    {
+        if (activePanelMode != CardPanelMode.LevelUp)
+        {
+            return;
+        }
+
+        if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
+        {
+            return;
+        }
+
+        if (pendingAutoSelectSegmentAction)
+        {
+            pendingAutoSelectSegmentAction = false;
+            TryStartAutoSelectSegmentAction(pendingAutoSelectCanAdd, pendingAutoSelectCanLevelUp);
+            return;
+        }
+
+        TryStartAutoSelect();
+    }
+
     private IEnumerator AutoSelectRoutine()
     {
-        // 안건준 추가 - 0622 : WaitForSecondsRealtime — timeScale = 0 상태에서도 작동
-        float waitTime = 0.4f + autoSelectDelay;
-        yield return new WaitForSecondsRealtime(waitTime);
+        yield return WaitForClickableCards(3f);
+        yield return new WaitForSecondsRealtime(autoSelectDelay);
 
-        if (isProcessingSelection || spawnedCards == null || spawnedCards.Count == 0)
+        if (!TryPickAutoSelectCard(out SpawnedCardEntry picked))
         {
             autoSelectRoutine = null;
             yield break;
+        }
+
+        ResetAllCardHoverForAutoSelect();
+        yield return null;
+
+        NotifySpawnedCardClicked(picked);
+        autoSelectRoutine = null;
+    }
+
+    private IEnumerator AutoSelectSegmentActionRoutine(bool canAdd, bool canLevelUp)
+    {
+        yield return WaitForClickableCards(3f);
+        yield return new WaitForSecondsRealtime(autoSelectDelay);
+
+        if (!TryPickAutoSelectSegmentActionCard(canAdd, canLevelUp, out SpawnedCardEntry picked))
+        {
+            autoSelectRoutine = null;
+            yield break;
+        }
+
+        ResetAllCardHoverForAutoSelect();
+        yield return null;
+
+        NotifySpawnedCardClicked(picked);
+        autoSelectRoutine = null;
+    }
+
+    private IEnumerator WaitForClickableCards(float timeoutSeconds)
+    {
+        float deadline = Time.unscaledTime + timeoutSeconds;
+        while (Time.unscaledTime < deadline)
+        {
+            if (isProcessingSelection)
+            {
+                yield break;
+            }
+
+            if (CountClickableSelectableCards() > 0)
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
+    private int CountClickableSelectableCards()
+    {
+        if (spawnedCards == null)
+        {
+            return 0;
+        }
+
+        int count = 0;
+        for (int i = 0; i < spawnedCards.Count; i++)
+        {
+            SpawnedCardEntry card = spawnedCards[i];
+            if (card != null && card.CanSelect && card.IsClickable)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private bool TryPickAutoSelectCard(out SpawnedCardEntry picked)
+    {
+        picked = null;
+        if (isProcessingSelection || spawnedCards == null || spawnedCards.Count == 0)
+        {
+            return false;
         }
 
         List<SpawnedCardEntry> selectable = new List<SpawnedCardEntry>();
@@ -80,33 +177,21 @@ public partial class CardUI
 
         if (selectable.Count == 0)
         {
-            autoSelectRoutine = null;
-            yield break;
+            return false;
         }
 
-        // 안건준 수정 - 0622 : 랜덤 → 최고 등급 우선 선택
-        SpawnedCardEntry picked = PickHighestTierCard(selectable);
-
-        NotifySpawnedCardPointerEnter(picked);
-        yield return new WaitForSecondsRealtime(0.2f);
-
-        NotifySpawnedCardClicked(picked);
-        autoSelectRoutine = null;
+        picked = PickHighestTierCard(selectable);
+        return picked != null;
     }
 
-    // 안건준 추가 - 0622 : 추가/레벨업 2차 카드 자동선택 — 선택 불가 카드 제외 후 랜덤
-    private IEnumerator AutoSelectSegmentActionRoutine(bool canAdd, bool canLevelUp)
+    private bool TryPickAutoSelectSegmentActionCard(bool canAdd, bool canLevelUp, out SpawnedCardEntry picked)
     {
-        // 카드 등장 연출 대기
-        yield return new WaitForSecondsRealtime(0.4f + autoSelectDelay);
-
+        picked = null;
         if (isProcessingSelection || spawnedCards == null || spawnedCards.Count == 0)
         {
-            autoSelectRoutine = null;
-            yield break;
+            return false;
         }
 
-        // 선택 가능한 카드만 수집 (CanSelect 기준 — 레벨업 불가면 LevelUpAction이 CanSelect=false)
         List<SpawnedCardEntry> selectable = new List<SpawnedCardEntry>();
         for (int i = 0; i < spawnedCards.Count; i++)
         {
@@ -116,9 +201,6 @@ public partial class CardUI
                 continue;
             }
 
-            // 추가만 가능한 경우 AddAction만 허용
-            // 레벨업만 가능한 경우 LevelUpAction만 허용
-            // 둘 다 가능한 경우 둘 다 허용
             bool isAdd = card.SegmentRole == SegmentCardRole.AddAction;
             bool isLevelUp = card.SegmentRole == SegmentCardRole.LevelUpAction;
 
@@ -132,27 +214,52 @@ public partial class CardUI
             }
             else if (!isAdd && !isLevelUp && card.CanSelect)
             {
-                selectable.Add(card); // 기타 선택 가능 카드 fallback
+                selectable.Add(card);
             }
         }
 
         if (selectable.Count == 0)
         {
-            autoSelectRoutine = null;
-            yield break;
+            return false;
         }
 
-        // 안건준 수정 - 0622 : 랜덤 → 최고 등급 우선 선택
-        SpawnedCardEntry picked = PickHighestTierCard(selectable);
-
-        NotifySpawnedCardPointerEnter(picked);
-        yield return new WaitForSecondsRealtime(0.2f);
-
-        NotifySpawnedCardClicked(picked);
-        autoSelectRoutine = null;
+        picked = PickHighestTierCard(selectable);
+        return picked != null;
     }
 
-    // 안건준 추가 - 0622 : 카드 등급(티어) 반환 — 스탯/무기강화는 실제 등급, 세그먼트 계열은 Normal
+    private void ResetAllCardHoverForAutoSelect()
+    {
+        if (spawnedCards == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < spawnedCards.Count; i++)
+        {
+            SpawnedCardEntry card = spawnedCards[i];
+            if (card == null)
+            {
+                continue;
+            }
+
+            card.IsPointerOver = false;
+            card.HasTooltipPointer = false;
+            card.IsHoverVisualActive = false;
+            HideCardHoverTooltip(card, true);
+
+            if (card.RootTransform != null)
+            {
+                card.RootTransform.DOKill();
+                card.RootTransform.localScale = card.OriginalScale;
+            }
+
+            if (card.Root != null)
+            {
+                cardEffect?.OnCardHoverExit(card.Root);
+            }
+        }
+    }
+
     private StatUpgrade.StatCardTier GetCardTier(SpawnedCardEntry entry)
     {
         if (entry == null)
@@ -162,32 +269,31 @@ public partial class CardUI
 
         if (entry.SegmentRole == SegmentCardRole.EnhanceChoice)
         {
-            return entry.WeaponEnhancementTier; // 무기 강화 카드 등급
+            return entry.WeaponEnhancementTier;
         }
 
         if (entry.RewardChoice != RewardChoiceKind.None)
         {
-            return entry.RewardTier; // 보상 선택 카드 등급
+            return entry.RewardTier;
         }
 
         if (entry.StatUpgrade != null)
         {
-            return entry.StatUpgrade.CurrentTier; // 스탯 카드 등급
+            return entry.StatUpgrade.CurrentTier;
         }
 
-        return StatUpgrade.StatCardTier.Normal; // 세그먼트 추가/레벨업 등 등급 없는 카드
+        return StatUpgrade.StatCardTier.Normal;
     }
 
-    // 안건준 추가 - 0622 : 후보 목록에서 가장 높은 등급의 카드를 반환 — 동급이면 랜덤
     private SpawnedCardEntry PickHighestTierCard(List<SpawnedCardEntry> candidates)
     {
         StatUpgrade.StatCardTier best = StatUpgrade.StatCardTier.Normal;
         for (int i = 0; i < candidates.Count; i++)
         {
-            StatUpgrade.StatCardTier t = GetCardTier(candidates[i]);
-            if (t > best)
+            StatUpgrade.StatCardTier tier = GetCardTier(candidates[i]);
+            if (tier > best)
             {
-                best = t;
+                best = tier;
             }
         }
 

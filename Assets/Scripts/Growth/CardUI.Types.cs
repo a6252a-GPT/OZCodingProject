@@ -203,16 +203,31 @@ public partial class CardUI
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerEnter(entry, eventData);
         }
 
         public void OnPointerMove(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerMove(entry, eventData);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            if (manager != null && manager.IsAutoSelectInProgress)
+            {
+                return;
+            }
+
             manager?.NotifySpawnedCardPointerExit(entry);
         }
     }
