@@ -4471,83 +4471,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!1 &123862162
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 123862163}
-  - component: {fileID: 123862164}
-  m_Layer: 0
-  m_Name: BonusChestWaveSpawner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &123862163
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 123862162}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1272370754}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &123862164
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 123862162}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 507c5f14e33eb7e46958a088a9bf391d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.BonusChestWaveSpawner
-  chestPrefab: {fileID: -2797154915781816065, guid: 511198219d384134c8311337315ae660, type: 3}
-  chestRoot: {fileID: 0}
-  spawnAroundConvoy: 1
-  fallbackCenter: {fileID: 0}
-  minSpawnRadius: 20
-  maxSpawnRadius: 30
-  groundHeightOffset: 0
-  minChestSpacing: 14
-  spawnPositionRetryCount: 16
-  chestSpawnCount: 6
-  allowOnlyOneChoice: 1
-  unselectedChestDestroyDelay: 0.2
-  maxHighGradeCount: 2
-  blockLevel2WhenLevel3Appears: 0
-  chestGrades:
-  - displayName: "Lv1 \uC77C\uBC18 \uC0C1\uC790"
-    prefab: {fileID: -2797154915781816065, guid: 511198219d384134c8311337315ae660, type: 3}
-    chancePercent: 0
-    overrideRewardChoiceTierChanceBonus: 0
-    rewardChoiceRareChanceBonusPercent: 0
-    rewardChoiceUniqueChanceBonusPercent: 0
-  - displayName: "Lv2 \uD76C\uADC0 \uC0C1\uC790"
-    prefab: {fileID: 3466024493924604102, guid: 21e1a44ae31baec42bce7d17f5ff3d6f, type: 3}
-    chancePercent: 50
-    overrideRewardChoiceTierChanceBonus: 0
-    rewardChoiceRareChanceBonusPercent: 0
-    rewardChoiceUniqueChanceBonusPercent: 0
-  - displayName: "Lv3 \uACE0\uAE09 \uC0C1\uC790"
-    prefab: {fileID: -4449904733654359422, guid: 69beb7d8398acdb44b9866760561cce2, type: 3}
-    chancePercent: 50
-    overrideRewardChoiceTierChanceBonus: 0
-    rewardChoiceRareChanceBonusPercent: 0
-    rewardChoiceUniqueChanceBonusPercent: 0
 --- !u!1001 &126192914
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7187,6 +7110,42 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4154338043968197655, guid: 922b7080113cbd34d8b277e8b5b6ad62, type: 3}
   m_PrefabInstance: {fileID: 1472776165178730297}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &199831796
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 199831797}
+  m_Layer: 0
+  m_Name: WaveSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &199831797
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 199831796}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 495582049}
+  - {fileID: 703319736}
+  - {fileID: 2022528515}
+  - {fileID: 566683164}
+  - {fileID: 610403981}
+  m_Father: {fileID: 1087132220}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &201118261
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7500,149 +7459,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7125543862522947445, guid: 736b0c0f991c81d4fb83b87e30192270, type: 3}
   m_PrefabInstance: {fileID: 209026225}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &213885078
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 213885079}
-  - component: {fileID: 213885080}
-  m_Layer: 0
-  m_Name: EliteMixController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &213885079
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 213885078}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1272370754}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &213885080
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 213885078}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2bf2db354564bea45b7cd34227a91701, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EliteMixController
-  eliteRatioSteps:
-  - startStage: 6
-    eliteRatioPercent: 10
-  - startStage: 12
-    eliteRatioPercent: 20
-  - startStage: 18
-    eliteRatioPercent: 30
-  eliteCompositions:
-  - compositionId: E01
-    minStage: 6
-    weight: 18
-    combinationType: "\uC810\uD504+\uC790\uD3ED"
-    elites:
-    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
-      ratioPercent: 70
-    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
-      ratioPercent: 30
-  - compositionId: E02
-    minStage: 6
-    weight: 16
-    combinationType: "\uC790\uD3ED+\uC810\uD504"
-    elites:
-    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
-      ratioPercent: 30
-    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
-      ratioPercent: 70
-  - compositionId: E03
-    minStage: 8
-    weight: 14
-    combinationType: "\uC131\uC7A5+\uC2AC\uB85C\uC6B0"
-    elites:
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
-      ratioPercent: 30
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      ratioPercent: 70
-  - compositionId: E04
-    minStage: 12
-    weight: 12
-    combinationType: "\uC131\uC7A5+\uC7A5\uC560\uBB3C"
-    elites:
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      ratioPercent: 30
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      ratioPercent: 70
-  - compositionId: E05
-    minStage: 16
-    weight: 10
-    combinationType: "\uC7A5\uC560\uBB3C+\uC2AC\uB85C\uC6B0"
-    elites:
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      ratioPercent: 30
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
-      ratioPercent: 70
-  - compositionId: E06
-    minStage: 15
-    weight: 9
-    combinationType: "\uB9C8\uBC95+\uC790\uD3ED"
-    elites:
-    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
-      ratioPercent: 30
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      ratioPercent: 70
-  - compositionId: E07
-    minStage: 18
-    weight: 8
-    combinationType: "\uC808\uB2E8+\uC131\uC7A5"
-    elites:
-    - prefab: {fileID: 5342407866216693720, guid: 65b75a732e1e5d844a4d9aeeaa5a0c6c, type: 3}
-      ratioPercent: 30
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      ratioPercent: 70
-  - compositionId: E08
-    minStage: 20
-    weight: 7
-    combinationType: "\uD3EC\uD0C8+\uC131\uC7A5+\uBC29\uC5B4"
-    elites:
-    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
-      ratioPercent: 10
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      ratioPercent: 60
-    - prefab: {fileID: 9194778320841374434, guid: e1261b4e636b2b040884415fbe7c845b, type: 3}
-      ratioPercent: 30
-  - compositionId: E09
-    minStage: 24
-    weight: 6
-    combinationType: "\uD3EC\uD0C8+\uC7A5\uC560\uBB3C+\uBC29\uC5B4"
-    elites:
-    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
-      ratioPercent: 10
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      ratioPercent: 60
-    - prefab: {fileID: 9194778320841374434, guid: e1261b4e636b2b040884415fbe7c845b, type: 3}
-      ratioPercent: 30
-  checkAliveEliteCombinations: 1
-  blockedEliteCombinations:
-  - combinationA: "\uD3EC\uD0C8+\uC131\uC7A5+\uBC29\uC5B4"
-    combinationB: "\uB9C8\uBC95+\uC790\uD3ED"
-  - combinationA: "\uB9C8\uBC95+\uC790\uD3ED"
-    combinationB: "\uD3EC\uD0C8+\uC7A5\uC560\uBB3C+\uBC29\uC5B4"
 --- !u!1 &214969438
 GameObject:
   m_ObjectHideFlags: 0
@@ -15991,6 +15807,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5466109866394844696, guid: 937e83a7deec7b44189ea214d39d7d99, type: 3}
   m_PrefabInstance: {fileID: 494492232}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &495582048
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 495582049}
+  - component: {fileID: 495582050}
+  m_Layer: 0
+  m_Name: WaveController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &495582049
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 495582048}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 199831797}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &495582050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 495582048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d48c88243dfe4ac69349ca4c29bf154c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WaveController
+  autoStart: 1
+  startStage: 1
+  stageDurationSeconds: 40
+  advanceWhenAllMonstersCleared: 1
+  clearCheckDelaySeconds: 1
+  enemySpawner: {fileID: 600374184}
+  disableSpawnerStageRulesUpdate: 1
+  normalWaveSpawner: {fileID: 703319737}
+  eliteMixController: {fileID: 2022528516}
+  bossWaveController: {fileID: 566683165}
+  bonusChestWaveSpawner: {fileID: 610403982}
+  enableSpecialWaveExtension: 0
+  specialWaveController: {fileID: 0}
 --- !u!1001 &497877477
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17824,69 +17697,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5696358228615099455, guid: fd1d4d60645514641bea47de68691877, type: 3}
   m_PrefabInstance: {fileID: 556769513}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &556965378
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 556965379}
-  - component: {fileID: 556965380}
-  m_Layer: 0
-  m_Name: BossWaveController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &556965379
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 556965378}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1272370754}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &556965380
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 556965378}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 25fea55fe55654945ace8033622e4041, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.BossWaveController
-  enemySpawner: {fileID: 0}
-  bonusChestWaveSpawner: {fileID: 123862164}
-  enableBossWave: 1
-  bossStartStage: 20
-  bossIntervalStage: 15
-  blockAdditionalBossWhileAlive: 1
-  spawnChestAfterBossClear: 1
-  pauseNormalSpawnWhileBossAlive: 1
-  endBossStageOnBossClear: 1
-  bossSequence:
-  - bossId: B01
-    displayName: "\uCD08\uBC18 \uBCF4\uC2A4"
-    prefab: {fileID: 824607774837057934, guid: 94fe31a0770c6fa479eff15faa1be3e1, type: 3}
-  enableBossCombination: 0
-  bossCombinationStartStage: 60
-  bossCombinations:
-  - combinationId: BC01
-    displayName: "\uBCF4\uC2A4 \uC870\uD569"
-    bosses: []
 --- !u!1 &558261778
 GameObject:
   m_ObjectHideFlags: 0
@@ -18250,6 +18060,69 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3127234523182447554, guid: b28a8aeace643a846a95ed1f40482e1c, type: 3}
   m_PrefabInstance: {fileID: 564250587}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &566683163
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 566683164}
+  - component: {fileID: 566683165}
+  m_Layer: 0
+  m_Name: BossWaveController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &566683164
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566683163}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 199831797}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &566683165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 566683163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25fea55fe55654945ace8033622e4041, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.BossWaveController
+  enemySpawner: {fileID: 0}
+  bonusChestWaveSpawner: {fileID: 610403982}
+  enableBossWave: 1
+  bossStartStage: 20
+  bossIntervalStage: 15
+  blockAdditionalBossWhileAlive: 1
+  spawnChestAfterBossClear: 1
+  pauseNormalSpawnWhileBossAlive: 1
+  endBossStageOnBossClear: 1
+  bossSequence:
+  - bossId: B01
+    displayName: "\uCD08\uBC18 \uBCF4\uC2A4"
+    prefab: {fileID: 824607774837057934, guid: 94fe31a0770c6fa479eff15faa1be3e1, type: 3}
+  enableBossCombination: 0
+  bossCombinationStartStage: 60
+  bossCombinations:
+  - combinationId: BC01
+    displayName: "\uBCF4\uC2A4 \uC870\uD569"
+    bosses: []
 --- !u!1001 &567211899
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18913,6 +18786,8 @@ MonoBehaviour:
   rowSpacing: 5
   spawnGroundHeight: 0.72
   maxActiveMonsters: 120
+  useWaveMaxActiveMonsterLimit: 1
+  waveMaxActiveMonsters: 3000
   firstSpawnDelay: 1
   stageRules:
   - stageName: Stage 1
@@ -19073,6 +18948,83 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5466109866394844696, guid: 937e83a7deec7b44189ea214d39d7d99, type: 3}
   m_PrefabInstance: {fileID: 600691106}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &610403980
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 610403981}
+  - component: {fileID: 610403982}
+  m_Layer: 0
+  m_Name: BonusChestWaveSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &610403981
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 610403980}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 199831797}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &610403982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 610403980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 507c5f14e33eb7e46958a088a9bf391d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.BonusChestWaveSpawner
+  chestPrefab: {fileID: -2797154915781816065, guid: 511198219d384134c8311337315ae660, type: 3}
+  chestRoot: {fileID: 0}
+  spawnAroundConvoy: 1
+  fallbackCenter: {fileID: 0}
+  minSpawnRadius: 20
+  maxSpawnRadius: 30
+  groundHeightOffset: 0
+  minChestSpacing: 14
+  spawnPositionRetryCount: 16
+  chestSpawnCount: 6
+  allowOnlyOneChoice: 1
+  unselectedChestDestroyDelay: 0.2
+  maxHighGradeCount: 2
+  blockLevel2WhenLevel3Appears: 0
+  chestGrades:
+  - displayName: "Lv1 \uC77C\uBC18 \uC0C1\uC790"
+    prefab: {fileID: -2797154915781816065, guid: 511198219d384134c8311337315ae660, type: 3}
+    chancePercent: 0
+    overrideRewardChoiceTierChanceBonus: 0
+    rewardChoiceRareChanceBonusPercent: 0
+    rewardChoiceUniqueChanceBonusPercent: 0
+  - displayName: "Lv2 \uD76C\uADC0 \uC0C1\uC790"
+    prefab: {fileID: 3466024493924604102, guid: 21e1a44ae31baec42bce7d17f5ff3d6f, type: 3}
+    chancePercent: 50
+    overrideRewardChoiceTierChanceBonus: 0
+    rewardChoiceRareChanceBonusPercent: 0
+    rewardChoiceUniqueChanceBonusPercent: 0
+  - displayName: "Lv3 \uACE0\uAE09 \uC0C1\uC790"
+    prefab: {fileID: -4449904733654359422, guid: 69beb7d8398acdb44b9866760561cce2, type: 3}
+    chancePercent: 50
+    overrideRewardChoiceTierChanceBonus: 0
+    rewardChoiceRareChanceBonusPercent: 0
+    rewardChoiceUniqueChanceBonusPercent: 0
 --- !u!1 &610915527
 GameObject:
   m_ObjectHideFlags: 0
@@ -21673,6 +21625,149 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3358555226883187598, guid: cd7172d7069989f45b57c116334b9832, type: 3}
   m_PrefabInstance: {fileID: 1766425995}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &703319735
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 703319736}
+  - component: {fileID: 703319737}
+  m_Layer: 0
+  m_Name: NormalWaveSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &703319736
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 703319735}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 199831797}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &703319737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 703319735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33127e94bb9852c498421e5433dc8d35, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.NormalWaveSpawner
+  enemySpawner: {fileID: 0}
+  baseSpawnCount: 40
+  spawnScaleSteps:
+  - startStage: 1
+    spawnScalePercent: 100
+  - startStage: 5
+    spawnScalePercent: 150
+  - startStage: 8
+    spawnScalePercent: 220
+  - startStage: 12
+    spawnScalePercent: 350
+  - startStage: 16
+    spawnScalePercent: 550
+  - startStage: 20
+    spawnScalePercent: 800
+  - startStage: 25
+    spawnScalePercent: 1200
+  - startStage: 30
+    spawnScalePercent: 1600
+  - startStage: 35
+    spawnScalePercent: 2100
+  - startStage: 40
+    spawnScalePercent: 2500
+  difficultyScaleSteps:
+  - startStage: 1
+    healthScalePercent: 100
+    moveSpeedScalePercent: 100
+    nexusDamageScalePercent: 100
+  - startStage: 8
+    healthScalePercent: 105
+    moveSpeedScalePercent: 104
+    nexusDamageScalePercent: 100
+  - startStage: 12
+    healthScalePercent: 110
+    moveSpeedScalePercent: 107
+    nexusDamageScalePercent: 100
+  - startStage: 15
+    healthScalePercent: 115
+    moveSpeedScalePercent: 110
+    nexusDamageScalePercent: 100
+  - startStage: 18
+    healthScalePercent: 120
+    moveSpeedScalePercent: 112
+    nexusDamageScalePercent: 100
+  - startStage: 20
+    healthScalePercent: 130
+    moveSpeedScalePercent: 115
+    nexusDamageScalePercent: 110
+  - startStage: 25
+    healthScalePercent: 145
+    moveSpeedScalePercent: 118
+    nexusDamageScalePercent: 110
+  - startStage: 30
+    healthScalePercent: 160
+    moveSpeedScalePercent: 121
+    nexusDamageScalePercent: 120
+  - startStage: 35
+    healthScalePercent: 180
+    moveSpeedScalePercent: 124
+    nexusDamageScalePercent: 120
+  - startStage: 40
+    healthScalePercent: 200
+    moveSpeedScalePercent: 127
+    nexusDamageScalePercent: 130
+  normalCompositions:
+  - compositionId: N01
+    displayName: "\uAE30\uBCF8 \uADFC\uC811"
+    minStage: 1
+    weight: 80
+    monsters:
+    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+      ratioPercent: 60
+    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
+      ratioPercent: 40
+  - compositionId: N02
+    displayName: "\uADFC\uC811+\uC6D0\uAC70\uB9AC"
+    minStage: 1
+    weight: 20
+    monsters:
+    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
+      ratioPercent: 60
+    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
+      ratioPercent: 40
+    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
+      ratioPercent: 10
+  spawnWindowPercent: 40
+  spawnBatchCount: 4
+  batchGateCount: 2
+  earlyGateCount: 2
+  midGateStartStage: 10
+  midGateCount: 4
+  lateGateStartStage: 20
+  lateGateCount: 8
+  frontRowCount: 7
+  useCongestionPush: 0
+  congestionCheckRadius: 8
+  congestionMonsterThreshold: 12
+  congestionPushDistance: 5
+  congestionMaxPushDistance: 20
 --- !u!1001 &704587936
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -33109,7 +33204,7 @@ Transform:
   - {fileID: 413415196}
   - {fileID: 623680078}
   - {fileID: 961320357}
-  - {fileID: 1272370754}
+  - {fileID: 199831797}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1087513297
@@ -38853,42 +38948,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 33119423}
   m_LocalEulerAnglesHint: {x: 0, y: 135, z: 0}
---- !u!1 &1272370753
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1272370754}
-  m_Layer: 0
-  m_Name: WaveSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1272370754
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1272370753}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2116130058}
-  - {fileID: 1991012899}
-  - {fileID: 213885079}
-  - {fileID: 556965379}
-  - {fileID: 123862163}
-  m_Father: {fileID: 1087132220}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1274873098
 GameObject:
   m_ObjectHideFlags: 0
@@ -45805,6 +45864,7 @@ MonoBehaviour:
   selectionPanelCloseFadeSeconds: 0.15
   levelUpPanelCanvasGroup: {fileID: 1527344714}
   levelUpUi: {fileID: 1527344713}
+  ownedSegmentChoiceGuaranteeChance: 0.5
   useSegmentSelectWeaponEnhanceFlow: 0
   weaponEnhanceSegmentBaseWeight: 100
   weaponEnhanceSegmentWeightPerOwned: 50
@@ -59233,138 +59293,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1988281793}
   m_CullTransparentMesh: 1
---- !u!1 &1991012898
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1991012899}
-  - component: {fileID: 1991012900}
-  m_Layer: 0
-  m_Name: NormalWaveSpawner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1991012899
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1991012898}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1272370754}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1991012900
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1991012898}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 33127e94bb9852c498421e5433dc8d35, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.NormalWaveSpawner
-  enemySpawner: {fileID: 0}
-  baseSpawnCount: 30
-  spawnScaleSteps:
-  - startStage: 1
-    spawnScalePercent: 100
-  - startStage: 6
-    spawnScalePercent: 120
-  - startStage: 12
-    spawnScalePercent: 130
-  - startStage: 18
-    spawnScalePercent: 140
-  difficultyScaleSteps:
-  - startStage: 1
-    healthScalePercent: 100
-    moveSpeedScalePercent: 100
-    nexusDamageScalePercent: 100
-  - startStage: 8
-    healthScalePercent: 105
-    moveSpeedScalePercent: 104
-    nexusDamageScalePercent: 100
-  - startStage: 12
-    healthScalePercent: 110
-    moveSpeedScalePercent: 107
-    nexusDamageScalePercent: 100
-  - startStage: 15
-    healthScalePercent: 115
-    moveSpeedScalePercent: 110
-    nexusDamageScalePercent: 100
-  - startStage: 18
-    healthScalePercent: 120
-    moveSpeedScalePercent: 112
-    nexusDamageScalePercent: 100
-  - startStage: 20
-    healthScalePercent: 130
-    moveSpeedScalePercent: 115
-    nexusDamageScalePercent: 110
-  - startStage: 25
-    healthScalePercent: 145
-    moveSpeedScalePercent: 118
-    nexusDamageScalePercent: 110
-  - startStage: 30
-    healthScalePercent: 160
-    moveSpeedScalePercent: 121
-    nexusDamageScalePercent: 120
-  - startStage: 35
-    healthScalePercent: 180
-    moveSpeedScalePercent: 124
-    nexusDamageScalePercent: 120
-  - startStage: 40
-    healthScalePercent: 200
-    moveSpeedScalePercent: 127
-    nexusDamageScalePercent: 130
-  normalCompositions:
-  - compositionId: N01
-    displayName: "\uAE30\uBCF8 \uADFC\uC811"
-    minStage: 1
-    weight: 100
-    monsters:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      ratioPercent: 100
-  - compositionId: N02
-    displayName: "\uADFC\uC811 \uC11E\uAE30"
-    minStage: 3
-    weight: 80
-    monsters:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      ratioPercent: 70
-    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      ratioPercent: 30
-  - compositionId: N03
-    displayName: "\uADFC\uC811 + \uC6D0\uAC70\uB9AC"
-    minStage: 5
-    weight: 70
-    monsters:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      ratioPercent: 65
-    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
-      ratioPercent: 20
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      ratioPercent: 15
-  spawnWindowPercent: 40
-  spawnBatchCount: 4
-  earlyGateCount: 2
-  midGateStartStage: 10
-  midGateCount: 4
-  lateGateStartStage: 20
-  lateGateCount: 8
-  frontRowCount: 5
 --- !u!1001 &1993162383
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -60728,6 +60656,151 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2022137910}
   m_CullTransparentMesh: 1
+--- !u!1 &2022528514
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2022528515}
+  - component: {fileID: 2022528516}
+  m_Layer: 0
+  m_Name: EliteMixController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2022528515
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2022528514}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 199831797}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2022528516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2022528514}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bf2db354564bea45b7cd34227a91701, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EliteMixController
+  eliteRatioSteps:
+  - startStage: 6
+    eliteRatioPercent: 5
+  - startStage: 12
+    eliteRatioPercent: 8
+  - startStage: 18
+    eliteRatioPercent: 10
+  - startStage: 18
+    eliteRatioPercent: 20
+  eliteCompositions:
+  - compositionId: E01
+    minStage: 6
+    weight: 18
+    combinationType: "\uC810\uD504+\uC790\uD3ED"
+    elites:
+    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
+      ratioPercent: 70
+    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
+      ratioPercent: 30
+  - compositionId: E02
+    minStage: 6
+    weight: 16
+    combinationType: "\uC790\uD3ED+\uC810\uD504"
+    elites:
+    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
+      ratioPercent: 70
+  - compositionId: E03
+    minStage: 8
+    weight: 14
+    combinationType: "\uC131\uC7A5+\uC2AC\uB85C\uC6B0"
+    elites:
+    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 70
+  - compositionId: E04
+    minStage: 12
+    weight: 12
+    combinationType: "\uC131\uC7A5+\uC7A5\uC560\uBB3C"
+    elites:
+    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 70
+  - compositionId: E05
+    minStage: 16
+    weight: 10
+    combinationType: "\uC7A5\uC560\uBB3C+\uC2AC\uB85C\uC6B0"
+    elites:
+    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
+      ratioPercent: 70
+  - compositionId: E06
+    minStage: 15
+    weight: 9
+    combinationType: "\uB9C8\uBC95+\uC790\uD3ED"
+    elites:
+    - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
+      ratioPercent: 70
+  - compositionId: E07
+    minStage: 18
+    weight: 8
+    combinationType: "\uC808\uB2E8+\uC131\uC7A5"
+    elites:
+    - prefab: {fileID: 5342407866216693720, guid: 65b75a732e1e5d844a4d9aeeaa5a0c6c, type: 3}
+      ratioPercent: 30
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 70
+  - compositionId: E08
+    minStage: 20
+    weight: 7
+    combinationType: "\uD3EC\uD0C8+\uC131\uC7A5+\uBC29\uC5B4"
+    elites:
+    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
+      ratioPercent: 10
+    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      ratioPercent: 60
+    - prefab: {fileID: 9194778320841374434, guid: e1261b4e636b2b040884415fbe7c845b, type: 3}
+      ratioPercent: 30
+  - compositionId: E09
+    minStage: 24
+    weight: 6
+    combinationType: "\uD3EC\uD0C8+\uC7A5\uC560\uBB3C+\uBC29\uC5B4"
+    elites:
+    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
+      ratioPercent: 10
+    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
+      ratioPercent: 60
+    - prefab: {fileID: 9194778320841374434, guid: e1261b4e636b2b040884415fbe7c845b, type: 3}
+      ratioPercent: 30
+  checkAliveEliteCombinations: 1
+  blockedEliteCombinations:
+  - combinationA: "\uD3EC\uD0C8+\uC131\uC7A5+\uBC29\uC5B4"
+    combinationB: "\uB9C8\uBC95+\uC790\uD3ED"
+  - combinationA: "\uB9C8\uBC95+\uC790\uD3ED"
+    combinationB: "\uD3EC\uD0C8+\uC7A5\uC560\uBB3C+\uBC29\uC5B4"
 --- !u!1001 &2027422290
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -64058,63 +64131,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6355364947706921436, guid: 832b5023130e23243b099c45edef9434, type: 3}
   m_PrefabInstance: {fileID: 2113817890}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &2116130057
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2116130058}
-  - component: {fileID: 2116130059}
-  m_Layer: 0
-  m_Name: WaveController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2116130058
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2116130057}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1272370754}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2116130059
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2116130057}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d48c88243dfe4ac69349ca4c29bf154c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WaveController
-  autoStart: 1
-  startStage: 1
-  stageDurationSeconds: 40
-  advanceWhenAllMonstersCleared: 1
-  clearCheckDelaySeconds: 1
-  enemySpawner: {fileID: 600374184}
-  disableSpawnerStageRulesUpdate: 1
-  normalWaveSpawner: {fileID: 1991012900}
-  eliteMixController: {fileID: 213885080}
-  bossWaveController: {fileID: 556965380}
-  bonusChestWaveSpawner: {fileID: 123862164}
-  enableSpecialWaveExtension: 0
-  specialWaveController: {fileID: 0}
 --- !u!1001 &2116435025
 PrefabInstance:
   m_ObjectHideFlags: 0
