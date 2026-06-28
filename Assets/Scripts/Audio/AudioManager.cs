@@ -13,6 +13,8 @@ public class AudioManager : AudioSingleton<AudioManager>
     [Header("SFX List")]
     [SerializeField] private SFXClipData[] sfxClips; //인스펙터에서 등록할 효과음
 
+    private static readonly HashSet<SfxVolumeListener> sfxListeners = new HashSet<SfxVolumeListener>();
+
     private Dictionary<BGMType, BGMClipData> bgmDictionary;
     private Dictionary<SFXType, SFXClipData> sfxDictionary;
 
@@ -21,7 +23,44 @@ public class AudioManager : AudioSingleton<AudioManager>
     private float bgmVolume = 1f;
     private float sfxVolume = 1f;
 
+    public const string BgmVolumePrefKey = "Settings.BGMVolume";
+    public const string SfxVolumePrefKey = "Settings.SFXVolume";
 
+    public float BgmVolume => bgmVolume;
+    public float SfxVolume => sfxVolume;
+
+    public static void RegisterSfxListener(SfxVolumeListener listener)
+    {
+        if (listener == null || !sfxListeners.Add(listener))
+        {
+            return;
+        }
+
+        if (Instance != null)
+        {
+            Instance.ApplyVolumeToListener(listener);
+        }
+    }
+
+    public static void UnregisterSfxListener(SfxVolumeListener listener)
+    {
+        if (listener == null)
+        {
+            return;
+        }
+
+        sfxListeners.Remove(listener);
+    }
+
+    public float GetEffectiveSfxVolume(float localVolume = 1f)
+    {
+        return Mathf.Clamp01(localVolume * sfxVolume * masterVolume);
+    }
+
+
+
+    private float sfxScanAccumulator;
+    private const float SfxScanInterval = 0.25f; // 런타임 생성 AudioSource 탐색 주기 //안건준 추가 - 0628
 
     protected override void Awake()
     {
@@ -42,12 +81,101 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private void Start()
     {
+        LoadVolumePreferences();
         PlayBGMForActiveScene();
+        BindSceneSfxSources(SceneManager.GetActiveScene()); // 첫 씬 SFX 볼륨 연동 //안건준 추가 - 0628
+    }
+
+    private void Update()
+    {
+        sfxScanAccumulator += Time.unscaledDeltaTime;
+        if (sfxScanAccumulator < SfxScanInterval)
+        {
+            return;
+        }
+
+        sfxScanAccumulator = 0f;
+        ScanUnboundSfxSources();
+    }
+
+    private void LoadVolumePreferences()
+    {
+        if (PlayerPrefs.HasKey(BgmVolumePrefKey))
+        {
+            SetBGMVolume(PlayerPrefs.GetFloat(BgmVolumePrefKey));
+        }
+
+        if (PlayerPrefs.HasKey(SfxVolumePrefKey))
+        {
+            SetSFXVolume(PlayerPrefs.GetFloat(SfxVolumePrefKey));
+        }
     }
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         PlayBGMForScene(scene.name);
+        BindSceneSfxSources(scene); // 씬 전환 시 SFX AudioSource 자동 연동 //안건준 추가 - 0628
+    }
+
+    private void BindSceneSfxSources(Scene scene)
+    {
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return;
+        }
+
+        ScanUnboundSfxSources();
+    }
+
+    private void ScanUnboundSfxSources()
+    {
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        bool addedAny = false;
+
+        for (int i = 0; i < sources.Length; i++)
+        {
+            if (TryBindSfxSource(sources[i]))
+            {
+                addedAny = true;
+            }
+        }
+
+        if (addedAny)
+        {
+            ApplySfxVolumeToListeners();
+        }
+    }
+
+    private bool TryBindSfxSource(AudioSource source)
+    {
+        if (source == null || source == bgmSource || source == sfxSource)
+        {
+            return false; // BGM 전용 소스·AudioManager PlaySFX 소스만 제외 //안건준 수정 - 0628
+        }
+
+        if (source.GetComponent<SfxVolumeListener>() != null)
+        {
+            return false;
+        }
+
+        source.gameObject.AddComponent<SfxVolumeListener>();
+        return true;
+    }
+
+    private void ApplySfxVolumeToListeners()
+    {
+        foreach (SfxVolumeListener listener in sfxListeners)
+        {
+            if (listener != null)
+            {
+                ApplyVolumeToListener(listener);
+            }
+        }
+    }
+
+    private void ApplyVolumeToListener(SfxVolumeListener listener)
+    {
+        listener.ApplyVolume(sfxVolume, masterVolume);
     }
 
     private void PlayBGMForActiveScene()
@@ -194,13 +322,16 @@ public class AudioManager : AudioSingleton<AudioManager>
     public void SetSFXVolume(float volume)
     {
         sfxVolume = Mathf.Clamp01(volume);
-        
+        ScanUnboundSfxSources();
+        ApplySfxVolumeToListeners();
     }
 
     //전체 볼륨을 변경
     public void SetMasterVolume(float volume)
     {
         masterVolume = Mathf.Clamp01(volume);
+        UpdateBGMVolume();
+        ApplySfxVolumeToListeners();
     }
     //현재 재생중인 BGM의 볼륨을 계산
     private void UpdateBGMVolume()

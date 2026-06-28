@@ -154,11 +154,24 @@ public class LevelUpUi : MonoBehaviour
         skipPause = false;
     }
 
+    public bool IsPanelOpen => isOpen; // 닫히는 중(페이드) 포함 열림 상태 //안건준 추가 - 0628
+
+    public bool IsPanelVisible => isOpen
+        && panelCanvasGroup != null
+        && panelCanvasGroup.blocksRaycasts
+        && panelCanvasGroup.interactable
+        && panelCanvasGroup.alpha > 0.01f; // 카드 패널 실제 표시 여부 //안건준 추가 - 0628
+
     public void Open()
     {
-        if (isOpen || panelCanvasGroup == null)
+        if (panelCanvasGroup == null)
         {
             return;
+        }
+
+        if (IsPanelVisible)
+        {
+            return; // 이미 열려 있음
         }
 
         isOpen = true;
