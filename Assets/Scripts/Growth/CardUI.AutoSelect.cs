@@ -16,14 +16,9 @@ public partial class CardUI
 
     private void TryStartAutoSelect()
     {
-        if (activePanelMode != CardPanelMode.LevelUp)
+        if (!CanAutoSelectCurrentLevelUpPanel())
         {
-            return; // 보상 선택/선택권 화면은 직접 선택 유지
-        }
-
-        if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
-        {
-            return; // 자동모드가 아니거나 기능 꺼짐
+            return; // 보상/선택권·수동모드·패널 닫힘은 직접 선택 유지
         }
 
         StopAutoSelect();
@@ -33,18 +28,31 @@ public partial class CardUI
     // 안건준 추가 - 0622 : 세그먼트 추가/레벨업 2차 카드 자동선택
     private void TryStartAutoSelectSegmentAction(bool canAdd, bool canLevelUp)
     {
-        if (activePanelMode != CardPanelMode.LevelUp)
+        if (!CanAutoSelectCurrentLevelUpPanel())
         {
             return; // 선택권으로 열린 세그먼트 선택은 자동선택하지 않음
         }
 
-        if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
-        {
-            return;
-        }
-
         StopAutoSelect();
         autoSelectRoutine = StartCoroutine(AutoSelectSegmentActionRoutine(canAdd, canLevelUp));
+    }
+
+    private void TryRestartAutoSelectForCurrentPanel()
+    {
+        if (!spawnedForCurrentOpen || isProcessingSelection)
+        {
+            return; // 아직 카드 생성 전이거나 선택 처리 중
+        }
+
+        TryStartAutoSelect(); // 현재 열린 카드 묶음 기준 재시작
+    }
+
+    private bool CanAutoSelectCurrentLevelUpPanel()
+    {
+        return activePanelMode == CardPanelMode.LevelUp
+            && autoSelectInAutoOrbit
+            && IsAutoOrbitActive()
+            && IsLevelUpPanelOpen(); // 보상/선택권과 수동 선택은 제외
     }
 
     private void StopAutoSelect()
@@ -62,7 +70,10 @@ public partial class CardUI
         float waitTime = 0.4f + autoSelectDelay;
         yield return new WaitForSecondsRealtime(waitTime);
 
-        if (isProcessingSelection || spawnedCards == null || spawnedCards.Count == 0)
+        if (!CanAutoSelectCurrentLevelUpPanel()
+            || isProcessingSelection
+            || spawnedCards == null
+            || spawnedCards.Count == 0)
         {
             autoSelectRoutine = null;
             yield break;
@@ -90,6 +101,12 @@ public partial class CardUI
         NotifySpawnedCardPointerEnter(picked);
         yield return new WaitForSecondsRealtime(0.2f);
 
+        if (!CanAutoSelectCurrentLevelUpPanel() || isProcessingSelection)
+        {
+            autoSelectRoutine = null;
+            yield break;
+        }
+
         NotifySpawnedCardClicked(picked);
         autoSelectRoutine = null;
     }
@@ -100,7 +117,10 @@ public partial class CardUI
         // 카드 등장 연출 대기
         yield return new WaitForSecondsRealtime(0.4f + autoSelectDelay);
 
-        if (isProcessingSelection || spawnedCards == null || spawnedCards.Count == 0)
+        if (!CanAutoSelectCurrentLevelUpPanel()
+            || isProcessingSelection
+            || spawnedCards == null
+            || spawnedCards.Count == 0)
         {
             autoSelectRoutine = null;
             yield break;
@@ -147,6 +167,12 @@ public partial class CardUI
 
         NotifySpawnedCardPointerEnter(picked);
         yield return new WaitForSecondsRealtime(0.2f);
+
+        if (!CanAutoSelectCurrentLevelUpPanel() || isProcessingSelection)
+        {
+            autoSelectRoutine = null;
+            yield break;
+        }
 
         NotifySpawnedCardClicked(picked);
         autoSelectRoutine = null;

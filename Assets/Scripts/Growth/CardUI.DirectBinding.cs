@@ -93,6 +93,7 @@ public partial class CardUI
             {
                 Vector2 slotSize = ResolveCommonCardIconSlotSize(img.rectTransform); // 공통카드 기준 슬롯 크기
                 img.sprite = iconSprite;
+                img.overrideSprite = null;
                 img.enabled = true;
                 img.color = Color.white;
                 img.type = UnityEngine.UI.Image.Type.Simple;

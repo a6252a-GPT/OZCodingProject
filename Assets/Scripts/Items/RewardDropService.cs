@@ -8,7 +8,7 @@ namespace TeamProject01.Gameplay
         private const string ExperiencePickupResourcePath = "RewardPickups/PF_RewardPickup_Exp";
         private const string GoldPickupResourcePath = "RewardPickups/PF_RewardPickup_Gold";
         private const string SegmentChoiceTicketPickupResourcePath = "RewardPickups/PF_RewardPickup_SegmentChoiceTicket";
-        private const string SegmentChoiceTicketFallbackModelResourcePath = "RewardPickups/SegmentChoiceTicketModel/Source_SegmentChoiceTicket/MDL_SegmentChoiceTicket";
+        private const string SegmentChoiceTicketFallbackModelResourcePath = "RewardPickups/SegmentChoiceTicketModel/PF_SegmentChoiceTicketModel";
         private const float MinimumDropSpreadRadius = 1.08f;
 
         public static RewardDropService Active { get; private set; }

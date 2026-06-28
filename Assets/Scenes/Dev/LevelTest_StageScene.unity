@@ -12887,8 +12887,8 @@ MonoBehaviour:
   SpawnSegmentChoiceTicketsOnStart: 1
   StartingSegmentChoiceTicketCount: 3
   StartingSegmentChoiceTicketAmount: 1
-  StartingSegmentChoiceTicketMinRadius: 3.2
-  StartingSegmentChoiceTicketMaxRadius: 6.2
+  StartingSegmentChoiceTicketMinRadius: 6.2
+  StartingSegmentChoiceTicketMaxRadius: 11.2
 --- !u!23 &435910881
 MeshRenderer:
   m_ObjectHideFlags: 0

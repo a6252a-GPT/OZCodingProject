@@ -35,6 +35,7 @@ public partial class CardUI : MonoBehaviour
     private const string TierFrameNormalResourcePath = "LevelCard/TierFrames/CardFrame_Normal";
     private const string TierFrameRareResourcePath = "LevelCard/TierFrames/CardFrame_Rare";
     private const string TierFrameUniqueResourcePath = "LevelCard/TierFrames/CardFrame_Unique";
+    private const string AutoSelectInAutoOrbitPrefsKey = "OZ.CardUI.AutoSelectInAutoOrbit";
 
     [Header("Stat Upgrade")]
     [SerializeField] private GameObject[] statUpgradeCards = System.Array.Empty<GameObject>(); // 스탯 강화 카드 프리팹
@@ -185,8 +186,12 @@ public partial class CardUI : MonoBehaviour
     private Sprite cachedTierFrameRareSprite; // 레어 등급 카드 프레임
     private Sprite cachedTierFrameUniqueSprite; // 유니크 등급 카드 프레임
 
+    public bool AutoSelectInAutoOrbit => autoSelectInAutoOrbit; // HUD 토글 표시용
+    public event System.Action<bool> AutoSelectInAutoOrbitChanged; // HUD 상태 갱신 알림
+
     private void Awake()
     {
+        LoadAutoSelectInAutoOrbitPreference(); // 자동궤도 카드자동 설정 복원
         ResolveManagerReferences(); // 참조 보강
         SetupSegmentListHoverUi(); // 안건준 추가 - 0622 — 호버 브릿지 연결 + 기본 비활성
         SetupRerollUi(); // 마법책 리롤 버튼 연결
@@ -300,6 +305,63 @@ public partial class CardUI : MonoBehaviour
         {
             ResolveLevelUpUi()?.Open();
         }
+    }
+
+    public void ToggleAutoSelectInAutoOrbit()
+    {
+        SetAutoSelectInAutoOrbit(!autoSelectInAutoOrbit, true); // HUD 버튼 토글
+    }
+
+    public void SetAutoSelectInAutoOrbit(bool enabled)
+    {
+        SetAutoSelectInAutoOrbit(enabled, true); // 외부 설정 진입점
+    }
+
+    public void NotifyAutoOrbitActiveChanged(bool active)
+    {
+        if (!active)
+        {
+            StopAutoSelect(); // 자동궤도 종료 즉시 예약 선택 취소
+            return;
+        }
+
+        TryRestartAutoSelectForCurrentPanel(); // 자동궤도 진입 중 열린 카드가 있으면 재시도
+    }
+
+    private void SetAutoSelectInAutoOrbit(bool enabled, bool save)
+    {
+        if (autoSelectInAutoOrbit == enabled)
+        {
+            return; // 변경 없음
+        }
+
+        autoSelectInAutoOrbit = enabled;
+        if (!autoSelectInAutoOrbit)
+        {
+            StopAutoSelect(); // OFF 즉시 예약 선택 취소
+        }
+        else
+        {
+            TryRestartAutoSelectForCurrentPanel(); // 열린 레벨업 카드가 있으면 바로 예약
+        }
+
+        if (save)
+        {
+            PlayerPrefs.SetInt(AutoSelectInAutoOrbitPrefsKey, autoSelectInAutoOrbit ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+
+        AutoSelectInAutoOrbitChanged?.Invoke(autoSelectInAutoOrbit); // HUD 라벨/색 갱신
+    }
+
+    private void LoadAutoSelectInAutoOrbitPreference()
+    {
+        if (!PlayerPrefs.HasKey(AutoSelectInAutoOrbitPrefsKey))
+        {
+            return; // Inspector 기본값 유지
+        }
+
+        autoSelectInAutoOrbit = PlayerPrefs.GetInt(AutoSelectInAutoOrbitPrefsKey, autoSelectInAutoOrbit ? 1 : 0) != 0;
     }
 
     public bool OpenRewardChoice() // 상자 등 외부 보상 선택 진입점

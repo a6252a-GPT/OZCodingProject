@@ -11,9 +11,6 @@ namespace TeamProject01.Gameplay
         private static readonly Color GoldOrbEmissionColor = new Color(0.75f, 0.38f, 0.04f, 1f);
         private static readonly Color ExperienceOrbColor = new Color(0.18f, 1f, 0.36f, 1f);
         private static readonly Color ExperienceOrbEmissionColor = new Color(0.04f, 0.65f, 0.2f, 1f);
-        private static readonly Color SegmentTicketOrbColor = new Color(0.44f, 0.82f, 1f, 1f);
-        private static readonly Color SegmentTicketOrbEmissionColor = new Color(0.12f, 0.38f, 0.95f, 1f);
-
         public RewardPickupKind Kind = RewardPickupKind.Experience; // 보상 종류
         [Min(0)] public int Amount = 1; // 보상 수치
         public Transform ModelRoot; // 회전/둥둥 표시 루트
@@ -397,7 +394,7 @@ namespace TeamProject01.Gameplay
 
         private void ApplySegmentTicketVisualColor()
         {
-            ApplyVisualColor(SegmentTicketOrbColor, SegmentTicketOrbEmissionColor);
+            ClearVisualColorOverride(); // 선택권은 모델 텍스처 색을 그대로 사용
         }
 
         private void ApplyVisualColor(Color baseColor, Color emissionColor)
@@ -425,6 +422,26 @@ namespace TeamProject01.Gameplay
                 visualPropertyBlock.SetColor("_BaseColor", baseColor);
                 visualPropertyBlock.SetColor("_EmissionColor", emissionColor);
                 renderer.SetPropertyBlock(visualPropertyBlock);
+            }
+        }
+
+        private void ClearVisualColorOverride()
+        {
+            MeshRenderer[] renderers = ModelRoot != null
+                ? ModelRoot.GetComponentsInChildren<MeshRenderer>(true)
+                : GetComponentsInChildren<MeshRenderer>(true);
+
+            if (renderers == null || renderers.Length == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] != null)
+                {
+                    renderers[i].SetPropertyBlock(null); // 풀링 재사용 시 이전 색상 제거
+                }
             }
         }
 

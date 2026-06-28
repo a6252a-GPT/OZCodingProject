@@ -9,6 +9,8 @@ namespace TeamProject01.Gameplay
         private const float Level2RewardUniqueChanceBonusPercent = 5.0f; // 희귀 상자 기본 유니크 보너스
         private const float Level3RewardRareChanceBonusPercent = 30.0f; // 고급 상자 기본 레어 보너스
         private const float Level3RewardUniqueChanceBonusPercent = 15.0f; // 고급 상자 기본 유니크 보너스
+        private const float DebugNexusChestMinSpawnRadius = 8.0f; // 디버그 넥서스 주변 상자 최소 반경
+        private const float DebugNexusChestMaxSpawnRadius = 14.0f; // 디버그 넥서스 주변 상자 최대 반경
 
 #pragma warning disable CS0649
         [System.Serializable]
@@ -179,6 +181,38 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        [ContextMenu("Debug Spawn One Bonus Chest Near Nexus")]
+        public void SpawnDebugBonusChestNearNexus()
+        {
+            Transform root = chestRoot != null ? chestRoot : transform; // 상자 부모
+            Vector3 center = NexusController.Active != null ? NexusController.Active.transform.position : ResolveSpawnCenter(); // 넥서스 우선
+            List<Vector3> usedPositions = CollectActiveChestPositions(); // 기존 상자와 겹침 방지
+            int selectedGradeIndex = RollGradeIndex(0, false); // 1개 랜덤 등급
+            BonusChestGradeRule grade = GetGrade(selectedGradeIndex);
+            if (grade == null)
+            {
+                Debug.LogWarning("[BonusChestWaveSpawner] 디버그 상자 등급을 결정하지 못했습니다.", this);
+                return;
+            }
+
+            BonusChest spawnedChest = SpawnChest(
+                grade,
+                selectedGradeIndex,
+                center,
+                root,
+                usedPositions,
+                DebugNexusChestMinSpawnRadius,
+                DebugNexusChestMaxSpawnRadius);
+
+            if (spawnedChest == null)
+            {
+                return;
+            }
+
+            activeChests.Add(spawnedChest);
+            Debug.Log($"[BonusChestWaveSpawner] 디버그 보상상자 1개 생성: {spawnedChest.transform.position}", spawnedChest);
+        }
+
         public bool TrySelectChest(BonusChest chest)
         {
             if (chest == null)
@@ -201,7 +235,14 @@ namespace TeamProject01.Gameplay
             return true;
         }
 
-        private BonusChest SpawnChest(BonusChestGradeRule grade, int gradeIndex, Vector3 center, Transform root, List<Vector3> usedPositions)
+        private BonusChest SpawnChest(
+            BonusChestGradeRule grade,
+            int gradeIndex,
+            Vector3 center,
+            Transform root,
+            List<Vector3> usedPositions,
+            float minRadiusOverride = -1.0f,
+            float maxRadiusOverride = -1.0f)
         {
             BonusChest prefab = grade.prefab != null ? grade.prefab : chestPrefab;
             if (prefab == null)
@@ -210,7 +251,7 @@ namespace TeamProject01.Gameplay
                 return null;
             }
 
-            Vector3 position = GetSeparatedSpawnPosition(center, usedPositions);
+            Vector3 position = GetSeparatedSpawnPosition(center, usedPositions, minRadiusOverride, maxRadiusOverride);
             Quaternion rotation = Quaternion.Euler(0.0f, Random.Range(0.0f, 360.0f), 0.0f);
             BonusChest chest = Instantiate(prefab, position, rotation, root);
             chest.ConfigureOwner(this);
@@ -416,10 +457,30 @@ namespace TeamProject01.Gameplay
             return transform.position;
         }
 
-        private Vector3 GetRandomSpawnPosition(Vector3 center)
+        private List<Vector3> CollectActiveChestPositions()
         {
-            float safeMinRadius = Mathf.Max(0.0f, minSpawnRadius);
-            float safeMaxRadius = Mathf.Max(safeMinRadius + 0.1f, maxSpawnRadius);
+            List<Vector3> positions = new List<Vector3>(activeChests.Count); // 겹침 방지용
+            for (int i = activeChests.Count - 1; i >= 0; i--)
+            {
+                BonusChest chest = activeChests[i];
+                if (chest == null)
+                {
+                    activeChests.RemoveAt(i); // 제거된 상자 정리
+                    continue;
+                }
+
+                positions.Add(chest.transform.position);
+            }
+
+            return positions;
+        }
+
+        private Vector3 GetRandomSpawnPosition(Vector3 center, float minRadiusOverride = -1.0f, float maxRadiusOverride = -1.0f)
+        {
+            float minRadius = minRadiusOverride >= 0.0f ? minRadiusOverride : minSpawnRadius;
+            float maxRadius = maxRadiusOverride >= 0.0f ? maxRadiusOverride : maxSpawnRadius;
+            float safeMinRadius = Mathf.Max(0.0f, minRadius);
+            float safeMaxRadius = Mathf.Max(safeMinRadius + 0.1f, maxRadius);
             float radius = Random.Range(safeMinRadius, safeMaxRadius);
             float angle = Random.Range(0.0f, Mathf.PI * 2.0f);
             Vector3 offset = new Vector3(Mathf.Cos(angle), 0.0f, Mathf.Sin(angle)) * radius;
@@ -428,14 +489,18 @@ namespace TeamProject01.Gameplay
             return GroundService.ProjectToGround(position, groundHeightOffset);
         }
 
-        private Vector3 GetSeparatedSpawnPosition(Vector3 center, List<Vector3> usedPositions)
+        private Vector3 GetSeparatedSpawnPosition(
+            Vector3 center,
+            List<Vector3> usedPositions,
+            float minRadiusOverride = -1.0f,
+            float maxRadiusOverride = -1.0f)
         {
             int retryCount = Mathf.Max(1, spawnPositionRetryCount);
-            Vector3 fallbackPosition = GetRandomSpawnPosition(center);
+            Vector3 fallbackPosition = GetRandomSpawnPosition(center, minRadiusOverride, maxRadiusOverride);
 
             for (int i = 0; i < retryCount; i++)
             {
-                Vector3 candidate = i == 0 ? fallbackPosition : GetRandomSpawnPosition(center);
+                Vector3 candidate = i == 0 ? fallbackPosition : GetRandomSpawnPosition(center, minRadiusOverride, maxRadiusOverride);
                 if (IsFarEnoughFromOtherChests(candidate, usedPositions))
                 {
                     return candidate;

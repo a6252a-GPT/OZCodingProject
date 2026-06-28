@@ -52,17 +52,28 @@ public partial class CardUI
         entry.CanSelect = kind != RewardChoiceKind.None;
 
         ApplyTierCardFrame(entry.Root, tier);
+        Sprite icon = ResolveRewardChoiceIcon(kind);
         ApplyCardTextsDirectly(
             entry.Root,
             ResolveRewardChoiceTitle(kind),
             ResolveRewardChoiceDescription(kind, amount, ticketCount),
-            null);
-        ClearRewardChoiceCardIcon(entry.Root); // 이미지는 나중에 연결할 공간만 남김
+            icon);
+        if (icon == null)
+        {
+            ClearRewardChoiceCardIcon(entry.Root); // 참조 누락 시 빈 이미지 상태 유지
+        }
+
         return entry;
     }
 
     private GameObject ResolveRewardChoiceCardTemplate()
     {
+        CardUiPrefabReferences references = GetPrefabReferences();
+        if (references != null && references.RewardChoiceCardPrefab != null)
+        {
+            return references.RewardChoiceCardPrefab; // 보상 선택 공통 프리팹
+        }
+
         GameObject template = ResolveStatUpgradeTemplatePrefab(null); // 공통 강화 카드 기본 프리팹
         return template != null ? template : segmentCardBasePrefab;
     }
@@ -141,6 +152,27 @@ public partial class CardUI
                 return $"세그먼트선택권 x{Mathf.Max(1, ticketCount)}";
             default:
                 return "선택 불가";
+        }
+    }
+
+    private Sprite ResolveRewardChoiceIcon(RewardChoiceKind kind)
+    {
+        CardUiPrefabReferences references = GetPrefabReferences();
+        if (references == null)
+        {
+            return null;
+        }
+
+        switch (kind)
+        {
+            case RewardChoiceKind.Gold:
+                return references.RewardGoldIconSprite;
+            case RewardChoiceKind.Experience:
+                return references.RewardExperienceIconSprite;
+            case RewardChoiceKind.SegmentChoiceTicket:
+                return references.RewardSegmentChoiceTicketIconSprite;
+            default:
+                return null;
         }
     }
 

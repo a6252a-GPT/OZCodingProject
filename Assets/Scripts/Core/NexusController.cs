@@ -31,8 +31,8 @@ namespace TeamProject01.Gameplay
         public bool SpawnSegmentChoiceTicketsOnStart = true; // 시작 시 선택권 드랍
         [Min(0)] public int StartingSegmentChoiceTicketCount = 3; // 시작 선택권 개수
         [Min(1)] public int StartingSegmentChoiceTicketAmount = 1; // 픽업당 선택권 횟수
-        [Min(0f)] public float StartingSegmentChoiceTicketMinRadius = 3.2f; // 최소 드랍 반경
-        [Min(0f)] public float StartingSegmentChoiceTicketMaxRadius = 6.2f; // 최대 드랍 반경
+        [Min(0f)] public float StartingSegmentChoiceTicketMinRadius = 6.2f; // 최소 드랍 반경
+        [Min(0f)] public float StartingSegmentChoiceTicketMaxRadius = 11.2f; // 최대 드랍 반경
 
         public bool IsDead { get; private set; } // 사망 여부
         public float HealthRatio => MaxHealth <= 0 ? 0f : Mathf.Clamp01((float)CurrentHealth / MaxHealth); // HUD 비율
