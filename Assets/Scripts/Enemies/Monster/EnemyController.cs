@@ -79,6 +79,11 @@ namespace TeamProject01.Gameplay
                 return; // 중복 방지
             }
 
+            if (!EnemyShieldRegistry.CanApplyDamage(this, damage)) // 조성원추가-0628 - 보호막 범위 안의 몬스터는 외부 공격 피해를 받지 않게 한다.
+            {
+                return; // 조성원추가-0628 - 보호막에 막힌 피해는 HP를 깎지 않는다.
+            }
+
             if (health == null) // EnemyHealth가 붙어 있지 않다면
             {
                 KillByDamage(); // 체력 계산 없이 즉시 사망 처리한다.
