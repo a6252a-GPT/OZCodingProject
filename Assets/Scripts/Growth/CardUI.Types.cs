@@ -213,7 +213,44 @@ public partial class CardUI
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            manager?.NotifySpawnedCardPointerExit(entry);
+            manager?.NotifySpawnedCardPointerExit(entry, eventData);
+        }
+    }
+
+    private sealed class CardChildInputBridge : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerMoveHandler, IPointerClickHandler
+    {
+        private CardUI manager;
+        private SpawnedCardEntry entry;
+
+        public void Initialize(CardUI owner, SpawnedCardEntry spawnedEntry)
+        {
+            manager = owner;
+            entry = spawnedEntry;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            manager?.NotifySpawnedCardPointerEnter(entry, eventData);
+        }
+
+        public void OnPointerMove(PointerEventData eventData)
+        {
+            manager?.NotifySpawnedCardPointerMove(entry, eventData);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            manager?.NotifySpawnedCardPointerExit(entry, eventData);
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
+            {
+                return;
+            }
+
+            manager?.NotifySpawnedCardClicked(entry);
         }
     }
 

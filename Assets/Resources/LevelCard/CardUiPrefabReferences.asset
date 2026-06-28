@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CardUiPrefabReferences
   m_EditorClassIdentifier: 
   segmentChoiceCardPrefab: {fileID: 1511448857506858134, guid: 76fa2678eb380c24bb632931f5597fd4, type: 3}
-  rewardChoiceCardPrefab: {fileID: 2933095178709274133, guid: a6f0c7606f7110a48b91291308e0f524, type: 3}
+  rewardChoiceCardPrefab: {fileID: 5093926429036568398, guid: a6f0c7606f7110a48b91291308e0f524, type: 3}
   rewardGoldIconSprite: {fileID: 21300000, guid: 53c8108370a2d8446ab1edb7fb516c54, type: 3}
   rewardExperienceIconSprite: {fileID: 21300000, guid: 6bb1674f45468654bb284a5a91fb664a, type: 3}
   rewardSegmentChoiceTicketIconSprite: {fileID: 21300000, guid: fad2ec3bd02c2ce4095dc10dd102706b, type: 3}

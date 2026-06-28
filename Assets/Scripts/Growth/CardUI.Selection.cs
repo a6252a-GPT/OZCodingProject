@@ -382,6 +382,7 @@ public partial class CardUI
     {
         if (activePanelMode == CardPanelMode.RewardChoice)
         {
+            bool keepBackgroundBlur = pendingRewardSegmentTicketCount > 0; // 선택권 화면으로 이어질 때 블러 유지
             CloseLevelUpPanelAfterSelection(() =>
             {
                 StopAutoSelect();
@@ -389,12 +390,13 @@ public partial class CardUI
                 spawnedForCurrentOpen = false;
                 isProcessingSelection = false;
                 ApplyPendingRewardChoiceAfterClosed(); // 지급 또는 선택권 화면 연속 오픈
-            });
+            }, keepBackgroundBlur);
             return;
         }
 
         if (activePanelMode == CardPanelMode.SegmentTicketChoice)
         {
+            bool keepBackgroundBlur = segmentTicketChoicesRemaining > 1; // x2/x3 선택권 다음 화면 유지
             CloseLevelUpPanelAfterSelection(() =>
             {
                 StopAutoSelect();
@@ -402,7 +404,7 @@ public partial class CardUI
                 spawnedForCurrentOpen = false;
                 isProcessingSelection = false;
                 HandleSegmentTicketChoiceCompletedAfterClose(); // x2/x3 선택권 연속 처리
-            });
+            }, keepBackgroundBlur);
             return;
         }
 
@@ -419,12 +421,12 @@ public partial class CardUI
         });
     }
 
-    private void CloseLevelUpPanelAfterSelection(System.Action onClosed = null) // 선택 완료 후 오버레이·일시정지 해제
+    private void CloseLevelUpPanelAfterSelection(System.Action onClosed = null, bool keepBackgroundBlur = false) // 선택 완료 후 오버레이·일시정지 해제
     {
         LevelUpUi ui = ResolveLevelUpUi();
         if (ui != null)
         {
-            ui.Close(selectionPanelCloseFadeSeconds, onClosed); // 페이드 완료 후 onClosed 실행
+            ui.Close(selectionPanelCloseFadeSeconds, onClosed, keepBackgroundBlur); // 페이드 완료 후 onClosed 실행
             return;
         }
 

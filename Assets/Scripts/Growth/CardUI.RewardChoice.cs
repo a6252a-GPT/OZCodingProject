@@ -283,6 +283,7 @@ public partial class CardUI
         isProcessingSelection = false;
         currentSpawnPhase = LevelUpCardPhase.Upgrade;
         ui.SetUseRewardTitle(activePanelMode != CardPanelMode.LevelUp);
+        ui.SetUseBackgroundBlur(activePanelMode != CardPanelMode.LevelUp);
         ui.Open();
         return true;
     }
@@ -295,7 +296,12 @@ public partial class CardUI
         pendingRewardGold = 0;
         pendingRewardSegmentTicketCount = 0;
         ClearRewardChoiceTierChanceBonus();
-        ResolveLevelUpUi()?.SetUseRewardTitle(false);
+        LevelUpUi ui = ResolveLevelUpUi();
+        if (ui != null)
+        {
+            ui.SetUseRewardTitle(false);
+            ui.SetUseBackgroundBlur(false);
+        }
     }
 
     private void ClearRewardChoiceTierChanceBonus()

@@ -16,11 +16,14 @@ public class LevelUpUi : MonoBehaviour
     [SerializeField] private RectTransform titleVisual; // 정식 배치된 타이틀 이미지/텍스트 연출 대상
     [SerializeField] private Sprite levelUpTitleSprite; // 기본 레벨업 타이틀
     [SerializeField] private Sprite rewardTitleSprite; // 보상/선택권 타이틀
+    [Header("배경 블러")]
+    [SerializeField] private UiBackgroundBlurLayer backgroundBlurLayer; // 보상/선택권 배경 블러
     [Header("디버그")]
     [SerializeField] private bool logCoreStats = true; // 코어 경험치 로그 출력 여부
 
     private bool isOpen;
     private bool useRewardTitle;
+    private bool useBackgroundBlur;
     private Image cachedTitleImage;
     private float previousTimeScale = 1f;
     private bool skipPause; // 안건준 추가 - 0622 : 자동모드일 때 일시정지 스킵 플래그
@@ -30,6 +33,7 @@ public class LevelUpUi : MonoBehaviour
     private int lastLoggedLevel = -1; // 마지막 로그 레벨
     private CoreStatData pendingLogStats; // 디바운스 대기값
     private Coroutine debouncedLogRoutine; // 경험치 변경 묶음 로그
+    private Coroutine openBlurRoutine; // 블러 캡처 후 패널 표시 루틴
 
     private void Reset()
     {
@@ -140,9 +144,20 @@ public class LevelUpUi : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (openBlurRoutine != null)
+        {
+            StopCoroutine(openBlurRoutine);
+            openBlurRoutine = null;
+        }
+
         if (isOpen)
         {
             ResumeGame();
+        }
+
+        if (backgroundBlurLayer != null)
+        {
+            backgroundBlurLayer.HideImmediate(true);
         }
     }
 
@@ -162,6 +177,7 @@ public class LevelUpUi : MonoBehaviour
         }
 
         isOpen = true;
+        bool shouldUseBackgroundBlur = useBackgroundBlur && backgroundBlurLayer != null;
         // 안건준 추가 - 0622 : skipPause 플래그 또는 자동궤도 모드이면 일시정지 스킵
         if (!skipPause && !IsAutoOrbitActive())
         {
@@ -171,12 +187,39 @@ public class LevelUpUi : MonoBehaviour
         if (levelUpPanel != null)
         {
             levelUpPanel.SetActive(true);
-            SetOverlayPanelActive(!IsAutoOrbitActive()); // 안건준 추가 - 0622 : 자동모드면 Overlay Panel 숨김
+            SetOverlayPanelActive(!IsAutoOrbitActive() && !shouldUseBackgroundBlur); // 블러 사용 시 기존 딤 중복 방지
         }
 
         ResolveTitleVisual(); // 정식 타이틀 오브젝트 재확인
         ApplyTitleSprite(); // 레벨업/보상 타이틀 모드 반영
 
+        panelCanvasGroup.DOKill();
+        if (shouldUseBackgroundBlur)
+        {
+            panelCanvasGroup.alpha = 0f;
+            panelCanvasGroup.blocksRaycasts = false;
+            panelCanvasGroup.interactable = false;
+            if (openBlurRoutine != null)
+            {
+                StopCoroutine(openBlurRoutine);
+            }
+
+            openBlurRoutine = StartCoroutine(OpenAfterBackgroundBlurRoutine());
+            return;
+        }
+
+        ShowPanelImmediate();
+    }
+
+    private IEnumerator OpenAfterBackgroundBlurRoutine()
+    {
+        yield return backgroundBlurLayer.ShowRoutine(); // 패널이 찍히지 않은 화면 캡처 후 블러 표시
+        openBlurRoutine = null;
+        ShowPanelImmediate();
+    }
+
+    private void ShowPanelImmediate()
+    {
         // DOFade 가 timeScale=0 에서 충돌하거나 지연되는 문제 → 즉시 표시
         panelCanvasGroup.DOKill();
         panelCanvasGroup.alpha = 1f;
@@ -190,6 +233,11 @@ public class LevelUpUi : MonoBehaviour
     {
         useRewardTitle = useReward;
         ApplyTitleSprite();
+    }
+
+    public void SetUseBackgroundBlur(bool useBlur) // 보상/선택권 모드 배경 블러 전환
+    {
+        useBackgroundBlur = useBlur;
     }
 
     // 안건준 추가 - 0622 : Overlay Panel 활성/비활성 (LevelUpPanel 하위에서 이름으로 검색)
@@ -239,18 +287,34 @@ public class LevelUpUi : MonoBehaviour
     // 안건준 추가 - 0622 : 닫힘 완료 후 콜백 — 연속 레벨업 대응
     public void Close(float fadeDuration, System.Action onClosed)
     {
+        Close(fadeDuration, onClosed, false);
+    }
+
+    public void Close(float fadeDuration, System.Action onClosed, bool keepBackgroundBlur)
+    {
         if (panelCanvasGroup == null)
         {
-            CloseInstant();
+            CloseInstant(keepBackgroundBlur);
             onClosed?.Invoke();
             return;
         }
 
+        if (openBlurRoutine != null)
+        {
+            StopCoroutine(openBlurRoutine);
+            openBlurRoutine = null;
+        }
+
         float duration = Mathf.Max(0.01f, fadeDuration);
         panelCanvasGroup.DOKill();
+        if (!keepBackgroundBlur && backgroundBlurLayer != null)
+        {
+            backgroundBlurLayer.Hide(duration);
+        }
+
         panelCanvasGroup.DOFade(0.0f, duration).SetUpdate(true).OnComplete(() =>
         {
-            CloseInstant();
+            CloseInstant(keepBackgroundBlur);
             onClosed?.Invoke(); // 완전히 닫힌 후 호출
         });
     }
@@ -341,6 +405,11 @@ public class LevelUpUi : MonoBehaviour
 
     private void CloseInstant()
     {
+        CloseInstant(false);
+    }
+
+    private void CloseInstant(bool keepBackgroundBlur)
+    {
         isOpen = false;
         ResumeGame();
 
@@ -354,6 +423,11 @@ public class LevelUpUi : MonoBehaviour
             panelCanvasGroup.alpha = 0.0f;
             panelCanvasGroup.blocksRaycasts = false;
             panelCanvasGroup.interactable = false;
+        }
+
+        if (!keepBackgroundBlur && backgroundBlurLayer != null)
+        {
+            backgroundBlurLayer.HideImmediate(true);
         }
     }
 }

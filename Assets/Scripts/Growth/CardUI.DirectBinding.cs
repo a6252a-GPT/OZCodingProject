@@ -243,7 +243,7 @@ public partial class CardUI
             return;
         }
 
-        float baseSize = descText.fontSizeMax > 0f ? Mathf.Max(descText.fontSizeMax, descText.fontSize) : descText.fontSize;
+        float baseSize = ResolveDirectBaseFontSize(descText); // 프리팹 실제 글자 크기 기준
         float maxSize = CountDescriptionLines(description) >= 3 ? baseSize * 0.86f : baseSize;
         ConfigureDirectAutoSize(descText, maxSize, true);
     }
@@ -255,8 +255,23 @@ public partial class CardUI
             return;
         }
 
-        float baseSize = text.fontSizeMax > 0f ? Mathf.Max(text.fontSizeMax, text.fontSize) : text.fontSize;
+        float baseSize = ResolveDirectBaseFontSize(text); // fontSizeMax(72)로 확대되는 문제 방지
         ConfigureDirectAutoSize(text, baseSize, false);
+    }
+
+    private static float ResolveDirectBaseFontSize(TMP_Text text)
+    {
+        if (text == null)
+        {
+            return 24f; // 안전 fallback
+        }
+
+        if (text.fontSize > 0f)
+        {
+            return text.fontSize; // 프리팹에 배치된 실제 표시 크기
+        }
+
+        return text.fontSizeMax > 0f ? Mathf.Min(text.fontSizeMax, 24f) : 24f; // 비정상 값만 보정
     }
 
     private static void ConfigureDirectAutoSize(TMP_Text text, float maxSize, bool allowWrapping)

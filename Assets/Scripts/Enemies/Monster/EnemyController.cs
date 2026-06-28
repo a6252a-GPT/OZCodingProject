@@ -7,6 +7,7 @@ namespace TeamProject01.Gameplay
     {
         private static readonly List<EnemyController> ActiveMonsters = new List<EnemyController>(128); // 타겟 목록
         private static int nextEnemyId; // 몬스터 ID 발급용 번호
+        public static event System.Action<EnemyController> DamageKilled; // 플레이어 피해 처치 알림
 
         [SerializeField] private EnemyGrade grade = EnemyGrade.Monster; // 몬스터 등급
 
@@ -126,9 +127,10 @@ namespace TeamProject01.Gameplay
 
             if (reward != null) // EnemyReward Script Component가 있다면
             {
-                reward.GiveReward(EnemyId, transform.position); // 보상 생성.
+                reward.GiveReward(EnemyId, transform.position, grade); // 보상 생성.
             }
 
+            DamageKilled?.Invoke(this); // 런 결과 처치 수 기록
             Kill(); // 공통 제거
         }
 

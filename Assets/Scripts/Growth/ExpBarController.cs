@@ -28,6 +28,7 @@ namespace TeamProject01.Gameplay
         private CoreStatProvider subscribedCore; // StatsChanged 구독 대상
         private bool levelUpUiOpened; // 레벨업 UI 중복 오픈 방지
         private bool wasLevelUpChoicePending; // 카드 선택 완료 감지용 이전 상태
+        private bool cancelingFailedLevelUpOpen; // 오픈 실패 복구 중 재진입 방지
 
         private void Awake() // Slider·Fill 참조 초기화
         {
@@ -86,13 +87,17 @@ namespace TeamProject01.Gameplay
 
         private void Update() // 코어가 늦게 생성된 경우 연결 재시도
         {
-            if (subscribedCore != null || CoreStatProvider.Active == null)
+            if (CoreStatProvider.Active == null)
             {
                 return;
             }
 
-            TrySubscribeCore();
-            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault());
+            if (subscribedCore == null && TrySubscribeCore())
+            {
+                RefreshFromCore(CoreStatProvider.GetCurrentOrDefault());
+            }
+
+            TryOpenPendingLevelUp(CoreStatProvider.GetCurrentOrDefault()); // UI가 바빴던 레벨업 재시도
         }
 
         private void OnDisable() // 구독 해제
@@ -104,31 +109,30 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void OnLevelUpTriggered() // 레벨업 조건 충족 시 UI 오픈
-        {
-            if (LevelUpUi != null)
-            {
-                LevelUpUi.Open();
-                return;
-            }
-
-            CardUi?.PlayLevelUpTween();
-        }
-
-        private void TrySubscribeCore() // CoreStatProvider.StatsChanged 구독
+        private bool TrySubscribeCore() // CoreStatProvider.StatsChanged 구독
         {
             if (subscribedCore != null || CoreStatProvider.Active == null)
             {
-                return;
+                return false;
             }
 
             subscribedCore = CoreStatProvider.Active;
             subscribedCore.StatsChanged += OnStatsChanged;
+            return true;
         }
 
         private void OnStatsChanged(CoreStatData stats) // 코어 스탯 변경 시 HUD 갱신 + 레벨업 처리
         {
             RefreshFromCore(stats);
+            TryOpenPendingLevelUp(stats);
+        }
+
+        private void TryOpenPendingLevelUp(CoreStatData stats) // 경험치 충족 시 카드 UI가 열릴 때만 pending 처리
+        {
+            if (cancelingFailedLevelUpOpen)
+            {
+                return;
+            }
 
             CoreStatProvider core = CoreStatProvider.Active;
             if (core == null)
@@ -148,22 +152,57 @@ namespace TeamProject01.Gameplay
                 return; // 카드 선택 중 — 경험치는 아직 미소비
             }
 
-            if (stats.CanLevelUp && !levelUpUiOpened)
-            {
-                levelUpUiOpened = true;
-                if (core.TryBeginLevelUpChoice())
-                {
-                    OnLevelUpTriggered();
-                }
-                else
-                {
-                    levelUpUiOpened = false; // 레벨 반영 실패 시 재시도 허용
-                }
-            }
-            else if (!stats.CanLevelUp)
+            if (!stats.CanLevelUp)
             {
                 levelUpUiOpened = false;
+                return;
             }
+
+            if (levelUpUiOpened)
+            {
+                return;
+            }
+
+            CardUI cardUi = ResolveCardUi();
+            if (cardUi == null || !cardUi.CanOpenLevelUpPanel())
+            {
+                levelUpUiOpened = false; // 보상/선택권 패널이 닫힌 뒤 Update에서 재시도
+                return;
+            }
+
+            if (!core.TryBeginLevelUpChoice())
+            {
+                levelUpUiOpened = false; // 레벨 반영 실패 시 재시도 허용
+                return;
+            }
+
+            if (cardUi.TryOpenLevelUpPanel())
+            {
+                levelUpUiOpened = true;
+                return;
+            }
+
+            cancelingFailedLevelUpOpen = true;
+            try
+            {
+                core.CancelLevelUpChoice(); // UI 오픈 실패 시 pending만 남기지 않음
+            }
+            finally
+            {
+                cancelingFailedLevelUpOpen = false;
+                levelUpUiOpened = false;
+            }
+        }
+
+        private CardUI ResolveCardUi() // 씬 연결 누락 시 런타임 보강
+        {
+            if (CardUi != null)
+            {
+                return CardUi;
+            }
+
+            CardUi = FindFirstObjectByType<CardUI>();
+            return CardUi;
         }
 
         private void RefreshFromCore(CoreStatData stats) // 코어 데이터 → UI 일괄 반영

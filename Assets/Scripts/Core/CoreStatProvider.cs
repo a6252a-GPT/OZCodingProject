@@ -27,6 +27,8 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float RejoinRangeBonus; // 재결합 범위 보너스
         [Header("보유 골드")]
         [Min(0)] public int CurrentGold; // 보유 골드
+        [Header("런 중 획득 다이아")]
+        [Min(0)] public int CurrentRunDiamond; // 결과 정산 전 런 안에서 먹은 다이아
         [Header("")]
         [Min(0)] public int CurrentExperience; // 현재 레벨 경험치
         [Min(0)] public int TotalExperience; // 누적 경험치        
@@ -163,6 +165,7 @@ namespace TeamProject01.Gameplay
 
             AddExperience(reward.Experience); // 경험치 코어 누적
             CurrentGold += reward.Gold; // 골드 코어 누적
+            CurrentRunDiamond += reward.Diamond; // 런 다이아 누적
             StatsChanged?.Invoke(CurrentStats); // HUD 갱신
             return true; // 적용 성공
         }
@@ -203,6 +206,7 @@ namespace TeamProject01.Gameplay
             CurrentExperience = 0; // 현재 경험치 초기화
             TotalExperience = 0; // 누적 경험치 초기화
             CurrentGold = 0; // 골드 초기화
+            CurrentRunDiamond = 0; // 런 다이아 초기화
             segmentUpgrades.Clear(); // 세그먼트 강화 초기화
             // 건춘 추가 시작 =======
             weaponStatBonuses.Clear(); // 무기 강화 보너스 초기화

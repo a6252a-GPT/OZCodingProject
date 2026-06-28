@@ -38,17 +38,33 @@ public partial class CardUI
         }
     }
 
-    private void NotifySpawnedCardPointerExit(SpawnedCardEntry entry)
+    private void NotifySpawnedCardPointerExit(SpawnedCardEntry entry, PointerEventData eventData = null)
     {
         if (entry == null || !entry.IsClickable)
         {
             return;
         }
 
+        if (IsPointerStillInsideSpawnedCard(entry, eventData))
+        {
+            return; // 자식 Graphic 사이 이동 중이면 호버 유지
+        }
+
         entry.IsPointerOver = false;
         entry.HasTooltipPointer = false;
         SetCardHoverVisual(entry, false); // 호버 비주얼 복원
         HideCardHoverTooltip(entry, false); // 카드 호버 툴팁 닫기
+    }
+
+    private static bool IsPointerStillInsideSpawnedCard(SpawnedCardEntry entry, PointerEventData eventData)
+    {
+        if (entry == null || entry.RootTransform == null || eventData == null)
+        {
+            return false;
+        }
+
+        Camera eventCamera = eventData.enterEventCamera != null ? eventData.enterEventCamera : eventData.pressEventCamera;
+        return RectTransformUtility.RectangleContainsScreenPoint(entry.RootTransform, eventData.position, eventCamera);
     }
 
     private void SetCardHoverVisual(SpawnedCardEntry entry, bool active)

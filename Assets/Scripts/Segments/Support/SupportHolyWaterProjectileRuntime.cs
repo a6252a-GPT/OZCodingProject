@@ -1,34 +1,9 @@
-using System.Collections.Generic;
-using System;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
     public sealed class SupportHolyWaterProjectileRuntime : MonoBehaviour
     {
-        public struct HolyWaterDebuffHitData
-        {
-            public EnemyController Enemy;
-            public int EnemyId;
-            public Vector3 Position;
-            public float Radius;
-            public float IncomingDamageMultiplier;
-            public float Duration;
-
-            public HolyWaterDebuffHitData(EnemyController enemy, Vector3 position, float radius, float incomingDamageMultiplier, float duration)
-            {
-                Enemy = enemy;
-                EnemyId = enemy != null ? enemy.EnemyId : 0;
-                Position = position;
-                Radius = radius;
-                IncomingDamageMultiplier = incomingDamageMultiplier;
-                Duration = duration;
-            }
-        }
-
-        public static event Action<HolyWaterDebuffHitData> DebuffHitDataEmitted;
-
-        private readonly List<int> tickEnemyIds = new List<int>(16);
         private static Material debugMaterial;
         private static Color debugMaterialColor;
 
@@ -41,11 +16,7 @@ namespace TeamProject01.Gameplay
         private float age;
         private float startRadius;
         private float endRadius;
-        private float tickInterval;
-        private float tickTimer;
         private float muzzleInfluenceStrength;
-        private float incomingDamageMultiplier;
-        private float debuffDuration;
 
         public static void Spawn(
             Transform parent,
@@ -56,10 +27,7 @@ namespace TeamProject01.Gameplay
             float lifetime,
             float startRadius,
             float endRadius,
-            float tickInterval,
             float muzzleInfluenceStrength,
-            float incomingDamageMultiplier,
-            float debuffDuration,
             Color projectileColor)
         {
             GameObject instance = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -86,10 +54,7 @@ namespace TeamProject01.Gameplay
                 lifetime,
                 startRadius,
                 endRadius,
-                tickInterval,
                 muzzleInfluenceStrength,
-                incomingDamageMultiplier,
-                debuffDuration,
                 projectileColor);
         }
 
@@ -100,10 +65,7 @@ namespace TeamProject01.Gameplay
             float lifetime,
             float startRadius,
             float endRadius,
-            float tickInterval,
             float muzzleInfluenceStrength,
-            float incomingDamageMultiplier,
-            float debuffDuration,
             Color projectileColor)
         {
             direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : transform.forward;
@@ -112,12 +74,8 @@ namespace TeamProject01.Gameplay
             this.lifetime = Mathf.Max(0.05f, lifetime);
             this.startRadius = Mathf.Max(0.05f, startRadius);
             this.endRadius = Mathf.Max(this.startRadius, endRadius);
-            this.tickInterval = Mathf.Max(0.02f, tickInterval);
             this.muzzleInfluenceStrength = Mathf.Clamp01(muzzleInfluenceStrength);
-            this.incomingDamageMultiplier = Mathf.Max(1f, incomingDamageMultiplier);
-            this.debuffDuration = Mathf.Max(0.05f, debuffDuration);
             age = 0f;
-            tickTimer = 0f;
             hasLastMuzzleInfluenceAnchorPosition = this.muzzleInfluenceAnchor != null;
             lastMuzzleInfluenceAnchorPosition = hasLastMuzzleInfluenceAnchorPosition ? this.muzzleInfluenceAnchor.position : Vector3.zero;
 
@@ -143,13 +101,6 @@ namespace TeamProject01.Gameplay
 
             float radius = GetCurrentRadius();
             ApplyScale(radius);
-
-            tickTimer -= Time.deltaTime;
-            if (tickTimer <= 0f)
-            {
-                EmitDebuffHitData(radius);
-                tickTimer = tickInterval;
-            }
         }
 
         private void ApplyMuzzleInfluence()
@@ -194,23 +145,6 @@ namespace TeamProject01.Gameplay
             float progress = lifetime > 0f ? Mathf.Clamp01(age / lifetime) : 1f;
             progress = Mathf.SmoothStep(0f, 1f, progress);
             return Mathf.Lerp(startRadius, endRadius, progress);
-        }
-
-        private void EmitDebuffHitData(float radius)
-        {
-            tickEnemyIds.Clear();
-            Collider[] hits = Physics.OverlapSphere(transform.position, Mathf.Max(0.05f, radius));
-            for (int i = 0; i < hits.Length; i++)
-            {
-                EnemyController enemy = hits[i].GetComponentInParent<EnemyController>();
-                if (enemy == null || enemy.IsDead || tickEnemyIds.Contains(enemy.EnemyId))
-                {
-                    continue;
-                }
-
-                tickEnemyIds.Add(enemy.EnemyId);
-                DebuffHitDataEmitted?.Invoke(new HolyWaterDebuffHitData(enemy, transform.position, radius, incomingDamageMultiplier, debuffDuration));
-            }
         }
 
         private void ApplyScale(float radius)

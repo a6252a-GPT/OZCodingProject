@@ -288,7 +288,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyController
   grade: 1
-  countsAsMonster: 1
 --- !u!114 &464322772614052711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -352,6 +351,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyReward
   experienceReward: 5
   goldReward: 5
+  enableEliteDiamondDrop: 1
+  eliteDiamondDropChance: 0.5
+  eliteDiamondReward: 2
 --- !u!114 &2539157941389820013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -418,6 +420,8 @@ MonoBehaviour:
   impactSurfaceOffset: 1.2
   impactHeightOffset: 0.5
   impactSideRandomAmount: 0.5
+  waitForAnimationEvent: 0
+  animationEventTimeout: 2
 --- !u!1 &3981967202905672510
 GameObject:
   m_ObjectHideFlags: 0
@@ -778,11 +782,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 150
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 40
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_LocalPosition.x

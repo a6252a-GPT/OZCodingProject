@@ -368,6 +368,11 @@ namespace TeamProject01.Gameplay
 
         private static Color ResolveRewardMarkerColor(RewardPickupKind kind)
         {
+            if (kind == RewardPickupKind.Diamond)
+            {
+                return new Color(0.35f, 0.9f, 1f, 0.96f);
+            }
+
             if (kind == RewardPickupKind.Gold)
             {
                 return new Color(1f, 0.78f, 0.14f, 0.96f);

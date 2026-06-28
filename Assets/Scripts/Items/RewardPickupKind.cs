@@ -4,6 +4,7 @@ namespace TeamProject01.Gameplay
     {
         Experience = 1,
         Gold = 2,
-        SegmentChoiceTicket = 3
+        SegmentChoiceTicket = 3,
+        Diamond = 4
     }
 }

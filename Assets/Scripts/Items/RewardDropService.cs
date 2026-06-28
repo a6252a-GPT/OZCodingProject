@@ -7,6 +7,7 @@ namespace TeamProject01.Gameplay
     {
         private const string ExperiencePickupResourcePath = "RewardPickups/PF_RewardPickup_Exp";
         private const string GoldPickupResourcePath = "RewardPickups/PF_RewardPickup_Gold";
+        private const string DiamondPickupResourcePath = "RewardPickups/PF_RewardPickup_Diamond";
         private const string SegmentChoiceTicketPickupResourcePath = "RewardPickups/PF_RewardPickup_SegmentChoiceTicket";
         private const string SegmentChoiceTicketFallbackModelResourcePath = "RewardPickups/SegmentChoiceTicketModel/PF_SegmentChoiceTicketModel";
         private const float MinimumDropSpreadRadius = 1.08f;
@@ -15,6 +16,7 @@ namespace TeamProject01.Gameplay
 
         public WorldRewardPickup ExperiencePickupPrefab;
         public WorldRewardPickup GoldPickupPrefab;
+        public WorldRewardPickup DiamondPickupPrefab;
         public WorldRewardPickup SegmentChoiceTicketPickupPrefab;
         public Transform DropRoot;
         [Min(0f)] public float DropSpreadRadius = 0.42f;
@@ -25,6 +27,7 @@ namespace TeamProject01.Gameplay
 
         private static WorldRewardPickup cachedExperiencePrefab;
         private static WorldRewardPickup cachedGoldPrefab;
+        private static WorldRewardPickup cachedDiamondPrefab;
         private static WorldRewardPickup cachedSegmentChoiceTicketPrefab;
         private static int dropSerial;
         private readonly Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>> pickupPools = new Dictionary<WorldRewardPickup, Queue<WorldRewardPickup>>();
@@ -70,7 +73,25 @@ namespace TeamProject01.Gameplay
             }
 
             Vector3 basePosition = GroundService.ProjectToGround(position, 0.02f);
-            SpawnPickup(GetCachedSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, safeCount, 0, basePosition, basePosition + GetDefaultDropOffset(2), null, 0.02f);
+            SpawnPickup(GetCachedSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, safeCount, 0, basePosition, basePosition + GetDefaultDropOffset(3), null, 0.02f);
+        }
+
+        public static void SpawnDiamond(int amount, Vector3 position, int enemyId = 0)
+        {
+            int safeAmount = Mathf.Max(0, amount);
+            if (safeAmount <= 0)
+            {
+                return;
+            }
+
+            if (Active != null)
+            {
+                Active.SpawnDiamondInternal(safeAmount, position, enemyId);
+                return;
+            }
+
+            Vector3 basePosition = GroundService.ProjectToGround(position, 0.02f);
+            SpawnPickup(GetCachedDiamondPrefab(), RewardPickupKind.Diamond, safeAmount, enemyId, basePosition, basePosition + GetDefaultDropOffset(2), null, 0.02f);
         }
 
         private void SpawnRewardInternal(RewardData reward, Vector3 position)
@@ -85,12 +106,23 @@ namespace TeamProject01.Gameplay
             {
                 SpawnPickupFromPool(ResolveGoldPrefab(), RewardPickupKind.Gold, reward.Gold, reward.EnemyId, basePosition, basePosition + GetDropOffset(1), DropRoot, GroundHeightOffset);
             }
+
+            if (reward.Diamond > 0)
+            {
+                SpawnPickupFromPool(ResolveDiamondPrefab(), RewardPickupKind.Diamond, reward.Diamond, reward.EnemyId, basePosition, basePosition + GetDropOffset(2), DropRoot, GroundHeightOffset);
+            }
         }
 
         private void SpawnSegmentChoiceTicketInternal(int ticketCount, Vector3 position)
         {
             Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
-            SpawnPickupFromPool(ResolveSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, Mathf.Max(1, ticketCount), 0, basePosition, basePosition + GetDropOffset(2), DropRoot, GroundHeightOffset);
+            SpawnPickupFromPool(ResolveSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, Mathf.Max(1, ticketCount), 0, basePosition, basePosition + GetDropOffset(3), DropRoot, GroundHeightOffset);
+        }
+
+        private void SpawnDiamondInternal(int amount, Vector3 position, int enemyId)
+        {
+            Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
+            SpawnPickupFromPool(ResolveDiamondPrefab(), RewardPickupKind.Diamond, Mathf.Max(1, amount), enemyId, basePosition, basePosition + GetDropOffset(2), DropRoot, GroundHeightOffset);
         }
 
         private static void SpawnRewardDefault(RewardData reward, Vector3 position)
@@ -105,6 +137,11 @@ namespace TeamProject01.Gameplay
             {
                 SpawnPickup(GetCachedGoldPrefab(), RewardPickupKind.Gold, reward.Gold, reward.EnemyId, basePosition, basePosition + GetDefaultDropOffset(1), null, 0.02f);
             }
+
+            if (reward.Diamond > 0)
+            {
+                SpawnPickup(GetCachedDiamondPrefab(), RewardPickupKind.Diamond, reward.Diamond, reward.EnemyId, basePosition, basePosition + GetDefaultDropOffset(2), null, 0.02f);
+            }
         }
 
         private WorldRewardPickup ResolveExperiencePrefab()
@@ -115,6 +152,11 @@ namespace TeamProject01.Gameplay
         private WorldRewardPickup ResolveGoldPrefab()
         {
             return GoldPickupPrefab != null ? GoldPickupPrefab : GetCachedGoldPrefab();
+        }
+
+        private WorldRewardPickup ResolveDiamondPrefab()
+        {
+            return DiamondPickupPrefab != null ? DiamondPickupPrefab : GetCachedDiamondPrefab();
         }
 
         private WorldRewardPickup ResolveSegmentChoiceTicketPrefab()
@@ -130,16 +172,31 @@ namespace TeamProject01.Gameplay
                 return Vector3.zero;
             }
 
-            float angle = index == 0 ? -35f : 35f;
+            float angle = ResolveDropAngle(index);
             Quaternion rotation = Quaternion.Euler(0f, angle + Random.Range(-18f, 18f), 0f);
             return rotation * Vector3.forward * Random.Range(radius * 0.45f, radius);
         }
 
         private static Vector3 GetDefaultDropOffset(int index)
         {
-            float angle = index == 0 ? -35f : 35f;
+            float angle = ResolveDropAngle(index);
             Quaternion rotation = Quaternion.Euler(0f, angle + Random.Range(-18f, 18f), 0f);
             return rotation * Vector3.forward * Random.Range(MinimumDropSpreadRadius * 0.45f, MinimumDropSpreadRadius);
+        }
+
+        private static float ResolveDropAngle(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return -45f; // 경험치
+                case 1:
+                    return 20f; // 골드
+                case 2:
+                    return 75f; // 다이아
+                default:
+                    return 135f; // 선택권 등 추가 보상
+            }
         }
 
         private static WorldRewardPickup GetCachedExperiencePrefab()
@@ -160,6 +217,16 @@ namespace TeamProject01.Gameplay
             }
 
             return cachedGoldPrefab;
+        }
+
+        private static WorldRewardPickup GetCachedDiamondPrefab()
+        {
+            if (cachedDiamondPrefab == null)
+            {
+                cachedDiamondPrefab = LoadPickupPrefab(DiamondPickupResourcePath);
+            }
+
+            return cachedDiamondPrefab;
         }
 
         private static WorldRewardPickup GetCachedSegmentChoiceTicketPrefab()
@@ -183,6 +250,7 @@ namespace TeamProject01.Gameplay
             int count = Mathf.Max(0, InitialPoolSizePerKind);
             PrewarmPool(ResolveExperiencePrefab(), count);
             PrewarmPool(ResolveGoldPrefab(), count);
+            PrewarmPool(ResolveDiamondPrefab(), count);
             PrewarmPool(ResolveSegmentChoiceTicketPrefab(), count);
         }
 
@@ -319,11 +387,11 @@ namespace TeamProject01.Gameplay
                 return CreateSegmentChoiceTicketFallbackPickup(position, parent, groundHeightOffset); // 전용 모델 fallback
             }
 
-            PrimitiveType primitiveType = kind == RewardPickupKind.Experience ? PrimitiveType.Sphere : PrimitiveType.Cylinder;
+            PrimitiveType primitiveType = kind == RewardPickupKind.Gold ? PrimitiveType.Cylinder : PrimitiveType.Sphere;
             GameObject fallback = GameObject.CreatePrimitive(primitiveType);
             fallback.transform.SetParent(parent, true);
             fallback.transform.position = GroundService.ProjectToGround(position, groundHeightOffset);
-            fallback.transform.localScale = kind == RewardPickupKind.Experience ? Vector3.one * 0.34f : new Vector3(0.38f, 0.12f, 0.38f);
+            fallback.transform.localScale = kind == RewardPickupKind.Gold ? new Vector3(0.38f, 0.12f, 0.38f) : Vector3.one * 0.34f;
 
             Collider collider = fallback.GetComponent<Collider>();
             if (collider != null)

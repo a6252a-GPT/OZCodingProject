@@ -13,6 +13,9 @@ namespace TeamProject01.Gameplay
         [Header("Currency")]
         [Min(0)] public int Diamond = DefaultStartingDiamond; // 보유 다이아
 
+        [Header("Records")]
+        [Min(0)] public int HighestReachedWave; // 최고 도달 웨이브
+
         [Header("Save")]
         public bool LoadOnAwake = true; // 시작 시 로드
         public bool SaveOnChange = true; // 변경 시 저장
@@ -51,6 +54,7 @@ namespace TeamProject01.Gameplay
         [Min(0)] public int ClearDiamondBonus; // 클리어 추가 다이아
 
         public event Action<int> DiamondChanged; // 다이아 변경
+        public event Action<int> HighestReachedWaveChanged; // 최고 웨이브 변경
         public event Action<string> SelectedWormChanged; // 지렁이 변경
         public event Action<string> SelectedMapChanged; // 맵 변경
 
@@ -102,7 +106,13 @@ namespace TeamProject01.Gameplay
 
         public void SelectMap(string mapId) // 맵 선택 저장
         {
-            SelectedMapId = NormalizeMapId(mapId); // 선택 맵
+            string normalized = NormalizeMapId(mapId); // 선택 맵
+            if (SelectedMapId == normalized)
+            {
+                return; // 같은 맵 중복 저장 방지
+            }
+
+            SelectedMapId = normalized; // 선택 맵
             SaveProgressIfNeeded(); // 저장
             SelectedMapChanged?.Invoke(SelectedMapId); // 알림
         }
@@ -151,12 +161,31 @@ namespace TeamProject01.Gameplay
 
         public int ApplyRunResult(RunResultData result) // 게임 종료 보상 적용
         {
-            int baseReward = result.EarnedDiamond > 0 ? result.EarnedDiamond : CalculateDiamondReward(result.ReachedWave, result.IsClear); // 보상
-            int finalReward = BuildStartBonus().ApplyDiamondGainBonus(baseReward); // 다이아 보너스
+            bool recordChanged = TryRecordHighestReachedWave(result.ReachedWave); // 최고 기록 갱신
+            int baseReward = result.HasExplicitEarnedDiamond ? result.EarnedDiamond : CalculateDiamondReward(result.ReachedWave, result.IsClear); // 보상
+            int finalReward = result.HasExplicitEarnedDiamond ? baseReward : BuildStartBonus().ApplyDiamondGainBonus(baseReward); // 확정 보상은 재계산 금지
             Diamond += finalReward; // 획득
             SaveProgressIfNeeded(); // 저장
+            if (recordChanged)
+            {
+                HighestReachedWaveChanged?.Invoke(HighestReachedWave); // 기록 알림
+            }
+
             DiamondChanged?.Invoke(Diamond); // 알림
             return finalReward; // 실제 지급량
+        }
+
+        public bool RegisterReachedWave(int reachedWave) // 최고 웨이브 수동 반영
+        {
+            bool changed = TryRecordHighestReachedWave(reachedWave); // 기록 갱신
+            if (!changed)
+            {
+                return false; // 변화 없음
+            }
+
+            SaveProgressIfNeeded(); // 저장
+            HighestReachedWaveChanged?.Invoke(HighestReachedWave); // 알림
+            return true; // 갱신됨
         }
 
         public void AddDiamond(int amount) // 테스트/보상 다이아 지급
@@ -175,6 +204,7 @@ namespace TeamProject01.Gameplay
         public void ResetProgress() // 진행도 초기화
         {
             Diamond = DefaultStartingDiamond; // 다이아
+            HighestReachedWave = 0; // 최고 웨이브
             SelectedWormId = MetaWormIds.Basic; // 기본 지렁이
             SelectedMapId = MetaMapIds.Map1; // 기본 맵
             AttackWormUnlocked = false; // 공격형
@@ -195,6 +225,7 @@ namespace TeamProject01.Gameplay
             NormalizeState(); // 보정
             SaveProgressIfNeeded(); // 저장
             DiamondChanged?.Invoke(Diamond); // 다이아 알림
+            HighestReachedWaveChanged?.Invoke(HighestReachedWave); // 기록 알림
             SelectedWormChanged?.Invoke(SelectedWormId); // 지렁이 알림
             SelectedMapChanged?.Invoke(SelectedMapId); // 맵 알림
         }
@@ -206,6 +237,7 @@ namespace TeamProject01.Gameplay
             string nextCost = GetLowestNextUpgradeCost(upgradeBaseCost); // 다음 비용
             return $"다이아 {Diamond}\n"
                 + $"{saveState}\n"
+                + $"최고 웨이브 {HighestReachedWave}\n"
                 + $"선택 지렁이 {SelectedWormId}\n"
                 + $"선택 맵 {SelectedMapId}\n"
                 + $"업그레이드 {GetTotalUpgradeLevel()}/{MaxUpgradeLevel * 8}\n"
@@ -444,6 +476,7 @@ namespace TeamProject01.Gameplay
             {
                 Version = SaveVersion,
                 Diamond = Diamond,
+                HighestReachedWave = HighestReachedWave,
                 SelectedWormId = SelectedWormId,
                 SelectedMapId = SelectedMapId,
                 AttackWormUnlocked = AttackWormUnlocked,
@@ -467,6 +500,7 @@ namespace TeamProject01.Gameplay
         private void ApplySaveData(SaveData data) // 저장 데이터 반영
         {
             Diamond = data.Diamond; // 다이아
+            HighestReachedWave = data.HighestReachedWave; // 최고 웨이브
             SelectedWormId = data.SelectedWormId; // 지렁이
             SelectedMapId = data.SelectedMapId; // 맵
             AttackWormUnlocked = data.AttackWormUnlocked; // 공격형
@@ -489,6 +523,7 @@ namespace TeamProject01.Gameplay
         private void NormalizeState() // 전체 값 보정
         {
             Diamond = Mathf.Max(0, Diamond); // 재화 보정
+            HighestReachedWave = Mathf.Max(0, HighestReachedWave); // 기록 보정
             MigrateLegacyWormUnlocks(); // 이전 저장값 반영
             SelectedWormId = NormalizeWormId(SelectedWormId); // 지렁이 보정
             SelectedMapId = NormalizeMapId(SelectedMapId); // 맵 보정
@@ -641,9 +676,21 @@ namespace TeamProject01.Gameplay
             MobilityWormUnlocked |= ChargeWormUnlocked; // 돌격형 → 이속형
         }
 
+        private bool TryRecordHighestReachedWave(int reachedWave) // 최고 기록 내부 갱신
+        {
+            int safeWave = Mathf.Max(0, reachedWave); // 음수 방지
+            if (safeWave <= HighestReachedWave)
+            {
+                return false; // 기존 기록 유지
+            }
+
+            HighestReachedWave = safeWave; // 새 기록
+            return true; // 변경됨
+        }
+
         private static string NormalizeMapId(string mapId) // 맵 ID 보정
         {
-            return string.IsNullOrWhiteSpace(mapId) ? MetaMapIds.Map1 : mapId; // 기본값
+            return MetaMapIds.Normalize(mapId); // 공용 보정
         }
 
         private static float GetFiveStepPercent(int level) // 5/10/15/20/25%
@@ -688,6 +735,7 @@ namespace TeamProject01.Gameplay
         {
             public int Version; // 버전
             public int Diamond; // 다이아
+            public int HighestReachedWave; // 최고 웨이브
             public string SelectedWormId; // 지렁이
             public string SelectedMapId; // 맵
             public bool AttackWormUnlocked; // 공격형

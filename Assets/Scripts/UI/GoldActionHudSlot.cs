@@ -5,6 +5,10 @@ namespace TeamProject01.Gameplay
 {
     public sealed class GoldActionHudSlot : MonoBehaviour
     {
+        private const string RoundedIconMaskName = "ActionHudRoundedIconMask";
+        private const float RoundedIconCornerRadius = 8f;
+        private const int RoundedIconCornerSegments = 5;
+
         public Image BackgroundImage;
         public Image IconImage;
         public Image CooldownFill;
@@ -21,6 +25,7 @@ namespace TeamProject01.Gameplay
         private HudTooltipTrigger buttonTooltipTrigger;
         private HudTooltipTrigger buttonGraphicTooltipTrigger;
         private Button iconButton;
+        private RectTransform roundedIconMaskTransform;
 
         [Header("Colors")]
         public Color NormalTextColor = new Color(0.96f, 0.98f, 1f, 1f);
@@ -28,6 +33,16 @@ namespace TeamProject01.Gameplay
         public Color CooldownTextColor = new Color(1f, 0.93f, 0.62f, 1f);
         public Color DimmedIconColor = new Color(0.34f, 0.38f, 0.44f, 0.82f);
         public Color CooldownOverlayColor = new Color(0f, 0f, 0f, 0.62f);
+
+        private void Awake()
+        {
+            EnsureRoundedIconMask();
+        }
+
+        private void OnEnable()
+        {
+            EnsureRoundedIconMask();
+        }
 
         public void BindButton(UnityEngine.Events.UnityAction action)
         {
@@ -66,6 +81,7 @@ namespace TeamProject01.Gameplay
             bool iconActive,
             bool coolingDown)
         {
+            EnsureRoundedIconMask();
             SetSprite(IconImage, icon);
             SetText(KeyText, keyLabel, NormalTextColor);
             SetText(NameText, string.Empty, NormalTextColor);
@@ -184,6 +200,110 @@ namespace TeamProject01.Gameplay
             iconButton.transition = Selectable.Transition.None;
             iconButton.navigation = new Navigation { mode = Navigation.Mode.None };
             return iconButton;
+        }
+
+        private void EnsureRoundedIconMask()
+        {
+            if (IconImage == null)
+            {
+                return;
+            }
+
+            RectTransform iconRect = IconImage.rectTransform;
+            if (iconRect == null)
+            {
+                return;
+            }
+
+            if (roundedIconMaskTransform == null)
+            {
+                Transform existingMask = transform.Find(RoundedIconMaskName);
+                roundedIconMaskTransform = existingMask != null ? existingMask as RectTransform : null;
+            }
+
+            if (roundedIconMaskTransform == null)
+            {
+                roundedIconMaskTransform = CreateRoundedIconMask(iconRect);
+            }
+
+            if (roundedIconMaskTransform == null)
+            {
+                return;
+            }
+
+            ConfigureRoundedIconMask(roundedIconMaskTransform);
+            ParentToRoundedIconMask(IconImage.rectTransform);
+            ParentToRoundedIconMask(CooldownFill != null ? CooldownFill.rectTransform : null);
+
+            IconImage.rectTransform.SetAsFirstSibling();
+            if (CooldownFill != null)
+            {
+                CooldownFill.rectTransform.SetAsLastSibling();
+            }
+        }
+
+        private RectTransform CreateRoundedIconMask(RectTransform sourceRect)
+        {
+            Transform sourceParent = sourceRect.parent;
+            if (sourceParent == null)
+            {
+                return null;
+            }
+
+            int siblingIndex = sourceRect.GetSiblingIndex();
+            GameObject maskObject = new GameObject(
+                RoundedIconMaskName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(ActionHudRoundedRectMaskGraphic),
+                typeof(Mask));
+
+            maskObject.layer = sourceRect.gameObject.layer;
+            RectTransform maskRect = maskObject.GetComponent<RectTransform>();
+            maskRect.SetParent(sourceParent, false);
+            CopyRectTransform(sourceRect, maskRect);
+            maskRect.SetSiblingIndex(siblingIndex);
+
+            return maskRect;
+        }
+
+        private static void ConfigureRoundedIconMask(RectTransform maskRect)
+        {
+            ActionHudRoundedRectMaskGraphic maskGraphic = maskRect.GetComponent<ActionHudRoundedRectMaskGraphic>();
+            if (maskGraphic != null)
+            {
+                maskGraphic.CornerRadius = RoundedIconCornerRadius;
+                maskGraphic.CornerSegments = RoundedIconCornerSegments;
+                maskGraphic.color = Color.white;
+                maskGraphic.raycastTarget = false;
+            }
+
+            Mask mask = maskRect.GetComponent<Mask>();
+            if (mask != null)
+            {
+                mask.showMaskGraphic = false;
+            }
+        }
+
+        private void ParentToRoundedIconMask(RectTransform targetRect)
+        {
+            if (targetRect == null || targetRect == roundedIconMaskTransform || targetRect.parent == roundedIconMaskTransform)
+            {
+                return;
+            }
+
+            targetRect.SetParent(roundedIconMaskTransform, true);
+        }
+
+        private static void CopyRectTransform(RectTransform source, RectTransform target)
+        {
+            target.anchorMin = source.anchorMin;
+            target.anchorMax = source.anchorMax;
+            target.anchoredPosition = source.anchoredPosition;
+            target.sizeDelta = source.sizeDelta;
+            target.pivot = source.pivot;
+            target.localRotation = source.localRotation;
+            target.localScale = source.localScale;
         }
 
         private static HudTooltipTrigger EnsureTooltipTrigger(GameObject target, ref HudTooltipTrigger cache)

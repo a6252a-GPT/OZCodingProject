@@ -187,7 +187,6 @@ public partial class CardUI : MonoBehaviour
     private Sprite cachedTierFrameUniqueSprite; // 유니크 등급 카드 프레임
 
     public bool AutoSelectInAutoOrbit => autoSelectInAutoOrbit; // HUD 토글 표시용
-    public event System.Action<bool> AutoSelectInAutoOrbitChanged; // HUD 상태 갱신 알림
 
     private void Awake()
     {
@@ -293,18 +292,74 @@ public partial class CardUI : MonoBehaviour
 
     public void PlayLevelUpTween()
     {
+        TryOpenLevelUpPanel(); // 기존 외부 호출 호환
+    }
+
+    public bool CanOpenLevelUpPanel() // 경험치 레벨업 패널 오픈 가능 여부
+    {
+        ResolveManagerReferences(); // LevelUpUi/CanvasGroup 참조 보강
+        if (ResolveLevelUpUi() == null || levelUpPanelCanvasGroup == null)
+        {
+            return false; // 카드 생성 감지에 필요한 참조 없음
+        }
+
+        if (IsLevelUpPanelOpen() || isProcessingSelection)
+        {
+            return false; // 이미 카드 패널이 열렸거나 선택 처리 중
+        }
+
+        if (activePanelMode != CardPanelMode.LevelUp)
+        {
+            return false; // 보상/선택권 흐름 완료 전에는 레벨업 대기
+        }
+
+        return segmentTicketChoicesRemaining <= 0
+            && pendingRewardExperience <= 0
+            && pendingRewardGold <= 0
+            && pendingRewardSegmentTicketCount <= 0; // 특수 카드 잔여 처리 없음
+    }
+
+    public bool TryOpenLevelUpPanel() // 경험치 레벨업 패널 오픈
+    {
+        if (!CanOpenLevelUpPanel())
+        {
+            return false;
+        }
+
         activePanelMode = CardPanelMode.LevelUp; // 일반 경험치 레벨업 모드
-        ResolveLevelUpUi()?.SetUseRewardTitle(false);
+        segmentTicketChoicesRemaining = 0;
+        pendingRewardExperience = 0;
+        pendingRewardGold = 0;
+        pendingRewardSegmentTicketCount = 0;
+        ClearRewardChoiceTierChanceBonus();
+        spawnedForCurrentOpen = false; // 새 카드 묶음 생성 허용
+        isProcessingSelection = false;
+        currentSpawnPhase = LevelUpCardPhase.Upgrade;
+        remainingRerollCount = 0;
+        rerollAllowedForCurrentChoices = false;
+        RefreshRerollUi();
+
+        LevelUpUi ui = ResolveLevelUpUi();
+        ui.SetUseRewardTitle(false);
+        ui.SetUseBackgroundBlur(false);
 
         // 안건준 추가 - 0622 : 자동궤도 모드이고 자동선택이 켜져 있으면 일시정지 없이 열기
         if (autoSelectInAutoOrbit && IsAutoOrbitActive())
         {
-            ResolveLevelUpUi()?.OpenWithoutPause();
+            ui.OpenWithoutPause();
         }
         else
         {
-            ResolveLevelUpUi()?.Open();
+            ui.Open();
         }
+
+        bool opened = IsLevelUpPanelOpen();
+        if (!opened)
+        {
+            Debug.LogWarning("[CardUI] 레벨업 패널 오픈에 실패했습니다. LevelUpUi/CanvasGroup 연결을 확인하세요.", this);
+        }
+
+        return opened;
     }
 
     public void ToggleAutoSelectInAutoOrbit()
@@ -351,7 +406,6 @@ public partial class CardUI : MonoBehaviour
             PlayerPrefs.Save();
         }
 
-        AutoSelectInAutoOrbitChanged?.Invoke(autoSelectInAutoOrbit); // HUD 라벨/색 갱신
     }
 
     private void LoadAutoSelectInAutoOrbitPreference()
@@ -419,6 +473,7 @@ public partial class CardUI : MonoBehaviour
         isProcessingSelection = false;
         currentSpawnPhase = LevelUpCardPhase.Upgrade;
         ui.SetUseRewardTitle(mode != CardPanelMode.LevelUp); // 보상/선택권은 보상획득 타이틀
+        ui.SetUseBackgroundBlur(mode != CardPanelMode.LevelUp); // 보상/선택권은 배경 블러 사용
         ui.Open();
         return true;
     }
@@ -1279,32 +1334,6 @@ public partial class CardUI : MonoBehaviour
         return normal != 0 || rare != 0 || unique != 0;
     }
 
-    private static bool TryResolveWeaponDescriptionValue(WeaponDefinition definition, StatUpgrade.StatCardTier tier, out string valueText)
-    {
-        valueText = string.Empty;
-        if (definition == null)
-        {
-            return false;
-        }
-
-        if (TryFormatFlatOrPercentValue(definition.GetBaseDamage(tier), definition.GetBaseDamagePercent(tier), out valueText)) return true;
-        if (TryFormatPercentRate(definition.GetSawPierceDamageRatio(tier), out valueText)) return true;
-        if (TryFormatFlatOrPercentValue(definition.GetProjectileSpeed(tier), definition.GetProjectileSpeedPercent(tier), out valueText)) return true;
-        if (TryFormatFlatOrPercentValue(definition.GetSearchRange(tier), definition.GetSearchRangePercent(tier), "M", out valueText)) return true;
-        if (TryFormatIntValue(definition.GetMaxChainDepth(tier), out valueText)) return true;
-        if (TryFormatFlatOrPercentValue(definition.GetChainRange(tier), definition.GetChainRangePercent(tier), "M", out valueText)) return true;
-        if (TryFormatPercentRate(definition.GetChainDamageFalloff(tier), out valueText)) return true;
-        if (TryFormatIntValue(definition.GetProjectileCount(tier), out valueText)) return true;
-        if (TryFormatPercentRate(definition.GetCooldownReduction(tier), out valueText)) return true;
-        if (TryFormatFloatValue(definition.GetSideConeAngle(tier), out valueText)) return true;
-        if (TryFormatFlatOrPercentValue(definition.GetLaserDuration(tier), definition.GetLaserDurationPercent(tier), out valueText)) return true;
-        if (TryFormatPercentRate(definition.GetLaserTickInterval(tier), out valueText)) return true;
-        if (TryFormatFlatOrPercentValue(definition.GetLandingRollDistance(tier), definition.GetLandingRollDistancePercent(tier), "M", out valueText)) return true;
-        if (TryFormatFlatOrPercentValue(definition.GetLandingRollDuration(tier), definition.GetLandingRollDurationPercent(tier), out valueText)) return true;
-        if (TryFormatIntValue(definition.GetPierceCount(tier), out valueText)) return true;
-        return TryFormatFlatOrPercentValue(definition.GetExplosionRadius(tier), definition.GetExplosionRadiusPercent(tier), "M", out valueText);
-    }
-
     private static bool TryFormatFlatOrPercentValue(float flatValue, float percentValue, out string valueText)
     {
         return TryFormatFlatOrPercentValue(flatValue, percentValue, string.Empty, out valueText);
@@ -1685,6 +1714,38 @@ public partial class CardUI : MonoBehaviour
         }
 
         bridge.Initialize(this, entry);
+        WireSpawnedCardChildInput(entry); // 아이콘/텍스트 자식 히트도 카드 입력으로 연결
+    }
+
+    private void WireSpawnedCardChildInput(SpawnedCardEntry entry)
+    {
+        if (entry == null || entry.Root == null)
+        {
+            return;
+        }
+
+        Graphic[] graphics = entry.Root.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+        {
+            Graphic graphic = graphics[i];
+            if (graphic == null || !graphic.raycastTarget || graphic.gameObject == entry.Root)
+            {
+                continue;
+            }
+
+            if (graphic.GetComponent<Button>() != null)
+            {
+                continue; // 별도 버튼이면 기존 Button 흐름 유지
+            }
+
+            CardChildInputBridge childBridge = graphic.GetComponent<CardChildInputBridge>();
+            if (childBridge == null)
+            {
+                childBridge = graphic.gameObject.AddComponent<CardChildInputBridge>();
+            }
+
+            childBridge.Initialize(this, entry);
+        }
     }
 
     private static List<GameObject> BuildPrefabPool(GameObject[] prefabs)
@@ -1873,21 +1934,6 @@ public partial class CardUI : MonoBehaviour
 
         lastSelectedStatCardDefinition = definition;
         lastSelectedStatCardPrefab = null; // 기존 프리팹 fallback 가중치와 분리
-    }
-
-    private static List<GameObject> PickRandomPrefabs(List<GameObject> pool, int count)
-    {
-        List<GameObject> shuffled = new List<GameObject>(pool);
-        for (int i = shuffled.Count - 1; i > 0; i--)
-        {
-            int swapIndex = Random.Range(0, i + 1);
-            GameObject temp = shuffled[i];
-            shuffled[i] = shuffled[swapIndex];
-            shuffled[swapIndex] = temp;
-        }
-
-        int pickCount = Mathf.Min(count, shuffled.Count);
-        return shuffled.GetRange(0, pickCount);
     }
 
     // 안건준 추가 - 0622 ======

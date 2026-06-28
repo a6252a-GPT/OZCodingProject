@@ -678,6 +678,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyReward
   experienceReward: 1
   goldReward: 1
+  enableEliteDiamondDrop: 1
+  eliteDiamondDropChance: 0.5
+  eliteDiamondReward: 2
 --- !u!114 &3834878905956706615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -778,7 +781,7 @@ PrefabInstance:
       objectReference: {fileID: 5025662635331488248}
     - target: {fileID: 62207697838962261, guid: 2298fadb485b25141ba6033026ca5b2d, type: 3}
       propertyPath: fixedFillWidth
-      value: 140
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 5916244055597912211, guid: 2298fadb485b25141ba6033026ca5b2d, type: 3}
       propertyPath: m_Name
@@ -810,11 +813,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 2298fadb485b25141ba6033026ca5b2d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 150
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 2298fadb485b25141ba6033026ca5b2d, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 40
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 2298fadb485b25141ba6033026ca5b2d, type: 3}
       propertyPath: m_LocalPosition.x

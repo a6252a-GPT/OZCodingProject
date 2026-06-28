@@ -27,6 +27,12 @@ namespace TeamProject01.Gameplay
         [Min(0.0f)]
         [SerializeField] private float clearCheckDelaySeconds = 1.0f; // Stage 시작 직후 바로 넘어가는 일을 막기 위한 대기 시간입니다.
 
+        [Header("다이아 클리어 보상")]
+        [SerializeField] private bool spawnDiamondRewardOnWaveStepClear = true; // 일정 웨이브 클리어 보상
+        [Min(1)]
+        [SerializeField] private int diamondRewardWaveStep = 5; // 5웨이브 단위
+        [SerializeField] private int[] diamondRewardByWaveStep = { 30, 45, 60, 75, 90, 105, 115, 125 }; // 5~40웨이브 보상표
+
         [Header("담당 컴포넌트 연결")]
         [SerializeField] private EnemySpawner enemySpawner; // 기존 EnemySpawner의 외부 스폰 API만 사용합니다.
         [SerializeField] private bool disableSpawnerStageRulesUpdate = true; // 기존 Stage Rules 자동 스폰과 중복되지 않게 막습니다.
@@ -265,9 +271,50 @@ namespace TeamProject01.Gameplay
 
         private void AdvanceStage()
         {
+            int completedStage = currentStage; // 보상 기준 웨이브
+            TrySpawnWaveClearDiamondReward(completedStage); // 클리어 다이아 픽업
             elapsedStageSeconds = 0.0f;
             currentStage++;
             StartCurrentStage();
+        }
+
+        private void TrySpawnWaveClearDiamondReward(int completedStage) // 웨이브 클리어 다이아
+        {
+            if (!spawnDiamondRewardOnWaveStepClear || completedStage <= 0)
+            {
+                return; // 보상 비활성
+            }
+
+            if (completedStage % Mathf.Max(1, diamondRewardWaveStep) != 0)
+            {
+                return; // 보상 웨이브 아님
+            }
+
+            int reward = ResolveWaveClearDiamondReward(completedStage);
+            if (reward <= 0)
+            {
+                return; // 지급 없음
+            }
+
+            RewardDropService.SpawnDiamond(reward, ResolveWaveRewardDropPosition()); // 월드 픽업 생성
+        }
+
+        private int ResolveWaveClearDiamondReward(int completedStage) // 보상표 조회
+        {
+            if (diamondRewardByWaveStep == null || diamondRewardByWaveStep.Length == 0)
+            {
+                return 0; // 테이블 없음
+            }
+
+            int stepIndex = Mathf.Max(0, completedStage / Mathf.Max(1, diamondRewardWaveStep) - 1);
+            int clampedIndex = Mathf.Min(stepIndex, diamondRewardByWaveStep.Length - 1); // 40 이후는 마지막 값 반복
+            return Mathf.Max(0, diamondRewardByWaveStep[clampedIndex]); // 안전 보정
+        }
+
+        private Vector3 ResolveWaveRewardDropPosition() // 웨이브 보상 위치
+        {
+            NexusController nexus = NexusController.Active;
+            return nexus != null ? nexus.transform.position : transform.position; // 넥서스 근처 우선
         }
 
         private void ResolveReferences()

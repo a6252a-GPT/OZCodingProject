@@ -78,6 +78,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private bool showLevelInName = true; // 이름 뒤 Lv 표시
         [SerializeField] private bool syncScrollPosition = true; // TOTAL/WAVE 스크롤 동기화
         [SerializeField] private bool autoFitToCurrentRect = true; // 현재 패널 크기에 내부 내용 맞춤
+        [SerializeField] private bool onlyShowInAutoOrbit = true; // 자동궤도 중에만 표시
         [SerializeField] private TMP_FontAsset debugFont; // DPS 미터 전용 폰트
 
         private readonly List<AttachedSegmentDebugEntry> segmentEntries = new List<AttachedSegmentDebugEntry>(64); // 현재 세그먼트 순서
@@ -91,10 +92,12 @@ namespace TeamProject01.Gameplay
         private RectTransform waveContent; // WAVE 행 부모
         private ScrollRect totalScrollRect; // TOTAL 스크롤
         private ScrollRect waveScrollRect; // WAVE 스크롤
+        private CanvasGroup visibilityGroup; // 자동궤도 표시 제어
         private float nextRefreshTime; // 다음 갱신 시간
         private bool scrollSyncWired; // 스크롤 이벤트 연결 여부
         private bool isSyncingScroll; // 재귀 동기화 방지
         private bool warnedMissingLayout; // 레이아웃 누락 경고 반복 방지
+        private bool lastVisibleState = true; // 직전 표시 상태
 
         private const string GwangyangFontAssetPath = "Assets/UI/Fonts/Title/GwangyangSunshine_Bold SDF.asset";
         private static readonly Vector2 DefaultGeneratedRootSize = new Vector2(520f, 560f);
@@ -109,6 +112,13 @@ namespace TeamProject01.Gameplay
         private void OnEnable()
         {
             ResolveReferences();
+            bool visible = ShouldShowPanel();
+            ApplyPanelVisibility(visible);
+            if (!visible)
+            {
+                return; // 자동궤도 전에는 표시/갱신 보류
+            }
+
             EnsureLayout();
             ApplyResponsiveLayout(); // 사용자 크기에 맞게 내부만 보정
             WireScrollSync();
@@ -120,6 +130,13 @@ namespace TeamProject01.Gameplay
             if (!Application.isPlaying)
             {
                 return; // 에디터 대기 중 갱신 방지
+            }
+
+            bool visible = ShouldShowPanel();
+            ApplyPanelVisibility(visible);
+            if (!visible)
+            {
+                return; // 자동궤도 밖에서는 미터 숨김
             }
 
             if (Time.unscaledTime < nextRefreshTime)
@@ -163,6 +180,12 @@ namespace TeamProject01.Gameplay
 
         private void Refresh(bool force)
         {
+            if (!ShouldShowPanel())
+            {
+                ApplyPanelVisibility(false);
+                return; // 숨김 상태에서는 행 갱신 생략
+            }
+
             ResolveReferences();
             EnsureLayout();
             if (totalContent == null || waveContent == null)
@@ -170,6 +193,7 @@ namespace TeamProject01.Gameplay
                 return; // 정식 배치가 없으면 자동 재생성하지 않음
             }
 
+            WireScrollSync(); // 숨김 상태로 시작한 뒤 켜질 때도 보장
             ApplyResponsiveLayout(); // 현재 RectTransform 크기 기준 재배치
             if (!force)
             {
@@ -190,6 +214,50 @@ namespace TeamProject01.Gameplay
             float maxWaveDamage = CalculateMaxDamage(MetricKind.Wave);
             RefreshRows(totalRows, MetricKind.Total, maxTotalDamage, TotalFillColor);
             RefreshRows(waveRows, MetricKind.Wave, maxWaveDamage, WaveFillColor);
+        }
+
+        private bool ShouldShowPanel()
+        {
+            if (!onlyShowInAutoOrbit)
+            {
+                return true; // 항상 표시 모드
+            }
+
+            ResolveReferences();
+            return convoyController != null && convoyController.IsAutoOrbitActive; // 자동궤도 표시
+        }
+
+        private void ApplyPanelVisibility(bool visible)
+        {
+            EnsureVisibilityGroup();
+            if (visibilityGroup == null)
+            {
+                return; // 제어 불가
+            }
+
+            visibilityGroup.alpha = visible ? 1f : 0f;
+            visibilityGroup.interactable = visible;
+            visibilityGroup.blocksRaycasts = visible;
+            if (visible && !lastVisibleState)
+            {
+                nextRefreshTime = 0f; // 다시 켜질 때 즉시 갱신
+            }
+
+            lastVisibleState = visible;
+        }
+
+        private void EnsureVisibilityGroup()
+        {
+            if (visibilityGroup != null)
+            {
+                return; // 이미 있음
+            }
+
+            visibilityGroup = GetComponent<CanvasGroup>();
+            if (visibilityGroup == null)
+            {
+                visibilityGroup = gameObject.AddComponent<CanvasGroup>(); // 루트 활성은 유지
+            }
         }
 
         private void RefreshRows(List<RowView> rows, MetricKind metricKind, float maxDamage, Color fillColor)

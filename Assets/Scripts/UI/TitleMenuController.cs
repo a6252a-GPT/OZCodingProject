@@ -13,10 +13,25 @@ namespace TeamProject01.Gameplay
         private const string LegacyCoreTestScenePath = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 이전 코어 테스트 씬
 
         private Button runtimeMagicWormButton; // 런타임 마법형 버튼
+        private bool mapCardButtonsWired; // 맵 카드 런타임 리스너 중복 방지
+
+        [System.Serializable]
+        public sealed class TitleMapCardView // 맵 카드 표시 묶음
+        {
+            public string MapId; // map_01 등
+            public Button Button; // 카드 클릭
+            public Image PreviewImage; // 썸네일 슬롯
+            public Image FrameImage; // 카드 테두리/배경
+            public Image EmblemImage; // 문장
+            public Image SelectionGlowImage; // 선택 발광
+            public GameObject LockedOverlay; // 잠금 딤
+            public Text NameText; // 맵 이름
+            public Text StateText; // 선택 가능/예정
+        }
 
         public MetaProgressionManager Meta; // 메타 데이터
         public string TargetStageScenePath = CurrentCoreTestScenePath; // 현재 코어 테스트 대상
-        [Min(0)] public int HighestReachedWave; // 최고 도달 웨이브
+        [HideInInspector][Min(0)] public int HighestReachedWave; // 이전 타이틀 필드 기록
         [Min(0)] public int TemporaryUpgradeBaseCost = 50; // 임시 강화 기본 비용
 
         [Header("Panels")]
@@ -47,6 +62,18 @@ namespace TeamProject01.Gameplay
         public Text SelectedMapStateText; // 맵 상태
         public Text SelectedMapDescriptionText; // 맵 설명
         public Image SelectedMapPreview; // 맵 프리뷰
+        public Image SelectedMapEmblemImage; // 선택 맵 문장
+        public Text SelectedMapRecommendedLevelText; // 추천 레벨
+        public Text SelectedMapPowerText; // 권장 전투력
+        public Text SelectedMapEnemyTypeText; // 주요 적 유형
+        public Text SelectedMapRuleText; // 특수 규칙
+        public Text SelectedMapRewardText; // 보상 요약
+        public Text SelectedMapRecordText; // 최고 웨이브 기록
+        public Text MapDiamondText; // 맵 선택 상단 다이아
+        public Text MapHighestWaveText; // 맵 선택 상단 최고 웨이브
+        public Button StartSelectedMapButton; // 선택 버튼
+        public Text StartSelectedMapButtonText; // 선택 버튼 텍스트
+        public TitleMapCardView[] MapCards = System.Array.Empty<TitleMapCardView>(); // 하단 맵 카드들
 
         [Header("Debug")]
         [Min(0)] public int DebugDiamondAmount = 1000; // 테스트 지급 다이아
@@ -63,8 +90,10 @@ namespace TeamProject01.Gameplay
                 Meta = FindFirstObjectByType<MetaProgressionManager>(); // 씬 메타 검색
             }
 
+            MigrateLegacyHighestReachedWave(); // 이전 타이틀 필드 기록 보존
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
+            WireMapCardButtons(); // 맵 카드 클릭 연결
         }
 
         private void OnEnable() // 표시 시작
@@ -72,6 +101,7 @@ namespace TeamProject01.Gameplay
             if (Meta != null)
             {
                 Meta.DiamondChanged += OnDiamondChanged; // 다이아 갱신
+                Meta.HighestReachedWaveChanged += OnHighestReachedWaveChanged; // 최고 웨이브 갱신
                 Meta.SelectedWormChanged += OnSelectedWormChanged; // 지렁이 갱신
                 Meta.SelectedMapChanged += OnSelectedMapChanged; // 맵 갱신
             }
@@ -79,6 +109,8 @@ namespace TeamProject01.Gameplay
             EnsureWormSelectionButtons(); // 지렁이 버튼 보강
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
+            WireMapCardButtons(); // 씬 오브젝트 리스너 보강
+            TryConsumePendingRunResult(); // 스테이지 결과 보상 반영
             ShowMainMenu(); // 기본 화면
             RefreshAll(); // 즉시 갱신
         }
@@ -88,6 +120,7 @@ namespace TeamProject01.Gameplay
             if (Meta != null)
             {
                 Meta.DiamondChanged -= OnDiamondChanged; // 다이아 해제
+                Meta.HighestReachedWaveChanged -= OnHighestReachedWaveChanged; // 최고 웨이브 해제
                 Meta.SelectedWormChanged -= OnSelectedWormChanged; // 지렁이 해제
                 Meta.SelectedMapChanged -= OnSelectedMapChanged; // 맵 해제
             }
@@ -188,6 +221,18 @@ namespace TeamProject01.Gameplay
             SetStatus("맵 3은 업데이트 예정입니다."); // 잠금
         }
 
+        public void StartMap4() // 맵 4
+        {
+            SelectMap(MetaMapIds.Map4); // 맵4 표시
+            SetStatus("맵 4는 업데이트 예정입니다."); // 잠금
+        }
+
+        public void StartMap5() // 맵 5
+        {
+            SelectMap(MetaMapIds.Map5); // 맵5 표시
+            SetStatus("맵 5는 업데이트 예정입니다."); // 잠금
+        }
+
         public void SelectMap1() // 맵 1 선택
         {
             SelectMap(MetaMapIds.Map1); // 맵1
@@ -201,6 +246,21 @@ namespace TeamProject01.Gameplay
         public void SelectMap3() // 맵 3 선택
         {
             SelectMap(MetaMapIds.Map3); // 맵3
+        }
+
+        public void SelectMap4() // 맵 4 선택
+        {
+            SelectMap(MetaMapIds.Map4); // 맵4
+        }
+
+        public void SelectMap5() // 맵 5 선택
+        {
+            SelectMap(MetaMapIds.Map5); // 맵5
+        }
+
+        public void SelectMapById(string mapId) // 버튼/카드 공통 선택
+        {
+            SelectMap(mapId); // ID 기반 선택
         }
 
         public void StartSelectedMap() // 선택 맵 시작
@@ -339,10 +399,34 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            RunResultData result = RunResultData.Create(DebugReachedWave, 0f, 0, DebugRunClear, DebugEarnedDiamond, 0, Meta.SelectedWormId); // 결과
+            RunResultData result = RunResultData.CreateWithExplicitDiamond(DebugReachedWave, 0f, 0, DebugRunClear, DebugEarnedDiamond, 0, Meta.SelectedWormId); // 직접 입력 보상
             int reward = Meta.ApplyRunResult(result); // 보상 적용
             SetStatus($"임시 웨이브 보상 +{reward} 다이아"); // 상태
             RefreshAll(); // 갱신
+        }
+
+        private void TryConsumePendingRunResult() // 스테이지 결과 보상 적용
+        {
+            if (Meta == null || !RunResultContext.TryConsumePendingResult(out RunResultData result))
+            {
+                return; // 메타 없음/결과 없음
+            }
+
+            int reward = Meta.ApplyRunResult(result); // 다이아 지급/저장
+            HighestReachedWave = Meta.HighestReachedWave; // 메타 기록 동기화
+            string resultLabel = result.IsClear ? "게임 클리어" : "게임 오버";
+            string bonusText = result.ClearDiamondBonus > 0 ? $" / 보너스 +{result.ClearDiamondBonus}" : string.Empty; // 클리어 보너스
+            SetStatus($"{resultLabel} / 도달 웨이브 {result.ReachedWave} / 수집 {result.CollectedDiamond}{bonusText} / 다이아 +{reward}"); // 결과 요약
+        }
+
+        private void MigrateLegacyHighestReachedWave() // 이전 컨트롤러 필드 기록 이전
+        {
+            if (Meta == null || HighestReachedWave <= Meta.HighestReachedWave)
+            {
+                return; // 이전할 기록 없음
+            }
+
+            Meta.RegisterReachedWave(HighestReachedWave); // 메타 저장 기록으로 이전
         }
 
         private void SelectOrPurchaseWorm(string wormId) // 지렁이 선택/구매
@@ -465,7 +549,7 @@ namespace TeamProject01.Gameplay
             SetActive(WormSelectPanel, target == WormSelectPanel); // 지렁이
             SetActive(UpgradePanel, target == UpgradePanel); // 업그레이드
             SetActive(SettingsPanel, target == SettingsPanel); // 설정
-            SetActive(TitleLogoObject, target != WormSelectPanel); // 지렁이 선택에서는 숨김
+            SetActive(TitleLogoObject, target != WormSelectPanel && target != MapSelectPanel); // 전용 화면은 자체 로고 사용
         }
 
         private void RefreshAll() // 전체 표시 갱신
@@ -478,8 +562,7 @@ namespace TeamProject01.Gameplay
             EnsureWormSelectionButtons(); // 런타임 버튼 유지
             ResolvePreviewReferences(); // 프리뷰 참조
             string displayWormId = string.IsNullOrWhiteSpace(previewWormId) ? Meta.SelectedWormId : previewWormId; // 표시 대상
-            SetText(DiamondText, Meta.Diamond.ToString()); // 다이아
-            SetText(HighestWaveText, HighestReachedWave.ToString()); // 기록
+            RefreshProgressTexts(); // 보유 정보
             SetText(SelectedWormNameText, GetWormDisplayName(displayWormId)); // 이름
             SetText(SelectedWormBonusText, GetWormBonusText(displayWormId)); // 효과
             SetText(UpgradeSummaryText, BuildUpgradeSummary()); // 강화 요약
@@ -540,15 +623,40 @@ namespace TeamProject01.Gameplay
             SetText(SelectedMapNameText, GetMapDisplayName(mapId)); // 이름
             SetText(SelectedMapStateText, GetMapStateText(mapId)); // 상태
             SetText(SelectedMapDescriptionText, GetMapDescription(mapId)); // 설명
+            SetText(SelectedMapRecommendedLevelText, GetMapRecommendedLevelText(mapId)); // 추천 레벨
+            SetText(SelectedMapPowerText, GetMapPowerText(mapId)); // 전투력
+            SetText(SelectedMapEnemyTypeText, GetMapEnemyTypeText(mapId)); // 적 유형
+            SetText(SelectedMapRuleText, GetMapRuleText(mapId)); // 특수 규칙
+            SetText(SelectedMapRewardText, GetMapRewardText(mapId)); // 보상
+            SetText(SelectedMapRecordText, GetMapRecordText(mapId)); // 기록
+            SetText(StartSelectedMapButtonText, IsMapPlayable(mapId) ? "선택" : "예정"); // 시작 버튼
 
             if (SelectedMapPreview != null)
             {
-                SelectedMapPreview.color = GetMapPreviewColor(mapId); // 색상
+                ApplyMapImageSlotColor(SelectedMapPreview, mapId); // 실제 사진은 원색 유지
             }
+
+            if (SelectedMapEmblemImage != null)
+            {
+                SelectedMapEmblemImage.color = GetMapEmblemColor(mapId); // 문장색
+            }
+
+            if (StartSelectedMapButton != null)
+            {
+                StartSelectedMapButton.interactable = IsMapPlayable(mapId); // 잠금 맵 시작 금지
+            }
+
+            RefreshMapCardViews(mapId); // 하단 카드 상태 갱신
         }
 
         private void OnDiamondChanged(int diamond) // 다이아 이벤트
         {
+            RefreshAll(); // 갱신
+        }
+
+        private void OnHighestReachedWaveChanged(int highestWave) // 최고 웨이브 이벤트
+        {
+            HighestReachedWave = Mathf.Max(0, highestWave); // 표시 필드 동기화
             RefreshAll(); // 갱신
         }
 
@@ -567,6 +675,86 @@ namespace TeamProject01.Gameplay
         private void SetStatus(string message) // 상태 메시지
         {
             SetText(StatusText, message); // 표시
+        }
+
+        private void WireMapCardButtons() // 하단 카드 클릭 리스너 연결
+        {
+            if (mapCardButtonsWired)
+            {
+                return; // 중복 연결 방지
+            }
+
+            mapCardButtonsWired = true; // 1회만
+            if (StartSelectedMapButton != null && StartSelectedMapButton.onClick.GetPersistentEventCount() == 0)
+            {
+                StartSelectedMapButton.onClick.AddListener(StartSelectedMap); // 선택 버튼
+            }
+
+            for (int i = 0; MapCards != null && i < MapCards.Length; i++)
+            {
+                TitleMapCardView card = MapCards[i]; // 카드 묶음
+                if (card == null || card.Button == null || string.IsNullOrWhiteSpace(card.MapId))
+                {
+                    continue; // 연결 불가
+                }
+
+                string capturedMapId = NormalizeMapId(card.MapId); // 클로저용 복사
+                card.Button.onClick.AddListener(() => SelectMapById(capturedMapId)); // 카드 선택
+            }
+        }
+
+        private void RefreshProgressTexts() // 보유 정보 표시
+        {
+            int diamond = Meta != null ? Mathf.Max(0, Meta.Diamond) : 0; // 보유 다이아
+            int highestWave = ResolveHighestReachedWave(); // 최고 웨이브
+            HighestReachedWave = highestWave; // 레거시 표시 필드 동기화
+            string diamondText = diamond.ToString(); // 공통 문구
+            string highestWaveText = highestWave.ToString(); // 공통 문구
+            SetText(DiamondText, diamondText); // 메인 다이아
+            SetText(HighestWaveText, highestWaveText); // 메인 기록
+            SetText(MapDiamondText, diamondText); // 맵 선택 다이아
+            SetText(MapHighestWaveText, highestWaveText); // 맵 선택 기록
+        }
+
+        private void RefreshMapCardViews(string selectedMapId) // 하단 맵 카드 표시
+        {
+            for (int i = 0; MapCards != null && i < MapCards.Length; i++)
+            {
+                TitleMapCardView card = MapCards[i]; // 카드 묶음
+                if (card == null)
+                {
+                    continue; // 누락 방지
+                }
+
+                string mapId = NormalizeMapId(card.MapId); // 카드 맵
+                bool selected = mapId == selectedMapId; // 선택 여부
+                bool playable = IsMapPlayable(mapId); // 플레이 가능
+
+                SetText(card.NameText, GetMapDisplayName(mapId)); // 이름
+                SetText(card.StateText, GetMapStateText(mapId)); // 상태
+                SetActive(card.LockedOverlay, !playable); // 잠금 딤
+                if (card.PreviewImage != null)
+                {
+                    ApplyMapImageSlotColor(card.PreviewImage, mapId); // 실제 사진은 원색 유지
+                }
+
+                if (card.FrameImage != null)
+                {
+                    card.FrameImage.color = selected
+                        ? new Color(0.16f, 0.72f, 1f, 0.95f)
+                        : new Color(0.86f, 0.58f, 0.24f, 0.95f); // 선택/일반 테두리
+                }
+
+                if (card.EmblemImage != null)
+                {
+                    card.EmblemImage.color = GetMapEmblemColor(mapId); // 문장색
+                }
+
+                if (card.SelectionGlowImage != null)
+                {
+                    card.SelectionGlowImage.enabled = selected; // 선택 발광
+                }
+            }
         }
 
         private void EnsureWormSelectionButtons() // 지렁이 버튼 보강
@@ -828,7 +1016,19 @@ namespace TeamProject01.Gameplay
 
         private static string NormalizeMapId(string mapId) // 맵 ID 보정
         {
-            return string.IsNullOrWhiteSpace(mapId) ? MetaMapIds.Map1 : mapId; // 기본 맵
+            return MetaMapIds.Normalize(mapId); // 공용 보정
+        }
+
+        private static void ApplyMapImageSlotColor(Image image, string mapId) // 맵 사진 슬롯 색상
+        {
+            if (image == null)
+            {
+                return; // 대상 없음
+            }
+
+            image.type = Image.Type.Simple; // 실제 맵 사진은 사각 이미지로 표시
+            image.preserveAspect = false; // 정해진 슬롯 비율에 맞춰 채움
+            image.color = image.sprite != null ? Color.white : GetMapPreviewColor(mapId); // 사진 교체 시 원색 유지
         }
 
         private static bool IsMapPlayable(string mapId) // 플레이 가능 여부
@@ -841,11 +1041,15 @@ namespace TeamProject01.Gameplay
             switch (NormalizeMapId(mapId))
             {
                 case MetaMapIds.Map2:
-                    return "맵 2";
+                    return "숲의 경계";
                 case MetaMapIds.Map3:
-                    return "맵 3";
+                    return "바위 고원";
+                case MetaMapIds.Map4:
+                    return "황혼 늪지";
+                case MetaMapIds.Map5:
+                    return "빛의 신전";
                 default:
-                    return "맵 1";
+                    return "초원 유적";
             }
         }
 
@@ -859,11 +1063,110 @@ namespace TeamProject01.Gameplay
             switch (NormalizeMapId(mapId))
             {
                 case MetaMapIds.Map2:
-                    return "새로운 지형과 웨이브가 들어갈 예정입니다.";
+                    return "짙은 숲길과 좁은 진입로가 이어지는 경계 지역입니다.\n빠른 적과 매복형 웨이브가 들어갈 예정입니다.";
                 case MetaMapIds.Map3:
-                    return "후반 난이도용 맵으로 업데이트 예정입니다.";
+                    return "무너진 바위 지형이 많은 고원입니다.\n방어선을 흔드는 돌파형 웨이브가 들어갈 예정입니다.";
+                case MetaMapIds.Map4:
+                    return "해질녘 안개와 늪지가 깔린 위험 지역입니다.\n감속과 원거리 압박 규칙이 들어갈 예정입니다.";
+                case MetaMapIds.Map5:
+                    return "폐허가 된 빛의 신전입니다.\n후반 고난도 보스 웨이브가 들어갈 예정입니다.";
                 default:
-                    return "현재 테스트 가능한 기본 맵입니다. 선택 시 CoreTest 스테이지로 이동합니다.";
+                    return "고대의 유적이 남아 있는 드넓은 초원입니다.\n균형 잡힌 지형으로 초보자에게 추천됩니다.";
+            }
+        }
+
+        private static string GetMapRecommendedLevelText(string mapId) // 추천 레벨
+        {
+            switch (NormalizeMapId(mapId))
+            {
+                case MetaMapIds.Map2:
+                    return "추천 레벨 : 6 ~ 12";
+                case MetaMapIds.Map3:
+                    return "추천 레벨 : 13 ~ 20";
+                case MetaMapIds.Map4:
+                    return "추천 레벨 : 21 ~ 30";
+                case MetaMapIds.Map5:
+                    return "추천 레벨 : 31+";
+                default:
+                    return "추천 레벨 : 1 ~ 5";
+            }
+        }
+
+        private static string GetMapPowerText(string mapId) // 권장 전투력
+        {
+            switch (NormalizeMapId(mapId))
+            {
+                case MetaMapIds.Map2:
+                    return "1,800";
+                case MetaMapIds.Map3:
+                    return "3,200";
+                case MetaMapIds.Map4:
+                    return "5,000";
+                case MetaMapIds.Map5:
+                    return "7,500";
+                default:
+                    return "1,000";
+            }
+        }
+
+        private static string GetMapEnemyTypeText(string mapId) // 주요 적 유형
+        {
+            switch (NormalizeMapId(mapId))
+            {
+                case MetaMapIds.Map2:
+                    return "기동형";
+                case MetaMapIds.Map3:
+                    return "돌파형";
+                case MetaMapIds.Map4:
+                    return "마법형";
+                case MetaMapIds.Map5:
+                    return "보스형";
+                default:
+                    return "균형형";
+            }
+        }
+
+        private static string GetMapRuleText(string mapId) // 특수 규칙
+        {
+            switch (NormalizeMapId(mapId))
+            {
+                case MetaMapIds.Map2:
+                    return "숲길 매복";
+                case MetaMapIds.Map3:
+                    return "낙석 지역";
+                case MetaMapIds.Map4:
+                    return "늪지 감속";
+                case MetaMapIds.Map5:
+                    return "정예 강화";
+                default:
+                    return "없음";
+            }
+        }
+
+        private string GetMapRecordText(string mapId) // 맵 기록
+        {
+            return IsMapPlayable(mapId) ? ResolveHighestReachedWave().ToString() : "-"; // 현재는 맵1 기록만 사용
+        }
+
+        private int ResolveHighestReachedWave() // 표시용 최고 웨이브
+        {
+            return Meta != null ? Meta.HighestReachedWave : Mathf.Max(0, HighestReachedWave); // 메타 우선
+        }
+
+        private static string GetMapRewardText(string mapId) // 보상 요약
+        {
+            switch (NormalizeMapId(mapId))
+            {
+                case MetaMapIds.Map2:
+                    return "골드 / 다이아 / 숲 문장";
+                case MetaMapIds.Map3:
+                    return "골드 / 다이아 / 고원 문장";
+                case MetaMapIds.Map4:
+                    return "골드 / 다이아 / 늪지 문장";
+                case MetaMapIds.Map5:
+                    return "골드 / 다이아 / 신전 문장";
+                default:
+                    return "골드 / 다이아 / 초원 문장";
             }
         }
 
@@ -872,11 +1175,32 @@ namespace TeamProject01.Gameplay
             switch (NormalizeMapId(mapId))
             {
                 case MetaMapIds.Map2:
-                    return new Color(0.25f, 0.30f, 0.36f, 1f); // 예정
+                    return new Color(0.22f, 0.50f, 0.32f, 1f); // 숲
                 case MetaMapIds.Map3:
-                    return new Color(0.30f, 0.26f, 0.36f, 1f); // 예정
+                    return new Color(0.55f, 0.49f, 0.36f, 1f); // 바위
+                case MetaMapIds.Map4:
+                    return new Color(0.28f, 0.25f, 0.42f, 1f); // 늪지
+                case MetaMapIds.Map5:
+                    return new Color(0.58f, 0.72f, 0.78f, 1f); // 신전
                 default:
-                    return new Color(0.22f, 0.42f, 0.30f, 1f); // 맵1
+                    return new Color(0.36f, 0.62f, 0.32f, 1f); // 초원
+            }
+        }
+
+        private static Color GetMapEmblemColor(string mapId) // 맵 문장색
+        {
+            switch (NormalizeMapId(mapId))
+            {
+                case MetaMapIds.Map2:
+                    return new Color(0.42f, 0.76f, 0.28f, 1f); // 녹색
+                case MetaMapIds.Map3:
+                    return new Color(0.82f, 0.34f, 0.22f, 1f); // 적갈색
+                case MetaMapIds.Map4:
+                    return new Color(0.55f, 0.30f, 0.82f, 1f); // 보라
+                case MetaMapIds.Map5:
+                    return new Color(1.0f, 0.72f, 0.18f, 1f); // 금색
+                default:
+                    return new Color(0.58f, 0.78f, 0.22f, 1f); // 초원
             }
         }
     }

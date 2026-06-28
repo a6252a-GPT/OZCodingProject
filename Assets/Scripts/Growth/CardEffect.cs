@@ -467,69 +467,6 @@ public class CardEffect : MonoBehaviour
         }
     }
 
-    // ─────────────────────────────────────────────
-    //  둥근 사각형 마스크 스프라이트 런타임 생성
-    // ─────────────────────────────────────────────
-
-    /// <summary>
-    /// texSize × texSize 텍스처로 둥근 사각형 스프라이트를 생성합니다.
-    /// radius: 모서리 반경(픽셀). 9-slice 보더를 radius 로 설정해
-    /// 카드 크기가 달라져도 모서리 곡률이 일정하게 유지됩니다.
-    /// </summary>
-    private static Sprite CreateRoundedRectSprite(int texSize, int texSize2, int radius)
-    {
-        int w = texSize, h = texSize2;
-        radius = Mathf.Clamp(radius, 0, Mathf.Min(w, h) / 2);
-
-        Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-        Color[] pixels = new Color[w * h];
-
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < w; x++)
-            {
-                pixels[y * w + x] = InsideRoundedRect(x, y, w, h, radius)
-                    ? Color.white
-                    : Color.clear;
-            }
-        }
-
-        tex.SetPixels(pixels);
-        tex.Apply();
-
-        // 9-slice 보더: 좌/우/하/상 각각 radius 픽셀
-        Vector4 border = new Vector4(radius, radius, radius, radius);
-        return Sprite.Create(tex,
-                             new Rect(0, 0, w, h),
-                             new Vector2(0.5f, 0.5f),
-                             100f,          // pixelsPerUnit
-                             0,             // extrude
-                             SpriteMeshType.FullRect,
-                             border);
-    }
-
-    private static bool InsideRoundedRect(int x, int y, int w, int h, int r)
-    {
-        // 4개 모서리 원 중심 좌표
-        int x0 = r,     y0 = r;
-        int x1 = w - 1 - r, y1 = r;
-        int x2 = r,     y2 = h - 1 - r;
-        int x3 = w - 1 - r, y3 = h - 1 - r;
-
-        // 모서리 영역이면 원 안에 있는지 검사
-        if (x < r && y < r)         return Dist2(x, y, x0, y0) <= r * r;
-        if (x > w - 1 - r && y < r)         return Dist2(x, y, x1, y1) <= r * r;
-        if (x < r && y > h - 1 - r)         return Dist2(x, y, x2, y2) <= r * r;
-        if (x > w - 1 - r && y > h - 1 - r) return Dist2(x, y, x3, y3) <= r * r;
-        return true;
-    }
-
-    private static int Dist2(int ax, int ay, int bx, int by)
-    {
-        int dx = ax - bx, dy = ay - by;
-        return dx * dx + dy * dy;
-    }
-
 #if UNITY_EDITOR
     private const string PrefabRoot =
         "Assets/ThirdParty/03_LevelSystem/Game VFX - Card Effects Collection/Game VFX - Card Effects Collection/Prefabs/URP/FX_";

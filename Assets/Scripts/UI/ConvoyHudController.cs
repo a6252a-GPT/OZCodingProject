@@ -240,11 +240,11 @@ namespace TeamProject01.Gameplay
 
             Button button = Instantiate(AutoOrbitButton, searchRoot); // 기존 버튼 양식 복제
             button.name = "AutoCardSelectButton"; // 이름 기반 자동 연결
-            PositionAutoOrbitButton(AutoOrbitButton, button); // 자동궤도 버튼 오른쪽
+            PositionAutoCardSelectButton(AutoOrbitButton, button); // 자동궤도 버튼 위쪽
             return button;
         }
 
-        private static void PositionAutoOrbitButton(Button template, Button button) // 버튼 위치 보정
+        private static void PositionAutoCardSelectButton(Button template, Button button) // 버튼 위치 보정
         {
             if (template == null || button == null)
             {
@@ -258,8 +258,8 @@ namespace TeamProject01.Gameplay
                 return; // Rect 없음
             }
 
-            float width = templateRect.rect.width > 1f ? templateRect.rect.width : 110f; // 폭
-            rect.anchoredPosition = templateRect.anchoredPosition + new Vector2(width + 8f, 0f); // 오른쪽 배치
+            float height = templateRect.rect.height > 1f ? templateRect.rect.height : 36f; // 높이
+            rect.anchoredPosition = templateRect.anchoredPosition + new Vector2(0f, height + 8f); // 위쪽 배치
         }
 
         private static void SetButtonLabel(Button button, string label) // 버튼 글자

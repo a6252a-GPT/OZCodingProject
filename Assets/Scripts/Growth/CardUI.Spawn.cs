@@ -746,25 +746,6 @@ public partial class CardUI
         return ownedSegmentIds;
     }
 
-    private static void AppendWeaponDefinitions(List<WeaponDefinition> results, WeaponDefinition[] entries) // 배열 → 풀 등록
-    {
-        if (entries == null || entries.Length == 0)
-        {
-            return; // 항목 없음
-        }
-
-        for (int i = 0; i < entries.Length; i++)
-        {
-            WeaponDefinition definition = entries[i]; // 후보
-            if (definition == null || !definition.HasAnyStatBonus || !definition.HasTarget)
-            {
-                continue; // 적용 불가 항목 제외
-            }
-
-            results.Add(definition); // 풀에 추가
-        }
-    }
-
     private static List<WeaponDefinition> PickRandomWeaponDefinitions(List<WeaponDefinition> pool, int count) // 풀에서 랜덤 N장
     {
         List<WeaponDefinition> picked = new List<WeaponDefinition>(count); // 결과
@@ -896,16 +877,6 @@ public partial class CardUI
 
         CoreStatProvider core = CoreStatProvider.Active; // 코어 fallback
         return core != null ? core.WeaponCatalogAsset : null;
-    }
-
-    private bool CanShowWeaponEnhancements(string segmentId) // 무기 강화 카탈로그 존재 여부
-    {
-        WeaponCatalogAsset catalog = ResolveWeaponCatalog(); // 카탈로그
-        return catalog != null
-            && !string.IsNullOrWhiteSpace(segmentId)
-            && catalog.TryGetEnhancementsForSegment(segmentId, out WeaponDefinition[] enhancements)
-            && enhancements != null
-            && enhancements.Length > 0; // 강화 목록 존재
     }
 
     private void ConfigureWeaponEnhancementEntry(
@@ -1264,33 +1235,6 @@ public partial class CardUI
         }
 
         return true;
-    }
-
-    // 카탈로그 후보 랜덤 선택
-    private static List<SegmentCatalogEntry> PickRandomSegmentEntries(List<SegmentCatalogEntry> candidates, int count)
-    {
-        List<SegmentCatalogEntry> shuffled = new List<SegmentCatalogEntry>(); // 유효 후보 복사
-        if (candidates != null)
-        {
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                if (candidates[i].HasId)
-                {
-                    shuffled.Add(candidates[i]); // ID 있는 후보만 사용
-                }
-            }
-        }
-
-        for (int i = shuffled.Count - 1; i > 0; i--)
-        {
-            int swapIndex = Random.Range(0, i + 1); // 랜덤 교환 위치
-            SegmentCatalogEntry temp = shuffled[i]; // 임시 저장
-            shuffled[i] = shuffled[swapIndex]; // 교환
-            shuffled[swapIndex] = temp; // 교환 완료
-        }
-
-        int pickCount = Mathf.Min(Mathf.Max(0, count), shuffled.Count); // 선택 수 보정
-        return shuffled.GetRange(0, pickCount); // 선택 결과
     }
 
     // 세그먼트 선택카드: 50% 확률 보유 Lv3 미만 1장 + 지원형 최대 1장

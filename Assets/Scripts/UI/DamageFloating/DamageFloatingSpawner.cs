@@ -404,6 +404,7 @@ namespace TeamProject01.Gameplay
         {
             string label = kind == RewardPickupKind.Gold
                 ? "골드"
+                : kind == RewardPickupKind.Diamond ? "다이아"
                 : kind == RewardPickupKind.SegmentChoiceTicket ? "세그먼트선택권" : "경험치"; // 표시 이름
             return $"{label} {Mathf.Max(0, amount)}"; // 요청 표기
         }
@@ -430,6 +431,11 @@ namespace TeamProject01.Gameplay
             if (kind == RewardPickupKind.SegmentChoiceTicket)
             {
                 return new Color(0.42f, 0.82f, 1f, 1f); // 선택권
+            }
+
+            if (kind == RewardPickupKind.Diamond)
+            {
+                return new Color(0.35f, 0.9f, 1f, 1f); // 다이아
             }
 
             return kind == RewardPickupKind.Gold

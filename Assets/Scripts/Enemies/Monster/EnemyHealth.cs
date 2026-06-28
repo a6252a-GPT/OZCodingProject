@@ -7,6 +7,9 @@ namespace TeamProject01.Gameplay
         [Min(1)]
         [SerializeField] private float maxHp = 3f; // 최대 체력
 
+        public event System.Action<EnemyHealth> HealthChanged; // 체력 값 변경 알림
+        public event System.Action<EnemyHealth, float> HpDecreased; // 실제 HP 감소 알림
+
         public float MaxHp
         {
             get
@@ -35,6 +38,8 @@ namespace TeamProject01.Gameplay
                 return; // 체력을 줄이지 않고 종료한다.
             }
 
+            float hpBeforeDamage = CurrentHp; // 감소량 계산용 이전 체력
+
             CurrentHp -= damage; // 현재 체력에서 들어온 피해량을 빼고, 그 결과를 다시 CurrentHp에 저장한다.
 
             if (CurrentHp <= 0f) // 체력이 0 이하가 되었다면
@@ -42,6 +47,14 @@ namespace TeamProject01.Gameplay
                 CurrentHp = 0f; // 체력이 음수로 내려가지 않도록 0으로 고정한다.
 
                 IsDead = true; // 죽은 상태로 표시해서 이후 중복 피해나 중복 사망 처리를 막는다.
+            }
+
+            float decreasedHp = Mathf.Max(0f, hpBeforeDamage - CurrentHp); // 실제 감소한 체력
+
+            if (decreasedHp > 0f) // 체력이 실제로 감소했다면
+            {
+                HealthChanged?.Invoke(this); // UI와 보조 시스템에 체력 변경을 알린다.
+                HpDecreased?.Invoke(this, decreasedHp); // 피격 표시용 감소 이벤트를 보낸다.
             }
         }
 
@@ -71,6 +84,8 @@ namespace TeamProject01.Gameplay
             CurrentHp = maxHp * hpRatio; // 기존 체력 비율에 맞춰 현재 체력도 같이 증가시킨다.
 
             CurrentHp = Mathf.Clamp(CurrentHp, 0f, maxHp); // 현재 체력이 0과 최대 체력 사이에 있도록 제한한다.
+
+            HealthChanged?.Invoke(this); // 최대 체력 변경을 UI에 알린다.
         }
 
         public void ApplyMaxHpMultiplierKeepingRatio(float multiplier) // 웨이브 난이도 체력 배율 적용
@@ -88,6 +103,8 @@ namespace TeamProject01.Gameplay
             float hpRatio = CurrentHp / maxHp; // 현재 체력 비율 보존
             maxHp = Mathf.Max(1f, maxHp * multiplier); // 최대 체력 배율
             CurrentHp = Mathf.Clamp(maxHp * hpRatio, 0f, maxHp); // 현재 체력도 같은 비율
+
+            HealthChanged?.Invoke(this); // 최대 체력 변경을 UI에 알린다.
         }
     }
 }
