@@ -237,4 +237,24 @@ public partial class CardUI
             manager?.NotifySegmentListHoverExit();
         }
     }
+
+    private sealed class RerollButtonHoverBridge : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        private CardUI manager;
+
+        public void Initialize(CardUI owner)
+        {
+            manager = owner;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            manager?.NotifyRerollButtonPointerEnter();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            manager?.NotifyRerollButtonPointerExit();
+        }
+    }
 }

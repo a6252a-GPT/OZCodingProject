@@ -43976,7 +43976,6 @@ GameObject:
   - component: {fileID: 1443544558}
   - component: {fileID: 1443544561}
   - component: {fileID: 1443544563}
-  - component: {fileID: 1443544562}
   m_Layer: 5
   m_Name: LevelUpPanel
   m_TagString: Untagged
@@ -44116,33 +44115,6 @@ MonoBehaviour:
   PositionOffsetX: 0
   PositionOffsetY: -9
   SpeedOffset: -60
---- !u!114 &1443544562
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1443544557}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d46d3e37deedd974baaf55de5985b2d7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CardSoundSelector
-  soundManager: {fileID: 1443544563}
-  targetCanvas: {fileID: 0}
-  fontSource: {fileID: 553004151}
-  showRuntimePanel: 0
-  panelWidth: 300
-  panelHeight: 600
-  tabHeight: 28
-  panelOffset: {x: 350, y: 10}
-  buttonHeightPx: 30
-  buttonFontSize: 20
-  headerFontSize: 20
-  tabFontSize: 20
-  slotFontSize: 20
-  slideTime: 0.22
-  autoCloseDelay: 0.5
 --- !u!114 &1443544563
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -50042,25 +50014,25 @@ MonoBehaviour:
   baseSpawnCount: 40
   spawnScaleSteps:
   - startStage: 1
-    spawnScalePercent: 1000
+    spawnScalePercent: 100
   - startStage: 5
-    spawnScalePercent: 1000
+    spawnScalePercent: 120
   - startStage: 8
-    spawnScalePercent: 1000
+    spawnScalePercent: 160
   - startStage: 12
-    spawnScalePercent: 2000
+    spawnScalePercent: 220
   - startStage: 16
-    spawnScalePercent: 2000
+    spawnScalePercent: 280
   - startStage: 20
-    spawnScalePercent: 2000
+    spawnScalePercent: 360
   - startStage: 25
-    spawnScalePercent: 2000
+    spawnScalePercent: 440
   - startStage: 30
-    spawnScalePercent: 2000
+    spawnScalePercent: 540
   - startStage: 35
-    spawnScalePercent: 2100
+    spawnScalePercent: 640
   - startStage: 40
-    spawnScalePercent: 2500
+    spawnScalePercent: 780
   difficultyScaleSteps:
   - startStage: 1
     healthScalePercent: 100
