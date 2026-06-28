@@ -14,6 +14,7 @@ namespace TeamProject01.Gameplay
 
         private Button runtimeMagicWormButton; // 런타임 마법형 버튼
         private bool mapCardButtonsWired; // 맵 카드 런타임 리스너 중복 방지
+        private bool upgradeButtonsWired; // 강화 버튼 런타임 리스너 중복 방지
 
         [System.Serializable]
         public sealed class TitleMapCardView // 맵 카드 표시 묶음
@@ -27,6 +28,23 @@ namespace TeamProject01.Gameplay
             public GameObject LockedOverlay; // 잠금 딤
             public Text NameText; // 맵 이름
             public Text StateText; // 선택 가능/예정
+        }
+
+        [System.Serializable]
+        public sealed class TitleUpgradeRowView // 영구 강화 행 묶음
+        {
+            public MetaUpgradeId UpgradeId; // 실제 강화 ID
+            public bool Planned; // 추후 연결 예약칸
+            public string PlannedKey; // 예약칸 식별값
+            public string PlannedName; // 예약칸 이름
+            public Button Button; // 행 클릭
+            public Image BackgroundImage; // 행 배경
+            public Image IconImage; // 아이콘 슬롯
+            public Image SelectionGlowImage; // 선택 발광
+            public GameObject PlannedOverlay; // 예정 딤
+            public Text NameText; // 행 이름
+            public Text StateText; // 상태
+            public Image[] LevelPipImages = System.Array.Empty<Image>(); // 5단계 표시
         }
 
         public MetaProgressionManager Meta; // 메타 데이터
@@ -75,6 +93,23 @@ namespace TeamProject01.Gameplay
         public Text StartSelectedMapButtonText; // 선택 버튼 텍스트
         public TitleMapCardView[] MapCards = System.Array.Empty<TitleMapCardView>(); // 하단 맵 카드들
 
+        [Header("Upgrade Select")]
+        public MetaUpgradeId SelectedUpgradeId = MetaUpgradeId.AttackSpeed; // 선택 강화
+        public string SelectedPlannedUpgradeKey; // 선택 예약 강화
+        public Text UpgradeDiamondText; // 강화 화면 보유 다이아
+        public Text UpgradeHighestWaveText; // 강화 화면 최고 웨이브
+        public TitleUpgradeRowView[] UpgradeRows = System.Array.Empty<TitleUpgradeRowView>(); // 강화 행들
+        public Image UpgradeDetailIconImage; // 상세 아이콘 슬롯
+        public Text UpgradeDetailNameText; // 상세 이름
+        public Text UpgradeDetailCurrentLevelText; // 현재 레벨
+        public Text UpgradeDetailCurrentEffectText; // 현재 효과
+        public Text UpgradeDetailNextLevelText; // 다음 레벨
+        public Text UpgradeDetailNextEffectText; // 다음 효과
+        public Text UpgradeDetailCostText; // 필요 다이아
+        public Text UpgradeDetailStatusText; // 상세 상태
+        public Button UpgradeConfirmButton; // 강화 버튼
+        public Text UpgradeConfirmButtonText; // 강화 버튼 텍스트
+
         [Header("Debug")]
         [Min(0)] public int DebugDiamondAmount = 1000; // 테스트 지급 다이아
         [Min(0)] public int DebugReachedWave = 20; // 테스트 웨이브
@@ -94,6 +129,7 @@ namespace TeamProject01.Gameplay
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
             WireMapCardButtons(); // 맵 카드 클릭 연결
+            WireUpgradeButtons(); // 강화 행 클릭 연결
         }
 
         private void OnEnable() // 표시 시작
@@ -110,6 +146,7 @@ namespace TeamProject01.Gameplay
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
             WireMapCardButtons(); // 씬 오브젝트 리스너 보강
+            WireUpgradeButtons(); // 강화 리스너 보강
             TryConsumePendingRunResult(); // 스테이지 결과 보상 반영
             ShowMainMenu(); // 기본 화면
             RefreshAll(); // 즉시 갱신
@@ -308,6 +345,58 @@ namespace TeamProject01.Gameplay
             Upgrade(MetaUpgradeId.NexusRegen); // 회복
         }
 
+        public void SelectGoldBonusUpgrade() // 골드 선택
+        {
+            SelectUpgrade(MetaUpgradeId.GoldBonus); // 골드
+        }
+
+        public void SelectDiamondBonusUpgrade() // 다이아 선택
+        {
+            SelectUpgrade(MetaUpgradeId.DiamondBonus); // 다이아
+        }
+
+        public void SelectTurnBonusUpgrade() // 회전 선택
+        {
+            SelectUpgrade(MetaUpgradeId.TurnBonus); // 회전
+        }
+
+        public void SelectCollisionForceUpgrade() // 충돌 선택
+        {
+            SelectUpgrade(MetaUpgradeId.CollisionForce); // 충돌
+        }
+
+        public void SelectBaseAttackUpgrade() // 공격력 선택
+        {
+            SelectUpgrade(MetaUpgradeId.BaseAttack); // 공격력
+        }
+
+        public void SelectAttackSpeedUpgrade() // 공속 선택
+        {
+            SelectUpgrade(MetaUpgradeId.AttackSpeed); // 공속
+        }
+
+        public void SelectNexusMaxHpUpgrade() // 체력 선택
+        {
+            SelectUpgrade(MetaUpgradeId.NexusMaxHp); // 체력
+        }
+
+        public void SelectNexusRegenUpgrade() // 회복 선택
+        {
+            SelectUpgrade(MetaUpgradeId.NexusRegen); // 회복
+        }
+
+        public void ConfirmSelectedUpgrade() // 선택 강화 실행
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedPlannedUpgradeKey))
+            {
+                SetStatus($"{ResolvePlannedUpgradeName(SelectedPlannedUpgradeKey)}는 추후 적용 예정입니다."); // 예정
+                RefreshUpgradePanel(); // 표시 유지
+                return;
+            }
+
+            Upgrade(SelectedUpgradeId); // 실제 강화
+        }
+
         public void QuitGame() // 종료
         {
             Application.Quit(); // 빌드 종료
@@ -492,7 +581,9 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            string upgradeName = MetaProgressionManager.GetUpgradeDisplayName(upgradeId); // 표시명
+            SelectedUpgradeId = upgradeId; // 상세 선택 동기화
+            SelectedPlannedUpgradeKey = string.Empty; // 예약 선택 해제
+            string upgradeName = GetTitleUpgradeDisplayName(upgradeId); // 표시명
             int currentLevel = Meta.GetUpgradeLevel(upgradeId); // 현재 단계
             if (Meta.IsUpgradeMaxed(upgradeId))
             {
@@ -523,6 +614,21 @@ namespace TeamProject01.Gameplay
             RefreshAll(); // 갱신
         }
 
+        private void SelectUpgrade(MetaUpgradeId upgradeId) // 강화 선택
+        {
+            SelectedUpgradeId = upgradeId; // 선택 저장
+            SelectedPlannedUpgradeKey = string.Empty; // 예약 해제
+            SetStatus($"{GetTitleUpgradeDisplayName(upgradeId)} 선택됨"); // 상태
+            RefreshAll(); // 갱신
+        }
+
+        private void SelectPlannedUpgrade(string plannedKey) // 예약 강화 선택
+        {
+            SelectedPlannedUpgradeKey = string.IsNullOrWhiteSpace(plannedKey) ? "planned_upgrade" : plannedKey; // 키 보정
+            SetStatus($"{ResolvePlannedUpgradeName(SelectedPlannedUpgradeKey)}는 추후 적용 예정입니다."); // 상태
+            RefreshAll(); // 갱신
+        }
+
         private void LoadStageScene() // 스테이지 로드
         {
             NormalizeTargetStageScenePath(); // 직렬화된 이전 값 보정
@@ -549,7 +655,7 @@ namespace TeamProject01.Gameplay
             SetActive(WormSelectPanel, target == WormSelectPanel); // 지렁이
             SetActive(UpgradePanel, target == UpgradePanel); // 업그레이드
             SetActive(SettingsPanel, target == SettingsPanel); // 설정
-            SetActive(TitleLogoObject, target != WormSelectPanel && target != MapSelectPanel); // 전용 화면은 자체 로고 사용
+            SetActive(TitleLogoObject, target != WormSelectPanel && target != MapSelectPanel && target != UpgradePanel); // 전용 화면은 자체 로고 사용
         }
 
         private void RefreshAll() // 전체 표시 갱신
@@ -566,6 +672,7 @@ namespace TeamProject01.Gameplay
             SetText(SelectedWormNameText, GetWormDisplayName(displayWormId)); // 이름
             SetText(SelectedWormBonusText, GetWormBonusText(displayWormId)); // 효과
             SetText(UpgradeSummaryText, BuildUpgradeSummary()); // 강화 요약
+            RefreshUpgradePanel(); // 강화 화면
             RefreshMapPreview(); // 맵 표시
             if (WormPortraitPreview != null)
             {
@@ -603,7 +710,7 @@ namespace TeamProject01.Gameplay
         private string BuildUpgradeLine(MetaUpgradeId upgradeId) // 강화 한 줄 요약
         {
             int level = Meta.GetUpgradeLevel(upgradeId); // 현재 단계
-            string name = MetaProgressionManager.GetUpgradeDisplayName(upgradeId); // 이름
+            string name = GetTitleUpgradeDisplayName(upgradeId); // 이름
             string current = CompactEffectText(MetaProgressionManager.GetUpgradeEffectText(upgradeId, level)); // 현재 효과
             if (Meta.IsUpgradeMaxed(upgradeId))
             {
@@ -714,6 +821,130 @@ namespace TeamProject01.Gameplay
             SetText(HighestWaveText, highestWaveText); // 메인 기록
             SetText(MapDiamondText, diamondText); // 맵 선택 다이아
             SetText(MapHighestWaveText, highestWaveText); // 맵 선택 기록
+            SetText(UpgradeDiamondText, diamondText); // 강화 화면 다이아
+            SetText(UpgradeHighestWaveText, highestWaveText); // 강화 화면 기록
+        }
+
+        private void WireUpgradeButtons() // 강화 행/버튼 리스너 연결
+        {
+            if (upgradeButtonsWired)
+            {
+                return; // 중복 방지
+            }
+
+            upgradeButtonsWired = true; // 1회 연결
+            if (UpgradeConfirmButton != null && UpgradeConfirmButton.onClick.GetPersistentEventCount() == 0)
+            {
+                UpgradeConfirmButton.onClick.AddListener(ConfirmSelectedUpgrade); // 강화 버튼
+            }
+
+            for (int i = 0; UpgradeRows != null && i < UpgradeRows.Length; i++)
+            {
+                TitleUpgradeRowView row = UpgradeRows[i]; // 행
+                if (row == null || row.Button == null)
+                {
+                    continue; // 누락
+                }
+
+                MetaUpgradeId capturedId = row.UpgradeId; // enum 복사
+                bool capturedPlanned = row.Planned; // 예약 여부
+                string capturedKey = row.PlannedKey; // 예약 키
+                row.Button.onClick.AddListener(() =>
+                {
+                    if (capturedPlanned)
+                    {
+                        SelectPlannedUpgrade(capturedKey); // 예약 선택
+                    }
+                    else
+                    {
+                        SelectUpgrade(capturedId); // 실제 강화 선택
+                    }
+                });
+            }
+        }
+
+        private void RefreshUpgradePanel() // 강화 화면 표시
+        {
+            WireUpgradeButtons(); // 런타임 연결 보강
+            RefreshUpgradeRows(); // 좌측 목록
+            RefreshUpgradeDetail(); // 우측 상세
+        }
+
+        private void RefreshUpgradeRows() // 강화 목록 표시
+        {
+            for (int i = 0; UpgradeRows != null && i < UpgradeRows.Length; i++)
+            {
+                TitleUpgradeRowView row = UpgradeRows[i]; // 행
+                if (row == null)
+                {
+                    continue; // 누락
+                }
+
+                string plannedKey = string.IsNullOrWhiteSpace(row.PlannedKey) ? row.PlannedName : row.PlannedKey; // 예약 키
+                bool selected = row.Planned
+                    ? !string.IsNullOrWhiteSpace(SelectedPlannedUpgradeKey) && SelectedPlannedUpgradeKey == plannedKey
+                    : string.IsNullOrWhiteSpace(SelectedPlannedUpgradeKey) && row.UpgradeId == SelectedUpgradeId; // 선택
+                int level = row.Planned || Meta == null ? 0 : Meta.GetUpgradeLevel(row.UpgradeId); // 현재 단계
+                bool maxed = !row.Planned && Meta != null && Meta.IsUpgradeMaxed(row.UpgradeId); // 최대
+
+                SetText(row.NameText, row.Planned ? ResolvePlannedUpgradeName(plannedKey, row.PlannedName) : GetTitleUpgradeDisplayName(row.UpgradeId)); // 이름
+                SetText(row.StateText, row.Planned ? "예정" : maxed ? "MAX" : $"{level}/{MetaProgressionManager.MaxUpgradeLevel}"); // 상태
+                SetActive(row.PlannedOverlay, row.Planned); // 예약 딤
+                ApplyUpgradeRowVisual(row, selected, row.Planned, level); // 비주얼
+            }
+        }
+
+        private void RefreshUpgradeDetail() // 강화 상세 표시
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedPlannedUpgradeKey))
+            {
+                RefreshPlannedUpgradeDetail(); // 예약 상세
+                return;
+            }
+
+            MetaUpgradeId upgradeId = SelectedUpgradeId; // 현재 선택
+            string name = GetTitleUpgradeDisplayName(upgradeId); // 이름
+            int level = Meta != null ? Meta.GetUpgradeLevel(upgradeId) : 0; // 현재 단계
+            bool maxed = Meta != null && Meta.IsUpgradeMaxed(upgradeId); // 최대
+            int nextLevel = maxed ? level : Mathf.Min(level + 1, MetaProgressionManager.MaxUpgradeLevel); // 다음 단계
+            int cost = Meta != null ? Meta.GetNextUpgradeCost(upgradeId, TemporaryUpgradeBaseCost) : 0; // 비용
+            bool affordable = Meta != null && !maxed && Meta.Diamond >= cost; // 구매 가능
+
+            SetText(UpgradeDetailNameText, name); // 이름
+            SetText(UpgradeDetailCurrentLevelText, $"{level} / {MetaProgressionManager.MaxUpgradeLevel}"); // 현재 레벨
+            SetText(UpgradeDetailCurrentEffectText, MetaProgressionManager.GetUpgradeEffectText(upgradeId, level)); // 현재 효과
+            SetText(UpgradeDetailNextLevelText, maxed ? "MAX" : $"{nextLevel} / {MetaProgressionManager.MaxUpgradeLevel}"); // 다음 레벨
+            SetText(UpgradeDetailNextEffectText, maxed ? "최대 단계" : MetaProgressionManager.GetUpgradeEffectText(upgradeId, nextLevel)); // 다음 효과
+            SetText(UpgradeDetailCostText, maxed ? "-" : cost.ToString()); // 비용
+            SetText(UpgradeDetailStatusText, maxed ? "이미 최대 강화입니다." : affordable ? "강화 가능" : "다이아가 부족합니다."); // 상태
+            SetText(UpgradeConfirmButtonText, maxed ? "최대" : affordable ? "강화" : "부족"); // 버튼
+            if (UpgradeConfirmButton != null)
+            {
+                UpgradeConfirmButton.interactable = affordable; // 상호작용
+                ApplyButtonColor(UpgradeConfirmButton.image, affordable, maxed); // 버튼 색
+            }
+
+            ApplyUpgradeIconVisual(UpgradeDetailIconImage, upgradeId, false); // 아이콘
+        }
+
+        private void RefreshPlannedUpgradeDetail() // 예약 상세
+        {
+            string name = ResolvePlannedUpgradeName(SelectedPlannedUpgradeKey); // 이름
+            SetText(UpgradeDetailNameText, name); // 이름
+            SetText(UpgradeDetailCurrentLevelText, "-"); // 현재
+            SetText(UpgradeDetailCurrentEffectText, "추후 적용"); // 현재 효과
+            SetText(UpgradeDetailNextLevelText, "예정"); // 다음
+            SetText(UpgradeDetailNextEffectText, "강화값 적용 구조 협의 후 연결"); // 다음 효과
+            SetText(UpgradeDetailCostText, "-"); // 비용
+            SetText(UpgradeDetailStatusText, "기능 연결 예정"); // 상태
+            SetText(UpgradeConfirmButtonText, "예정"); // 버튼
+            if (UpgradeConfirmButton != null)
+            {
+                UpgradeConfirmButton.interactable = false; // 잠금
+                ApplyButtonColor(UpgradeConfirmButton.image, false, false); // 비활성 색
+            }
+
+            ApplyUpgradeIconVisual(UpgradeDetailIconImage, MetaUpgradeId.GoldBonus, true); // 예약 아이콘
         }
 
         private void RefreshMapCardViews(string selectedMapId) // 하단 맵 카드 표시
@@ -956,6 +1187,141 @@ namespace TeamProject01.Gameplay
         private static string CompactEffectText(string effectText) // 요약용 축약
         {
             return effectText == "효과 없음" ? "없음" : effectText; // 0단계 축약
+        }
+
+        private static void ApplyUpgradeRowVisual(TitleUpgradeRowView row, bool selected, bool planned, int level) // 강화 행 비주얼
+        {
+            if (row == null)
+            {
+                return; // 대상 없음
+            }
+
+            if (row.BackgroundImage != null)
+            {
+                row.BackgroundImage.type = Image.Type.Simple; // 사각 슬롯
+                row.BackgroundImage.color = selected
+                    ? new Color(0.78f, 0.92f, 1f, 0.96f)
+                    : planned ? new Color(0.54f, 0.48f, 0.40f, 0.84f) : new Color(0.84f, 0.70f, 0.50f, 0.94f); // 선택/예정/일반
+            }
+
+            if (row.SelectionGlowImage != null)
+            {
+                row.SelectionGlowImage.enabled = selected; // 선택 테두리
+                row.SelectionGlowImage.color = new Color(0.18f, 0.78f, 1f, 0.86f); // 청색 강조
+            }
+
+            ApplyUpgradeIconVisual(row.IconImage, row.UpgradeId, planned); // 아이콘
+            for (int i = 0; row.LevelPipImages != null && i < row.LevelPipImages.Length; i++)
+            {
+                Image pip = row.LevelPipImages[i]; // 단계 점
+                if (pip == null)
+                {
+                    continue; // 누락
+                }
+
+                pip.type = Image.Type.Simple; // 다이아 슬롯
+                pip.raycastTarget = false; // 입력 통과
+                bool filled = !planned && i < Mathf.Clamp(level, 0, MetaProgressionManager.MaxUpgradeLevel); // 채움
+                pip.color = planned
+                    ? new Color(0.38f, 0.34f, 0.29f, 0.72f)
+                    : filled ? new Color(1f, 0.68f, 0.16f, 1f) : new Color(0.49f, 0.43f, 0.35f, 0.98f); // 단계색
+            }
+        }
+
+        private static void ApplyUpgradeIconVisual(Image image, MetaUpgradeId upgradeId, bool planned) // 강화 아이콘 표시
+        {
+            if (image == null)
+            {
+                return; // 대상 없음
+            }
+
+            image.enabled = true; // 표시
+            image.type = Image.Type.Simple; // 아이콘 슬롯
+            image.preserveAspect = true; // 실제 아이콘 비율 유지
+            image.raycastTarget = false; // 행 버튼 입력 우선
+            image.color = planned ? new Color(0.55f, 0.55f, 0.55f, 0.9f) : image.sprite != null ? Color.white : GetUpgradeIconColor(upgradeId); // 스프라이트 교체 대응
+        }
+
+        private static void ApplyButtonColor(Image image, bool affordable, bool maxed) // 강화 버튼 색
+        {
+            if (image == null)
+            {
+                return; // 대상 없음
+            }
+
+            image.type = Image.Type.Simple; // 버튼 슬롯
+            image.color = maxed
+                ? new Color(0.65f, 0.56f, 0.40f, 0.96f)
+                : affordable ? new Color(0.34f, 0.62f, 0.18f, 1f) : new Color(0.38f, 0.33f, 0.27f, 0.88f); // 가능/불가
+        }
+
+        private static string GetTitleUpgradeDisplayName(MetaUpgradeId upgradeId) // 타이틀용 강화 이름
+        {
+            switch (upgradeId)
+            {
+                case MetaUpgradeId.GoldBonus:
+                    return "골드 보너스";
+                case MetaUpgradeId.DiamondBonus:
+                    return "다이아 보너스";
+                case MetaUpgradeId.TurnBonus:
+                    return "회전력 증가";
+                case MetaUpgradeId.CollisionForce:
+                    return "충돌힘 증가";
+                case MetaUpgradeId.BaseAttack:
+                    return "기본 공격력 증가";
+                case MetaUpgradeId.AttackSpeed:
+                    return "기본 공격속도 증가";
+                case MetaUpgradeId.NexusMaxHp:
+                    return "알 최대체력 증가";
+                case MetaUpgradeId.NexusRegen:
+                    return "알 분당회복";
+                default:
+                    return MetaProgressionManager.GetUpgradeDisplayName(upgradeId); // 기본값
+            }
+        }
+
+        private static string ResolvePlannedUpgradeName(string plannedKey) // 예정 강화 이름
+        {
+            return ResolvePlannedUpgradeName(plannedKey, string.Empty); // 기본
+        }
+
+        private static string ResolvePlannedUpgradeName(string plannedKey, string fallbackName) // 예정 강화 이름
+        {
+            string key = string.IsNullOrWhiteSpace(plannedKey) ? string.Empty : plannedKey.Trim(); // 키 보정
+            switch (key)
+            {
+                case "planned_rejoin_range":
+                    return "재결합 범위 증가";
+                case "planned_pickup_range":
+                    return "픽업 회수 범위 증가";
+                default:
+                    return string.IsNullOrWhiteSpace(fallbackName) ? "예정 강화" : fallbackName; // 대체명
+            }
+        }
+
+        private static Color GetUpgradeIconColor(MetaUpgradeId upgradeId) // 임시 아이콘 색
+        {
+            switch (upgradeId)
+            {
+                case MetaUpgradeId.GoldBonus:
+                    return new Color(1f, 0.74f, 0.12f, 1f);
+                case MetaUpgradeId.DiamondBonus:
+                    return new Color(0.18f, 0.76f, 1f, 1f);
+                case MetaUpgradeId.TurnBonus:
+                    return new Color(0.78f, 0.78f, 0.74f, 1f);
+                case MetaUpgradeId.CollisionForce:
+                    return new Color(0.54f, 0.48f, 0.42f, 1f);
+                case MetaUpgradeId.BaseAttack:
+                    return new Color(0.90f, 0.90f, 0.86f, 1f);
+                case MetaUpgradeId.AttackSpeed:
+                    return new Color(0.96f, 0.80f, 0.30f, 1f);
+                case MetaUpgradeId.NexusMaxHp:
+                    return new Color(0.86f, 0.94f, 1f, 1f);
+                case MetaUpgradeId.NexusRegen:
+                    return new Color(0.46f, 0.95f, 0.32f, 1f);
+                default:
+                    return Color.white;
+            }
         }
 
         private static string GetWormDisplayName(string wormId) // 지렁이 이름
