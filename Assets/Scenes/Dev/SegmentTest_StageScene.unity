@@ -15441,6 +15441,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4221184320157858624, guid: 7657dfb97efeffc4b9297e4a64fa5b29, type: 3}
   m_PrefabInstance: {fileID: 452882394}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &454022564
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 454022565}
+  m_Layer: 0
+  m_Name: RewardChestCenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &454022565
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 454022564}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1013270688}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &456586708
 GameObject:
   m_ObjectHideFlags: 0
@@ -19562,6 +19593,80 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5487153932523173458, guid: 30707976c6e03e4488d29ecf7e881e35, type: 3}
   m_PrefabInstance: {fileID: 600300916}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &600438073
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 600438074}
+  - component: {fileID: 600438075}
+  m_Layer: 0
+  m_Name: GoldCollectSpecialWave
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &600438074
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 600438073}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1013270688}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &600438075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 600438073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd23fb893cda59547acbece7c5cf050b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.GoldCollectSpecialWave
+  enableSpecialWave: 1
+  minStartStage: 2
+  baseChancePercent: 100
+  chanceIncreaseOnFailPercent: 5
+  maxChancePercent: 100
+  cooldownStageCount: 1
+  blockBossStage: 1
+  goldPickupPrefab: {fileID: 9179975789304730178, guid: 93feacb1343c494409df2d44ad402dfe, type: 3}
+  goldRoot: {fileID: 0}
+  nexus: {fileID: 254650594}
+  goldSpawnCount: 100
+  collectDurationSeconds: 100
+  minSpawnRadius: 10
+  maxSpawnRadius: 20
+  goldHeightOffset: 0.35
+  collectRadius: 1.5
+  goldRewardPerPickup: 1
+  normalChestPercent: 30
+  rareChestPercent: 50
+  uniqueChestPercent: 70
+  normalChestPrefab: {fileID: -2797154915781816065, guid: 511198219d384134c8311337315ae660, type: 3}
+  rareChestPrefab: {fileID: 3466024493924604102, guid: 21e1a44ae31baec42bce7d17f5ff3d6f, type: 3}
+  uniqueChestPrefab: {fileID: -4449904733654359422, guid: 69beb7d8398acdb44b9866760561cce2, type: 3}
+  chestRoot: {fileID: 0}
+  rewardCenter: {fileID: 454022565}
+  fallbackRewardDirection: {x: 0, y: 0, z: -1}
+  fallbackRewardDistance: 8
+  chestSpacing: 10
+  chestHeightOffset: 0
+  rewardStageMaxWaitSeconds: 20
 --- !u!1001 &600504658
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -24694,7 +24799,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25fea55fe55654945ace8033622e4041, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.BossWaveController
-  enemySpawner: {fileID: 0}
+  enemySpawner: {fileID: 1395373505}
   bonusChestWaveSpawner: {fileID: 403980953}
   enableBossWave: 1
   bossStartStage: 20
@@ -31523,6 +31628,8 @@ Transform:
   - {fileID: 1463886591}
   - {fileID: 774117053}
   - {fileID: 403980952}
+  - {fileID: 454022565}
+  - {fileID: 600438074}
   m_Father: {fileID: 1679849225}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1013827237
@@ -36008,8 +36115,9 @@ MonoBehaviour:
   eliteMixController: {fileID: 1463886592}
   bossWaveController: {fileID: 774117054}
   bonusChestWaveSpawner: {fileID: 403980953}
-  enableSpecialWaveExtension: 0
+  enableSpecialWaveExtension: 1
   specialWaveController: {fileID: 0}
+  goldCollectSpecialWave: {fileID: 600438075}
 --- !u!1001 &1158287795
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -46805,15 +46913,19 @@ MonoBehaviour:
     eliteRatioPercent: 8
   - startStage: 18
     eliteRatioPercent: 10
-  - startStage: 18
-    eliteRatioPercent: 20
+  - startStage: 20
+    eliteRatioPercent: 13
+  - startStage: 24
+    eliteRatioPercent: 15
+  - startStage: 30
+    eliteRatioPercent: 17
   eliteCompositions:
   - compositionId: E01
     minStage: 6
     weight: 18
     combinationType: "\uC810\uD504+\uC790\uD3ED"
     elites:
-    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
+    - prefab: {fileID: 8503523623773363453, guid: 5773da492ef404849a9e1800a588b739, type: 3}
       ratioPercent: 70
     - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
       ratioPercent: 30
@@ -46822,28 +46934,32 @@ MonoBehaviour:
     weight: 16
     combinationType: "\uC790\uD3ED+\uC810\uD504"
     elites:
-    - prefab: {fileID: 996500175997674265, guid: c743a82d120d6cf4e908586989bd1be5, type: 3}
+    - prefab: {fileID: 8503523623773363453, guid: 5773da492ef404849a9e1800a588b739, type: 3}
       ratioPercent: 30
     - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
       ratioPercent: 70
   - compositionId: E03
     minStage: 8
     weight: 14
-    combinationType: "\uC131\uC7A5+\uC2AC\uB85C\uC6B0"
+    combinationType: "\uC131\uC7A5+\uC2AC\uB85C\uC6B0+\uC810\uD504"
     elites:
     - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
-      ratioPercent: 30
+      ratioPercent: 10
     - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      ratioPercent: 70
+      ratioPercent: 50
+    - prefab: {fileID: 8503523623773363453, guid: 5773da492ef404849a9e1800a588b739, type: 3}
+      ratioPercent: 40
   - compositionId: E04
     minStage: 12
     weight: 12
-    combinationType: "\uC131\uC7A5+\uC7A5\uC560\uBB3C"
+    combinationType: "\uC131\uC7A5+\uC7A5\uC560\uBB3C+\uC810\uD504"
     elites:
     - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      ratioPercent: 30
+      ratioPercent: 10
     - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
-      ratioPercent: 70
+      ratioPercent: 50
+    - prefab: {fileID: 8503523623773363453, guid: 5773da492ef404849a9e1800a588b739, type: 3}
+      ratioPercent: 40
   - compositionId: E05
     minStage: 16
     weight: 10
@@ -65706,28 +65822,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.NormalWaveSpawner
   enemySpawner: {fileID: 0}
-  baseSpawnCount: 40
+  baseSpawnCount: 30
   spawnScaleSteps:
   - startStage: 1
-    spawnScalePercent: 1000
+    spawnScalePercent: 100
   - startStage: 5
-    spawnScalePercent: 1000
+    spawnScalePercent: 150
   - startStage: 8
-    spawnScalePercent: 1000
+    spawnScalePercent: 200
   - startStage: 12
-    spawnScalePercent: 2000
+    spawnScalePercent: 300
   - startStage: 16
-    spawnScalePercent: 2000
+    spawnScalePercent: 450
   - startStage: 20
-    spawnScalePercent: 2000
+    spawnScalePercent: 700
   - startStage: 25
-    spawnScalePercent: 2000
+    spawnScalePercent: 1000
   - startStage: 30
-    spawnScalePercent: 2000
+    spawnScalePercent: 1400
   - startStage: 35
-    spawnScalePercent: 2100
+    spawnScalePercent: 1900
   - startStage: 40
-    spawnScalePercent: 2500
+    spawnScalePercent: 2400
   difficultyScaleSteps:
   - startStage: 1
     healthScalePercent: 100
@@ -65779,15 +65895,17 @@ MonoBehaviour:
       ratioPercent: 60
     - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
       ratioPercent: 40
-  - compositionId: N02
+  - compositionId: N01
     displayName: "\uADFC\uC811+\uC6D0\uAC70\uB9AC"
     minStage: 1
     weight: 20
     monsters:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      ratioPercent: 60
+      ratioPercent: 40
     - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
       ratioPercent: 40
+    - prefab: {fileID: 6409752787900454463, guid: 2ccdee97b4f0a9142be5618c8e0381d2, type: 3}
+      ratioPercent: 10
     - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
       ratioPercent: 10
   spawnWindowPercent: 40

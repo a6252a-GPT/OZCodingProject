@@ -84,6 +84,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5907265257560273388}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3985666898432986932
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6719409213708605630}
+  m_Layer: 0
+  m_Name: EventVfxRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6719409213708605630
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3985666898432986932}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.15, z: 0}
+  m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 21894792743370833}
+  m_Father: {fileID: 5907265257560273388}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4489827520783579619
 GameObject:
   m_ObjectHideFlags: 0
@@ -182,7 +214,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 553a4e08cfd3dd740b44ca722e454755, type: 2}
+  - {fileID: 2100000, guid: db930e869e1677243b41d9cbbc060386, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -277,9 +309,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5907265257560273388}
-  - component: {fileID: 8596352493877792357}
+  - component: {fileID: -6831709194757886375}
   m_Layer: 0
-  m_Name: PF_RewardPickup_Gold
+  m_Name: PF_BonusGoldCollectPickup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -303,9 +335,10 @@ Transform:
   - {fileID: 365049385269755584}
   - {fileID: 5941288425926318760}
   - {fileID: 230309731495353519}
+  - {fileID: 6719409213708605630}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8596352493877792357
+--- !u!114 &-6831709194757886375
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -314,20 +347,89 @@ MonoBehaviour:
   m_GameObject: {fileID: 9179975789304730178}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ba566a6214cfa8946bbef81c93997c1e, type: 3}
+  m_Script: {fileID: 11500000, guid: 34b5432acc6bbf54b87247034751119b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.WorldRewardPickup
-  Kind: 2
-  Amount: 1
-  ModelRoot: {fileID: 1964604132377512487}
-  IdleVfxRoot: {fileID: 3139784672898194724}
-  CollectVfxRoot: {fileID: 365049385269755584}
-  MagnetTrailVfxRoot: {fileID: 5941288425926318760}
-  HoverHeight: 0.54
-  HoverAmplitude: 0.1
-  HoverSpeed: 2.4
-  RotationSpeed: 125
-  GroundHeightOffset: 0.02
-  DropPopHeight: 1.15
-  DropPopDuration: 0.42
-  CollectDistance: 0.55
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.GoldCollectPickup
+  collectDistance: 0.6
+  modelRoot: {fileID: 1964604132377512487}
+  hoverHeight: 0.54
+  hoverAmplitude: 0.1
+  hoverSpeed: 2.4
+  rotationSpeed: 125
+  attractRadius: 4
+  pullStrength: 570
+  maxPullSpeed: 252
+--- !u!1001 &1639098599204865515
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6719409213708605630}
+    m_Modifications:
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023800424400518386, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+      propertyPath: m_Name
+      value: SG22_LoadedSnowCircle
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+--- !u!4 &21894792743370833 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1653654834283546042, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
+  m_PrefabInstance: {fileID: 1639098599204865515}
+  m_PrefabAsset: {fileID: 0}

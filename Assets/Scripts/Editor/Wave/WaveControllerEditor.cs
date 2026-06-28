@@ -36,6 +36,7 @@ namespace TeamProject01.Gameplay.EditorTools
             using (new EditorGUI.DisabledScope(enableSpecial == null || !enableSpecial.boolValue))
             {
                 WaveInspectorUtility.DrawProperty(serializedObject, "specialWaveController", "특수 웨이브 컨트롤러 자리");
+                WaveInspectorUtility.DrawProperty(serializedObject, "goldCollectSpecialWave", "골드 수집 특수웨이브");
             }
 
             serializedObject.ApplyModifiedProperties();
