@@ -18,7 +18,7 @@ MonoBehaviour:
     3\uBC1C\uC744 \uB3D9\uC2DC\uC5D0 \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
   MoveType: 1
   ImpactType: 1
-  SearchRange: 34
+  SearchRange: 26
   TargetPriorityMode: 1
   AttackAreaMode: 0
   SideConeAngle: 100

@@ -6,10 +6,16 @@ namespace TeamProject01.Gameplay
     {
         private void UpdateStraightProjectile() // 직선 이동
         {
+            Vector3 previousPosition = transform.position; // 이동 전 위치
             transform.position += direction * (GetProjectileSpeed() * Time.deltaTime); // 강화 속도 이동
             if (direction.sqrMagnitude > 0.0001f)
             {
                 transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 방향
+            }
+
+            if (TryExplodeOnGroundContact(previousPosition, transform.position))
+            {
+                return; // 바닥 충돌 폭발
             }
 
             TryApplyHitAt(transform.position); // 명중 확인

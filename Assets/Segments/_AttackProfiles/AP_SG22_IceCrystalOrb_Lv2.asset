@@ -19,7 +19,7 @@ MonoBehaviour:
     \uB5A8\uC5B4\uB728\uB9BD\uB2C8\uB2E4."
   MoveType: 2
   ImpactType: 2
-  SearchRange: 26
+  SearchRange: 23
   TargetPriorityMode: 2
   AttackAreaMode: 0
   SideConeAngle: 100

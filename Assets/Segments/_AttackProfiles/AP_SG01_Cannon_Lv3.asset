@@ -17,7 +17,7 @@ MonoBehaviour:
     \uBC1C\uC0AC\uD558\uB294 SG01 \uCE90\uB17C \uB808\uBCA8 3 \uACF5\uACA9"
   MoveType: 0
   ImpactType: 0
-  SearchRange: 28
+  SearchRange: 20
   TargetPriorityMode: 0
   AttackAreaMode: 1
   SideConeAngle: 100
@@ -25,7 +25,7 @@ MonoBehaviour:
   ClusterMinEnemyCount: 5
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.42
-  BaseDamage: 15
+  BaseDamage: 17
   Cooldown: 3.15
   UseDamageTypeOverride: 0
   DamageTypeOverride: 1

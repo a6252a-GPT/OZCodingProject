@@ -22,6 +22,11 @@ namespace TeamProject01.Gameplay
                 transform.rotation = ResolveProjectileRotation(moveDirection); // 방향
             }
 
+            if (!ShouldRollAfterArcLanding() && !useVerticalImpactDrop && TryExplodeOnGroundContact(previous, position))
+            {
+                return; // 지형을 파고들면 즉시 폭발
+            }
+
             if (t >= 1f)
             {
                 if (ShouldRollAfterArcLanding())

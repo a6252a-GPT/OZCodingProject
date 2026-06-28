@@ -21673,21 +21673,21 @@ MonoBehaviour:
   baseSpawnCount: 40
   spawnScaleSteps:
   - startStage: 1
-    spawnScalePercent: 100
+    spawnScalePercent: 1000
   - startStage: 5
-    spawnScalePercent: 150
+    spawnScalePercent: 1000
   - startStage: 8
-    spawnScalePercent: 220
+    spawnScalePercent: 1000
   - startStage: 12
-    spawnScalePercent: 350
+    spawnScalePercent: 2000
   - startStage: 16
-    spawnScalePercent: 550
+    spawnScalePercent: 2000
   - startStage: 20
-    spawnScalePercent: 800
+    spawnScalePercent: 2000
   - startStage: 25
-    spawnScalePercent: 1200
+    spawnScalePercent: 2000
   - startStage: 30
-    spawnScalePercent: 1600
+    spawnScalePercent: 2000
   - startStage: 35
     spawnScalePercent: 2100
   - startStage: 40

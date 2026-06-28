@@ -17,7 +17,7 @@ MonoBehaviour:
     damage, then bounces once by default.
   MoveType: 6
   ImpactType: 0
-  SearchRange: 24
+  SearchRange: 17
   AttackAreaMode: 1
   SideConeAngle: 100
   TargetAimHeight: 0.45

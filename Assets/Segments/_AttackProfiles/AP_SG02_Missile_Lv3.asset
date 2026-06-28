@@ -17,7 +17,7 @@ MonoBehaviour:
     \uB4A4 \uD3ED\uBC1C \uBC94\uC704 \uD53C\uD574\uB97C \uC900\uB2E4."
   MoveType: 2
   ImpactType: 2
-  SearchRange: 30
+  SearchRange: 22
   AttackAreaMode: 1
   SideConeAngle: 100
   TargetAimHeight: 0.45

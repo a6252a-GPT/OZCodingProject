@@ -111,7 +111,7 @@ namespace TeamProject01.Gameplay
         public bool RequireAimBeforeFire = true; // 조준 후 발사
         [Min(1f)] public float HeadTurnSpeed = 540f; // 머리 회전 속도
         [Min(0f)] public float FireAngleTolerance = 8f; // 발사 허용 각도
-        public bool ContinueAimingDuringProjectileSequence; // 발사 중에도 타겟 재탐색/조준
+        public bool ContinueAimingDuringProjectileSequence; // 순차 발사 중 특수 조준 정책 사용
         [Range(0.01f, 1f)] public float FiringHeadTurnSpeedMultiplier = 1f; // 발사 중 머리 회전 배율
         public bool UseMuzzleDirectionDuringProjectileSequence; // 발사 중 투사체 방향을 현재 포구 기준으로 사용
 

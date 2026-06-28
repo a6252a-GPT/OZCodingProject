@@ -68,6 +68,43 @@ namespace TeamProject01.Gameplay
             Destroy(gameObject); // 종료
         }
 
+        private bool TryExplodeOnGroundContact(Vector3 previousPosition, Vector3 currentPosition) // 폭발탄 바닥 충돌
+        {
+            if (profile == null || profile.ImpactType != SegmentAttackImpactType.ExplosionArea)
+            {
+                return false; // 폭발탄만 바닥 폭발
+            }
+
+            Vector3 movement = currentPosition - previousPosition; // 이동량
+            if (movement.sqrMagnitude <= 0.000001f)
+            {
+                return false; // 이동 없음
+            }
+
+            float contactHeight = GetGroundContactHeight(); // 중심 기준 접촉 높이
+            float previousClearance = previousPosition.y - GroundService.ProjectToGround(previousPosition, 0f).y; // 이전 바닥 높이 차
+            float currentClearance = currentPosition.y - GroundService.ProjectToGround(currentPosition, 0f).y; // 현재 바닥 높이 차
+            if (currentClearance > contactHeight || previousClearance <= currentClearance)
+            {
+                return false; // 아직 바닥에 닿지 않음
+            }
+
+            float clearanceDelta = previousClearance - currentClearance; // 통과 깊이
+            float contactRatio = previousClearance > contactHeight && clearanceDelta > 0.0001f
+                ? Mathf.Clamp01((previousClearance - contactHeight) / clearanceDelta)
+                : 1f; // 이미 접촉권이면 현재 위치 기준
+            Vector3 contactSample = Vector3.Lerp(previousPosition, currentPosition, contactRatio); // 예상 접촉 위치
+            Vector3 groundPoint = GroundService.ProjectToGround(contactSample, 0f); // 실제 바닥점
+            ApplyImpactAt(groundPoint, null); // 바닥 폭발
+            return true; // 처리 완료
+        }
+
+        private float GetGroundContactHeight() // 폭발탄 지면 접촉 여유
+        {
+            float hitRadius = profile != null ? Mathf.Max(0f, profile.ProjectileHitRadius) : 0f; // 전투 판정 반경
+            return Mathf.Clamp(hitRadius * 0.5f, 0.03f, 0.35f); // 너무 일찍/늦게 터지지 않게 제한
+        }
+
         private float GetPiercingDamageRatio() // 일반 관통탄 피해 비율
         {
             return profile != null ? Mathf.Clamp01(profile.PiercingProjectileDamageRatio) : 1f; // 기본 100%
