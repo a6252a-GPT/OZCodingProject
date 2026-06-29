@@ -10382,7 +10382,7 @@ MonoBehaviour:
   enemySpawner: {fileID: 0}
   bonusChestWaveSpawner: {fileID: 702210175}
   enableBossWave: 1
-  bossStartStage: 2
+  bossStartStage: 20
   bossIntervalStage: 15
   blockAdditionalBossWhileAlive: 1
   spawnChestAfterBossClear: 1
@@ -29396,14 +29396,11 @@ MonoBehaviour:
   hp3Fill: {fileID: 955867009}
   hpStockText: {fileID: 835897534}
   totalStockCount: 50
-  purpleHue: 0.78
-  redHue: 0
   colorSaturation: 0.85
   colorBrightness: 1
   damageHighlightAmount: 0.65
-  waitingColorExtraSteps: 8
-  waitingExtraHueShift: 0.1
-  waitingMinHueGap: 0.06
+  forceRedStockThreshold: 2
+  waitingBrightnessScale: 0.9
   damageTrailDelay: 0.1
   damageTrailDuration: 0.3
   shakeDuration: 0.12
