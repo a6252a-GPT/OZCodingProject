@@ -50,7 +50,6 @@ namespace TeamProject01.Gameplay
         [Min(128)] public int PathSampleLimit = 2048; // 경로 보관량
         public Vector3 HeadScale = new Vector3(1.25f, 0.6f, 1.45f); // 머리 크기
         public Vector3 SegmentScale = Vector3.one; // 몸통 크기
-        public bool ApplySegmentScaleAtRuntime = true; // 런타임 몸통 크기 반영
         public bool PreventSegmentVerticalSquash = true; // 새 모델 납작해짐 방지
         [Min(0.01f)] public float MinimumSegmentScaleY = 1f; // 최소 세로 크기
         [Min(0f)] public float VisualCenterHeight = 0.32f; // 표시 높이
@@ -115,7 +114,6 @@ namespace TeamProject01.Gameplay
         private float currentForwardSpeed; // 현재 전진속도
         private float tailCutCooldownRemaining; // 절단 쿨타임
         private int detachedTailSerial; // 분리 그룹 번호
-        private Vector3 lastAppliedSegmentScale; // 마지막 적용 몸통 크기
 
         // 외부 피격 효과 런타임
         private Vector3 knockbackDirection; // 외부 넉백 방향
@@ -302,31 +300,6 @@ namespace TeamProject01.Gameplay
 
             NotifySegmentCountChanged(); // 길이 변경 알림
             return true; // 추가 성공
-        }
-
-        private void ApplyRuntimeSegmentScaleIfNeeded() // 런타임 스케일 튜닝
-        {
-            if (!ApplySegmentScaleAtRuntime)
-            {
-                return; // 수동 반영 안 함
-            }
-
-            Vector3 targetScale = GetSafeSegmentScale(); // 안전 크기
-            if ((lastAppliedSegmentScale - targetScale).sqrMagnitude <= 0.000001f)
-            {
-                return; // 변경 없음
-            }
-
-            for (int i = 0; i < segments.Count; i++)
-            {
-                Transform segment = segments[i]; // 현재 몸통
-                if (segment != null)
-                {
-                    segment.localScale = targetScale; // 기존 몸통에도 적용
-                }
-            }
-
-            lastAppliedSegmentScale = targetScale; // 적용값 저장
         }
 
         private Vector3 GetSafeSegmentScale() // 몸통 크기 보정

@@ -21,6 +21,26 @@ namespace TeamProject01.Gameplay
             return instance;
         }
 
+        public static GameObject PlayAttached(GameObject prefab, Transform parent, Vector3 localPosition, Quaternion localRotation, Vector3 localScale, float lifetime) // 부착 VFX
+        {
+            if (prefab == null || parent == null)
+            {
+                return null; // 지정 없음
+            }
+
+            GameObject instance = Object.Instantiate(prefab, parent); // 소켓 하위 생성
+            Transform instanceTransform = instance.transform;
+            instanceTransform.localPosition = localPosition; // 소켓 기준 위치
+            instanceTransform.localRotation = localRotation; // 소켓 기준 방향
+            instanceTransform.localScale = localScale; // 프로필 스케일
+            if (lifetime > 0f)
+            {
+                Object.Destroy(instance, lifetime); // 수명 제거
+            }
+
+            return instance;
+        }
+
         public static GameObject PlayExplosion(GameObject prefab, Vector3 position, float radius, float lifetime, float alpha) // 폭발 VFX
         {
             GameObject instance = Play(prefab, position, Quaternion.identity, lifetime); // 생성

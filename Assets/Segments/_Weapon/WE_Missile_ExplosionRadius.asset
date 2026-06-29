@@ -82,11 +82,11 @@ MonoBehaviour:
   PierceCount: 0
   PierceCountRare: 0
   PierceCountUnique: 0
-  ExplosionRadius: 0.2
+  ExplosionRadius: 0.3
   ExplosionRadiusUsePercent: 0
-  ExplosionRadiusRare: 0.4
+  ExplosionRadiusRare: 0.5
   ExplosionRadiusUsePercentRare: 0
-  ExplosionRadiusUnique: 0.6
+  ExplosionRadiusUnique: 0.7
   ExplosionRadiusUsePercentUnique: 0
   CardPrefabOverride: {fileID: 1511448857506858134, guid: 3a49d0b5d6d28734c8caac14b1e175c5, type: 3}
   CardIconSprite: {fileID: 21300000, guid: 3578b26932a7130409582c40ef744576, type: 3}

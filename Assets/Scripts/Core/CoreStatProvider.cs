@@ -13,6 +13,10 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float FlatDamageBonus; // 기본 공격력 고정 보너스
         [Header("코어 공격력 배율")]
         [Min(0f)] public float DamageMultiplier = 1f; // 공격력 배율
+        [Header("코어 밀리 공격력 배율 보너스")]
+        [Min(0f)] public float MeleeDamageMultiplierBonus; // 밀리 무기 공격력 보너스
+        [Header("코어 마법 공격력 배율 보너스")]
+        [Min(0f)] public float MagicDamageMultiplierBonus; // 마법 무기 공격력 보너스
         [Header("코어 공격속도 배율")]
         [Min(0.01f)] public float AttackSpeedMultiplier = 1f; // 공격속도 배율
         [Header("코어 회전력 보너스")]
@@ -23,11 +27,22 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float RejoinRangeBonus; // 재결합 범위 보너스
         [Header("보유 골드")]
         [Min(0)] public int CurrentGold; // 보유 골드
+        [Header("런 중 획득 다이아")]
+        [Min(0)] public int CurrentRunDiamond; // 결과 정산 전 런 안에서 먹은 다이아
         [Header("")]
         [Min(0)] public int CurrentExperience; // 현재 레벨 경험치
         [Min(0)] public int TotalExperience; // 누적 경험치        
+        [HideInInspector]
         [Min(1)] public int BaseExperienceToLevelUp = 5; // 1레벨 필요 경험치
+        [HideInInspector]
         [Min(0)] public int ExtraExperiencePerLevel = 5; // 레벨당 증가량
+        [Header("코어 경험치 요구량")]
+        [Min(1)] public int ExperienceRequirementLevel1To5 = 30; // Lv1~5 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel6To10 = 90; // Lv6~10 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel11To20 = 320; // Lv11~20 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel21To30 = 560; // Lv21~30 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel31To40 = 850; // Lv31~40 다음 레벨 필요 경험치
+        [Min(1)] public int ExperienceRequirementLevel41Plus = 1150; // Lv41+ 다음 레벨 필요 경험치
         public ConvoyController Convoy; // 세그먼트 추가 입구
         public SegmentCatalogAsset SegmentCatalogAsset; // 새 세그먼트 데이터에셋 목록
         // 건춘 추가 시작 =======
@@ -45,32 +60,27 @@ namespace TeamProject01.Gameplay
         private readonly List<SegmentUpgradeData> segmentUpgrades = new List<SegmentUpgradeData>(); // 세그먼트별 강화 누적
         // 건춘 추가 시작 =======
         private readonly List<WeaponStatBonusEntry> weaponStatBonuses = new List<WeaponStatBonusEntry>(); // 세그먼트 ID별 무기 강화 보너스 누적 저장
-        private int levelUpCardCycleIndex; // 레벨업 카드 순환 (0=스탯, 1=무기강화, 2=세그먼트)
+        private int levelUpCardCycleIndex; // 레벨업 카드 선택 완료 횟수(현재 카드 종류는 레벨 구간 기준)
 
-        public int LevelUpCardCycleIndex => levelUpCardCycleIndex; // CardUI에서 현재 순환 위치 조회
+        public int LevelUpCardCycleIndex => levelUpCardCycleIndex; // CardUI 호환/디버그용 선택 카운트
 
         public bool IsLevelUpChoicePending => pendingLevelUpChoiceCommitted; // 레벨업 카드 선택 UI 표시 중 여부
 
-        public void AdvanceLevelUpCardCycle() // 카드 1회 선택 완료 후 다음 종류로 이동
+        public void AdvanceLevelUpCardCycle() // 카드 1회 선택 완료 카운트 증가
         {
-            levelUpCardCycleIndex++; // 0→1→2→0 순환
+            levelUpCardCycleIndex++; // 레벨 구간 로테이션은 CardUI가 CurrentLevel로 판정
         }
 
         // 경험치 충족 시 카드 UI만 열고, 경험치/레벨은 카드 선택 시 소비
         public bool TryBeginLevelUpChoice() // 레벨업 카드 UI 오픈 허용
         {
-            if (pendingLevelUpChoiceCommitted)
-            {
-                return true; // 이미 UI 표시 중
-            }
-
             if (!CanLevelUp || !CanApplyLevelDelta(1))
             {
                 return false; // 경험치 부족 등 레벨업 불가
             }
 
-            pendingLevelUpChoiceCommitted = true; // UI 중복 오픈 방지 (경험치는 아직 미소비)
-            return true; // ExpBarController에서 패널 오픈 가능
+            pendingLevelUpChoiceCommitted = true; // UI 중복 오픈 방지 (경험치는 카드 선택 시 소비)
+            return true;
         }
 
         public void CompleteLevelUpChoice() // 카드 선택·적용 완료 후 호출
@@ -119,6 +129,8 @@ namespace TeamProject01.Gameplay
             ApplyLevelDeltaIfNeeded(growth.LevelDelta); // 카드 선택 시 플레이어 레벨·경험치 소비
             // 건춘 추가 끝 =====
             DamageMultiplier = Mathf.Max(0f, DamageMultiplier + growth.DamageMultiplierBonus); // 공격력 누적
+            MeleeDamageMultiplierBonus = Mathf.Max(0f, MeleeDamageMultiplierBonus + growth.MeleeDamageMultiplierBonus); // 밀리 공격력 누적
+            MagicDamageMultiplierBonus = Mathf.Max(0f, MagicDamageMultiplierBonus + growth.MagicDamageMultiplierBonus); // 마법 공격력 누적
             AttackSpeedMultiplier = Mathf.Max(0.01f, AttackSpeedMultiplier + growth.AttackSpeedMultiplierBonus); // 공격속도 누적
             TurnSpeedBonus += growth.TurnSpeedBonus; // 회전력 누적
             CollisionForceBonus += growth.CollisionForceBonus; // 충돌힘 누적
@@ -148,6 +160,7 @@ namespace TeamProject01.Gameplay
 
             AddExperience(reward.Experience); // 경험치 코어 누적
             CurrentGold += reward.Gold; // 골드 코어 누적
+            CurrentRunDiamond += reward.Diamond; // 런 다이아 누적
             StatsChanged?.Invoke(CurrentStats); // HUD 갱신
             return true; // 적용 성공
         }
@@ -179,6 +192,8 @@ namespace TeamProject01.Gameplay
             CurrentLevel = 1; // 기본 레벨
             FlatDamageBonus = 0f; // 기본 공격력 초기화
             DamageMultiplier = 1f; // 기본 공격력
+            MeleeDamageMultiplierBonus = 0f; // 밀리 공격력 초기화
+            MagicDamageMultiplierBonus = 0f; // 마법 공격력 초기화
             AttackSpeedMultiplier = 1f; // 기본 공격속도
             TurnSpeedBonus = 0f; // 회전력 초기화
             CollisionForceBonus = 0f; // 충돌힘 초기화
@@ -186,10 +201,11 @@ namespace TeamProject01.Gameplay
             CurrentExperience = 0; // 현재 경험치 초기화
             TotalExperience = 0; // 누적 경험치 초기화
             CurrentGold = 0; // 골드 초기화
+            CurrentRunDiamond = 0; // 런 다이아 초기화
             segmentUpgrades.Clear(); // 세그먼트 강화 초기화
             // 건춘 추가 시작 =======
             weaponStatBonuses.Clear(); // 무기 강화 보너스 초기화
-            levelUpCardCycleIndex = 0; // 레벨업 카드 순환 초기화
+            levelUpCardCycleIndex = 0; // 레벨업 카드 선택 카운트 초기화
             pendingLevelUpChoiceCommitted = false; // 레벨업 카드 UI 상태 초기화
             // 건춘 추가 끝 =====
             StatsChanged?.Invoke(CurrentStats); // 변경 알림
@@ -208,6 +224,12 @@ namespace TeamProject01.Gameplay
         {
             CurrentGold = Mathf.Max(0, CurrentGold + Mathf.Max(0, amount)); // 골드 증가
             StatsChanged?.Invoke(CurrentStats); // HUD 갱신
+        }
+
+        public void DebugAddExperience(int amount) // CoreTest 디버그 경험치 지급
+        {
+            AddExperience(Mathf.Max(0, amount)); // 보상과 같은 경험치 누적 경로 사용
+            StatsChanged?.Invoke(CurrentStats); // HUD/레벨업 UI 갱신
         }
 
         public static CoreStatData GetCurrentOrDefault() // 공통 조회
@@ -450,6 +472,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
+            float profileBaseDamage = ResolveCurrentSegmentBaseDamage(normalizedSegmentId); // 유니크 현재 피해 계산 기준
             string requestedSegmentId = string.IsNullOrWhiteSpace(segmentId) ? string.Empty : segmentId.Trim(); // UI에서 고른 세그먼트
             if (!string.Equals(requestedSegmentId, normalizedSegmentId, StringComparison.OrdinalIgnoreCase))
             {
@@ -459,7 +482,7 @@ namespace TeamProject01.Gameplay
 
             int index = FindWeaponStatBonusIndex(normalizedSegmentId); // 기존 누적 검색
             WeaponStatBonusData bonus = index >= 0 ? weaponStatBonuses[index].Bonus : default; // 현재 누적값
-            bonus.AddDefinition(definition, tier); // WeaponDefinition 보너스 합산 (등급별 수치)
+            bonus.AddDefinition(definition, tier, profileBaseDamage); // WeaponDefinition 보너스 합산 (등급별 수치)
             // 건준수정 - 0621 ======
             if (index >= 0)
             {
@@ -489,6 +512,28 @@ namespace TeamProject01.Gameplay
         public static WeaponStatBonusData GetWeaponStatBonusOrDefault(string segmentId) // GenericSegmentWeapon 등에서 호출
         {
             return Active != null ? Active.GetWeaponStatBonus(segmentId) : default; // 코어 없으면 기본값
+        }
+
+        public float GetCommonBaseDamageBonus(string segmentId, float profileBaseDamage) // 공통 공격력은 기초 피해 기준 가산
+        {
+            float baseDamage = Mathf.Max(0f, profileBaseDamage); // 현재 세그먼트 레벨 기초 피해
+            float bonusRate = Mathf.Max(0f, DamageMultiplier - 1f); // 모든 무기 공격력 누적분
+            switch (ResolveSegmentDamageCategory(segmentId))
+            {
+                case SegmentDamageCategory.Melee:
+                    bonusRate += Mathf.Max(0f, MeleeDamageMultiplierBonus); // 밀리 기초 피해 보너스
+                    break;
+                case SegmentDamageCategory.Magic:
+                    bonusRate += Mathf.Max(0f, MagicDamageMultiplierBonus); // 마법 기초 피해 보너스
+                    break;
+            }
+
+            return baseDamage * Mathf.Max(0f, bonusRate); // 최종 곱이 아니라 기초값 가산
+        }
+
+        public static float GetCommonBaseDamageBonusOrDefault(string segmentId, float profileBaseDamage)
+        {
+            return Active != null ? Active.GetCommonBaseDamageBonus(segmentId, profileBaseDamage) : 0f; // 코어 없으면 보너스 없음
         }
         // 건춘 추가 끝 =====
 
@@ -559,6 +604,34 @@ namespace TeamProject01.Gameplay
             return Active != null ? Active.GetSegmentUpgrade(segmentId) : SegmentUpgradeData.None; // 없으면 기본값
         }
 
+        public float GetWeaponCategoryDamageMultiplier(string segmentId) // 밀리/마법 공통 공격력 보정
+        {
+            switch (ResolveSegmentDamageCategory(segmentId))
+            {
+                case SegmentDamageCategory.Melee:
+                    return Mathf.Max(0f, 1f + MeleeDamageMultiplierBonus); // 밀리 보너스
+                case SegmentDamageCategory.Magic:
+                    return Mathf.Max(0f, 1f + MagicDamageMultiplierBonus); // 마법 보너스
+                default:
+                    return 1f; // 미분류/지원형
+            }
+        }
+
+        public static float GetWeaponCategoryDamageMultiplierOrDefault(string segmentId) // 전투 쪽 공통 조회
+        {
+            return Active != null ? Active.GetWeaponCategoryDamageMultiplier(segmentId) : 1f; // 코어 없으면 보정 없음
+        }
+
+        public bool IsMeleeWeaponSegment(string segmentId) // 공통 카드 UI용 밀리 분류 조회
+        {
+            return ResolveSegmentDamageCategory(segmentId) == SegmentDamageCategory.Melee;
+        }
+
+        public bool IsMagicWeaponSegment(string segmentId) // 공통 카드 UI용 마법 분류 조회
+        {
+            return ResolveSegmentDamageCategory(segmentId) == SegmentDamageCategory.Magic;
+        }
+
         internal static bool TryApplyReward(RewardData reward) // 보상 입구 내부용
         {
             if (Active == null || !reward.IsValid)
@@ -578,6 +651,134 @@ namespace TeamProject01.Gameplay
 
             TotalExperience += amount; // 총 경험치 누적
             CurrentExperience += amount; // 현재 경험치 누적
+        }
+
+        private enum SegmentDamageCategory
+        {
+            None,
+            Melee,
+            Magic
+        }
+
+        private SegmentDamageCategory ResolveSegmentDamageCategory(string segmentId) // 세그먼트 설명 태그/ID 기반 분류
+        {
+            string normalizedId = NormalizeSegmentIdForCategory(segmentId);
+            if (SegmentCatalogAsset != null
+                && !string.IsNullOrWhiteSpace(normalizedId)
+                && SegmentCatalogAsset.TryFind(normalizedId, out SegmentDefinition definition)
+                && definition != null)
+            {
+                SegmentDefinition categoryDefinition = ResolveSharedCategoryDefinition(definition);
+                if (TryResolveCategoryFromDescription(categoryDefinition.Description, out SegmentDamageCategory category))
+                {
+                    return category; // [밀리]/[마법] 태그 우선
+                }
+
+                normalizedId = NormalizeSegmentIdForCategory(categoryDefinition.UpgradeId); // 공유 ID fallback
+            }
+
+            return ResolveCategoryFromSegmentId(normalizedId); // ID 대역 fallback
+        }
+
+        private SegmentDefinition ResolveSharedCategoryDefinition(SegmentDefinition definition) // 스타터 공유 ID 보정
+        {
+            if (definition == null
+                || SegmentCatalogAsset == null
+                || string.IsNullOrWhiteSpace(definition.SharedUpgradeSegmentId))
+            {
+                return definition; // 공유 없음
+            }
+
+            return SegmentCatalogAsset.TryFind(definition.SharedUpgradeSegmentId, out SegmentDefinition sharedDefinition) && sharedDefinition != null
+                ? sharedDefinition
+                : definition; // 공유 대상 없으면 원본
+        }
+
+        private static bool TryResolveCategoryFromDescription(string description, out SegmentDamageCategory category)
+        {
+            category = SegmentDamageCategory.None;
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                return false; // 태그 없음
+            }
+
+            if (description.Contains("[밀리]", StringComparison.OrdinalIgnoreCase))
+            {
+                category = SegmentDamageCategory.Melee;
+                return true;
+            }
+
+            if (description.Contains("[마법]", StringComparison.OrdinalIgnoreCase))
+            {
+                category = SegmentDamageCategory.Magic;
+                return true;
+            }
+
+            return false; // 미분류
+        }
+
+        private static SegmentDamageCategory ResolveCategoryFromSegmentId(string segmentId)
+        {
+            string normalizedId = NormalizeSegmentIdForCategory(segmentId);
+            if (string.IsNullOrWhiteSpace(normalizedId))
+            {
+                return SegmentDamageCategory.None; // ID 없음
+            }
+
+            if (normalizedId.Contains("StarterMagic", StringComparison.OrdinalIgnoreCase)
+                || normalizedId.Contains("StarterSupport", StringComparison.OrdinalIgnoreCase))
+            {
+                return SegmentDamageCategory.Magic; // 스타터 마법 계열
+            }
+
+            if (normalizedId.Contains("StarterCannon", StringComparison.OrdinalIgnoreCase)
+                || normalizedId.Contains("StarterAttack", StringComparison.OrdinalIgnoreCase)
+                || normalizedId.Contains("StarterMobility", StringComparison.OrdinalIgnoreCase))
+            {
+                return SegmentDamageCategory.Melee; // 스타터 물리 계열
+            }
+
+            if (TryParseSegmentNumber(normalizedId, out int number))
+            {
+                if (number >= 1 && number <= 6)
+                {
+                    return SegmentDamageCategory.Melee; // SG01~06
+                }
+
+                if (number >= 20 && number < 50)
+                {
+                    return SegmentDamageCategory.Magic; // SG20~49
+                }
+            }
+
+            return SegmentDamageCategory.None; // 지원형/미분류
+        }
+
+        private static bool TryParseSegmentNumber(string segmentId, out int number)
+        {
+            number = 0;
+            if (string.IsNullOrWhiteSpace(segmentId) || segmentId.Length < 4 || !segmentId.StartsWith("SG", StringComparison.OrdinalIgnoreCase))
+            {
+                return false; // 형식 아님
+            }
+
+            int index = 2;
+            int value = 0;
+            bool hasDigit = false;
+            while (index < segmentId.Length && char.IsDigit(segmentId[index]))
+            {
+                value = value * 10 + (segmentId[index] - '0');
+                hasDigit = true;
+                index++;
+            }
+
+            number = value;
+            return hasDigit;
+        }
+
+        private static string NormalizeSegmentIdForCategory(string segmentId)
+        {
+            return string.IsNullOrWhiteSpace(segmentId) ? string.Empty : segmentId.Trim();
         }
 
         private bool CanApplyGrowth(GrowthStatData growth) // 적용 가능 확인
@@ -773,6 +974,47 @@ namespace TeamProject01.Gameplay
             return prefab != null; // 최종 확인
         }
 
+        private float ResolveCurrentSegmentBaseDamage(string segmentId) // 현재 세그먼트 레벨의 기초 피해 조회
+        {
+            return TryGetCurrentSegmentAttackProfile(segmentId, out SegmentAttackProfile profile) && profile != null
+                ? Mathf.Max(0f, profile.BaseDamage)
+                : 0f; // 조회 실패 시 안전값
+        }
+
+        private bool TryGetCurrentSegmentAttackProfile(string segmentId, out SegmentAttackProfile profile)
+        {
+            profile = null; // 기본값
+            EnsureConvoyReference(); // 컨보이 보강
+            if (!TryFindSegmentDefinition(segmentId, out SegmentDefinition definition))
+            {
+                return false; // 정의 없음
+            }
+
+            int currentLevel = Convoy != null
+                ? Convoy.GetCurrentSegmentLevel(definition.NormalizedId, definition)
+                : 1; // 컨보이 없으면 Lv1
+
+            if (definition.TryGetLevel(currentLevel, out SegmentLevelDefinition levelDefinition) && levelDefinition.AttackProfile != null)
+            {
+                profile = levelDefinition.AttackProfile; // 레벨 정의 우선
+                return true;
+            }
+
+            if (!definition.TryGetSegmentPrefab(currentLevel, out GameObject prefab) || prefab == null)
+            {
+                return false; // 프리팹 없음
+            }
+
+            GenericSegmentWeapon weapon = prefab.GetComponentInChildren<GenericSegmentWeapon>(true); // 프리팹 fallback
+            if (weapon == null || weapon.AttackProfile == null)
+            {
+                return false; // 공격 데이터 없음
+            }
+
+            profile = weapon.AttackProfile;
+            return true;
+        }
+
         ////// 전찬우추가 - 카탈로그 데이터에셋에서 세그먼트 정의 찾기
         private bool TryFindSegmentDefinition(string segmentId, out SegmentDefinition definition)
         {
@@ -805,8 +1047,39 @@ namespace TeamProject01.Gameplay
 
         private int CalculateRequiredExperience(int level) // 필요 경험치 계산
         {
-            int levelIndex = Mathf.Max(0, level - 1); // 1레벨 기준
-            return Mathf.Max(1, BaseExperienceToLevelUp + ExtraExperiencePerLevel * levelIndex); // 선형 증가
+            int safeLevel = Mathf.Max(1, level); // 최소 레벨 보정
+
+            if (safeLevel <= 5)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel1To5, 30); // 초반 빠른 세그먼트 확보
+            }
+
+            if (safeLevel <= 10)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel6To10, 90); // 초반 성장 유지
+            }
+
+            if (safeLevel <= 20)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel11To20, 320); // 1차 빌드 형성 구간
+            }
+
+            if (safeLevel <= 30)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel21To30, 560); // 중반 성장 둔화
+            }
+
+            if (safeLevel <= 40)
+            {
+                return ResolveExperienceRequirement(ExperienceRequirementLevel31To40, 850); // 후반 강화 비중 증가
+            }
+
+            return ResolveExperienceRequirement(ExperienceRequirementLevel41Plus, 1150); // Lv41 이후 마무리 구간
+        }
+
+        private static int ResolveExperienceRequirement(int configuredValue, int fallbackValue) // 경험치 구간값 보정
+        {
+            return configuredValue > 0 ? configuredValue : Mathf.Max(1, fallbackValue); // 신규 직렬화 0 방어
         }
     }
 }

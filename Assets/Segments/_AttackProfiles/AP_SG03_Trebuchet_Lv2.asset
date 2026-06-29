@@ -16,18 +16,18 @@ MonoBehaviour:
   Description: "Lv2 \uD22C\uC11D\uAE30 \uACE1\uC0AC \uD3ED\uBC1C \uACF5\uACA9"
   MoveType: 2
   ImpactType: 2
-  SearchRange: 26
+  SearchRange: 20
   AttackAreaMode: 1
   SideConeAngle: 100
   TargetAimHeight: 0.05
   AttackSpawnHeight: 0.65
-  BaseDamage: 12
-  Cooldown: 4.75
+  BaseDamage: 48
+  Cooldown: 4.5
   ApplyMonsterFeedback: 1
-  MonsterKnockbackDistance: 0.25
-  MonsterKnockbackDuration: 0.08
-  MonsterStaggerDuration: 0.06
-  MonsterExplosionFeedbackMultiplier: 2
+  MonsterKnockbackDistance: 1.3
+  MonsterKnockbackDuration: 0.18
+  MonsterStaggerDuration: 0.09
+  MonsterExplosionFeedbackMultiplier: 2.1
   MonsterPierceFeedbackMultiplier: 0.35
   MonsterContinuousFeedbackMultiplier: 0
   ProjectilePrefab: {fileID: 1138852089107971199, guid: 2bab05cc4794f6c4db350f463c2ba772, type: 3}
@@ -37,19 +37,20 @@ MonoBehaviour:
   ProjectileFireDelay: 0.18
   UseLoadedProjectileVisuals: 1
   LoadedProjectileReloadRatio: 0.5
-  ProjectileScale: {x: 0, y: 0, z: 0}
-  ProjectileSpeed: 14.5
+  ProjectileScale: {x: 1.8, y: 1.8, z: 1.8}
+  ProjectileSpeed: 17.5
   ProjectileHitRadius: 0.75
   ProjectileLifetime: 7
   PierceCount: 1
   ArcHeight: 4.7
   RollAfterArcLanding: 1
-  LandingImpactRadius: 1.1
+  LandingImpactRadius: 1.3
   LandingRollDamageRadius: 0.75
-  LandingRollDistance: 2.45
-  LandingRollDuration: 1.5
-  LandingRollSpinSpeed: 900
-  ExplosionRadius: 3.2
+  LandingRollDamageRatio: 0.45
+  LandingRollDistance: 7
+  LandingRollDuration: 1.25
+  LandingRollSpinSpeed: 1140
+  ExplosionRadius: 1.3
   ExplosionLifetime: 0.35
   LaserDuration: 0.5
   LaserTickInterval: 0.15

@@ -22,8 +22,8 @@ MonoBehaviour:
   SideConeAngle: 110
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.75
-  BaseDamage: 16
-  Cooldown: 3.9
+  BaseDamage: 42
+  Cooldown: 3.05
   UseDamageTypeOverride: 0
   DamageTypeOverride: 1
   ApplyMonsterFeedback: 1
@@ -41,8 +41,8 @@ MonoBehaviour:
   UseLoadedProjectileVisuals: 1
   LoadedProjectileReloadRatio: 0
   ProjectileScale: {x: 1, y: 1, z: 1}
-  ProjectileSpeed: 19
-  ProjectileHitRadius: 0.6
+  ProjectileSpeed: 22
+  ProjectileHitRadius: 0.7
   ProjectileLifetime: 5.5
   PierceCount: 1
   ArcHeight: 0
@@ -55,7 +55,7 @@ MonoBehaviour:
   LandingRollDistance: 0
   LandingRollDuration: 0.35
   LandingRollSpinSpeed: 720
-  ExplosionRadius: 3.4
+  ExplosionRadius: 4.4
   ExplosionLifetime: 0.45
   LaserDuration: 0.5
   LaserTickInterval: 0.15

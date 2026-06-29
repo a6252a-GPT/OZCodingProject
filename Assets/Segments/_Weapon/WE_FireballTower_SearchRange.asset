@@ -31,11 +31,11 @@ MonoBehaviour:
   ProjectileSpeedUsePercentRare: 0
   ProjectileSpeedUnique: 0
   ProjectileSpeedUsePercentUnique: 0
-  SearchRange: 0.5
+  SearchRange: 1.5
   SearchRangeUsePercent: 0
-  SearchRangeRare: 1
+  SearchRangeRare: 2.5
   SearchRangeUsePercentRare: 0
-  SearchRangeUnique: 2
+  SearchRangeUnique: 3.5
   SearchRangeUsePercentUnique: 0
   MaxChainDepth: 0
   MaxChainDepthRare: 0

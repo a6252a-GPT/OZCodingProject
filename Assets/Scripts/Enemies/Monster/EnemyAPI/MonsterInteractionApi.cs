@@ -61,6 +61,16 @@ namespace TeamProject01.Gameplay
             return convoyController.TryGetRandomAttachedWeaponSegment(out targetSegment);
         }
 
+        public static bool HasAvailableSegmentCutTarget() //조성원추가-0626 절단 가능한 무기 세그먼트가 존재하는지 확인
+        {
+            if (!TryGetConvoyController(out ConvoyController convoyController)) //조성원추가-0626 등록된 컨보이 또는 ConvoyController를 찾지 못했다면
+            {
+                return false; //조성원추가-0626 절단 가능한 대상이 없다고 반환한다.
+            }
+
+            return convoyController.HasAvailableSegmentCutTarget(); //조성원추가-0626 대상을 예약하지 않고 절단 가능한 세그먼트 존재 여부만 반환한다.
+        }
+
         public static bool IsConvoyHeadCollider(Collider other) //조성원추가-0622 컨보이 머리 충돌 확인
         {
             if (!TryGetConvoyController(out ConvoyController convoyController))

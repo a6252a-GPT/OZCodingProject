@@ -1,23 +1,34 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace TeamProject01.Gameplay
 {
     [DisallowMultipleComponent]
-    public sealed class ExpBarController : MonoBehaviour // 경험치 Slider (0~1)
+    public sealed class ExpBarController : MonoBehaviour // 경험치 바 + 레벨/골드 HUD 연동
     {
-        public Slider ExpSlider; // UI Slider
-        public TextMeshProUGUI LevelText; // 레벨 표시 (LevelTest)
-        // public ExpTest ExpTestSource; // 임시 테스트
-        public LevelUpUi LevelUpUi; // 레벨업 패널
-        public CardUI CardUi; // 레벨업 UI 호출 (LevelUpUi 없을 때)
-        // public bool PreferExpTest = true; // 테스트 우선
+        [Header("경험치 바")]
+        public Slider ExpSlider;
+        [SerializeField] private Image expFillImage;
 
-        private CoreStatProvider subscribedCore;
-        // private ExpTest subscribedExpTest;
-        private bool levelUpUiOpened; // 코어 레벨업 UI 중복 호출 방지
-        private bool wasLevelUpChoicePending; // 카드 선택 완료 감지
+        [Header("레벨업 UI")]
+        public TextMeshProUGUI LevelText;
+        public LevelUpUi LevelUpUi;
+        public CardUI CardUi;
+
+        [Header("경험치 텍스트")]
+        [SerializeField] private TextMeshProUGUI expNumText;
+
+        [Header("골드 텍스트")]
+        [SerializeField] private TextMeshProUGUI goldText;
+
+        [Header("보석 텍스트")]
+        [SerializeField] private TextMeshProUGUI gemText;
+
+        private CoreStatProvider subscribedCore; // StatsChanged 구독 대상
+        private bool levelUpUiOpened; // 레벨업 UI 중복 오픈 방지
+        private bool wasLevelUpChoicePending; // 카드 선택 완료 감지용 이전 상태
+        private bool cancelingFailedLevelUpOpen; // 오픈 실패 복구 중 재진입 방지
 
         private void Awake()
         {
@@ -32,37 +43,57 @@ namespace TeamProject01.Gameplay
                 ExpSlider.maxValue = 1f;
                 ExpSlider.interactable = false;
             }
+
+            if (expFillImage == null && ExpSlider != null)
+            {
+                foreach (Image img in ExpSlider.GetComponentsInChildren<Image>(true))
+                {
+                    if (img.gameObject.name.Contains("Fill") && img.gameObject.name != "Fill Area")
+                    {
+                        expFillImage = img;
+                        break;
+                    }
+                }
+            }
+
+            ConfigureExpFillImage();
+        }
+
+        private void ConfigureExpFillImage()
+        {
+            if (expFillImage == null)
+            {
+                return;
+            }
+
+            expFillImage.type = Image.Type.Filled;
+            expFillImage.fillMethod = Image.FillMethod.Horizontal;
+            expFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+            expFillImage.preserveAspect = false;
         }
 
         private void OnEnable()
         {
-            // if (UsesExpTest())
-            // {
-            //     TrySubscribeExpTest();
-            //     RefreshFromExpTest();
-            //     return;
-            // }
-
             TrySubscribeCore();
-            CoreStatData stats = CoreStatProvider.GetCurrentOrDefault();
-            RefreshFromCore(stats); // 
+            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault());
+            TryProcessLevelUp();
         }
 
         private void Start()
         {
-            TrySubscribeCore(); // Awake/OnEnable 순서 보정
-            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault()); // 최신 코어값 재반영
+            TrySubscribeCore();
+            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault());
+            TryProcessLevelUp();
         }
 
         private void Update()
         {
-            if (subscribedCore != null || CoreStatProvider.Active == null)
+            if (subscribedCore == null && TrySubscribeCore())
             {
-                return; // 이미 연결 또는 코어 없음
+                RefreshFromCore(CoreStatProvider.GetCurrentOrDefault());
             }
 
-            TrySubscribeCore(); // 늦게 생성된 코어 연결
-            RefreshFromCore(CoreStatProvider.GetCurrentOrDefault()); // 연결 즉시 표시 보정
+            TryOpenPendingLevelUp(CoreStatProvider.GetCurrentOrDefault()); // UI가 바빴던 레벨업 재시도
         }
 
         private void OnDisable()
@@ -72,138 +103,155 @@ namespace TeamProject01.Gameplay
                 subscribedCore.StatsChanged -= OnStatsChanged;
                 subscribedCore = null;
             }
-
-            // if (subscribedExpTest != null)
-            // {
-            //     subscribedExpTest.Changed -= OnExpTestChanged;
-            //     subscribedExpTest.LevelUpTriggered -= OnLevelUpTriggered;
-            //     subscribedExpTest = null;
-            // }
         }
 
-        // private bool UsesExpTest()
-        // {
-        //     return PreferExpTest && ResolveExpTest() != null;
-        // }
-        //
-        // private ExpTest ResolveExpTest()
-        // {
-        //     return ExpTestSource != null ? ExpTestSource : ExpTest.Active;
-        // }
-        //
-        // private void TrySubscribeExpTest()
-        // {
-        //     ExpTest expTest = ResolveExpTest();
-        //     if (subscribedExpTest != null || expTest == null)
-        //     {
-        //         return;
-        //     }
-        //
-        //     subscribedExpTest = expTest;
-        //     subscribedExpTest.Changed += OnExpTestChanged;
-        //     subscribedExpTest.LevelUpTriggered += OnLevelUpTriggered;
-        // }
-
-        private void OnLevelUpTriggered()
-        {
-            if (LevelUpUi != null)
-            {
-                LevelUpUi.Open();
-                return;
-            }
-
-            CardUi?.PlayLevelUpTween();
-        }
-
-        private void TrySubscribeCore()
+        private bool TrySubscribeCore() // CoreStatProvider.StatsChanged 구독
         {
             if (subscribedCore != null || CoreStatProvider.Active == null)
             {
-                return;
+                return false;
             }
 
             subscribedCore = CoreStatProvider.Active;
             subscribedCore.StatsChanged += OnStatsChanged;
+            return true;
         }
-
-        // private void OnExpTestChanged()
-        // {
-        //     RefreshFromExpTest();
-        // }
 
         private void OnStatsChanged(CoreStatData stats)
         {
-            // if (UsesExpTest())
-            // {
-            //     RefreshFromExpTest();
-            //     return;
-            // }
-
-            RefreshFromCore(stats); // 
-
-            CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
-            if (core == null)
-            {
-                return; // 코어 없음
-            }
-
-            bool choicePending = core.IsLevelUpChoicePending; // 카드 선택 UI 표시 중
-            if (wasLevelUpChoicePending && !choicePending)
-            {
-                levelUpUiOpened = false; // 카드 선택 완료 → 다음 레벨업 UI 허용
-            }
-
-            wasLevelUpChoicePending = choicePending; // 이전 프레임 상태 저장
-            if (choicePending)
-            {
-                return; // 카드 선택 중 (경험치는 아직 미소비)
-            }
-
-            if (stats.CanLevelUp && !levelUpUiOpened) // 
-            {
-                levelUpUiOpened = true; // 
-                if (core.TryBeginLevelUpChoice()) // 조건 확인 후 패널 오픈 (경험치는 선택 시 소비)
-                {
-                    OnLevelUpTriggered(); // 
-                }
-                else
-                {
-                    levelUpUiOpened = false; // 레벨 반영 실패 시 재시도 허용
-                }
-            }
-            else if (!stats.CanLevelUp) // 
-            {
-                levelUpUiOpened = false; // 
-            }
+            RefreshFromCore(stats);
+            TryOpenPendingLevelUp(stats);
         }
 
-        // private void RefreshFromExpTest()
-        // {
-        //     TrySubscribeExpTest();
-        //     ExpTest expTest = ResolveExpTest();
-        //     if (expTest == null)
-        //     {
-        //         return;
-        //     }
-        //
-        //     SetFillRatio(expTest.FillRatio);
-        //     SetLevelDisplay(expTest.Level);
-        // }
-
-        private void RefreshFromCore(CoreStatData stats)
+        private void TryOpenPendingLevelUp(CoreStatData stats) // 경험치 충족 시 카드 UI가 열릴 때만 pending 처리
         {
-            SetFillRatio(stats.ExperienceRatio); // 코어 경험치 비율
-            SetLevelDisplay(stats.Level); // 코어 레벨
-        }
-
-        private void SetFillRatio(float ratio)
-        {
-            if (ExpSlider == null)
+            if (cancelingFailedLevelUpOpen)
             {
                 return;
             }
 
-            ExpSlider.value = Mathf.Clamp01(ratio);
+            CoreStatProvider core = CoreStatProvider.Active;
+            if (core == null)
+            {
+                return;
+            }
+
+            stats = core.CurrentStats; // 최신 코어 값으로 재확인
+            RefreshFromCore(stats);
+
+            bool choicePending = core.IsLevelUpChoicePending;
+            bool panelOpen = IsLevelUpPanelOpen();
+
+            if (choicePending && !panelOpen)
+            {
+                core.CancelLevelUpChoice(); // UI 없이 pending만 남은 stuck 상태 복구
+                choicePending = false;
+                levelUpUiOpened = false;
+            }
+
+            if (wasLevelUpChoicePending && !choicePending)
+            {
+                levelUpUiOpened = false; // 카드 선택 완료 → 다음 레벨업 허용
+            }
+
+            wasLevelUpChoicePending = choicePending;
+            if (choicePending)
+            {
+                return; // 카드 선택 중 — 경험치는 아직 미소비
+            }
+
+            if (!stats.CanLevelUp)
+            {
+                levelUpUiOpened = false;
+                return;
+            }
+
+            if (levelUpUiOpened)
+            {
+                return;
+            }
+
+            CardUI cardUi = ResolveCardUi();
+            if (cardUi == null || !cardUi.CanOpenLevelUpPanel())
+            {
+                levelUpUiOpened = false; // 보상/선택권 패널이 닫힌 뒤 Update에서 재시도
+                return;
+            }
+
+            if (!core.TryBeginLevelUpChoice())
+            {
+                levelUpUiOpened = false; // 레벨 반영 실패 시 재시도 허용
+                return;
+            }
+
+            if (cardUi.TryOpenLevelUpPanel())
+            {
+                levelUpUiOpened = true;
+                return;
+            }
+
+            cancelingFailedLevelUpOpen = true;
+            try
+            {
+                core.CancelLevelUpChoice(); // UI 오픈 실패 시 pending만 남기지 않음
+            }
+            finally
+            {
+                cancelingFailedLevelUpOpen = false;
+                levelUpUiOpened = false;
+            }
+        }
+
+        private void TryProcessLevelUp() // 기존 호출 호환
+        {
+            TryOpenPendingLevelUp(CoreStatProvider.GetCurrentOrDefault());
+        }
+
+        private CardUI ResolveCardUi() // 씬 연결 누락 시 런타임 보강
+        {
+            if (CardUi != null)
+            {
+                return CardUi;
+            }
+
+            CardUi = FindFirstObjectByType<CardUI>();
+            return CardUi;
+        }
+
+        private bool IsLevelUpPanelOpen()
+        {
+            return LevelUpUi != null && LevelUpUi.IsPanelOpen;
+        }
+
+        private bool IsLevelUpPanelVisible()
+        {
+            return LevelUpUi != null && LevelUpUi.IsPanelVisible;
+        }
+
+        private void RefreshFromCore(CoreStatData stats)
+        {
+            SetFillRatio(stats.ExperienceRatio);
+            SetLevelDisplay(stats.Level);
+            SetExpNumDisplay(stats.CurrentExperience, stats.ExperienceToNextLevel);
+            SetGoldDisplay(stats.Gold);
+            SetGemDisplay();
+        }
+
+        private void SetFillRatio(float ratio)
+        {
+            float clamped = Mathf.Clamp01(ratio);
+
+            if (expFillImage != null)
+            {
+                expFillImage.enabled = true;
+                expFillImage.fillAmount = clamped;
+                return;
+            }
+
+            if (ExpSlider != null)
+            {
+                ExpSlider.value = clamped;
+            }
         }
 
         private void SetLevelDisplay(int level)
@@ -213,7 +261,37 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            LevelText.text = $"LV : {Mathf.Max(1, level)}";
+            LevelText.text = $"{Mathf.Max(1, level)}";
+        }
+
+        private void SetExpNumDisplay(int current, int max)
+        {
+            if (expNumText == null)
+            {
+                return;
+            }
+
+            expNumText.text = $"{current}/{max}";
+        }
+
+        private void SetGoldDisplay(int gold)
+        {
+            if (goldText == null)
+            {
+                return;
+            }
+
+            goldText.text = gold.ToString();
+        }
+
+        private void SetGemDisplay()
+        {
+            if (gemText == null)
+            {
+                return;
+            }
+
+            gemText.text = "0";
         }
     }
 }

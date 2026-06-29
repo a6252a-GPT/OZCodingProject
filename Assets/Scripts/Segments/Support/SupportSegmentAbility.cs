@@ -34,7 +34,6 @@ namespace TeamProject01.Gameplay
         [Min(0.05f)] public float HolyWaterProjectileLifetime = 1.05f;
         [Min(0.05f)] public float HolyWaterProjectileStartRadius = 0.32f;
         [Min(0.05f)] public float HolyWaterProjectileEndRadius = 1.75f;
-        [Min(0.02f)] public float HolyWaterProjectileTickInterval = 0.25f;
         [Range(0f, 1f)] public float HolyWaterMuzzleInfluenceStrength = 0.3f;
         public Color HolyWaterProjectileColor = new Color(0.86f, 0.96f, 1f, 0.34f);
 
@@ -274,10 +273,7 @@ namespace TeamProject01.Gameplay
                 HolyWaterProjectileLifetime,
                 HolyWaterProjectileStartRadius,
                 HolyWaterProjectileEndRadius,
-                HolyWaterProjectileTickInterval,
                 HolyWaterMuzzleInfluenceStrength,
-                Mathf.Max(1f, Profile.IncomingDamageMultiplier),
-                GetEffectDurationSeconds(),
                 HolyWaterProjectileColor);
 
             holyWaterProjectilesRemaining--;

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG05_Flamethrower
   DisplayName: "\uD654\uC5FC\uBC29\uC0AC\uAE30"
-  Description: "\uC804\uBC29 \uBC94\uC704\uC758 \uC801\uC5D0\uAC8C \uC9C0\uC18D \uD654\uC5FC
-    \uD53C\uD574\uB97C \uC8FC\uB294 \uD654\uC5FC\uBC29\uC0AC\uAE30 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
+  Description: "<color=#9B3A2F><b>[밀리]</b></color> <color=#6B5B3A>[지속]</color> 전방 범위에 화염을 분사해 지속 피해를 줍니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

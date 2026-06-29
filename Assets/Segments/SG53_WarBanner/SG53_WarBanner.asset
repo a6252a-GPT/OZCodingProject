@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG53_WarBanner
   DisplayName: "\uC804\uC7C1\uAE43\uBC1C"
-  Description: "\uC55E\uB4A4 3\uCE78 \uC544\uAD70 \uC138\uADF8\uBA3C\uD2B8\uC758
-    \uCD5C\uC885 \uACF5\uACA9\uC18D\uB3C4\uB97C 5\uCD08\uAC04 30% \uC99D\uAC00\uC2DC\uD0A4\uB294
-    \uC9C0\uC6D0 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
+  Description: "<color=#2E7D59><b>[지원]</b></color> <color=#6B5B3A>[버프]</color> 주기적으로 앞뒤 아군 세그먼트의 공격 쿨타임을 감소시킵니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

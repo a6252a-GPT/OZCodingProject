@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG20_LightningObelisk
   DisplayName: "\uC804\uAE30 \uC624\uBCA8\uB9AC\uC2A4\uD06C"
-  Description: "\uCCAB \uBAAC\uC2A4\uD130\uC5D0\uAC8C \uC804\uAE30\uB97C \uBCF4\uB0B4\uACE0
-    \uC8FC\uBCC0\uC73C\uB85C \uC5F0\uC1C4 \uBC88\uAC1C\uB97C \uD37C\uB728\uB9AC\uB294
-    \uB9C8\uBC95 \uC138\uADF8\uBA3C\uD2B8."
+  Description: "<color=#2F6BFF><b>[마법]</b></color> <color=#6B5B3A>[연쇄]</color> 번개를 발사하고 주변 적에게 연쇄 전격을 퍼뜨립니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1
