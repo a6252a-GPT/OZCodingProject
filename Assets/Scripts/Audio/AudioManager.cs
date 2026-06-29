@@ -64,9 +64,151 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     protected override void Awake()
     {
+        AudioManager survivor = _instance as AudioManager;
         base.Awake();
-        CreateAudioSources();
-        InitializDictionary();
+
+        if (!IsActiveSingleton)
+        {
+            survivor?.AbsorbConfiguration(this); // 씬 AudioManager 설정을 DDOL 인스턴스로 이전 //안건준 수정 - 0628
+            return;
+        }
+
+        EnsureRuntimeReady();
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+    }
+
+    internal void AbsorbConfiguration(AudioManager donor)
+    {
+        if (donor == null)
+        {
+            return;
+        }
+
+        if (!HasAssignedBgmClips() && donor.HasAssignedBgmClips())
+        {
+            bgmClips = donor.bgmClips;
+        }
+
+        if (!HasAssignedSfxClips() && donor.HasAssignedSfxClips())
+        {
+            sfxClips = donor.sfxClips;
+        }
+
+        EnsureRuntimeReady();
+    }
+
+    private void EnsureRuntimeReady()
+    {
+        EnsureAudioSources();
+        EnsureDictionaries();
+    }
+
+    private bool HasAssignedBgmClips()
+    {
+        return CountAssignedClips(bgmClips) > 0;
+    }
+
+    private bool HasAssignedSfxClips()
+    {
+        return CountAssignedClips(sfxClips) > 0;
+    }
+
+    private static int CountAssignedClips(BGMClipData[] clips)
+    {
+        if (clips == null)
+        {
+            return 0;
+        }
+
+        int count = 0;
+        for (int i = 0; i < clips.Length; i++)
+        {
+            if (clips[i] != null && clips[i].clip != null)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static int CountAssignedClips(SFXClipData[] clips)
+    {
+        if (clips == null)
+        {
+            return 0;
+        }
+
+        int count = 0;
+        for (int i = 0; i < clips.Length; i++)
+        {
+            if (clips[i] != null && clips[i].clip != null)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private void EnsureDictionaries()
+    {
+        bool needsRebuild = bgmDictionary == null
+            || sfxDictionary == null
+            || (HasAssignedBgmClips() && bgmDictionary.Count == 0)
+            || (HasAssignedSfxClips() && sfxDictionary.Count == 0);
+
+        if (needsRebuild)
+        {
+            InitializDictionary();
+        }
+    }
+
+    private void EnsureAudioSources()
+    {
+        if (!IsValidAudioSource(bgmSource))
+        {
+            bgmSource = FindChildAudioSource("BGM Source");
+            if (!IsValidAudioSource(bgmSource))
+            {
+                bgmSource = CreateChildAudioSource("BGM Source", loop: true);
+            }
+        }
+
+        if (!IsValidAudioSource(sfxSource))
+        {
+            sfxSource = FindChildAudioSource("SFX Source");
+            if (!IsValidAudioSource(sfxSource))
+            {
+                sfxSource = CreateChildAudioSource("SFX Source", loop: false);
+            }
+        }
+    }
+
+    private static bool IsValidAudioSource(AudioSource source)
+    {
+        return source != null;
+    }
+
+    private AudioSource FindChildAudioSource(string childName)
+    {
+        Transform child = transform.Find(childName);
+        return child != null ? child.GetComponent<AudioSource>() : null;
+    }
+
+    private AudioSource CreateChildAudioSource(string childName, bool loop)
+    {
+        GameObject sourceObject = new GameObject(childName);
+        sourceObject.transform.SetParent(transform, false);
+        AudioSource source = sourceObject.AddComponent<AudioSource>();
+        source.loop = loop;
+        source.playOnAwake = false;
+        source.spatialBlend = 0f;
+        return source;
     }
 
     private void OnEnable()
@@ -81,9 +223,10 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private void Start()
     {
+        EnsureRuntimeReady();
         LoadVolumePreferences();
         PlayBGMForActiveScene();
-        BindSceneSfxSources(SceneManager.GetActiveScene()); // 첫 씬 SFX 볼륨 연동 //안건준 추가 - 0628
+        BindSceneSfxSources(SceneManager.GetActiveScene());
     }
 
     private void Update()
@@ -113,8 +256,9 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        EnsureRuntimeReady();
         PlayBGMForScene(scene.name);
-        BindSceneSfxSources(scene); // 씬 전환 시 SFX AudioSource 자동 연동 //안건준 추가 - 0628
+        BindSceneSfxSources(scene);
     }
 
     private void BindSceneSfxSources(Scene scene)
@@ -194,67 +338,49 @@ public class AudioManager : AudioSingleton<AudioManager>
         PlayBGM(bgmType);
     }
 
-    //오디오소스가 없을경우 자동으로 생성
-    private void CreateAudioSources()
-    {
-        if(bgmSource == null)
-        {
-            //BGM Source 생성
-            GameObject bgmObject = new GameObject("BGM Source");
-            bgmObject.transform.SetParent(transform);
-            //생성한 오브젝트에 AudioSource 컴포넌트 추가
-            bgmSource = bgmObject.AddComponent<AudioSource>();
-
-            bgmSource.loop = true; //반복재생
-
-
-        }
-        if(sfxSource == null)
-        {
-            //SFX Source 생성
-            GameObject sfxObject = new GameObject("SFX Source");
-            sfxObject.transform.SetParent(transform);
-            //생성한 오브젝트에 AudioSource 컴포넌트 추가
-            sfxSource = sfxObject.AddComponent<AudioSource>();
-            sfxSource.loop = false; //반복 재생 안함
-        }
-    }
-
     //배열로 등록한 오디오 데이터를 딕셔너리에 저장
     private void InitializDictionary()
     {
         bgmDictionary = new Dictionary<BGMType, BGMClipData>();
         sfxDictionary = new Dictionary<SFXType, SFXClipData>();
-        
-        if (bgmClips == null) return;
 
-        for(int i = 0; i < bgmClips.Length; i++)
+        if (bgmClips != null)
         {
-            if(bgmClips[i] == null) continue;
-            if(bgmClips[i].clip == null) continue;
-            //딕셔너리에 같은 BGM타입이 없으면 추가
-            if(!bgmDictionary.ContainsKey(bgmClips[i].type))
+            for (int i = 0; i < bgmClips.Length; i++)
             {
-                bgmDictionary.Add(bgmClips[i].type, bgmClips[i]);
+                if (bgmClips[i] == null || bgmClips[i].clip == null)
+                {
+                    continue;
+                }
+
+                if (!bgmDictionary.ContainsKey(bgmClips[i].type))
+                {
+                    bgmDictionary.Add(bgmClips[i].type, bgmClips[i]);
+                }
             }
         }
-        if (sfxClips == null) return;
 
-        for(int i = 0; i < sfxClips.Length; i++)
+        if (sfxClips != null)
         {
-            if(sfxClips[i] == null) continue;
-            if(sfxClips[i].clip == null) continue;
-            //딕셔너리에 같은 효과음 타입이 없으면 추가
-            if(!sfxDictionary.ContainsKey(sfxClips[i].type))
+            for (int i = 0; i < sfxClips.Length; i++)
             {
-                sfxDictionary.Add(sfxClips[i].type, sfxClips[i]);
+                if (sfxClips[i] == null || sfxClips[i].clip == null)
+                {
+                    continue;
+                }
+
+                if (!sfxDictionary.ContainsKey(sfxClips[i].type))
+                {
+                    sfxDictionary.Add(sfxClips[i].type, sfxClips[i]);
+                }
             }
         }
     }
     //BGM 재생
     public void PlayBGM(BGMType type)
     {
-        if(!bgmDictionary.ContainsKey(type))
+        EnsureRuntimeReady();
+        if (bgmSource == null || bgmDictionary == null || !bgmDictionary.ContainsKey(type))
         {
             return;
         }
@@ -301,7 +427,8 @@ public class AudioManager : AudioSingleton<AudioManager>
     //효과음 재생
     public void PlaySFX(SFXType type)
     {
-        if(!sfxDictionary.ContainsKey(type))
+        EnsureRuntimeReady();
+        if (sfxSource == null || sfxDictionary == null || !sfxDictionary.ContainsKey(type))
         {
             return;
         }

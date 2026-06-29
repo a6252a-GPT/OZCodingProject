@@ -10,6 +10,7 @@ namespace TeamProject01.Gameplay
     public sealed class RunResultController : MonoBehaviour // 런 종료 판정/결과창
     {
         private const string DefaultTitleScenePath = "Assets/Scenes/TitleScene.unity";
+        private const string DefaultTitleSceneName = "TitleScene";
 
         [Header("Rules")]
         [Min(1)] [SerializeField] private int clearStageThreshold = 40; // 이 스테이지 이상에서 넥서스 사망 시 클리어
@@ -150,7 +151,7 @@ namespace TeamProject01.Gameplay
 #if UNITY_EDITOR
             EditorSceneManager.LoadSceneInPlayMode(titleScenePath, new LoadSceneParameters(LoadSceneMode.Single));
 #else
-            SceneManager.LoadScene(titleScenePath);
+            SceneManager.LoadScene(DefaultTitleSceneName);
 #endif
         }
 
