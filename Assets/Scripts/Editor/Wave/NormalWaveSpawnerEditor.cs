@@ -35,6 +35,10 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "lateGateCount", "후반 사용 게이트 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "frontRowCount", "앞줄 배치 수");
 
+            WaveInspectorUtility.DrawSection("스폰 퍼짐 설정", "선택된 방향 안에서 몬스터가 한 줄로만 나오지 않게 살짝 퍼뜨립니다.");
+            WaveInspectorUtility.DrawProperty(serializedObject, "useSpawnSpread", "스폰 퍼짐 사용");
+            WaveInspectorUtility.DrawProperty(serializedObject, "spawnSpreadAmount", "퍼짐 정도");
+
             WaveInspectorUtility.DrawSection("스폰 혼잡 보정", "켜면 스폰 예정 위치 주변에 몬스터가 많을 때 넥서스 반대 방향으로 더 멀리 생성합니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "useCongestionPush", "혼잡 보정 사용");
             WaveInspectorUtility.DrawProperty(serializedObject, "congestionCheckRadius", "혼잡 체크 반경");

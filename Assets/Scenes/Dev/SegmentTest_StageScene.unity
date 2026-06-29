@@ -5324,13 +5324,15 @@ MonoBehaviour:
       ratioPercent: 10
   spawnWindowPercent: 40
   spawnBatchCount: 4
-  batchGateCount: 6
-  earlyGateCount: 2
+  batchGateCount: 2
+  earlyGateCount: 4
   midGateStartStage: 10
   midGateCount: 6
   lateGateStartStage: 20
   lateGateCount: 8
   frontRowCount: 7
+  useSpawnSpread: 1
+  spawnSpreadAmount: 12
   useCongestionPush: 0
   congestionCheckRadius: 8
   congestionMonsterThreshold: 12
