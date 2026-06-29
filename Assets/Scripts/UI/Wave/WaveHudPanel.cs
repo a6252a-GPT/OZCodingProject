@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -27,12 +28,31 @@ namespace TeamProject01.Gameplay
         private GameObject bonusRewardMessageObject;
         private TMP_Text bonusTimeText;
 
+        private GameObject bossStageBanner;
+        private RectTransform bossStageBannerRect;
+        private CanvasGroup bossStageBannerCanvasGroup;
+        private Sequence bossStageBannerSequence;
+
+        private GameObject bonusStageBanner;
+        private RectTransform bonusStageBannerRect;
+        private CanvasGroup bonusStageBannerCanvasGroup;
+        private Sequence bonusStageBannerSequence;
+        private WaveController.WaveRunState previousState = WaveController.WaveRunState.Normal;
+
         [Header("Display Text")]
         [SerializeField] private string normalTitleFormat = "WAVE {0}";
         [SerializeField] private string normalEnemyFormat = "{0} Enemies Left";
         [SerializeField] private string bossTitle = "BOSS STAGE";
         [SerializeField] private string bonusTitle = "BONUS STAGE";
         [SerializeField] private string missingControllerText = "WaveController Missing";
+
+        [Header("Stage Banner Tween")]
+        [SerializeField] private float bannerShowDuration = 0.25f;
+        [SerializeField] private float bannerStayDuration = 1.2f;
+        [SerializeField] private float bannerHideDuration = 0.25f;
+        [SerializeField] private float bannerStartScale = 0.75f;
+        [SerializeField] private float bannerPopScale = 1.08f;
+        [SerializeField] private float bannerEndScale = 1.0f;
 
         private void Reset()
         {
@@ -42,13 +62,21 @@ namespace TeamProject01.Gameplay
         private void Awake()
         {
             ResolveReferences();
+            HideStageBannersImmediate();
             Refresh();
         }
 
         private void OnEnable()
         {
             ResolveReferences();
+            HideStageBannersImmediate();
             Refresh();
+        }
+
+        private void OnDisable()
+        {
+            KillStageBannerTween(ref bossStageBannerSequence);
+            KillStageBannerTween(ref bonusStageBannerSequence);
         }
 
         private void Update()
@@ -82,6 +110,32 @@ namespace TeamProject01.Gameplay
             bonusCollectMessageObject = bonusCollectMessageObject != null ? bonusCollectMessageObject : FindGroupObject(bonusGroup, "CollectMessageText");
             bonusRewardMessageObject = bonusRewardMessageObject != null ? bonusRewardMessageObject : FindGroupObject(bonusGroup, "RewardMessageText");
             bonusTimeText = bonusTimeText != null ? bonusTimeText : FindGroupText(bonusGroup, "TimeText");
+
+            bossStageBanner = bossStageBanner != null ? bossStageBanner : FindChildObject("BossStageBanner");
+            bossStageBannerRect = bossStageBannerRect != null && bossStageBannerRect.gameObject == bossStageBanner
+                ? bossStageBannerRect
+                : GetComponentFromObject<RectTransform>(bossStageBanner);
+            bossStageBannerCanvasGroup = bossStageBannerCanvasGroup != null && bossStageBannerCanvasGroup.gameObject == bossStageBanner
+                ? bossStageBannerCanvasGroup
+                : GetComponentFromObject<CanvasGroup>(bossStageBanner);
+
+            bonusStageBanner = bonusStageBanner != null ? bonusStageBanner : FindChildObject("BonusStageBanner");
+            bonusStageBannerRect = bonusStageBannerRect != null && bonusStageBannerRect.gameObject == bonusStageBanner
+                ? bonusStageBannerRect
+                : GetComponentFromObject<RectTransform>(bonusStageBanner);
+            bonusStageBannerCanvasGroup = bonusStageBannerCanvasGroup != null && bonusStageBannerCanvasGroup.gameObject == bonusStageBanner
+                ? bonusStageBannerCanvasGroup
+                : GetComponentFromObject<CanvasGroup>(bonusStageBanner);
+
+            if (Application.isPlaying && bossStageBanner != null && bossStageBannerCanvasGroup == null)
+            {
+                bossStageBannerCanvasGroup = bossStageBanner.AddComponent<CanvasGroup>();
+            }
+
+            if (Application.isPlaying && bonusStageBanner != null && bonusStageBannerCanvasGroup == null)
+            {
+                bonusStageBannerCanvasGroup = bonusStageBanner.AddComponent<CanvasGroup>();
+            }
         }
 
         private void Refresh()
@@ -92,10 +146,27 @@ namespace TeamProject01.Gameplay
                 SetText(normalTitleText, "WAVE");
                 SetText(normalEnemyCountText, missingControllerText);
                 SetText(normalTimeText, "00:00");
+                previousState = WaveController.WaveRunState.Normal;
                 return;
             }
 
-            switch (waveController.CurrentState)
+            WaveController.WaveRunState currentState = waveController.CurrentState;
+
+            if (currentState != previousState)
+            {
+                if (currentState == WaveController.WaveRunState.Boss)
+                {
+                    PlayBossStageBanner();
+                }
+                else if (currentState == WaveController.WaveRunState.Special)
+                {
+                    PlayBonusStageBanner();
+                }
+            }
+
+            previousState = currentState;
+
+            switch (currentState)
             {
                 case WaveController.WaveRunState.Boss:
                     RefreshBoss();
@@ -106,6 +177,96 @@ namespace TeamProject01.Gameplay
                 default:
                     RefreshNormal();
                     break;
+            }
+        }
+
+        private void PlayBonusStageBanner()
+        {
+            ResolveReferences();
+            PlayStageBanner(bonusStageBanner, bonusStageBannerRect, bonusStageBannerCanvasGroup, ref bonusStageBannerSequence);
+        }
+
+        private void PlayBossStageBanner()
+        {
+            ResolveReferences();
+            PlayStageBanner(bossStageBanner, bossStageBannerRect, bossStageBannerCanvasGroup, ref bossStageBannerSequence);
+        }
+
+        private void PlayStageBanner(
+            GameObject banner,
+            RectTransform bannerRect,
+            CanvasGroup bannerCanvasGroup,
+            ref Sequence bannerSequence)
+        {
+            if (banner == null || bannerRect == null || bannerCanvasGroup == null)
+            {
+                return;
+            }
+
+            KillStageBannerTween(ref bannerSequence);
+
+            float showDuration = Mathf.Max(0.01f, bannerShowDuration);
+            float stayDuration = Mathf.Max(0.0f, bannerStayDuration);
+            float hideDuration = Mathf.Max(0.01f, bannerHideDuration);
+            float startScale = Mathf.Max(0.01f, bannerStartScale);
+            float popScale = Mathf.Max(0.01f, bannerPopScale);
+            float endScale = Mathf.Max(0.01f, bannerEndScale);
+
+            banner.SetActive(true);
+            bannerCanvasGroup.alpha = 0.0f;
+            bannerCanvasGroup.interactable = false;
+            bannerCanvasGroup.blocksRaycasts = false;
+            bannerRect.localScale = Vector3.one * startScale;
+
+            bannerSequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .Append(bannerCanvasGroup.DOFade(1.0f, showDuration))
+                .Join(bannerRect.DOScale(popScale, showDuration).SetEase(Ease.OutBack))
+                .Append(bannerRect.DOScale(endScale, showDuration * 0.35f).SetEase(Ease.OutQuad))
+                .AppendInterval(stayDuration)
+                .Append(bannerCanvasGroup.DOFade(0.0f, hideDuration))
+                .OnComplete(() =>
+                {
+                    if (banner != null)
+                    {
+                        banner.SetActive(false);
+                    }
+                });
+        }
+
+        private void HideStageBannersImmediate()
+        {
+            ResolveReferences();
+            HideStageBannerImmediate(bossStageBanner, bossStageBannerRect, bossStageBannerCanvasGroup);
+            HideStageBannerImmediate(bonusStageBanner, bonusStageBannerRect, bonusStageBannerCanvasGroup);
+        }
+
+        private void HideStageBannerImmediate(
+            GameObject banner,
+            RectTransform bannerRect,
+            CanvasGroup bannerCanvasGroup)
+        {
+            if (bannerCanvasGroup != null)
+            {
+                bannerCanvasGroup.alpha = 0.0f;
+                bannerCanvasGroup.interactable = false;
+                bannerCanvasGroup.blocksRaycasts = false;
+            }
+
+            if (bannerRect != null)
+            {
+                bannerRect.localScale = Vector3.one * Mathf.Max(0.01f, bannerEndScale);
+            }
+
+            SetActive(banner, false);
+        }
+
+        private static void KillStageBannerTween(ref Sequence bannerSequence)
+        {
+            if (bannerSequence != null)
+            {
+                bannerSequence.Kill();
+                bannerSequence = null;
             }
         }
 
@@ -209,6 +370,11 @@ namespace TeamProject01.Gameplay
             }
 
             return null;
+        }
+
+        private static T GetComponentFromObject<T>(GameObject target) where T : Component
+        {
+            return target != null ? target.GetComponent<T>() : null;
         }
 
         private static string FormatTime(float seconds)
