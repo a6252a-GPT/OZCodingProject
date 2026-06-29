@@ -37,8 +37,6 @@ namespace TeamProject01.Gameplay
 
         private readonly List<EnemyController> gatheredEnemies = new List<EnemyController>(32);// 입구 토템 안에 모인 순간이동 대상 목록
 
-        private EnemyController ownerController;// 이 Script Component가 붙은 토템 몬스터
-
         private EnemyPortalTotem entryTotem;// 현재 생성된 입구 토템
 
         private EnemyPortalTotem exitTotem;// 현재 생성된 출구 토템
@@ -49,8 +47,6 @@ namespace TeamProject01.Gameplay
 
         private void Awake()
         {
-            ownerController = GetComponent<EnemyController>();// 같은 GameObject의 EnemyController를 저장한다.
-
             GameObject nexusObject = GameObject.Find("Nexus_Core");// 씬에서 Nexus_Core를 찾는다.
 
             nexus = nexusObject != null ? nexusObject.transform : null;// 찾았다면 Nexus Transform을 저장한다.
@@ -173,6 +169,8 @@ namespace TeamProject01.Gameplay
                 return;// 입구나 출구가 없다면 순간이동할 수 없다.
             }
 
+            gatheredEnemies.Clear();// 이전 집결 대상이 남아 있지 않도록 목록을 비운다.
+
             EnemyController.CollectActiveInRange(entryTotem.transform.position, entryTotem.EntryRadius, gatheredEnemies, IsTeleportCandidate);// 입구 토템의 Entry Radius 안에 모인 몬스터를 모두 수집한다.
 
             for (int i = 0; i < gatheredEnemies.Count; i++)
@@ -197,17 +195,12 @@ namespace TeamProject01.Gameplay
                 return false;// 대상이 없으면 제외한다.
             }
 
-            if (enemy == ownerController)
-            {
-                return false;// PortalTotemCaster 자기 자신은 순간이동시키지 않는다.
-            }
-
             if (enemy.Grade == EnemyGrade.Boss)
             {
                 return false;// Boss 등급 몬스터는 순간이동시키지 않는다.
             }
 
-            return true;// 입구 토템 범위 안에 모인 일반 몬스터와 엘리트 몬스터는 모두 순간이동시킨다.
+            return true;// 입구 토템 범위 안에 모인 일반 몬스터, 엘리트 몬스터, PortalTotemCaster 자신도 순간이동시킨다.
         }
 
         private Vector3 CalculateTeleportPosition(int index)
