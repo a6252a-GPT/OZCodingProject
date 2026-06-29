@@ -7,6 +7,7 @@ namespace TeamProject01.Gameplay
     {
         private static readonly List<EnemyController> ActiveMonsters = new List<EnemyController>(128); // 타겟 목록
         private static int nextEnemyId; // 몬스터 ID 발급용 번호
+        public static event System.Action<EnemyController> DamageKilled; // 플레이어 피해 처치 알림
 
         [SerializeField] private EnemyGrade grade = EnemyGrade.Monster; // 몬스터 등급
 
@@ -79,6 +80,11 @@ namespace TeamProject01.Gameplay
                 return; // 중복 방지
             }
 
+            if (!EnemyShieldRegistry.CanApplyDamage(this, damage)) // 조성원추가-0628 - 보호막 범위 안의 몬스터는 외부 공격 피해를 받지 않게 한다.
+            {
+                return; // 조성원추가-0628 - 보호막에 막힌 피해는 HP를 깎지 않는다.
+            }
+
             if (health == null) // EnemyHealth가 붙어 있지 않다면
             {
                 KillByDamage(); // 체력 계산 없이 즉시 사망 처리한다.
@@ -91,6 +97,7 @@ namespace TeamProject01.Gameplay
             float hpBeforeDamage = health.CurrentHp; //전찬우추가-0619 - 표시용 피격 전 체력
             health.TakeDamage(resolvedDamage.Amount); // 실제 HP 감소는 EnemyHealth가 담당한다.
             float actualDamage = Mathf.Max(0f, hpBeforeDamage - health.CurrentHp); //전찬우추가-0619 - 실제 감소 체력
+            SegmentDpsDebugMeter.RecordDamage(resolvedDamage, actualDamage); // 실제 HP 감소량만 DPS 미터 기록
             DamageFloatingSpawner.SpawnEnemyDamage(resolvedDamage, actualDamage, transform.position); //전찬우추가-0619 - 데미지 숫자 표시
 
             if (health.IsDead) // HP가 0 이하가 되었다면
@@ -125,9 +132,10 @@ namespace TeamProject01.Gameplay
 
             if (reward != null) // EnemyReward Script Component가 있다면
             {
-                reward.GiveReward(EnemyId, transform.position); // 보상 생성.
+                reward.GiveReward(EnemyId, transform.position, grade); // 보상 생성.
             }
 
+            DamageKilled?.Invoke(this); // 런 결과 처치 수 기록
             Kill(); // 공통 제거
         }
 

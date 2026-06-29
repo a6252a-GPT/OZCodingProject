@@ -8,7 +8,8 @@ namespace TeamProject01.Gameplay
         public enum DebugAction
         {
             LevelUp,
-            AddGold
+            AddGold,
+            AddExperience
         }
 
         public DebugAction Action;
@@ -61,8 +62,15 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            CoreStats.DebugAddGold(amount);
-            Debug.Log($"[CoreTest] Gold +{amount} => {CoreStats.CurrentGold}", this);
+            if (Action == DebugAction.AddGold)
+            {
+                CoreStats.DebugAddGold(amount);
+                Debug.Log($"[CoreTest] Gold +{amount} => {CoreStats.CurrentGold}", this);
+                return;
+            }
+
+            CoreStats.DebugAddExperience(amount);
+            Debug.Log($"[CoreTest] Experience +{amount} => {CoreStats.CurrentExperience}/{CoreStats.ExperienceToNextLevel}", this);
         }
 
         private void ResolveReferences()
@@ -97,7 +105,13 @@ namespace TeamProject01.Gameplay
             }
 
             int amount = Mathf.Max(1, Amount);
-            Label.text = Action == DebugAction.LevelUp ? $"레벨 +{amount}" : $"골드 +{amount}";
+            if (Action == DebugAction.LevelUp)
+            {
+                Label.text = $"레벨 +{amount}";
+                return;
+            }
+
+            Label.text = Action == DebugAction.AddGold ? $"골드 +{amount}" : $"경험치 +{amount}";
         }
     }
 }

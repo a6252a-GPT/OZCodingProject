@@ -67,17 +67,17 @@ MonoBehaviour:
   LaserTickInterval: 0
   LaserTickIntervalRare: 0
   LaserTickIntervalUnique: 0
-  LandingRollDistance: 0.1
+  LandingRollDistance: 0.8
   LandingRollDistanceUsePercent: 0
-  LandingRollDistanceRare: 0.2
+  LandingRollDistanceRare: 1.2
   LandingRollDistanceUsePercentRare: 0
-  LandingRollDistanceUnique: 0.3
+  LandingRollDistanceUnique: 1.8
   LandingRollDistanceUsePercentUnique: 0
-  LandingRollDuration: 0.1
+  LandingRollDuration: 0
   LandingRollDurationUsePercent: 0
-  LandingRollDurationRare: 0.1
+  LandingRollDurationRare: 0
   LandingRollDurationUsePercentRare: 0
-  LandingRollDurationUnique: 0.1
+  LandingRollDurationUnique: 0
   LandingRollDurationUsePercentUnique: 0
   PierceCount: 0
   PierceCountRare: 0

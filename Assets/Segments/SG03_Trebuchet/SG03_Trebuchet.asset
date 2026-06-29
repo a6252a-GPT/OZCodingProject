@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG03_Trebuchet
   DisplayName: "\uD22C\uC11D\uAE30"
-  Description: "\uC88C\uC6B0\uB85C \uD68C\uC804\uD574 \uACE1\uC0AC \uD3ED\uBC1C \uD22C\uC0AC\uCCB4\uB97C
-    \uBC1C\uC0AC\uD558\uB294 \uACF5\uACA9 \uC138\uADF8\uBA3C\uD2B8"
+  Description: "<color=#9B3A2F><b>[밀리]</b></color> <color=#6B5B3A>[범위]</color> 무거운 돌덩이를 곡사로 던져 범위 피해를 주고, 착지 후 굴러갑니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

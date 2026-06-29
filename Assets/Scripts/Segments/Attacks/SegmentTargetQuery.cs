@@ -6,6 +6,11 @@ namespace TeamProject01.Gameplay
 {
     internal static class SegmentTargetQuery // 세그먼트 타겟 공용 검색
     {
+        public static bool IsEnemyUsable(EnemyController enemy) // 살아있는 몬스터 후보인지 확인
+        {
+            return enemy != null && !enemy.IsDead && enemy.isActiveAndEnabled; // 사망/비활성 제외
+        }
+
         public static bool TryPickMidToLongRandomTarget(
             Vector3 origin,
             float range,
@@ -33,7 +38,7 @@ namespace TeamProject01.Gameplay
                 }
 
                 EnemyController enemy = hit.GetComponentInParent<EnemyController>(); // 몬스터
-                if (enemy == null || enemy.EnemyId == excludedEnemyId || ContainsCandidate(candidates, enemy.EnemyId))
+                if (!IsEnemyUsable(enemy) || enemy.EnemyId == excludedEnemyId || ContainsCandidate(candidates, enemy.EnemyId))
                 {
                     continue; // 대상 아님/제외/중복
                 }
@@ -80,7 +85,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < candidates.Count; i++)
             {
                 EnemyController enemy = candidates[i]; // 후보
-                if (enemy == null)
+                if (!IsEnemyUsable(enemy))
                 {
                     continue; // 빈 후보
                 }
@@ -140,7 +145,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < candidates.Count; i++)
             {
                 EnemyController centerEnemy = candidates[i];
-                if (centerEnemy == null)
+                if (!IsEnemyUsable(centerEnemy))
                 {
                     continue; // 빈 후보
                 }
@@ -151,7 +156,7 @@ namespace TeamProject01.Gameplay
                 for (int j = 0; j < candidates.Count; j++)
                 {
                     EnemyController other = candidates[j];
-                    if (other == null)
+                    if (!IsEnemyUsable(other))
                     {
                         continue; // 빈 후보
                     }
@@ -289,7 +294,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < candidates.Count; i++)
             {
                 EnemyController candidate = candidates[i];
-                if (candidate == null)
+                if (!IsEnemyUsable(candidate))
                 {
                     continue; // 빈 후보
                 }

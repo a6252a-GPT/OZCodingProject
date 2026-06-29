@@ -25,12 +25,12 @@ MonoBehaviour:
   SawPierceDamageRatio: 0
   SawPierceDamageRatioRare: 0
   SawPierceDamageRatioUnique: 0
-  ProjectileSpeed: 0.5
-  ProjectileSpeedUsePercent: 0
-  ProjectileSpeedRare: 1
-  ProjectileSpeedUsePercentRare: 0
-  ProjectileSpeedUnique: 2
-  ProjectileSpeedUsePercentUnique: 0
+  ProjectileSpeed: 0.15
+  ProjectileSpeedUsePercent: 1
+  ProjectileSpeedRare: 0.25
+  ProjectileSpeedUsePercentRare: 1
+  ProjectileSpeedUnique: 0.4
+  ProjectileSpeedUsePercentUnique: 1
   SearchRange: 0
   SearchRangeUsePercent: 0
   SearchRangeRare: 0

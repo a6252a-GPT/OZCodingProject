@@ -14,10 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG55_MagicBook
   DisplayName: "\uB9C8\uBC95\uCC45"
-  Description: "\uD604\uC7AC \uAE30\uB2A5\uC774 \uC5C6\uB294 \uC9C0\uC6D0\uD615 \uB9C8\uBC95\uCC45
-    \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4. \uCD94\uD6C4 \uCE74\uB4DC \uB9AC\uB864
-    \uAE30\uD68C +1 \uD6A8\uACFC\uB97C \uC5F0\uACB0\uD558\uAE30 \uC704\uD55C \uBAA8\uB378/\uCE74\uD0C8\uB85C\uADF8
-    \uB4F1\uB85D\uC6A9\uC785\uB2C8\uB2E4."
+  Description: "<color=#2E7D59><b>[지원]</b></color> <color=#6B5B3A>[토템]</color> 장착한 마법책 하나당 카드 리롤 기회를 1회 얻습니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

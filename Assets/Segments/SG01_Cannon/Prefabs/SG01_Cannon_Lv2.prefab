@@ -112,6 +112,7 @@ MonoBehaviour:
   GroundCheck: {fileID: 3451399013520685173}
   Blocker: {fileID: 8965182404274387392}
   Weapon: {fileID: 191268061335559234}
+  SegmentLevel: 1
 --- !u!114 &191268061335559234
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -128,7 +129,9 @@ MonoBehaviour:
   AttackProfile: {fileID: 11400000, guid: 945b3b68acf3ec3459a60d57c3b25db9, type: 2}
   HeadYawPivot: {fileID: 2623570192967227630}
   Muzzle: {fileID: 3701261395818838237}
+  ProjectileMuzzles: []
   MuzzleVfxSocket: {fileID: 8418988772140537356}
+  LoadedProjectileRoot: {fileID: 0}
 --- !u!1 &6124725611616604085
 GameObject:
   m_ObjectHideFlags: 0
@@ -169,6 +172,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6020141601508850515}
     m_Modifications:
+    - target: {fileID: 366843419218999434, guid: d1e085858211dd94d826a08198dae51f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.652
+      objectReference: {fileID: 0}
     - target: {fileID: 1796036226186780020, guid: d1e085858211dd94d826a08198dae51f, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.2

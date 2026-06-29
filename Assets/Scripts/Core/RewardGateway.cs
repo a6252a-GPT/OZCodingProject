@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
@@ -6,8 +5,6 @@ namespace TeamProject01.Gameplay
     public sealed class RewardGateway : MonoBehaviour // 몬스터 보상 → 코어 전달 입구
     {
         public static RewardGateway Active { get; private set; } // 현재 입구
-
-        public event Action<RewardData> RewardReceived; // UI/테스트용 보상 알림
 
         private void Awake() // 등록
         {
@@ -35,7 +32,6 @@ namespace TeamProject01.Gameplay
                 return false; // 코어 없음
             }
 
-            RewardReceived?.Invoke(reward); // 외부 알림, 레벨업 판단은 CoreStatData 기준
             return true; // 전달 성공
         }
 

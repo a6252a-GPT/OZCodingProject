@@ -8,6 +8,8 @@ namespace TeamProject01.Gameplay
         public GrowthChoiceType ChoiceType; // 선택 종류
         public int LevelDelta; // 레벨 증가량
         public float DamageMultiplierBonus; // 공격력 배율 증가
+        public float MeleeDamageMultiplierBonus; // 밀리 공격력 배율 증가
+        public float MagicDamageMultiplierBonus; // 마법 공격력 배율 증가
         public float AttackSpeedMultiplierBonus; // 공격속도 배율 증가
         public float TurnSpeedBonus; // 회전력 증가
         public float CollisionForceBonus; // 충돌힘 증가
@@ -17,6 +19,8 @@ namespace TeamProject01.Gameplay
         public SegmentUpgradeData SegmentUpgrade; // 특정 세그먼트 강화값
 
         public bool HasConvoyUpgrade => DamageMultiplierBonus != 0f
+            || MeleeDamageMultiplierBonus != 0f
+            || MagicDamageMultiplierBonus != 0f
             || AttackSpeedMultiplierBonus != 0f
             || TurnSpeedBonus != 0f
             || CollisionForceBonus != 0f
@@ -31,12 +35,14 @@ namespace TeamProject01.Gameplay
             return CreateConvoyUpgrade(levelDelta, damageBonus, attackSpeedBonus, turnBonus, 0f, rejoinBonus); // 기존 호환
         }
 
-        public static GrowthStatData CreateConvoyUpgrade(int levelDelta, float damageBonus, float attackSpeedBonus, float turnBonus, float collisionForceBonus, float rejoinBonus) // 컨보이 강화
+        public static GrowthStatData CreateConvoyUpgrade(int levelDelta, float damageBonus, float attackSpeedBonus, float turnBonus, float collisionForceBonus, float rejoinBonus, float meleeDamageBonus = 0f, float magicDamageBonus = 0f) // 컨보이 강화
         {
             GrowthStatData data = default; // 값 준비
             data.ChoiceType = GrowthChoiceType.ConvoyUpgrade; // 선택 종류
             data.LevelDelta = levelDelta; // 레벨 저장
             data.DamageMultiplierBonus = damageBonus; // 공격력 저장
+            data.MeleeDamageMultiplierBonus = meleeDamageBonus; // 밀리 공격력 저장
+            data.MagicDamageMultiplierBonus = magicDamageBonus; // 마법 공격력 저장
             data.AttackSpeedMultiplierBonus = attackSpeedBonus; // 공격속도 저장
             data.TurnSpeedBonus = turnBonus; // 회전력 저장
             data.CollisionForceBonus = collisionForceBonus; // 충돌힘 저장

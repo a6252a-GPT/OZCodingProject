@@ -14,10 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG04_SawLauncher
   DisplayName: "\uD1B1\uB0A0\uBC1C\uC0AC\uAE30"
-  Description: "\uC911\uAC70\uB9AC~\uC7A5\uAC70\uB9AC \uC801\uC744 \uB178\uB824 \uD1B1\uB0A0\uC744
-    \uBC1C\uC0AC\uD569\uB2C8\uB2E4. \uBAA9\uD45C\uAE4C\uC9C0 \uC9C0\uB098\uAC00\uB294
-    \uC801\uC5D0\uAC8C \uAD00\uD1B5 \uD53C\uD574\uB97C \uC8FC\uACE0, \uBA85\uC911
-    \uD6C4 \uB2E4\uB978 \uC801\uC73C\uB85C \uC5F0\uC1C4\uB429\uB2C8\uB2E4."
+  Description: "<color=#9B3A2F><b>[밀리]</b></color> <color=#6B5B3A>[연쇄]</color> 톱날을 발사해 경로상의 적을 관통하고, 명중 후 다른 적에게 연쇄됩니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

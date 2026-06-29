@@ -6,10 +6,16 @@ namespace TeamProject01.Gameplay
     {
         private void UpdateStraightProjectile() // 직선 이동
         {
+            Vector3 previousPosition = transform.position; // 이동 전 위치
             transform.position += direction * (GetProjectileSpeed() * Time.deltaTime); // 강화 속도 이동
             if (direction.sqrMagnitude > 0.0001f)
             {
                 transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 방향
+            }
+
+            if (TryExplodeOnGroundContact(previousPosition, transform.position))
+            {
+                return; // 바닥 충돌 폭발
             }
 
             TryApplyHitAt(transform.position); // 명중 확인
@@ -17,7 +23,12 @@ namespace TeamProject01.Gameplay
 
         private void UpdateHomingProjectile() // 추적 이동
         {
-            if (target != null)
+            if (!SegmentTargetQuery.IsEnemyUsable(target))
+            {
+                target = TryReacquireProjectileTarget(out EnemyController nextTarget) ? nextTarget : null; // 죽은 대상이면 즉시 재탐색
+            }
+
+            if (SegmentTargetQuery.IsEnemyUsable(target))
             {
                 Vector3 targetPosition = target.transform.position + Vector3.up * profile.TargetAimHeight; // 목표 중심
                 Vector3 offset = targetPosition - transform.position; // 목표 방향
@@ -28,6 +39,12 @@ namespace TeamProject01.Gameplay
             }
 
             UpdateStraightProjectile(); // 이동 공유
+        }
+
+        private bool TryReacquireProjectileTarget(out EnemyController nextTarget) // 투사체 이동 중 새 대상 탐색
+        {
+            float range = profile != null ? Mathf.Max(profile.SearchRange, profile.ProjectileHitRadius) : 0.1f; // 프로필 사거리
+            return EnemyController.TryFindNearest(transform.position, range, SegmentTargetQuery.IsEnemyUsable, out nextTarget); // 현재 위치 기준 재탐색
         }
 
         private void UpdateExpandingFlameSphere() // 전진하며 커지는 화염 판정 구체
@@ -101,7 +118,7 @@ namespace TeamProject01.Gameplay
 
         private float GetExpandingFlameTickInterval() // 화염 피해 간격
         {
-            float interval = profile != null ? profile.LaserTickInterval : 0.2f; // 기존 지속 피해 간격 재사용
+            float interval = profile != null ? weaponBonus.ResolveLaserTickInterval(profile.LaserTickInterval) : 0.2f; // 기존 지속 피해 간격 재사용
             return Mathf.Max(0.02f, interval); // 최소값
         }
 
@@ -113,7 +130,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < hits.Length; i++)
             {
                 EnemyController enemy = hits[i].GetComponentInParent<EnemyController>(); // 몬스터
-                if (enemy == null || flameTickEnemyIds.Contains(enemy.EnemyId))
+                if (!SegmentTargetQuery.IsEnemyUsable(enemy) || flameTickEnemyIds.Contains(enemy.EnemyId))
                 {
                     continue; // 대상 아님/같은 틱 중복
                 }

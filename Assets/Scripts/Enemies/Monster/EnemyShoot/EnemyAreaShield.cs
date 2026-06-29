@@ -20,7 +20,12 @@ namespace TeamProject01.Gameplay
 
         [SerializeField] private GameObject shieldVisualRoot; // 방어막 시각 오브젝트
 
+        [Header("Shield Animation")]
+        [SerializeField] private Animator shieldAnimator; // 방어막 애니메이션을 재생할 Animator
+        [SerializeField] private string shieldTriggerName = "Shield"; // Animator Controller의 Shield Trigger 이름
+
         private Coroutine shieldCycleCoroutine;
+        private int shieldTriggerHash; // Shield Trigger 이름을 Hash로 저장한다.
 
         public float ShieldRadius
         {
@@ -31,6 +36,16 @@ namespace TeamProject01.Gameplay
         }
 
         public bool IsShieldActive { get; private set; } // 현재 방어막 활성 상태
+
+        private void Awake()
+        {
+            shieldTriggerHash = Animator.StringToHash(shieldTriggerName); // Trigger 이름을 Hash로 변환한다.
+
+            if (shieldAnimator == null) // Inspector에 Animator가 연결되지 않았다면
+            {
+                shieldAnimator = GetComponentInChildren<Animator>(); // 자식 오브젝트에서 Animator를 자동으로 찾는다.
+            }
+        }
 
         private void OnEnable()
         {
@@ -69,6 +84,11 @@ namespace TeamProject01.Gameplay
         {
             IsShieldActive = active;
 
+            if (active) // 방어막이 켜지는 순간
+            {
+                PlayShieldAnimation(); // Shield 애니메이션을 재생한다.
+            }
+
             if (shieldVisualRoot != null)
             {
                 shieldVisualRoot.SetActive(active);
@@ -82,6 +102,22 @@ namespace TeamProject01.Gameplay
             {
                 EnemyShieldRegistry.Unregister(transform);
             }
+        }
+
+        private void PlayShieldAnimation() // Animator에 Shield Trigger를 전달한다.
+        {
+            if (shieldAnimator == null) // Animator가 없으면 애니메이션을 재생하지 않는다.
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(shieldTriggerName)) // Trigger 이름이 비어 있으면 실행하지 않는다.
+            {
+                return;
+            }
+
+            shieldAnimator.ResetTrigger(shieldTriggerHash); // 이전 Shield Trigger 상태를 정리한다.
+            shieldAnimator.SetTrigger(shieldTriggerHash); // Shield 애니메이션을 실행한다.
         }
     }
 }
