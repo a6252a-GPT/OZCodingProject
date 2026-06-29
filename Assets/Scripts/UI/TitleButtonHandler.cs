@@ -84,10 +84,7 @@ namespace TeamProject01.Gameplay
 
         private void HandleButtonClicked(Button button)
         {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlaySFX(SFXType.ClickButton); // Inspector에 등록한 클릭 효과음 재생
-            }
+            AudioManager.EnsureExists()?.PlaySFX(SFXType.ClickButton); // Inspector에 등록한 클릭 효과음 재생
 
             PlayClickTween(button);
         }

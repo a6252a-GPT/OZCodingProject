@@ -55,6 +55,7 @@ public class CardSoundManager : MonoBehaviour
     {
         _ = Src;
         EnsureSfxVolumeListener();
+        AudioManager.NotifySfxSourceReady(Src, 1f); // 카드 SFX도 설정 볼륨 연동 //안건준 수정 - 0628
     }
 
     private void EnsureSfxVolumeListener()

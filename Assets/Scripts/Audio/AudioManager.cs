@@ -14,6 +14,7 @@ public class AudioManager : AudioSingleton<AudioManager>
     [SerializeField] private SFXClipData[] sfxClips; //인스펙터에서 등록할 효과음
 
     private static readonly HashSet<SfxVolumeListener> sfxListeners = new HashSet<SfxVolumeListener>();
+    private static readonly Dictionary<int, float> sfxBaseVolumes = new Dictionary<int, float>();
 
     private Dictionary<BGMType, BGMClipData> bgmDictionary;
     private Dictionary<SFXType, SFXClipData> sfxDictionary;
@@ -25,9 +26,59 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     public const string BgmVolumePrefKey = "Settings.BGMVolume";
     public const string SfxVolumePrefKey = "Settings.SFXVolume";
+    public const string MasterVolumePrefKey = "Settings.MasterVolume"; //안건준 추가 - 0628
 
     public float BgmVolume => bgmVolume;
     public float SfxVolume => sfxVolume;
+    public float MasterVolume => masterVolume;
+
+    public static float GlobalSfxVolume { get; private set; } = 1f;
+    public static float GlobalBgmVolume { get; private set; } = 1f;
+    public static float GlobalMasterVolume { get; private set; } = 1f;
+
+    public static AudioManager EnsureExists()
+    {
+        AudioManager manager = Instance;
+        if (manager != null)
+        {
+            return manager;
+        }
+
+        GameObject go = new GameObject("AudioManager");
+        DontDestroyOnLoad(go);
+        return go.AddComponent<AudioManager>();
+    }
+
+    public static void SetGlobalSfxVolume(float volume)
+    {
+        GlobalSfxVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(SfxVolumePrefKey, GlobalSfxVolume);
+        PlayerPrefs.Save();
+
+        AudioManager manager = EnsureExists();
+        manager.sfxVolume = GlobalSfxVolume;
+        manager.RefreshAllSfxSources();
+    }
+
+    public static void SetGlobalBgmVolume(float volume)
+    {
+        GlobalBgmVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(BgmVolumePrefKey, GlobalBgmVolume);
+        PlayerPrefs.Save();
+
+        AudioManager manager = EnsureExists();
+        manager.SetBGMVolume(GlobalBgmVolume);
+    }
+
+    public static void SetGlobalMasterVolume(float volume)
+    {
+        GlobalMasterVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(MasterVolumePrefKey, GlobalMasterVolume);
+        PlayerPrefs.Save();
+
+        AudioManager manager = EnsureExists();
+        manager.SetMasterVolume(GlobalMasterVolume);
+    }
 
     public static void RegisterSfxListener(SfxVolumeListener listener)
     {
@@ -50,6 +101,31 @@ public class AudioManager : AudioSingleton<AudioManager>
         }
 
         sfxListeners.Remove(listener);
+    }
+
+    public static void NotifySfxSourceReady(AudioSource source, float baseVolume)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        RegisterSfxBaseVolume(source, baseVolume);
+
+        if (Instance != null)
+        {
+            Instance.ApplySfxVolumeToSource(source);
+        }
+    }
+
+    public static void RegisterSfxBaseVolume(AudioSource source, float baseVolume)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        sfxBaseVolumes[source.GetInstanceID()] = Mathf.Clamp01(baseVolume);
     }
 
     public float GetEffectiveSfxVolume(float localVolume = 1f)
@@ -243,14 +319,23 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private void LoadVolumePreferences()
     {
+        if (PlayerPrefs.HasKey(MasterVolumePrefKey))
+        {
+            GlobalMasterVolume = PlayerPrefs.GetFloat(MasterVolumePrefKey);
+            SetMasterVolume(GlobalMasterVolume);
+        }
+
         if (PlayerPrefs.HasKey(BgmVolumePrefKey))
         {
-            SetBGMVolume(PlayerPrefs.GetFloat(BgmVolumePrefKey));
+            GlobalBgmVolume = PlayerPrefs.GetFloat(BgmVolumePrefKey);
+            SetBGMVolume(GlobalBgmVolume);
         }
 
         if (PlayerPrefs.HasKey(SfxVolumePrefKey))
         {
-            SetSFXVolume(PlayerPrefs.GetFloat(SfxVolumePrefKey));
+            GlobalSfxVolume = PlayerPrefs.GetFloat(SfxVolumePrefKey);
+            sfxVolume = GlobalSfxVolume;
+            RefreshAllSfxSources();
         }
     }
 
@@ -273,37 +358,99 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private void ScanUnboundSfxSources()
     {
-        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        bool addedAny = false;
-
-        for (int i = 0; i < sources.Length; i++)
-        {
-            if (TryBindSfxSource(sources[i]))
-            {
-                addedAny = true;
-            }
-        }
-
-        if (addedAny)
-        {
-            ApplySfxVolumeToListeners();
-        }
+        RefreshAllSfxSources();
     }
 
-    private bool TryBindSfxSource(AudioSource source)
+    private void RefreshAllSfxSources()
     {
-        if (source == null || source == bgmSource || source == sfxSource)
+        EnsureRuntimeReady();
+
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < sources.Length; i++)
         {
-            return false; // BGM 전용 소스·AudioManager PlaySFX 소스만 제외 //안건준 수정 - 0628
+            AudioSource source = sources[i];
+            if (source == null || ShouldSkipSfxVolumeApply(source))
+            {
+                continue;
+            }
+
+            EnsureSfxListener(source);
+            ApplySfxVolumeToSource(source);
         }
 
-        if (source.GetComponent<SfxVolumeListener>() != null)
+        ApplySfxVolumeToListeners();
+    }
+
+    private void EnsureSfxListener(AudioSource source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        SfxVolumeListener listener = source.GetComponent<SfxVolumeListener>();
+        if (listener != null)
+        {
+            return;
+        }
+
+        float baseVolume = GetOrCaptureBaseVolume(source);
+        listener = source.gameObject.AddComponent<SfxVolumeListener>();
+        listener.SetBaseVolume(baseVolume);
+    }
+
+    private void ApplySfxVolumeToSource(AudioSource source)
+    {
+        if (source == null || ShouldSkipSfxVolumeApply(source))
+        {
+            return;
+        }
+
+        float baseVolume = GetOrCaptureBaseVolume(source);
+        source.volume = Mathf.Clamp01(baseVolume * sfxVolume * masterVolume);
+    }
+
+    private float GetOrCaptureBaseVolume(AudioSource source)
+    {
+        int id = source.GetInstanceID();
+        if (sfxBaseVolumes.TryGetValue(id, out float storedBaseVolume))
+        {
+            return storedBaseVolume;
+        }
+
+        SfxVolumeListener listener = source.GetComponent<SfxVolumeListener>();
+        float baseVolume = listener != null
+            ? listener.BaseVolume
+            : ReverseCalculateBaseVolume(source.volume);
+
+        RegisterSfxBaseVolume(source, baseVolume);
+        return baseVolume;
+    }
+
+    private float ReverseCalculateBaseVolume(float currentVolume)
+    {
+        float scale = Mathf.Max(sfxVolume * masterVolume, 0.0001f);
+        return Mathf.Clamp01(currentVolume / scale);
+    }
+
+    private bool ShouldSkipSfxVolumeApply(AudioSource source)
+    {
+        return IsBgmSource(source) || source == sfxSource;
+    }
+
+    private bool IsBgmSource(AudioSource source)
+    {
+        if (source == null)
         {
             return false;
         }
 
-        source.gameObject.AddComponent<SfxVolumeListener>();
-        return true;
+        if (source == bgmSource)
+        {
+            return true;
+        }
+
+        return source.gameObject.name == "BGM Source";
     }
 
     private void ApplySfxVolumeToListeners()
@@ -433,32 +580,54 @@ public class AudioManager : AudioSingleton<AudioManager>
             return;
         }
         SFXClipData clipData = sfxDictionary[type];
-        float volume = clipData.volume * sfxVolume * masterVolume;
+        float volume = GetEffectiveSfxVolume(clipData.volume);
         sfxSource.PlayOneShot(clipData.clip, volume);
         UpdateBGMVolume();
+    }
+
+    // UI 버튼 등 Inspector 클립 직접 재생 — 마스터·효과음 볼륨 반영 //안건준 추가 - 0628
+    public void PlayUIClickSfx(AudioClip clip, float localVolume = 1f)
+    {
+        EnsureRuntimeReady();
+        if (clip == null || sfxSource == null)
+        {
+            return;
+        }
+
+        sfxSource.PlayOneShot(clip, GetEffectiveSfxVolume(localVolume));
+    }
+
+    public static void PlayUiSfxClip(AudioClip clip, float localVolume = 1f)
+    {
+        AudioManager manager = EnsureExists();
+        if (manager == null)
+        {
+            return;
+        }
+
+        manager.PlayUIClickSfx(clip, localVolume);
     }
 
     //BGM볼륨을 변경
     public void SetBGMVolume(float volume)
     {
-        bgmVolume = Mathf.Clamp01(volume);
+        bgmVolume = GlobalBgmVolume = Mathf.Clamp01(volume);
         UpdateBGMVolume();
 
     }
     //효과음볼륨을 변경
     public void SetSFXVolume(float volume)
     {
-        sfxVolume = Mathf.Clamp01(volume);
-        ScanUnboundSfxSources();
-        ApplySfxVolumeToListeners();
+        sfxVolume = GlobalSfxVolume = Mathf.Clamp01(volume);
+        RefreshAllSfxSources();
     }
 
-    //전체 볼륨을 변경
+    //전체 볼륨을 변경 — BGM·효과음 전부 //안건준 수정 - 0628
     public void SetMasterVolume(float volume)
     {
-        masterVolume = Mathf.Clamp01(volume);
+        masterVolume = GlobalMasterVolume = Mathf.Clamp01(volume);
         UpdateBGMVolume();
-        ApplySfxVolumeToListeners();
+        RefreshAllSfxSources();
     }
     //현재 재생중인 BGM의 볼륨을 계산
     private void UpdateBGMVolume()

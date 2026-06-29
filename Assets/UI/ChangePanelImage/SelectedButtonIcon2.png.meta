@@ -1,17 +1,7 @@
 fileFormatVersion: 2
-guid: f0b4dc9b8fe390b4597ba9c379657d44
-AssetOrigin:
-  serializedVersion: 1
-  productId: 235559
-  packageName: Violet Themed UI
-  packageVersion: 1.2
-  assetPath: Assets/Violet Theme Ui/Buttons/Misc/Menu Background.png
-  uploadId: 767621
+guid: 1d1ada013a79a5045917eed89562560b
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: -7020922751645015488
-    second: Menu Background_0
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -49,13 +39,13 @@ TextureImporter:
     mipBias: 0
     wrapU: 1
     wrapV: 1
-    wrapW: 1
+    wrapW: 0
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
   spriteMode: 1
   spriteExtrude: 1
-  spriteMeshType: 0
+  spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
@@ -131,34 +121,12 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: Menu Background_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 850
-        height: 785
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 20, y: 20, z: 20, w: 20}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 042adb0b4fba09e90800000000000000
-      internalID: -7020922751645015488
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 9912ba3dfb19b0c4caa75c5346c6c70c
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -167,8 +135,7 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable:
-      Menu Background_0: -7020922751645015488
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

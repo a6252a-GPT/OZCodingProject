@@ -18,6 +18,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private GameObject panelRoot; // Settings 또는 Panel
 
         [Header("Volume")]
+        [SerializeField] private Slider masterVolumeSlider; // Master Volume 슬라이더 (선택) //안건준 추가 - 0628
         [SerializeField] private Slider bgmVolumeSlider; // BGM Volume 슬라이더
         [SerializeField] private Slider sfxVolumeSlider; // SFX Volume 슬라이더
 
@@ -122,6 +123,11 @@ namespace TeamProject01.Gameplay
             if (convoy == null)
             {
                 convoy = FindFirstObjectByType<ConvoyController>();
+            }
+
+            if (masterVolumeSlider == null)
+            {
+                masterVolumeSlider = FindSlider(root, "Master Volume");
             }
 
             if (bgmVolumeSlider == null)
@@ -248,6 +254,13 @@ namespace TeamProject01.Gameplay
 
         private void ConfigureSliders()
         {
+            if (masterVolumeSlider != null)
+            {
+                masterVolumeSlider.minValue = 0f;
+                masterVolumeSlider.maxValue = 1f;
+                masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
+            }
+
             if (bgmVolumeSlider != null)
             {
                 bgmVolumeSlider.minValue = 0f;
@@ -322,6 +335,9 @@ namespace TeamProject01.Gameplay
         {
             suppressVolumeCallback = true;
 
+            float master = PlayerPrefs.HasKey(AudioManager.MasterVolumePrefKey)
+                ? PlayerPrefs.GetFloat(AudioManager.MasterVolumePrefKey)
+                : 1f;
             float bgm = PlayerPrefs.HasKey(AudioManager.BgmVolumePrefKey)
                 ? PlayerPrefs.GetFloat(AudioManager.BgmVolumePrefKey)
                 : 1f;
@@ -331,8 +347,20 @@ namespace TeamProject01.Gameplay
 
             if (AudioManager.Instance != null)
             {
+                master = AudioManager.Instance.MasterVolume;
                 bgm = AudioManager.Instance.BgmVolume;
                 sfx = AudioManager.Instance.SfxVolume;
+            }
+            else
+            {
+                master = AudioManager.GlobalMasterVolume;
+                bgm = AudioManager.GlobalBgmVolume;
+                sfx = AudioManager.GlobalSfxVolume;
+            }
+
+            if (masterVolumeSlider != null)
+            {
+                masterVolumeSlider.SetValueWithoutNotify(master);
             }
 
             if (bgmVolumeSlider != null)
@@ -348,6 +376,16 @@ namespace TeamProject01.Gameplay
             suppressVolumeCallback = false;
         }
 
+        private void OnMasterVolumeChanged(float value)
+        {
+            if (suppressVolumeCallback)
+            {
+                return;
+            }
+
+            AudioManager.SetGlobalMasterVolume(Mathf.Clamp01(value));
+        }
+
         private void OnBgmVolumeChanged(float value)
         {
             if (suppressVolumeCallback)
@@ -356,9 +394,7 @@ namespace TeamProject01.Gameplay
             }
 
             float clamped = Mathf.Clamp01(value);
-            AudioManager.Instance?.SetBGMVolume(clamped);
-            PlayerPrefs.SetFloat(AudioManager.BgmVolumePrefKey, clamped);
-            PlayerPrefs.Save();
+            AudioManager.SetGlobalBgmVolume(clamped);
         }
 
         private void OnSfxVolumeChanged(float value)
@@ -369,9 +405,7 @@ namespace TeamProject01.Gameplay
             }
 
             float clamped = Mathf.Clamp01(value);
-            AudioManager.Instance?.SetSFXVolume(clamped);
-            PlayerPrefs.SetFloat(AudioManager.SfxVolumePrefKey, clamped);
-            PlayerPrefs.Save();
+            AudioManager.SetGlobalSfxVolume(clamped);
         }
 
         private void HandleCloseClicked()
