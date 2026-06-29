@@ -45163,7 +45163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd23fb893cda59547acbece7c5cf050b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.GoldCollectSpecialWave
-  enableSpecialWave: 1
+  enableSpecialWave: 0
   minStartStage: 2
   baseChancePercent: 100
   chanceIncreaseOnFailPercent: 5
@@ -45174,7 +45174,7 @@ MonoBehaviour:
   goldRoot: {fileID: 0}
   nexus: {fileID: 0}
   goldSpawnCount: 100
-  collectDurationSeconds: 100
+  collectDurationSeconds: 20
   minSpawnRadius: 10
   maxSpawnRadius: 20
   goldHeightOffset: 0.35
