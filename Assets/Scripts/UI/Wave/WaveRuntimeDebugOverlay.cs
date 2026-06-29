@@ -14,11 +14,15 @@ namespace TeamProject01.Gameplay
         [Header("표시 문구")]
         [SerializeField] private string normalStageHeaderFormat = "STAGE {0:00}"; // 일반 Stage 제목 형식입니다.
         [SerializeField] private string bossStageHeaderFormat = "BOSS STAGE {0:00}"; // 보스 Stage 제목 형식입니다.
+        [SerializeField] private string bonusStageHeaderText = "BONUS STAGE"; // 골드 수집 특수 Stage 제목입니다.
         [SerializeField] private string normalPopupFormat = "STAGE {0:00} START"; // 일반 Stage 시작 팝업 형식입니다.
         [SerializeField] private string bossPopupFormat = "BOSS STAGE {0:00}"; // 보스 Stage 시작 팝업 형식입니다.
+        [SerializeField] private string bonusPopupText = "BONUS STAGE START"; // 골드 수집 특수 Stage 시작 팝업입니다.
         [SerializeField] private string stateLabel = "상태"; // 상태 줄 제목입니다.
         [SerializeField] private string nextStageTimeLabel = "다음 Stage까지"; // 일반 Stage 타이머 줄 제목입니다.
         [SerializeField] private string bossWaitText = "보스 처치 대기"; // 보스 Stage에서 타이머 대신 표시할 문구입니다.
+        [SerializeField] private string bonusRewardWaitText = "상자를 획득하세요"; // 보상 상자 대기 중 표시할 문구입니다.
+        [SerializeField] private string goldCollectLabel = "골드 수집"; // 골드 수집 진행도 제목입니다.
         [SerializeField] private string activeMonsterLabel = "이번 웨이브 남은 적"; // 이번 Stage 기준 남은 몬스터 수 줄 제목입니다.
         [SerializeField] private string fieldMonsterLabel = "현재 필드 적"; // 씬에 실제로 살아있는 전체 몬스터 수 줄 제목입니다.
         [SerializeField] private string normalStateText = "일반"; // 일반 상태 표시 문구입니다.
@@ -115,13 +119,17 @@ namespace TeamProject01.Gameplay
             int targetStageEnemies = waveController.CurrentStageTargetEnemyCount;
             int fieldMonsters = EnemyController.ActiveCount;
             bool isBossStage = waveController.CurrentState == WaveController.WaveRunState.Boss;
+            bool isSpecialStage = waveController.CurrentState == WaveController.WaveRunState.Special;
 
-            SetText(headerText, string.Format(isBossStage ? bossStageHeaderFormat : normalStageHeaderFormat, waveController.CurrentStage));
-            SetText(bodyText,
-                $"{stateLabel}: {GetStateText(waveController.CurrentState)}\n" +
-                $"{GetProgressLine()}\n" +
-                $"{activeMonsterLabel}: {FormatStageEnemyCount(remainingStageEnemies, targetStageEnemies)}\n" +
-                $"{fieldMonsterLabel}: {fieldMonsters}");
+            SetText(headerText, isSpecialStage
+                ? bonusStageHeaderText
+                : string.Format(isBossStage ? bossStageHeaderFormat : normalStageHeaderFormat, waveController.CurrentStage));
+            SetText(bodyText, isSpecialStage
+                ? BuildSpecialStageBody()
+                : $"{stateLabel}: {GetStateText(waveController.CurrentState)}\n" +
+                  $"{GetProgressLine()}\n" +
+                  $"{activeMonsterLabel}: {FormatStageEnemyCount(remainingStageEnemies, targetStageEnemies)}\n" +
+                  $"{fieldMonsterLabel}: {fieldMonsters}");
 
             bool showPopup = forcePopup || popupTimer > 0.0f;
 
@@ -132,7 +140,36 @@ namespace TeamProject01.Gameplay
                 popupGroup.interactable = false;
             }
 
-            SetText(popupText, string.Format(isBossStage ? bossPopupFormat : normalPopupFormat, waveController.CurrentStage));
+            SetText(popupText, isSpecialStage
+                ? bonusPopupText
+                : string.Format(isBossStage ? bossPopupFormat : normalPopupFormat, waveController.CurrentStage));
+        }
+
+        private string BuildSpecialStageBody()
+        {
+            GoldCollectSpecialWave goldWave = waveController != null ? waveController.CurrentGoldCollectSpecialWave : null;
+
+            if (goldWave == null)
+            {
+                return $"{stateLabel}: {specialStateText}\n{bonusRewardWaitText}";
+            }
+
+            if (goldWave.IsCollectStageActive)
+            {
+                return $"{stateLabel}: 골드 수집\n" +
+                       $"{nextStageTimeLabel}: {FormatTime(goldWave.RemainingCollectSeconds)}\n" +
+                       $"{goldCollectLabel}: {goldWave.CollectedGoldCount}/{goldWave.SpawnedGoldCount}";
+            }
+
+            if (goldWave.IsRewardStageActive)
+            {
+                return $"{stateLabel}: 보상 선택\n" +
+                       $"{bonusRewardWaitText}\n" +
+                       $"{goldCollectLabel}: {goldWave.CollectedGoldCount}/{goldWave.SpawnedGoldCount}";
+            }
+
+            return $"{stateLabel}: {specialStateText}\n" +
+                   $"{goldCollectLabel}: {goldWave.CollectedGoldCount}/{goldWave.SpawnedGoldCount}";
         }
 
         private string GetProgressLine()
@@ -208,7 +245,7 @@ namespace TeamProject01.Gameplay
 
         private void CreateStatusPanel(Transform parent)
         {
-            RectTransform panel = CreateRect(parent, "WaveStatusPanel", new Vector2(360.0f, 96.0f));
+            RectTransform panel = CreateRect(parent, "WaveStatusPanel", new Vector2(360.0f, 108.0f));
             panel.anchorMin = new Vector2(0.5f, 1.0f);
             panel.anchorMax = new Vector2(0.5f, 1.0f);
             panel.pivot = new Vector2(0.5f, 1.0f);
@@ -222,7 +259,7 @@ namespace TeamProject01.Gameplay
             headerText.fontStyle = FontStyle.Bold;
             headerText.color = new Color(1.0f, 0.92f, 0.55f, 1.0f);
 
-            bodyText = CreateText(panel, "Body", new Vector2(332.0f, 50.0f), 14, TextAnchor.UpperLeft);
+            bodyText = CreateText(panel, "Body", new Vector2(332.0f, 62.0f), 14, TextAnchor.UpperLeft);
             bodyText.rectTransform.anchoredPosition = new Vector2(0.0f, -58.0f);
             bodyText.color = new Color(0.92f, 0.97f, 1.0f, 1.0f);
             bodyText.lineSpacing = 0.9f;

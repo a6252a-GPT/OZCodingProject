@@ -44,12 +44,15 @@ namespace TeamProject01.Gameplay
         [Header("확장 자리")]
         [SerializeField] private bool enableSpecialWaveExtension; // 추후 보상/골드 특수 Stage를 붙이기 위한 스위치입니다.
         [SerializeField] private MonoBehaviour specialWaveController; // 아직 직접 호출하지 않는 확장 자리입니다.
+        [SerializeField] private GoldCollectSpecialWave goldCollectSpecialWave; // 골드 수집 특수 Stage를 담당하는 컴포넌트입니다.
 
         private float elapsedStageSeconds; // 현재 Stage 안에서 흐른 시간입니다.
         private int currentStage; // 현재 Stage 번호입니다.
         private bool isRunning; // 웨이브 진행 여부입니다.
         private bool specialWaveActive; // 외부 특수 웨이브가 일반 스폰을 잠글 때 사용하는 값입니다.
         private bool waitingForBossClearStage; // 보스 처치로 종료되는 Stage인지 기록합니다.
+        private bool waitingForSpecialWaveStage; // 특수 Stage 보상 종료를 기다리는지 기록합니다.
+        private bool skipSpecialWaveCheckOnce; // 보너스 Stage가 끝난 뒤 같은 Stage를 일반 웨이브로 시작하기 위한 플래그입니다.
 
         private readonly List<EnemyController> currentStageEnemies = new List<EnemyController>(256); // 이번 Stage에서 WaveSystem이 직접 생성한 몬스터 목록입니다.
         private int currentStageTargetEnemyCount; // 이번 Stage에 나올 예정이었던 몬스터 수입니다.
@@ -61,7 +64,8 @@ namespace TeamProject01.Gameplay
         public float RemainingStageSeconds => Mathf.Max(0.0f, stageDurationSeconds - elapsedStageSeconds);
         public bool IsSpecialWaveActive => enableSpecialWaveExtension && specialWaveActive;
         public bool IsWaitingForBossClearStage => waitingForBossClearStage;
-        public bool UsesStageTimer => !waitingForBossClearStage;
+        public bool UsesStageTimer => !waitingForBossClearStage && !waitingForSpecialWaveStage;
+        public GoldCollectSpecialWave CurrentGoldCollectSpecialWave => IsSpecialWaveActive ? goldCollectSpecialWave : null;
         public int CurrentStageTargetEnemyCount => currentStageTargetEnemyCount;
         public int CurrentStageRemainingEnemyCount
         {
@@ -172,6 +176,11 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
+            if (waitingForSpecialWaveStage)
+            {
+                return;
+            }
+
             elapsedStageSeconds += Time.deltaTime;
 
             if (ShouldAdvanceByClear() || elapsedStageSeconds >= stageDurationSeconds)
@@ -189,6 +198,8 @@ namespace TeamProject01.Gameplay
             elapsedStageSeconds = 0.0f;
             specialWaveActive = false;
             waitingForBossClearStage = false;
+            waitingForSpecialWaveStage = false;
+            skipSpecialWaveCheckOnce = false;
             isRunning = true;
 
             SegmentDpsDebugMeter.ResetRun(); // DPS 미터 전체 누적 초기화
@@ -201,11 +212,15 @@ namespace TeamProject01.Gameplay
             SegmentDpsDebugMeter.BeginWave(currentStage); // 이번 웨이브 기록 초기화
 
             BeginCurrentStageEnemyTracking(currentStage, 0);
+            specialWaveActive = false;
+            waitingForSpecialWaveStage = false;
 
-            if (IsSpecialWaveActive)
+            if (!skipSpecialWaveCheckOnce && TryStartGoldCollectSpecialWave())
             {
                 return;
             }
+
+            skipSpecialWaveCheckOnce = false;
 
             bool bossSpawned = false;
 
@@ -236,6 +251,39 @@ namespace TeamProject01.Gameplay
 
             int normalSpawnCount = Mathf.Max(0, totalSpawnCount - elitePlan.TotalCount);
             normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, elitePlan, this);
+        }
+
+        private bool TryStartGoldCollectSpecialWave()
+        {
+            if (!enableSpecialWaveExtension || goldCollectSpecialWave == null)
+            {
+                return false;
+            }
+
+            bool isBossStage = bossWaveController != null && bossWaveController.IsBossStage(currentStage);
+
+            if (!goldCollectSpecialWave.TryBeginStage(currentStage, isBossStage, HandleGoldCollectSpecialWaveFinished))
+            {
+                return false;
+            }
+
+            specialWaveActive = true;
+            waitingForSpecialWaveStage = true;
+            return true;
+        }
+
+        private void HandleGoldCollectSpecialWaveFinished()
+        {
+            if (!isRunning || !waitingForSpecialWaveStage)
+            {
+                return;
+            }
+
+            specialWaveActive = false;
+            waitingForSpecialWaveStage = false;
+            elapsedStageSeconds = 0.0f;
+            skipSpecialWaveCheckOnce = true;
+            StartCurrentStage();
         }
 
         private void RefreshCurrentStageEnemyProgress()
@@ -274,6 +322,7 @@ namespace TeamProject01.Gameplay
             int completedStage = currentStage; // 보상 기준 웨이브
             TrySpawnWaveClearDiamondReward(completedStage); // 클리어 다이아 픽업
             elapsedStageSeconds = 0.0f;
+            skipSpecialWaveCheckOnce = false;
             currentStage++;
             StartCurrentStage();
         }
@@ -342,6 +391,11 @@ namespace TeamProject01.Gameplay
             if (bonusChestWaveSpawner == null)
             {
                 bonusChestWaveSpawner = ResolveWaveSiblingOrSceneComponent<BonusChestWaveSpawner>();
+            }
+
+            if (goldCollectSpecialWave == null)
+            {
+                goldCollectSpecialWave = ResolveWaveSiblingOrSceneComponent<GoldCollectSpecialWave>();
             }
         }
 

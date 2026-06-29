@@ -105,6 +105,22 @@ namespace TeamProject01.Gameplay
 
         public bool ShouldEndStageOnBossClear => endBossStageOnBossClear;
 
+        public bool IsBossStage(int stage)
+        {
+            if (!enableBossWave)
+            {
+                return false;
+            }
+
+            if (stage < bossStartStage)
+            {
+                return false;
+            }
+
+            int safeInterval = Mathf.Max(1, bossIntervalStage);
+            return (stage - bossStartStage) % safeInterval == 0;
+        }
+
         public bool BeginStage(int stage)
         {
             CleanupActiveBosses();
@@ -177,19 +193,7 @@ namespace TeamProject01.Gameplay
 
         private bool CanSpawnBoss(int stage)
         {
-            if (!enableBossWave)
-            {
-                return false;
-            }
-
-            if (stage < bossStartStage)
-            {
-                return false;
-            }
-
-            int safeInterval = Mathf.Max(1, bossIntervalStage);
-
-            if ((stage - bossStartStage) % safeInterval != 0)
+            if (!IsBossStage(stage))
             {
                 return false;
             }
