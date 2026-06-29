@@ -9,10 +9,12 @@ namespace TeamProject01.Gameplay
         public SegmentAttackProfile AttackProfile; // 공격 데이터
         public Transform HeadYawPivot; // 머리 회전축
         public Transform Muzzle; // 발사 위치
+        public Transform[] ProjectileMuzzles; // 다중 포구 발사용 위치 목록
         public Transform MuzzleVfxSocket; // 발사 VFX 위치
         public Transform LoadedProjectileRoot; // 장전 미사일 표시 루트
 
         private readonly List<Transform> loadedProjectileVisuals = new List<Transform>(4); // 장전 표시 목록
+        private readonly List<Transform> projectileMuzzleBuffer = new List<Transform>(8); // 자동 포구 수집 버퍼
         private float fireTimer; // 남은 쿨타임
         private float fireIntervalDuration; // 현재 쿨타임 길이
         private bool loadedProjectilesRestored = true; // 장전 표시 복구 여부
@@ -22,6 +24,8 @@ namespace TeamProject01.Gameplay
         private EnemyController lockedSawTarget; // 톱날 조준 고정 대상
         private EnemyController projectileSequenceTarget; // 순차 발사 중 현재 조준 대상
         private int projectileSequencePreferredSide; // 순차 발사 중 우선 탐색할 좌/우 콘
+        private bool hasProjectileSequenceLastAimPoint; // 순차 발사 fallback 위치 보유 여부
+        private Vector3 projectileSequenceLastAimPoint; // 순차 발사 마지막 조준 위치
         private bool hasResolvedImpactPoint; // 지점 타격 프로필의 현재 착탄 지점
         private Vector3 resolvedImpactPoint; // 실제 피해/장판 중심
         private GameObject sustainedMuzzleVfxInstance;
@@ -70,6 +74,7 @@ namespace TeamProject01.Gameplay
                 isFiringProjectileSequence = false;
                 projectileSequenceTarget = null;
                 projectileSequencePreferredSide = 0;
+                hasProjectileSequenceLastAimPoint = false;
                 StopSustainedMuzzleVfx(true);
             }
 
@@ -131,8 +136,9 @@ namespace TeamProject01.Gameplay
         {
             CoreStatData coreStats = CoreStatProvider.GetCurrentOrDefault(); // 코어 스탯
             WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
-            float baseDamage = AttackProfile.BaseDamage + weaponBonus.BaseDamageBonus; // 프로필 + 강화
-            float damage = GetUpgrade().ApplyDamage(coreStats.ApplyDamage(baseDamage)); // 최종 피해
+            float baseDamage = weaponBonus.ResolveBaseDamage(AttackProfile.BaseDamage); // 프로필 + 무기 강화
+            float commonDamage = CoreStatProvider.GetCommonBaseDamageBonusOrDefault(GetEffectiveSegmentId(), AttackProfile.BaseDamage); // 공통카드 기초 피해 보너스
+            float damage = GetUpgrade().ApplyDamage(baseDamage + commonDamage + coreStats.FlatDamageBonus); // 최종 피해
             damage *= SupportSegmentRuntimeBuffs.GetFinalDamageMultiplier(Segment.ChainIndex); // 지원형 최종 피해 버프
             return DamageData.Create(damage, GetDamageType(), Segment.ChainIndex, position, gameObject); // 전달값
         }
@@ -167,6 +173,48 @@ namespace TeamProject01.Gameplay
             fireTimer = GetUpgrade().ApplyFireInterval(coreInterval); // 세그먼트 공속
             fireIntervalDuration = fireTimer; // 진행률 계산 기준
             loadedProjectilesRestored = !ShouldUseLoadedProjectileVisuals(); // 장전 표시 복구 대기
+        }
+
+        private float GetEffectiveSearchRange() // 무기 강화 + 세그먼트 강화가 반영된 탐색 거리
+        {
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId());
+            return GetUpgrade().ApplyRange(weaponBonus.ResolveSearchRange(AttackProfile.SearchRange));
+        }
+
+        private float GetEffectiveSideConeAngle() // 무기 강화가 반영된 좌우 부채꼴 각도
+        {
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId());
+            return weaponBonus.ResolveSideConeAngle(AttackProfile.SideConeAngle);
+        }
+
+        private int GetEffectiveMaxChainDepth() // 무기 강화가 반영된 연쇄 단계
+        {
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId());
+            return weaponBonus.ResolveMaxChainDepth(AttackProfile.MaxChainDepth);
+        }
+
+        private float GetEffectiveChainRange() // 무기 강화 + 세그먼트 강화가 반영된 연쇄 거리
+        {
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId());
+            return GetUpgrade().ApplyRange(weaponBonus.ResolveChainRange(AttackProfile.ChainRange));
+        }
+
+        private float GetEffectiveChainDamageFalloff() // 무기 강화가 반영된 체인 피해 유지율
+        {
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId());
+            return weaponBonus.ResolveChainDamageFalloff(AttackProfile.ChainDamageFalloff);
+        }
+
+        private float GetEffectiveLaserDuration() // 무기 강화가 반영된 지속 시간
+        {
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId());
+            return weaponBonus.ResolveLaserDuration(AttackProfile.LaserDuration);
+        }
+
+        private float GetEffectiveLaserTickInterval() // 무기 강화가 반영된 틱 간격
+        {
+            WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId());
+            return weaponBonus.ResolveLaserTickInterval(AttackProfile.LaserTickInterval);
         }
 
         private float GetSupportAttackSpeedMultiplier() // 지원형 공격속도 버프

@@ -14,10 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG54_HolyWaterSprayer
   DisplayName: "\uC131\uC218\uBC1C\uC0AC\uAE30"
-  Description: "\uD654\uC5FC\uBC29\uC0AC\uAE30\uC640 \uAC19\uC740 \uC804\uBC29 \uBD84\uC0AC
-    \uBC29\uC2DD\uC73C\uB85C \uC131\uC218 \uAD6C\uCCB4\uB97C \uBC1C\uC0AC\uD558\uB294
-    \uC9C0\uC6D0 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4. \uD604\uC7AC\uB294 \uD6C4\uC18D
-    \uC5F0\uACB0\uC6A9 \uB514\uBC84\uD504 \uB370\uC774\uD130\uB9CC \uBC1C\uC0DD\uC2DC\uD0B5\uB2C8\uB2E4."
+  Description: "<color=#2E7D59><b>[지원]</b></color> <color=#6B5B3A>[디버프]</color> 전방에 성수를 분사해 적이 받는 피해를 증가시킵니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

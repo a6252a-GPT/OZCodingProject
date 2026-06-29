@@ -21,7 +21,7 @@ namespace TeamProject01.Gameplay
             Vector3 feedbackOrigin,
             SegmentMonsterFeedbackKind feedbackKind)
         {
-            if (enemy == null)
+            if (!SegmentTargetQuery.IsEnemyUsable(enemy))
             {
                 return;
             }

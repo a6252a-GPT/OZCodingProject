@@ -70,6 +70,7 @@ namespace TeamProject01.Gameplay
         public bool RollAfterArcLanding; // 곡사 도착 후 바로 터뜨리지 않고 바닥을 굴릴지 여부
         [Min(0f)] public float LandingImpactRadius = 1.1f; // 착지 순간 들어가는 작은 범위 피해
         [Min(0f)] public float LandingRollDamageRadius = 0.75f; // 구르는 동안 돌 주변 피해 반경
+        [Range(0f, 1f)] public float LandingRollDamageRatio = 1f; // 구르기 피해 배율
         // 착지 지점부터 굴러갈 거리
         [Min(0f)] public float LandingRollDistance = 0f; // 0이면 기존 곡사처럼 도착 즉시 명중 처리
         // 굴러가는 시간
@@ -110,7 +111,7 @@ namespace TeamProject01.Gameplay
         public bool RequireAimBeforeFire = true; // 조준 후 발사
         [Min(1f)] public float HeadTurnSpeed = 540f; // 머리 회전 속도
         [Min(0f)] public float FireAngleTolerance = 8f; // 발사 허용 각도
-        public bool ContinueAimingDuringProjectileSequence; // 발사 중에도 타겟 재탐색/조준
+        public bool ContinueAimingDuringProjectileSequence; // 순차 발사 중 특수 조준 정책 사용
         [Range(0.01f, 1f)] public float FiringHeadTurnSpeedMultiplier = 1f; // 발사 중 머리 회전 배율
         public bool UseMuzzleDirectionDuringProjectileSequence; // 발사 중 투사체 방향을 현재 포구 기준으로 사용
 

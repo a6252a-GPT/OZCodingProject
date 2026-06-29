@@ -541,20 +541,6 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void ClearDetachedTailGroups() // 분리 꼬리 전체 제거
-        {
-            for (int i = detachedTails.Count - 1; i >= 0; i--)
-            {
-                DetachedTailGroup group = detachedTails[i]; // 제거 그룹
-                if (group.Root != null)
-                {
-                    DestroyUnityObject(group.Root.gameObject); // 그룹 제거
-                }
-            }
-
-            detachedTails.Clear(); // 목록 비움
-        }
-
         private static void RenameDetachedTailSegments(DetachedTailGroup group) // 분리 이름 정리
         {
             if (group == null)

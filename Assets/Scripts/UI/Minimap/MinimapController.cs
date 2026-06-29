@@ -20,11 +20,6 @@ namespace TeamProject01.Gameplay
         private const string ZoomOutButtonName = "ZoomOut";
         private const string SettingsButtonName = "Settings";
         private const string ZoomValueName = "ZoomValue";
-        private const string NexusStatusRootName = "NexusStatusBars";
-        private const string NexusShieldBarName = "Shield";
-        private const string NexusHealthBarName = "Health";
-        private const string NexusStatusFillName = "Fill";
-        private const string NexusStatusTextName = "Text";
         private const string ButtonVisualName = "Visual";
         private const string ButtonLabelName = "Label";
         private const float MinimapPadding = 8f;
@@ -78,13 +73,6 @@ namespace TeamProject01.Gameplay
         [SerializeField, Min(0f)] private float offscreenDistanceInset = 24f;
         [SerializeField, Min(8)] private int offscreenDistanceFontSize = 12;
 
-        [Header("Nexus Status")]
-        [SerializeField] private bool showNexusStatusBars = true;
-        [SerializeField] private Vector2 nexusStatusOffset = new Vector2(0f, -8f);
-        [SerializeField, Min(80f)] private float nexusStatusWidth = 190f;
-        [SerializeField, Min(8f)] private float nexusStatusBarHeight = 14f;
-        [SerializeField, Min(8)] private int nexusStatusFontSize = 11;
-
         private readonly List<EnemyController> enemyBuffer = new List<EnemyController>(160);
         private readonly List<WorldRewardPickup> rewardBuffer = new List<WorldRewardPickup>(160);
         private readonly List<Image> playerMarkers = new List<Image>(128);
@@ -100,11 +88,6 @@ namespace TeamProject01.Gameplay
         private Text nexusDirectionDistance;
         private RectTransform zoomButtonRoot;
         private Text zoomValueText;
-        private RectTransform nexusStatusRoot;
-        private Image nexusShieldFillImage;
-        private Image nexusHealthFillImage;
-        private Text nexusShieldText;
-        private Text nexusHealthText;
         private ConvoyController convoy;
         private NexusController nexus;
         private Camera mainCamera;
@@ -141,7 +124,7 @@ namespace TeamProject01.Gameplay
 
         private void LateUpdate()
         {
-            if (mapRoot == null || markerRoot == null || nexusDirectionRoot == null || zoomButtonRoot == null || nexusStatusRoot == null)
+            if (mapRoot == null || markerRoot == null || nexusDirectionRoot == null || zoomButtonRoot == null)
             {
                 EnsureUi();
             }
@@ -222,7 +205,6 @@ namespace TeamProject01.Gameplay
             EnsureRingVisual(mapRoot);
             EnsureNexusDirectionUi(uiLayer);
             EnsureZoomControls(uiLayer);
-            EnsureNexusStatusUi(uiLayer);
             SetLayerRecursively(gameObject, uiLayer);
         }
 
@@ -256,7 +238,6 @@ namespace TeamProject01.Gameplay
             UpdateNexusMarker(center);
             UpdateEnemyMarkers(center);
             UpdateRewardMarkers(center);
-            UpdateNexusStatusBars();
         }
 
         private Vector3 ResolveMapCenter()
@@ -378,13 +359,28 @@ namespace TeamProject01.Gameplay
                     continue;
                 }
 
-                Color color = pickup.Kind == RewardPickupKind.Gold
-                    ? new Color(1f, 0.78f, 0.14f, 0.96f)
-                    : new Color(0.22f, 1f, 0.36f, 0.96f);
+                Color color = ResolveRewardMarkerColor(pickup.Kind);
                 used = ShowMarker(rewardMarkers, used, "Reward", pickup.transform.position, center, rewardMarkerSize, color, false, 0f);
             }
 
             HideUnused(rewardMarkers, used);
+        }
+
+        private static Color ResolveRewardMarkerColor(RewardPickupKind kind)
+        {
+            if (kind == RewardPickupKind.Diamond)
+            {
+                return new Color(0.35f, 0.9f, 1f, 0.96f);
+            }
+
+            if (kind == RewardPickupKind.Gold)
+            {
+                return new Color(1f, 0.78f, 0.14f, 0.96f);
+            }
+
+            return kind == RewardPickupKind.SegmentChoiceTicket
+                ? new Color(0.42f, 0.82f, 1f, 0.96f)
+                : new Color(0.22f, 1f, 0.36f, 0.96f);
         }
 
         private int ShowMarker(
@@ -654,145 +650,6 @@ namespace TeamProject01.Gameplay
             ConfigureZoomValueLabel();
             UpdateZoomValueLabel();
             SetLayerRecursively(zoomButtonRoot.gameObject, uiLayer);
-        }
-
-        private void EnsureNexusStatusUi(int uiLayer)
-        {
-            nexusStatusRoot = EnsureChildRect(mapRoot, NexusStatusRootName, out bool createdRoot);
-            if (createdRoot)
-            {
-                nexusStatusRoot.anchorMin = new Vector2(0.5f, 0f);
-                nexusStatusRoot.anchorMax = new Vector2(0.5f, 0f);
-                nexusStatusRoot.pivot = new Vector2(0.5f, 1f);
-                nexusStatusRoot.localScale = Vector3.one;
-                nexusStatusRoot.localRotation = Quaternion.identity;
-            }
-
-            nexusStatusRoot.anchoredPosition = nexusStatusOffset;
-            nexusStatusRoot.sizeDelta = new Vector2(nexusStatusWidth, 40f);
-            nexusStatusRoot.SetAsLastSibling();
-
-            ConfigureNexusStatusBar(
-                NexusShieldBarName,
-                "실드",
-                new Vector2(0f, -8f),
-                new Color(0.22f, 0.72f, 1f, 0.92f),
-                out nexusShieldFillImage,
-                out nexusShieldText);
-
-            ConfigureNexusStatusBar(
-                NexusHealthBarName,
-                "체력",
-                new Vector2(0f, -27f),
-                new Color(0.3f, 0.95f, 0.48f, 0.94f),
-                out nexusHealthFillImage,
-                out nexusHealthText);
-
-            SetLayerRecursively(nexusStatusRoot.gameObject, uiLayer);
-            if (!Application.isPlaying)
-            {
-                UpdateNexusStatusText(nexusShieldText, "실드 0/0");
-                UpdateNexusStatusText(nexusHealthText, "체력 0/0");
-            }
-        }
-
-        private void ConfigureNexusStatusBar(
-            string barName,
-            string label,
-            Vector2 anchoredPosition,
-            Color fillColor,
-            out Image fillImage,
-            out Text valueText)
-        {
-            RectTransform barRect = EnsureChildRect(nexusStatusRoot, barName, out bool createdBar);
-            if (createdBar)
-            {
-                barRect.anchorMin = new Vector2(0.5f, 1f);
-                barRect.anchorMax = new Vector2(0.5f, 1f);
-                barRect.pivot = new Vector2(0.5f, 0.5f);
-                barRect.localScale = Vector3.one;
-                barRect.localRotation = Quaternion.identity;
-            }
-
-            barRect.anchoredPosition = anchoredPosition;
-            barRect.sizeDelta = new Vector2(nexusStatusWidth, nexusStatusBarHeight);
-
-            Image background = EnsureComponent<Image>(barRect.gameObject);
-            background.sprite = null;
-            background.color = new Color(0f, 0.03f, 0.04f, 0.68f);
-            background.raycastTarget = false;
-
-            RectTransform fillRect = EnsureChildRect(barRect, NexusStatusFillName);
-            Stretch(fillRect);
-            fillImage = EnsureComponent<Image>(fillRect.gameObject);
-            fillImage.sprite = null;
-            fillImage.color = fillColor;
-            fillImage.type = Image.Type.Filled;
-            fillImage.fillMethod = Image.FillMethod.Horizontal;
-            fillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
-            fillImage.fillAmount = 0f;
-            fillImage.raycastTarget = false;
-
-            RectTransform textRect = EnsureChildRect(barRect, NexusStatusTextName);
-            Stretch(textRect);
-            valueText = EnsureComponent<Text>(textRect.gameObject);
-            valueText.font = ResolveDefaultFont();
-            valueText.fontSize = nexusStatusFontSize;
-            valueText.fontStyle = FontStyle.Bold;
-            valueText.alignment = TextAnchor.MiddleCenter;
-            valueText.color = new Color(0.92f, 1f, 1f, 1f);
-            valueText.raycastTarget = false;
-            valueText.text = label;
-
-            Outline outline = EnsureComponent<Outline>(textRect.gameObject);
-            outline.effectColor = new Color(0f, 0.03f, 0.04f, 0.95f);
-            outline.effectDistance = new Vector2(1f, -1f);
-        }
-
-        private void UpdateNexusStatusBars()
-        {
-            if (nexusStatusRoot == null)
-            {
-                return;
-            }
-
-            bool visible = showNexusStatusBars && nexus != null;
-            if (nexusStatusRoot.gameObject.activeSelf != visible)
-            {
-                nexusStatusRoot.gameObject.SetActive(visible);
-            }
-
-            if (!visible)
-            {
-                return;
-            }
-
-            if (nexusShieldFillImage != null)
-            {
-                nexusShieldFillImage.fillAmount = nexus.ShieldRatio;
-            }
-
-            if (nexusHealthFillImage != null)
-            {
-                nexusHealthFillImage.fillAmount = nexus.HealthRatio;
-                nexusHealthFillImage.color = nexus.HealthRatio <= 0.3f
-                    ? new Color(1f, 0.23f, 0.18f, 0.94f)
-                    : new Color(0.3f, 0.95f, 0.48f, 0.94f);
-            }
-
-            UpdateNexusStatusText(nexusShieldText, $"실드 {nexus.CurrentShield}/{nexus.MaxShield}");
-            string healthText = nexus.IsInvincible
-                ? $"체력 {nexus.CurrentHealth}/{nexus.MaxHealth} 무적"
-                : $"체력 {nexus.CurrentHealth}/{nexus.MaxHealth}";
-            UpdateNexusStatusText(nexusHealthText, healthText);
-        }
-
-        private static void UpdateNexusStatusText(Text targetText, string value)
-        {
-            if (targetText != null)
-            {
-                targetText.text = value;
-            }
         }
 
         private void ConfigureZoomButton(string buttonName, string label, Vector2 anchoredPosition, UnityEngine.Events.UnityAction action)

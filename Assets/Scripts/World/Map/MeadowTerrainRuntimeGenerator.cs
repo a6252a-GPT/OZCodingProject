@@ -63,10 +63,12 @@ namespace TeamProject01.Gameplay
 
         [Header("Terrain Surface Quality")]
         public bool UseDemoTerrainTemplateSurface = true; // 복사 TerrainData 표면 사용
+        public MeadowTerrainSurfaceProfile SurfaceProfile; // 빌드 포함용 Terrain 표면 프로필
         public TerrainData TerrainTemplate; // 프로젝트 소유 데모 TerrainData 복사본
         public bool OverlayGeneratedTrailsOnDemoTerrain = true; // 복사 바닥 위에 생성 흙길만 덮기
         public bool RegenerateDemoTerrainHeights = false; // 데모 heightmap 유지 시 로딩 단축
         public bool ClearDemoDetailsOnTrails = true; // 흙길 위 풀/꽃 제거
+        public bool UseInstancedTerrainRendering = false; // Player Build 표면 누락 방지를 위해 기본 Terrain 렌더 사용
         [Min(0f)] public float DemoTerrainEditPadding = 5f; // 길 주변 편집 여유
         public bool UseHighQualityControlMap = true; // Terrain splat map 방식 블렌딩
         [Range(256, 2048)] public int ControlMapResolution = 1024; // 200m 기준 약 0.2m/px
@@ -88,6 +90,7 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)] public float MainDirtHalfWidth = 1.9f; // 01 중심 반폭
         [Min(0f)] public float MainMidBlendWidth = 2.2f; // 01->02
         [Min(0f)] public float MainGrassBlendWidth = 2.4f; // 02->03
+        [Range(0.25f, 1.5f)] public float MainTrailWidthScale = 0.8f; // 큰 흙길 폭 배율
         [Min(1f)] public float EntryZoneDepth = 10f; // 시작 구역 깊이
         [Min(1f)] public float EntryZoneHalfWidth = 42f; // 시작 구역 폭
         [Min(0f)] public float MainControlJitter = 13f; // 메인 곡률 흔들림
@@ -156,6 +159,9 @@ namespace TeamProject01.Gameplay
         public GameObject[] FlowerAccentPrefabs; // 단일/키 큰 꽃
         public GameObject[] MushroomPrefabs; // 버섯 소품
         public GameObject[] RockGroupPrefabs; // 작은 돌 묶음
+
+        [Header("Decoration Catalog")]
+        public MeadowDecorationCatalogAsset DecorationCatalogAsset; // 빌드 포함용 자연물 카탈로그
 
         [Header("Pandazole Addon Decorations")]
         public bool SpawnPandazoleAddons = true; // Pandazole 팩만 별도 루트로 추가
@@ -337,6 +343,7 @@ namespace TeamProject01.Gameplay
         {
             System.Diagnostics.Stopwatch totalWatch = StartTiming();
             System.Diagnostics.Stopwatch stageWatch = StartTiming();
+            PrepareSceneVisuals();
             Transform parent = ResolveGeneratedParent();
             DestroyGeneratedRoot(parent);
 
@@ -360,7 +367,7 @@ namespace TeamProject01.Gameplay
         {
             System.Diagnostics.Stopwatch totalWatch = StartTiming();
             System.Diagnostics.Stopwatch stageWatch = StartTiming();
-            PrepareSceneVisuals(); // Play 시작 즉시 기존 표시 숨김
+            PrepareSceneVisuals(); // Play 시작 즉시 기존 표시 정리
             LogTiming("BuildRoutine.prepareSceneVisuals", stageWatch);
             float startedAt = Time.unscaledTime;
             if (ShowLoadingOverlay)
@@ -492,12 +499,7 @@ namespace TeamProject01.Gameplay
 
             if (HideSourceGroundRenderer && !string.IsNullOrWhiteSpace(SourceGroundRendererName))
             {
-                GameObject source = GameObject.Find(SourceGroundRendererName);
-                Renderer renderer = source != null ? source.GetComponent<Renderer>() : null;
-                if (renderer != null)
-                {
-                    renderer.enabled = false; // 콜라이더는 유지
-                }
+                SetSourceGroundRendererVisible(true); // 생성 실패 시 대체 바닥 유지
             }
 
             if (HideLegacyTerrainObject && !string.IsNullOrWhiteSpace(LegacyTerrainObjectName))
@@ -507,6 +509,30 @@ namespace TeamProject01.Gameplay
                 {
                     terrain.SetActive(false); // 데모 Terrain 잔존물 숨김
                 }
+            }
+        }
+
+        private void HideSourceGroundRendererIfSurfaceReady(string reason) // 생성 표면 준비 후 판정 평면 표시 숨김
+        {
+            if (!HideSourceGroundRenderer || string.IsNullOrWhiteSpace(SourceGroundRendererName))
+            {
+                return;
+            }
+
+            SetSourceGroundRendererVisible(false);
+            if (LogGenerationTimings)
+            {
+                Debug.Log($"[MeadowTerrainRuntimeGenerator] GroundPlane renderer hidden after {reason}.", this);
+            }
+        }
+
+        private void SetSourceGroundRendererVisible(bool visible) // GroundPlane Collider는 유지하고 Renderer만 전환
+        {
+            GameObject source = GameObject.Find(SourceGroundRendererName);
+            Renderer renderer = source != null ? source.GetComponent<Renderer>() : null;
+            if (renderer != null)
+            {
+                renderer.enabled = visible;
             }
         }
 
@@ -583,8 +609,9 @@ namespace TeamProject01.Gameplay
                 end
             };
 
+            float widthScale = GetEffectiveMainTrailWidthScale();
             Vector2[] points = SampleCatmullRom(controls, 10);
-            return new TrailSpline(points, MainDirtHalfWidth, MainMidBlendWidth, MainGrassBlendWidth);
+            return new TrailSpline(points, MainDirtHalfWidth * widthScale, MainMidBlendWidth * widthScale, MainGrassBlendWidth * widthScale);
         }
 
         private Mesh CreateMeshImmediate(Vector2 center, List<TrailSpline> trails) // 동기 메시 생성
@@ -720,6 +747,7 @@ namespace TeamProject01.Gameplay
             renderer.receiveShadows = true;
             renderer.lightProbeUsage = LightProbeUsage.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            HideSourceGroundRendererIfSurfaceReady("mesh fallback"); // 생성 바닥 준비 후 판정 평면 표시 숨김
 
             if (SpawnDecorations)
             {
@@ -778,6 +806,7 @@ namespace TeamProject01.Gameplay
             runtimeDemoTerrainData.size = new Vector3(Mathf.Max(10f, MapSize), Mathf.Max(1f, OuterHeightAmplitude + OuterRimRise + 1.2f), Mathf.Max(10f, MapSize));
             runtimeDemoTerrainData.treePrototypes = Array.Empty<TreePrototype>();
             runtimeDemoTerrainData.SetTreeInstances(Array.Empty<TreeInstance>(), false);
+            ApplyTerrainSurfaceProfile(runtimeDemoTerrainData);
             LogTiming("TryCreateDemoTemplateTerrain.instantiateAndResize", stageWatch, $"heightRes={runtimeDemoTerrainData.heightmapResolution}, alpha={runtimeDemoTerrainData.alphamapWidth}x{runtimeDemoTerrainData.alphamapHeight}, detail={runtimeDemoTerrainData.detailWidth}x{runtimeDemoTerrainData.detailHeight}");
             ApplyGeneratedHeightsToDemoTerrain(runtimeDemoTerrainData, center);
             LogTiming("TryCreateDemoTemplateTerrain.applyHeights", stageWatch);
@@ -802,12 +831,15 @@ namespace TeamProject01.Gameplay
             Terrain terrain = terrainObject.GetComponent<Terrain>();
             if (terrain != null)
             {
-                terrain.drawInstanced = true;
+                terrain.drawInstanced = UseInstancedTerrainRendering;
                 terrain.detailObjectDistance = GetEffectiveDetailObjectDistance();
                 terrain.detailObjectDensity = Mathf.Clamp01(GetEffectiveDetailObjectDensity());
                 terrain.treeDistance = 0f; // 나무는 담당자 고정 배치/패턴 영역에서 처리
                 terrain.shadowCastingMode = ShadowCastingMode.Off;
                 terrain.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                ApplyTerrainSurfaceProfile(terrain);
+                LogTerrainSurfaceSummary("TryCreateDemoTemplateTerrain.surface", runtimeDemoTerrainData, terrain);
+                HideSourceGroundRendererIfSurfaceReady("demo terrain"); // Terrain 표면 준비 후 판정 평면 표시 숨김
             }
 
             TerrainCollider terrainCollider = terrainObject.GetComponent<TerrainCollider>();
@@ -823,6 +855,11 @@ namespace TeamProject01.Gameplay
 
         private TerrainData ResolveDemoTerrainTemplate() // TerrainData 템플릿 로드
         {
+            if (SurfaceProfile != null && SurfaceProfile.TerrainTemplate != null)
+            {
+                return SurfaceProfile.TerrainTemplate;
+            }
+
             if (TerrainTemplate != null)
             {
                 return TerrainTemplate;
@@ -842,6 +879,101 @@ namespace TeamProject01.Gameplay
 #endif
 
             return null;
+        }
+
+        private void ApplyTerrainSurfaceProfile(TerrainData data) // TerrainData 레이어 명시 재연결
+        {
+            if (data == null || SurfaceProfile == null || !SurfaceProfile.ApplyTerrainLayers)
+            {
+                return;
+            }
+
+            TerrainLayer[] layers = CompactTerrainLayers(SurfaceProfile.TerrainLayers);
+            if (layers.Length > 0)
+            {
+                data.terrainLayers = layers;
+            }
+        }
+
+        private void ApplyTerrainSurfaceProfile(Terrain terrain) // Terrain 컴포넌트 표면 머티리얼 처리
+        {
+            if (terrain == null)
+            {
+                return;
+            }
+
+            if (SurfaceProfile == null || !SurfaceProfile.ApplyTerrainMaterial || SurfaceProfile.TerrainMaterial == null)
+            {
+                terrain.materialTemplate = null; // TerrainLayer 기반 기본 Terrain 머티리얼 사용
+                return;
+            }
+
+            terrain.materialTemplate = SurfaceProfile.TerrainMaterial;
+        }
+
+        private void LogTerrainSurfaceSummary(string stageName, TerrainData data, Terrain terrain) // 빌드 표면 진단 로그
+        {
+            if (!LogGenerationTimings && (SurfaceProfile == null || !SurfaceProfile.LogSurfaceSummary))
+            {
+                return;
+            }
+
+            if (SurfaceProfile != null && !SurfaceProfile.LogSurfaceSummary)
+            {
+                return;
+            }
+
+            TerrainLayer[] layers = data != null ? data.terrainLayers : null;
+            Material material = terrain != null ? terrain.materialTemplate : null;
+            string materialName = material != null ? material.name : "DefaultTerrainMaterial";
+            string shaderName = material != null && material.shader != null ? material.shader.name : "default";
+            Vector3 size = data != null ? data.size : Vector3.zero;
+            Debug.Log($"[MeadowTerrainRuntimeGenerator] SURFACE {stageName}: data={(data != null ? data.name : "null")}, size={size.x:0.##}x{size.y:0.##}x{size.z:0.##}, layers={DescribeTerrainLayers(layers)}, material={materialName}, shader={shaderName}", this);
+        }
+
+        private static TerrainLayer[] CompactTerrainLayers(TerrainLayer[] layers) // null TerrainLayer 제거
+        {
+            if (layers == null || layers.Length == 0)
+            {
+                return Array.Empty<TerrainLayer>();
+            }
+
+            List<TerrainLayer> compact = new List<TerrainLayer>(layers.Length);
+            for (int i = 0; i < layers.Length; i++)
+            {
+                if (layers[i] != null)
+                {
+                    compact.Add(layers[i]);
+                }
+            }
+
+            return compact.ToArray();
+        }
+
+        private static string DescribeTerrainLayers(IReadOnlyList<TerrainLayer> layers) // TerrainLayer/텍스처 로그 요약
+        {
+            if (layers == null || layers.Count == 0)
+            {
+                return "0 []";
+            }
+
+            int count = Mathf.Min(layers.Count, 8);
+            string[] names = new string[count];
+            for (int i = 0; i < count; i++)
+            {
+                TerrainLayer layer = layers[i];
+                if (layer == null)
+                {
+                    names[i] = $"{i}:null";
+                    continue;
+                }
+
+                string diffuse = layer.diffuseTexture != null ? layer.diffuseTexture.name : "no-diffuse";
+                names[i] = $"{i}:{layer.name}/{diffuse}";
+            }
+
+            string suffix = layers.Count > count ? ", ..." : string.Empty;
+            return $"{layers.Count} [{string.Join(", ", names)}{suffix}]";
         }
 
         private void ApplyGeneratedHeightsToDemoTerrain(TerrainData data, Vector2 center) // 플레이 영역 저굴곡 유지
@@ -1843,6 +1975,16 @@ namespace TeamProject01.Gameplay
         private float GetEffectivePathEdgeFlowerBoost() // 오래된 씬 직렬화값 꽃 과다 방어
         {
             return Mathf.Min(PathEdgeFlowerBoost, 0.28f);
+        }
+
+        private float GetEffectiveMainTrailWidthScale() // 큰 흙길 전용 폭 배율
+        {
+            return Mathf.Clamp(MainTrailWidthScale, 0.25f, 1.5f);
+        }
+
+        private float GetEffectiveMainBlendOuterWidth() // 길가 장식 판정용 전이 반폭
+        {
+            return (MainMidBlendWidth + MainGrassBlendWidth) * GetEffectiveMainTrailWidthScale();
         }
 
         private float GetEffectiveMeadowFlowerChance() // 일반 잔디 우선 비율 보장
@@ -2950,7 +3092,7 @@ namespace TeamProject01.Gameplay
 
         private Vector2 GetDecorationFlowDirection(Vector2 origin, Vector2 center, IReadOnlyList<TrailSpline> trails, System.Random random, bool preferTrail) // 장식 흐름 방향
         {
-            if (preferTrail && TryGetNearestTrailFrame(origin, trails, out Vector2 trailDirection, out _, out float distance) && distance <= MainMidBlendWidth + MainGrassBlendWidth + 7.5f)
+            if (preferTrail && TryGetNearestTrailFrame(origin, trails, out Vector2 trailDirection, out _, out float distance) && distance <= GetEffectiveMainBlendOuterWidth() + 7.5f)
             {
                 return MaybeFlip(random, trailDirection); // 길가 패턴은 길 방향
             }
@@ -3248,7 +3390,7 @@ namespace TeamProject01.Gameplay
 
                 case DecorationZone.FlowerPathEdge:
                     if (centerDistance < NexusClearingRadius + 6.5f) { return false; }
-                    return blend.r < 0.22f && nearestTrail >= 0.6f && nearestTrail <= MainMidBlendWidth + MainGrassBlendWidth + 4.5f;
+                    return blend.r < 0.22f && nearestTrail >= 0.6f && nearestTrail <= GetEffectiveMainBlendOuterWidth() + 4.5f;
 
                 case DecorationZone.FlowerMeadow:
                     if (centerDistance < NexusClearingRadius + 9f) { return false; }
@@ -3516,31 +3658,37 @@ namespace TeamProject01.Gameplay
         private DecorationCatalog ResolveDecorationCatalog() // 프리팹 묶음 확보
         {
             return new DecorationCatalog(
-                ResolveDecorationPrefabs(TreePrefabs, DefaultTreePrefabPaths),
-                ResolveDecorationPrefabs(LightTreePrefabs, DefaultLightTreePrefabPaths),
-                ResolveDecorationPrefabs(BushPrefabs, DefaultBushPrefabPaths),
-                ResolveDecorationPrefabs(GrassPrefabs, DefaultGrassPrefabPaths),
-                ResolveDecorationPrefabs(FlowerGroupPrefabs, DefaultFlowerGroupPrefabPaths),
-                ResolveDecorationPrefabs(FlowerAccentPrefabs, DefaultFlowerAccentPrefabPaths),
-                ResolveDecorationPrefabs(MushroomPrefabs, DefaultMushroomPrefabPaths),
-                ResolveDecorationPrefabs(RockGroupPrefabs, DefaultRockGroupPrefabPaths));
+                ResolveDecorationPrefabs(TreePrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.TreePrefabs : null, DefaultTreePrefabPaths),
+                ResolveDecorationPrefabs(LightTreePrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.LightTreePrefabs : null, DefaultLightTreePrefabPaths),
+                ResolveDecorationPrefabs(BushPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.BushPrefabs : null, DefaultBushPrefabPaths),
+                ResolveDecorationPrefabs(GrassPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.GrassPrefabs : null, DefaultGrassPrefabPaths),
+                ResolveDecorationPrefabs(FlowerGroupPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.FlowerGroupPrefabs : null, DefaultFlowerGroupPrefabPaths),
+                ResolveDecorationPrefabs(FlowerAccentPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.FlowerAccentPrefabs : null, DefaultFlowerAccentPrefabPaths),
+                ResolveDecorationPrefabs(MushroomPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.MushroomPrefabs : null, DefaultMushroomPrefabPaths),
+                ResolveDecorationPrefabs(RockGroupPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.RockGroupPrefabs : null, DefaultRockGroupPrefabPaths));
         }
 
         private PandazoleDecorationCatalog ResolvePandazoleDecorationCatalog() // Pandazole 전용 프리팹 묶음
         {
             return new PandazoleDecorationCatalog(
-                ResolvePandazolePrefabs(PandazoleFlowerPrefabs, "Flower_"),
-                ResolvePandazolePrefabs(PandazoleGrassPrefabs, "Grass_"),
-                ResolvePandazolePrefabs(PandazoleFoliagePrefabs, "Foliage_"),
-                ResolvePandazolePrefabs(PandazoleMushroomPrefabs, "Mashroom_"),
-                ResolvePandazolePrefabs(PandazoleLogPrefabs, "Log_"),
-                ResolvePandazolePrefabs(PandazoleBonePrefabs, "Bones_"),
-                ResolvePandazolePrefabs(PandazoleSkullPrefabs, "Skull_"));
+                ResolvePandazolePrefabs(PandazoleFlowerPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.PandazoleFlowerPrefabs : null, "Flower_"),
+                ResolvePandazolePrefabs(PandazoleGrassPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.PandazoleGrassPrefabs : null, "Grass_"),
+                ResolvePandazolePrefabs(PandazoleFoliagePrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.PandazoleFoliagePrefabs : null, "Foliage_"),
+                ResolvePandazolePrefabs(PandazoleMushroomPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.PandazoleMushroomPrefabs : null, "Mashroom_"),
+                ResolvePandazolePrefabs(PandazoleLogPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.PandazoleLogPrefabs : null, "Log_"),
+                ResolvePandazolePrefabs(PandazoleBonePrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.PandazoleBonePrefabs : null, "Bones_"),
+                ResolvePandazolePrefabs(PandazoleSkullPrefabs, DecorationCatalogAsset != null ? DecorationCatalogAsset.PandazoleSkullPrefabs : null, "Skull_"));
         }
 
-        private GameObject[] ResolveDecorationPrefabs(GameObject[] assigned, IReadOnlyList<string> editorFallbackPaths) // 직접 지정 우선
+        private GameObject[] ResolveDecorationPrefabs(GameObject[] assigned, GameObject[] catalogPrefabs, IReadOnlyList<string> editorFallbackPaths) // 직접 지정 > 카탈로그 > 에디터 fallback
         {
             GameObject[] compact = CompactPrefabs(assigned);
+            if (compact.Length > 0)
+            {
+                return compact;
+            }
+
+            compact = CompactPrefabs(catalogPrefabs);
             if (compact.Length > 0)
             {
                 return compact;
@@ -3568,9 +3716,15 @@ namespace TeamProject01.Gameplay
 #endif
         }
 
-        private GameObject[] ResolvePandazolePrefabs(GameObject[] assigned, params string[] prefixes) // 현재 남은 Pandazole 프리팹만 수집
+        private GameObject[] ResolvePandazolePrefabs(GameObject[] assigned, GameObject[] catalogPrefabs, params string[] prefixes) // 직접 지정 > 카탈로그 > 에디터 fallback
         {
             GameObject[] compact = CompactPrefabs(assigned);
+            if (compact.Length > 0)
+            {
+                return compact;
+            }
+
+            compact = CompactPrefabs(catalogPrefabs);
             if (compact.Length > 0)
             {
                 return compact;

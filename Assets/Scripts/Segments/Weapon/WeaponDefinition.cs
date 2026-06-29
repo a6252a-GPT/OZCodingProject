@@ -226,6 +226,12 @@ namespace TeamProject01.Gameplay
 
         public float GetBaseDamagePercent(StatUpgrade.StatCardTier tier) => GetTieredPercentValue(BaseDamage, BaseDamageRare, BaseDamageUnique, BaseDamageUsePercent, BaseDamageUsePercentRare, BaseDamageUsePercentUnique, tier);
 
+        public bool UsesCurrentBaseDamagePercent(StatUpgrade.StatCardTier tier) // 유니크 피해 %는 선택 당시 현재 무기 피해 기준
+        {
+            return tier == StatUpgrade.StatCardTier.Unique
+                && ResolveTieredUsePercent(BaseDamageUsePercent, BaseDamageUsePercentRare, BaseDamageUsePercentUnique, tier);
+        }
+
         public float GetSawPierceDamageRatio(StatUpgrade.StatCardTier tier) => ResolveTieredFloat(SawPierceDamageRatio, SawPierceDamageRatioRare, SawPierceDamageRatioUnique, tier);
 
         public float GetProjectileSpeed(StatUpgrade.StatCardTier tier) => GetTieredFlatValue(ProjectileSpeed, ProjectileSpeedRare, ProjectileSpeedUnique, ProjectileSpeedUsePercent, ProjectileSpeedUsePercentRare, ProjectileSpeedUsePercentUnique, tier);
@@ -366,11 +372,11 @@ namespace TeamProject01.Gameplay
     }
 
     [Serializable]
-    public struct WeaponStatBonusData // 세그먼트별 무기 강화 누적값
-    {
-        public float BaseDamageBonus; // 누적 피해 고정 보너스
-        // 건춘추가 - 0621 ======
-        public float BaseDamagePercentMultiplier; // 누적 피해 % 곱연산 (0=×1, 0.1=최종×1.1)
+        public struct WeaponStatBonusData // 세그먼트별 무기 강화 누적값
+        {
+            public float BaseDamageBonus; // 누적 피해 고정 보너스
+            // 건춘추가 - 0621 ======
+        public float BaseDamagePercentMultiplier; // 기초 피해 기준 % 보너스 (0.1=기초 피해의 10% 추가)
         public float SawPierceDamageRatioBonus; // 누적 관통 피해 비율 보너스 (더하기)
         public float ProjectileSpeedBonus; // 누적 투사체 속도 고정 보너스
         public float ProjectileSpeedPercentMultiplier; // 누적 투사체 속도 % 곱연산
@@ -422,7 +428,7 @@ namespace TeamProject01.Gameplay
             || ExplosionRadiusBonus > 0f
             || HasPercentMultiplier(ExplosionRadiusPercentMultiplier); // 보너스 존재 여부
 
-        public void AddDefinition(WeaponDefinition definition, StatUpgrade.StatCardTier tier = StatUpgrade.StatCardTier.Normal) // 강화 1종 누적 (등급별 수치)
+        public void AddDefinition(WeaponDefinition definition, StatUpgrade.StatCardTier tier = StatUpgrade.StatCardTier.Normal, float profileBaseDamage = 0f) // 강화 1종 누적 (등급별 수치)
         {
             if (definition == null)
             {
@@ -430,7 +436,7 @@ namespace TeamProject01.Gameplay
             }
 
             BaseDamageBonus += definition.GetBaseDamage(tier);
-            ApplyPercentMultiplier(ref BaseDamagePercentMultiplier, definition.GetBaseDamagePercent(tier));
+            AddBaseDamagePercent(definition, tier, profileBaseDamage);
             SawPierceDamageRatioBonus += definition.GetSawPierceDamageRatio(tier);
             ProjectileSpeedBonus += definition.GetProjectileSpeed(tier);
             ApplyPercentMultiplier(ref ProjectileSpeedPercentMultiplier, definition.GetProjectileSpeedPercent(tier));
@@ -453,6 +459,24 @@ namespace TeamProject01.Gameplay
             PierceCountBonus += definition.GetPierceCount(tier);
             ExplosionRadiusBonus += definition.GetExplosionRadius(tier);
             ApplyPercentMultiplier(ref ExplosionRadiusPercentMultiplier, definition.GetExplosionRadiusPercent(tier));
+        }
+
+        private void AddBaseDamagePercent(WeaponDefinition definition, StatUpgrade.StatCardTier tier, float profileBaseDamage) // 피해 % 등급 규칙
+        {
+            float percentRate = definition.GetBaseDamagePercent(tier); // 에셋 값
+            if (percentRate <= 0.0001f)
+            {
+                return; // 피해 % 없음
+            }
+
+            if (definition.UsesCurrentBaseDamagePercent(tier))
+            {
+                float currentDamage = ResolveBaseDamage(profileBaseDamage); // 선택 시점 현재 무기 피해
+                BaseDamageBonus += Mathf.Max(0f, currentDamage) * percentRate; // 1회 고정 보너스로 잠금
+                return;
+            }
+
+            ApplyPercentMultiplier(ref BaseDamagePercentMultiplier, percentRate); // 일반/레어 %는 기초 피해 기준
         }
 
         public static float ToPercentDisplayRate(float storedPercentRate) => storedPercentRate; // UI용 (0.1=10%)
@@ -493,7 +517,11 @@ namespace TeamProject01.Gameplay
         }
         // 건준수정 - 0621 ======
 
-        public float ResolveBaseDamage(float profileValue) => Mathf.Max(0f, ApplyFlatAndPercent(profileValue, BaseDamageBonus, BaseDamagePercentMultiplier));
+        public float ResolveBaseDamage(float profileValue)
+        {
+            float baseValue = Mathf.Max(0f, profileValue); // 세그먼트 레벨 기초 피해
+            return Mathf.Max(0f, baseValue + BaseDamageBonus + baseValue * BaseDamagePercentMultiplier); // 기초% + 고정
+        }
 
         public float ResolveSawPierceDamageRatio(float profileValue) => Mathf.Clamp01(profileValue + SawPierceDamageRatioBonus);
 

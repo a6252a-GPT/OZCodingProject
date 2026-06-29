@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG52_FrostBell
   DisplayName: "\uC5BC\uC74C\uC885"
-  Description: "10\uCD08\uB9C8\uB2E4 5\uCD08 \uB3D9\uC548 \uC8FC\uBCC0 \uBC94\uC704
-    \uC548\uC758 \uC801\uC5D0\uAC8C 5\uCD08 \uB3D9\uACB0\uC744 \uC801\uC6A9\uD558\uB294
-    \uC9C0\uC6D0 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
+  Description: "<color=#2E7D59><b>[지원]</b></color> <color=#6B5B3A>[디버프]</color> 주기적으로 주변 적을 얼려 이동과 공격 흐름을 늦춥니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

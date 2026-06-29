@@ -11,7 +11,8 @@ namespace TeamProject01.Gameplay
         private static readonly Color GoldOrbEmissionColor = new Color(0.75f, 0.38f, 0.04f, 1f);
         private static readonly Color ExperienceOrbColor = new Color(0.18f, 1f, 0.36f, 1f);
         private static readonly Color ExperienceOrbEmissionColor = new Color(0.04f, 0.65f, 0.2f, 1f);
-
+        private static readonly Color DiamondOrbColor = new Color(0.35f, 0.9f, 1f, 1f);
+        private static readonly Color DiamondOrbEmissionColor = new Color(0.05f, 0.52f, 1f, 1f);
         public RewardPickupKind Kind = RewardPickupKind.Experience; // 보상 종류
         [Min(0)] public int Amount = 1; // 보상 수치
         public Transform ModelRoot; // 회전/둥둥 표시 루트
@@ -224,9 +225,19 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            RewardData reward = Kind == RewardPickupKind.Experience
-                ? RewardData.Create(Amount, 0, enemyId, transform.position)
-                : RewardData.Create(0, Amount, enemyId, transform.position);
+            if (Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                if (!TryOpenSegmentChoiceTicket())
+                {
+                    return;
+                }
+
+                DamageFloatingSpawner.SpawnRewardGain(Kind, Amount, ResolveRewardFloatingFallbackPosition());
+                CompleteCollect();
+                return;
+            }
+
+            RewardData reward = ResolveRewardData(); // 픽업 종류별 보상
 
             if (!RewardGateway.SubmitReward(reward))
             {
@@ -234,6 +245,23 @@ namespace TeamProject01.Gameplay
             }
 
             DamageFloatingSpawner.SpawnRewardGain(Kind, Amount, ResolveRewardFloatingFallbackPosition());
+            CompleteCollect();
+        }
+
+        private bool TryOpenSegmentChoiceTicket()
+        {
+            CardUI cardUi = FindFirstObjectByType<CardUI>();
+            if (cardUi == null)
+            {
+                Debug.LogWarning("[WorldRewardPickup] CardUI가 없어 세그먼트 선택권을 열 수 없습니다.", this);
+                return false;
+            }
+
+            return cardUi.OpenSegmentChoiceTicket(Mathf.Max(1, Amount));
+        }
+
+        private void CompleteCollect()
+        {
             collected = true;
             SetVfxRootActive(IdleVfxRoot, false);
             SetVfxRootActive(CollectVfxRoot, true);
@@ -285,6 +313,21 @@ namespace TeamProject01.Gameplay
             return Kind != RewardPickupKind.Experience && RotationSpeed > 0f;
         }
 
+        private RewardData ResolveRewardData()
+        {
+            if (Kind == RewardPickupKind.Experience)
+            {
+                return RewardData.Create(Amount, 0, enemyId, transform.position); // 경험치
+            }
+
+            if (Kind == RewardPickupKind.Diamond)
+            {
+                return RewardData.CreateDiamond(Amount, enemyId, transform.position); // 다이아
+            }
+
+            return RewardData.Create(0, Amount, enemyId, transform.position); // 골드
+        }
+
         private void BeginDropMotion(Vector3 spawnPosition, Vector3 landingPosition)
         {
             dropStartPosition = GroundService.ProjectToGround(spawnPosition, GroundHeightOffset);
@@ -324,6 +367,18 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
+            if (Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                ApplySegmentTicketVisualColor();
+                return;
+            }
+
+            if (Kind == RewardPickupKind.Diamond)
+            {
+                ApplyDiamondVisualColor();
+                return;
+            }
+
             if (Kind != RewardPickupKind.Gold || ModelRoot == null)
             {
                 if (Kind == RewardPickupKind.Gold)
@@ -358,6 +413,16 @@ namespace TeamProject01.Gameplay
             ApplyVisualColor(GoldOrbColor, GoldOrbEmissionColor);
         }
 
+        private void ApplyDiamondVisualColor()
+        {
+            ApplyVisualColor(DiamondOrbColor, DiamondOrbEmissionColor);
+        }
+
+        private void ApplySegmentTicketVisualColor()
+        {
+            ClearVisualColorOverride(); // 선택권은 모델 텍스처 색을 그대로 사용
+        }
+
         private void ApplyVisualColor(Color baseColor, Color emissionColor)
         {
             MeshRenderer[] renderers = ModelRoot != null
@@ -383,6 +448,26 @@ namespace TeamProject01.Gameplay
                 visualPropertyBlock.SetColor("_BaseColor", baseColor);
                 visualPropertyBlock.SetColor("_EmissionColor", emissionColor);
                 renderer.SetPropertyBlock(visualPropertyBlock);
+            }
+        }
+
+        private void ClearVisualColorOverride()
+        {
+            MeshRenderer[] renderers = ModelRoot != null
+                ? ModelRoot.GetComponentsInChildren<MeshRenderer>(true)
+                : GetComponentsInChildren<MeshRenderer>(true);
+
+            if (renderers == null || renderers.Length == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] != null)
+                {
+                    renderers[i].SetPropertyBlock(null); // 풀링 재사용 시 이전 색상 제거
+                }
             }
         }
 
