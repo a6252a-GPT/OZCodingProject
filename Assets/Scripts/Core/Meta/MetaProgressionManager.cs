@@ -10,14 +10,18 @@ namespace TeamProject01.Gameplay
         private const int SaveVersion = 1; // 저장 버전
         private const int DefaultStartingDiamond = 1000; // 기본 시작 다이아
 
+        [Header("Defaults")]
+        [Min(0)] public int StartingDiamond = DefaultStartingDiamond; // 신규 저장 기본 다이아
+
         [Header("Currency")]
-        [Min(0)] public int Diamond = DefaultStartingDiamond; // 보유 다이아
+        [Min(0)] public int Diamond; // 보유 다이아
 
         [Header("Records")]
         [Min(0)] public int HighestReachedWave; // 최고 도달 웨이브
 
         [Header("Save")]
         public bool LoadOnAwake = true; // 시작 시 로드
+        public bool UseDefaultWhenNoSave = true; // 저장 없을 때 기본 진행도 적용
         public bool SaveOnChange = true; // 변경 시 저장
         public string PlayerPrefsKey = "TeamProject01.MetaProgression.v1"; // 저장 키
 
@@ -57,13 +61,25 @@ namespace TeamProject01.Gameplay
         public event Action<int> HighestReachedWaveChanged; // 최고 웨이브 변경
         public event Action<string> SelectedWormChanged; // 지렁이 변경
         public event Action<string> SelectedMapChanged; // 맵 변경
+        public event Action<MetaUpgradeId, int> UpgradeLevelChanged; // 강화 단계 변경
+        public event Action<string, bool> WormUnlockChanged; // 지렁이 보유 변경
+
+        public int OwnedDiamond => Mathf.Max(0, Diamond); // 영구 보유 다이아 조회
+        public int BestReachedWave => Mathf.Max(0, HighestReachedWave); // 최고 웨이브 조회
+        public int TotalUpgradeLevel => GetTotalUpgradeLevel(); // 전체 강화 합계
 
         private void Awake() // 등록
         {
             Active = this; // 현재 인스턴스
+            bool loaded = false; // 저장 로드 여부
             if (LoadOnAwake)
             {
-                LoadProgress(); // 저장값 로드
+                loaded = LoadProgress(); // 저장값 로드
+            }
+
+            if (LoadOnAwake && !loaded && UseDefaultWhenNoSave)
+            {
+                ApplyDefaultProgress(); // 저장 없으면 기본 상태
             }
 
             NormalizeState(); // 값 보정
@@ -126,15 +142,15 @@ namespace TeamProject01.Gameplay
             }
 
             int price = GetWormPrice(normalized); // 가격
-            if (price < 0 || Diamond < price)
+            if (price < 0 || !TrySpendOwnedDiamond(price))
             {
                 return false; // 구매 불가
             }
 
-            Diamond -= price; // 지출
             SetWormUnlocked(normalized, true); // 해금
             SaveProgressIfNeeded(); // 저장
-            DiamondChanged?.Invoke(Diamond); // 알림
+            DiamondChanged?.Invoke(OwnedDiamond); // 다이아 알림
+            WormUnlockChanged?.Invoke(normalized, true); // 보유 알림
             return true; // 구매 성공
         }
 
@@ -147,15 +163,15 @@ namespace TeamProject01.Gameplay
             }
 
             int cost = CalculateUpgradeCost(baseCost, level); // 다음 비용
-            if (Diamond < cost)
+            if (!TrySpendOwnedDiamond(cost))
             {
                 return false; // 재화 부족
             }
 
-            Diamond -= cost; // 지출
             SetUpgradeLevel(upgradeId, level + 1); // 강화
             SaveProgressIfNeeded(); // 저장
-            DiamondChanged?.Invoke(Diamond); // 알림
+            DiamondChanged?.Invoke(OwnedDiamond); // 다이아 알림
+            UpgradeLevelChanged?.Invoke(upgradeId, GetUpgradeLevel(upgradeId)); // 강화 알림
             return true; // 성공
         }
 
@@ -164,14 +180,14 @@ namespace TeamProject01.Gameplay
             bool recordChanged = TryRecordHighestReachedWave(result.ReachedWave); // 최고 기록 갱신
             int baseReward = result.HasExplicitEarnedDiamond ? result.EarnedDiamond : CalculateDiamondReward(result.ReachedWave, result.IsClear); // 보상
             int finalReward = result.HasExplicitEarnedDiamond ? baseReward : BuildStartBonus().ApplyDiamondGainBonus(baseReward); // 확정 보상은 재계산 금지
-            Diamond += finalReward; // 획득
+            GrantOwnedDiamond(finalReward); // 획득
             SaveProgressIfNeeded(); // 저장
             if (recordChanged)
             {
-                HighestReachedWaveChanged?.Invoke(HighestReachedWave); // 기록 알림
+                HighestReachedWaveChanged?.Invoke(BestReachedWave); // 기록 알림
             }
 
-            DiamondChanged?.Invoke(Diamond); // 알림
+            DiamondChanged?.Invoke(OwnedDiamond); // 알림
             return finalReward; // 실제 지급량
         }
 
@@ -184,7 +200,7 @@ namespace TeamProject01.Gameplay
             }
 
             SaveProgressIfNeeded(); // 저장
-            HighestReachedWaveChanged?.Invoke(HighestReachedWave); // 알림
+            HighestReachedWaveChanged?.Invoke(BestReachedWave); // 알림
             return true; // 갱신됨
         }
 
@@ -196,38 +212,17 @@ namespace TeamProject01.Gameplay
                 return; // 지급 없음
             }
 
-            Diamond += safeAmount; // 지급
+            GrantOwnedDiamond(safeAmount); // 지급
             SaveProgressIfNeeded(); // 저장
-            DiamondChanged?.Invoke(Diamond); // 알림
+            DiamondChanged?.Invoke(OwnedDiamond); // 알림
         }
 
         public void ResetProgress() // 진행도 초기화
         {
-            Diamond = DefaultStartingDiamond; // 다이아
-            HighestReachedWave = 0; // 최고 웨이브
-            SelectedWormId = MetaWormIds.Basic; // 기본 지렁이
-            SelectedMapId = MetaMapIds.Map1; // 기본 맵
-            AttackWormUnlocked = false; // 공격형
-            MobilityWormUnlocked = false; // 이속형
-            SupportWormUnlocked = false; // 지원형
-            MagicWormUnlocked = false; // 마법형
-            DefenseWormUnlocked = false; // 이전 지원형
-            ArmedWormUnlocked = false; // 이전 공격형
-            ChargeWormUnlocked = false; // 이전 이속형
-            GoldBonusLevel = 0; // 골드
-            DiamondBonusLevel = 0; // 다이아
-            TurnBonusLevel = 0; // 회전
-            CollisionForceLevel = 0; // 충돌
-            BaseAttackLevel = 0; // 공격력
-            AttackSpeedLevel = 0; // 공속
-            NexusMaxHpLevel = 0; // 체력
-            NexusRegenLevel = 0; // 회복
+            ApplyDefaultProgress(); // 기본 메타 상태
             NormalizeState(); // 보정
             SaveProgressIfNeeded(); // 저장
-            DiamondChanged?.Invoke(Diamond); // 다이아 알림
-            HighestReachedWaveChanged?.Invoke(HighestReachedWave); // 기록 알림
-            SelectedWormChanged?.Invoke(SelectedWormId); // 지렁이 알림
-            SelectedMapChanged?.Invoke(SelectedMapId); // 맵 알림
+            NotifyAllProgressChanged(); // 전체 알림
         }
 
         public string BuildDebugSummary(int upgradeBaseCost) // 메타 상태 요약
@@ -235,12 +230,14 @@ namespace TeamProject01.Gameplay
             NormalizeState(); // 표시 전 보정
             string saveState = HasSavedProgress() ? "저장 있음" : "저장 없음"; // 저장 상태
             string nextCost = GetLowestNextUpgradeCost(upgradeBaseCost); // 다음 비용
-            return $"다이아 {Diamond}\n"
+            return $"다이아 {OwnedDiamond}\n"
+                + $"기본 다이아 {StartingDiamond}\n"
                 + $"{saveState}\n"
-                + $"최고 웨이브 {HighestReachedWave}\n"
+                + $"최고 웨이브 {BestReachedWave}\n"
                 + $"선택 지렁이 {SelectedWormId}\n"
                 + $"선택 맵 {SelectedMapId}\n"
-                + $"업그레이드 {GetTotalUpgradeLevel()}/{MaxUpgradeLevel * 8}\n"
+                + $"보유 지렁이 {BuildUnlockedWormSummary()}\n"
+                + $"업그레이드 {TotalUpgradeLevel}/{MaxUpgradeLevel * 8}\n"
                 + $"다음 최저 비용 {nextCost}"; // 요약
         }
 
@@ -286,7 +283,21 @@ namespace TeamProject01.Gameplay
 
             ApplySaveData(data); // 값 반영
             NormalizeState(); // 로드 후 보정
+            NotifyAllProgressChanged(); // 로드 알림
             return true; // 성공
+        }
+
+        public bool LoadProgressOrDefault() // 저장 로드 또는 기본 진행도 적용
+        {
+            bool loaded = LoadProgress(); // 저장 우선
+            if (!loaded)
+            {
+                ApplyDefaultProgress(); // 저장 없으면 기본값
+                NormalizeState(); // 보정
+                NotifyAllProgressChanged(); // 기본값 알림
+            }
+
+            return loaded; // 저장 로드 여부
         }
 
         public bool HasSavedProgress() // 저장 존재 여부
@@ -303,6 +314,14 @@ namespace TeamProject01.Gameplay
 
             PlayerPrefs.DeleteKey(PlayerPrefsKey); // 삭제
             PlayerPrefs.Save(); // 반영
+        }
+
+        public void DeleteSavedProgressAndApplyDefault() // 저장 삭제 후 런타임 기본값 적용
+        {
+            DeleteSavedProgress(); // 저장 삭제
+            ApplyDefaultProgress(); // 기본 진행도
+            NormalizeState(); // 보정
+            NotifyAllProgressChanged(); // 표시 갱신
         }
 
         public int CalculateDiamondReward(int reachedWave, bool isClear) // 웨이브 기반 보상
@@ -331,7 +350,7 @@ namespace TeamProject01.Gameplay
                 return false; // 최대 단계
             }
 
-            return Diamond >= GetNextUpgradeCost(upgradeId, baseCost); // 비용 확인
+            return OwnedDiamond >= GetNextUpgradeCost(upgradeId, baseCost); // 비용 확인
         }
 
         public bool IsUpgradeMaxed(MetaUpgradeId upgradeId) // 최대 단계 여부
@@ -475,10 +494,10 @@ namespace TeamProject01.Gameplay
             return new SaveData
             {
                 Version = SaveVersion,
-                Diamond = Diamond,
-                HighestReachedWave = HighestReachedWave,
-                SelectedWormId = SelectedWormId,
-                SelectedMapId = SelectedMapId,
+                Diamond = OwnedDiamond,
+                HighestReachedWave = BestReachedWave,
+                SelectedWormId = NormalizeWormId(SelectedWormId),
+                SelectedMapId = NormalizeMapId(SelectedMapId),
                 AttackWormUnlocked = AttackWormUnlocked,
                 MobilityWormUnlocked = MobilityWormUnlocked,
                 SupportWormUnlocked = SupportWormUnlocked,
@@ -522,8 +541,9 @@ namespace TeamProject01.Gameplay
 
         private void NormalizeState() // 전체 값 보정
         {
-            Diamond = Mathf.Max(0, Diamond); // 재화 보정
-            HighestReachedWave = Mathf.Max(0, HighestReachedWave); // 기록 보정
+            StartingDiamond = Mathf.Max(0, StartingDiamond); // 기본 다이아 보정
+            Diamond = OwnedDiamond; // 재화 보정
+            HighestReachedWave = BestReachedWave; // 기록 보정
             MigrateLegacyWormUnlocks(); // 이전 저장값 반영
             SelectedWormId = NormalizeWormId(SelectedWormId); // 지렁이 보정
             SelectedMapId = NormalizeMapId(SelectedMapId); // 맵 보정
@@ -540,6 +560,125 @@ namespace TeamProject01.Gameplay
             AttackSpeedLevel = Mathf.Clamp(AttackSpeedLevel, 0, MaxUpgradeLevel); // 공속
             NexusMaxHpLevel = Mathf.Clamp(NexusMaxHpLevel, 0, MaxUpgradeLevel); // 체력
             NexusRegenLevel = Mathf.Clamp(NexusRegenLevel, 0, MaxUpgradeLevel); // 회복
+        }
+
+        private void ApplyDefaultProgress() // 신규/초기화 기본 메타 상태
+        {
+            StartingDiamond = Mathf.Max(0, StartingDiamond); // 기본값 보정
+            Diamond = StartingDiamond; // 시작 다이아
+            HighestReachedWave = 0; // 최고 웨이브
+            SelectedWormId = MetaWormIds.Basic; // 기본 지렁이
+            SelectedMapId = MetaMapIds.Map1; // 기본 맵
+            ResetWormUnlocks(); // 지렁이 보유 초기화
+            ResetUpgradeLevels(); // 강화 초기화
+        }
+
+        private void ResetWormUnlocks() // 기본형 외 보유 초기화
+        {
+            AttackWormUnlocked = false; // 공격형
+            MobilityWormUnlocked = false; // 이속형
+            SupportWormUnlocked = false; // 지원형
+            MagicWormUnlocked = false; // 마법형
+            DefenseWormUnlocked = false; // 이전 지원형
+            ArmedWormUnlocked = false; // 이전 공격형
+            ChargeWormUnlocked = false; // 이전 이속형
+        }
+
+        private void ResetUpgradeLevels() // 영구 강화 초기화
+        {
+            GoldBonusLevel = 0; // 골드
+            DiamondBonusLevel = 0; // 다이아
+            TurnBonusLevel = 0; // 회전
+            CollisionForceLevel = 0; // 충돌
+            BaseAttackLevel = 0; // 공격력
+            AttackSpeedLevel = 0; // 공속
+            NexusMaxHpLevel = 0; // 체력
+            NexusRegenLevel = 0; // 회복
+        }
+
+        private bool TrySpendOwnedDiamond(int amount) // 영구 다이아 지출
+        {
+            int cost = Mathf.Max(0, amount); // 비용 보정
+            if (cost <= 0)
+            {
+                return true; // 무료
+            }
+
+            if (OwnedDiamond < cost)
+            {
+                return false; // 부족
+            }
+
+            Diamond = OwnedDiamond - cost; // 차감
+            return true; // 성공
+        }
+
+        private void GrantOwnedDiamond(int amount) // 영구 다이아 획득
+        {
+            int safeAmount = Mathf.Max(0, amount); // 지급량 보정
+            if (safeAmount <= 0)
+            {
+                return; // 변화 없음
+            }
+
+            Diamond = OwnedDiamond + safeAmount; // 증가
+        }
+
+        private void NotifyAllProgressChanged() // 전체 메타 변경 알림
+        {
+            DiamondChanged?.Invoke(OwnedDiamond); // 다이아
+            HighestReachedWaveChanged?.Invoke(BestReachedWave); // 기록
+            SelectedWormChanged?.Invoke(SelectedWormId); // 선택 지렁이
+            SelectedMapChanged?.Invoke(SelectedMapId); // 선택 맵
+            NotifyAllWormUnlocksChanged(); // 보유 지렁이
+            NotifyAllUpgradeLevelsChanged(); // 강화
+        }
+
+        private void NotifyAllWormUnlocksChanged() // 지렁이 보유 알림
+        {
+            WormUnlockChanged?.Invoke(MetaWormIds.Basic, true); // 기본형
+            WormUnlockChanged?.Invoke(MetaWormIds.Attack, IsWormUnlocked(MetaWormIds.Attack)); // 공격형
+            WormUnlockChanged?.Invoke(MetaWormIds.Mobility, IsWormUnlocked(MetaWormIds.Mobility)); // 이속형
+            WormUnlockChanged?.Invoke(MetaWormIds.Support, IsWormUnlocked(MetaWormIds.Support)); // 지원형
+            WormUnlockChanged?.Invoke(MetaWormIds.Magic, IsWormUnlocked(MetaWormIds.Magic)); // 마법형
+        }
+
+        private void NotifyAllUpgradeLevelsChanged() // 강화 단계 알림
+        {
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.GoldBonus, GoldBonusLevel); // 골드
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.DiamondBonus, DiamondBonusLevel); // 다이아
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.TurnBonus, TurnBonusLevel); // 회전
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.CollisionForce, CollisionForceLevel); // 충돌
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.BaseAttack, BaseAttackLevel); // 공격력
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.AttackSpeed, AttackSpeedLevel); // 공속
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.NexusMaxHp, NexusMaxHpLevel); // 체력
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.NexusRegen, NexusRegenLevel); // 회복
+        }
+
+        private string BuildUnlockedWormSummary() // 보유 지렁이 요약
+        {
+            string summary = "기본"; // 기본형
+            if (IsWormUnlocked(MetaWormIds.Attack))
+            {
+                summary += ", 공격"; // 공격형
+            }
+
+            if (IsWormUnlocked(MetaWormIds.Mobility))
+            {
+                summary += ", 이속"; // 이속형
+            }
+
+            if (IsWormUnlocked(MetaWormIds.Support))
+            {
+                summary += ", 지원"; // 지원형
+            }
+
+            if (IsWormUnlocked(MetaWormIds.Magic))
+            {
+                summary += ", 마법"; // 마법형
+            }
+
+            return summary; // 결과
         }
 
         private int GetTotalUpgradeLevel() // 업그레이드 합계
