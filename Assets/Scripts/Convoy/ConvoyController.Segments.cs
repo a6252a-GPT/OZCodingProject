@@ -461,6 +461,7 @@ namespace TeamProject01.Gameplay
                 return false; // 대상 없음
             }
 
+            ConvoySegmentRuntime oldRuntime = index < segmentRuntimes.Count ? segmentRuntimes[index] : oldSegment.GetComponent<ConvoySegmentRuntime>(); // DPS 키 계승 대상
             bool wasStarter = starterSegment == oldSegment; // 스타터 여부
             string oldName = oldSegment.name; // 이름 유지
             int oldSiblingIndex = oldSegment.GetSiblingIndex(); // 순서 유지
@@ -483,6 +484,7 @@ namespace TeamProject01.Gameplay
             ConvoySegmentRuntime runtime = GetSegmentRuntime(newSegment, index, true); // 런타임
             if (runtime != null)
             {
+                runtime.AdoptDamageMeterKeyFrom(oldRuntime); // DPS 누적값 유지
                 runtime.SetSegmentLevel(level); // 새 레벨 저장
             }
 

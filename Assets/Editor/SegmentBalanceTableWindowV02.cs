@@ -371,9 +371,6 @@ namespace TeamProject01.EditorTools
                 case ColumnId.HolyWaterProjectileEndRadius:
                     row.Working.HolyWaterProjectileEndRadius = FloatCell(row.Working.HolyWaterProjectileEndRadius, row.Original.HolyWaterProjectileEndRadius, info.Width);
                     break;
-                case ColumnId.HolyWaterProjectileTickInterval:
-                    row.Working.HolyWaterProjectileTickInterval = FloatCell(row.Working.HolyWaterProjectileTickInterval, row.Original.HolyWaterProjectileTickInterval, info.Width);
-                    break;
                 case ColumnId.HolyWaterMuzzleInfluenceStrength:
                     row.Working.HolyWaterMuzzleInfluenceStrength = FloatCell(row.Working.HolyWaterMuzzleInfluenceStrength, row.Original.HolyWaterMuzzleInfluenceStrength, info.Width);
                     break;
@@ -759,7 +756,6 @@ namespace TeamProject01.EditorTools
                     columns.Add(ColumnId.HolyWaterProjectileLifetime);
                     columns.Add(ColumnId.HolyWaterProjectileStartRadius);
                     columns.Add(ColumnId.HolyWaterProjectileEndRadius);
-                    columns.Add(ColumnId.HolyWaterProjectileTickInterval);
                     columns.Add(ColumnId.HolyWaterMuzzleInfluenceStrength);
                 }
             }
@@ -1055,7 +1051,6 @@ namespace TeamProject01.EditorTools
             AppendDiff(builder, "성수 수명", before.HolyWaterProjectileLifetime, after.HolyWaterProjectileLifetime);
             AppendDiff(builder, "성수 시작 반경", before.HolyWaterProjectileStartRadius, after.HolyWaterProjectileStartRadius);
             AppendDiff(builder, "성수 끝 반경", before.HolyWaterProjectileEndRadius, after.HolyWaterProjectileEndRadius);
-            AppendDiff(builder, "성수 틱 간격", before.HolyWaterProjectileTickInterval, after.HolyWaterProjectileTickInterval);
             AppendDiff(builder, "성수 머즐 영향", before.HolyWaterMuzzleInfluenceStrength, after.HolyWaterMuzzleInfluenceStrength);
         }
 
@@ -1146,8 +1141,6 @@ namespace TeamProject01.EditorTools
                     return new ColumnInfo("시작반경", 66f);
                 case ColumnId.HolyWaterProjectileEndRadius:
                     return new ColumnInfo("끝반경", 58f);
-                case ColumnId.HolyWaterProjectileTickInterval:
-                    return new ColumnInfo("성수틱", 58f);
                 case ColumnId.HolyWaterMuzzleInfluenceStrength:
                     return new ColumnInfo("머즐영향", 66f);
                 case ColumnId.ProjectileCount:
@@ -1267,8 +1260,6 @@ namespace TeamProject01.EditorTools
                     return "단위: m. 성수 구체가 생성 직후 가지는 시작 반경입니다.";
                 case ColumnId.HolyWaterProjectileEndRadius:
                     return "단위: m. 성수 구체가 수명 끝에 도달하는 최종 반경입니다.";
-                case ColumnId.HolyWaterProjectileTickInterval:
-                    return "단위: 초. 성수 구체가 주변 적에게 취약 효과를 다시 적용하는 간격입니다.";
                 case ColumnId.HolyWaterMuzzleInfluenceStrength:
                     return "단위: 0~1 비율. 성수 구체가 머즐 방향 영향을 얼마나 따라갈지 정합니다. 0은 영향 없음, 1은 강한 영향입니다.";
                 case ColumnId.ProjectileCount:
@@ -1655,7 +1646,6 @@ namespace TeamProject01.EditorTools
             HolyWaterProjectileLifetime,
             HolyWaterProjectileStartRadius,
             HolyWaterProjectileEndRadius,
-            HolyWaterProjectileTickInterval,
             HolyWaterMuzzleInfluenceStrength,
             ProjectileCount,
             SpreadAngle,
@@ -1854,7 +1844,6 @@ namespace TeamProject01.EditorTools
             public float HolyWaterProjectileLifetime;
             public float HolyWaterProjectileStartRadius;
             public float HolyWaterProjectileEndRadius;
-            public float HolyWaterProjectileTickInterval;
             public float HolyWaterMuzzleInfluenceStrength;
 
             public static BalanceValues FromAttackProfile(SegmentAttackProfile profile)
@@ -1928,7 +1917,6 @@ namespace TeamProject01.EditorTools
                     values.HolyWaterProjectileLifetime = ability.HolyWaterProjectileLifetime;
                     values.HolyWaterProjectileStartRadius = ability.HolyWaterProjectileStartRadius;
                     values.HolyWaterProjectileEndRadius = ability.HolyWaterProjectileEndRadius;
-                    values.HolyWaterProjectileTickInterval = ability.HolyWaterProjectileTickInterval;
                     values.HolyWaterMuzzleInfluenceStrength = ability.HolyWaterMuzzleInfluenceStrength;
                 }
 
@@ -2023,7 +2011,6 @@ namespace TeamProject01.EditorTools
                 ability.HolyWaterProjectileLifetime = Mathf.Max(0.05f, HolyWaterProjectileLifetime);
                 ability.HolyWaterProjectileStartRadius = Mathf.Max(0.05f, HolyWaterProjectileStartRadius);
                 ability.HolyWaterProjectileEndRadius = Mathf.Max(0.05f, HolyWaterProjectileEndRadius);
-                ability.HolyWaterProjectileTickInterval = Mathf.Max(0.02f, HolyWaterProjectileTickInterval);
                 ability.HolyWaterMuzzleInfluenceStrength = Mathf.Clamp01(HolyWaterMuzzleInfluenceStrength);
             }
 
@@ -2088,7 +2075,6 @@ namespace TeamProject01.EditorTools
                     && Approximately(HolyWaterProjectileLifetime, other.HolyWaterProjectileLifetime)
                     && Approximately(HolyWaterProjectileStartRadius, other.HolyWaterProjectileStartRadius)
                     && Approximately(HolyWaterProjectileEndRadius, other.HolyWaterProjectileEndRadius)
-                    && Approximately(HolyWaterProjectileTickInterval, other.HolyWaterProjectileTickInterval)
                     && Approximately(HolyWaterMuzzleInfluenceStrength, other.HolyWaterMuzzleInfluenceStrength);
             }
         }

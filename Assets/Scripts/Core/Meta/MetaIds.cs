@@ -39,6 +39,29 @@ namespace TeamProject01.Gameplay
         public const string Map1 = "map_01"; // 현재 선택 가능
         public const string Map2 = "map_02"; // 업데이트 예정
         public const string Map3 = "map_03"; // 업데이트 예정
+        public const string Map4 = "map_04"; // 업데이트 예정
+        public const string Map5 = "map_05"; // 업데이트 예정
+
+        public static string Normalize(string mapId) // 저장값 보정
+        {
+            if (string.IsNullOrWhiteSpace(mapId))
+            {
+                return Map1; // 기본 맵
+            }
+
+            string normalized = mapId.Trim(); // 공백 제거
+            switch (normalized)
+            {
+                case Map1:
+                case Map2:
+                case Map3:
+                case Map4:
+                case Map5:
+                    return normalized; // 등록 맵
+                default:
+                    return Map1; // 알 수 없는 값은 기본 맵
+            }
+        }
     }
 
     public enum MetaUpgradeId // 업그레이드 종류

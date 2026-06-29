@@ -16,11 +16,11 @@ MonoBehaviour:
   DisplayName: "\uD22C\uC11D\uAE30 \uAC15\uD654"
   Description: "\uD53C\uD574\uB7C9 \uC99D\uAC00"
   TargetSegmentId: SG03_Trebuchet
-  BaseDamage: 0.1
+  BaseDamage: 3
   BaseDamageUsePercent: 0
-  BaseDamageRare: 0.2
-  BaseDamageUsePercentRare: 0
-  BaseDamageUnique: 0.1
+  BaseDamageRare: 0.12
+  BaseDamageUsePercentRare: 1
+  BaseDamageUnique: 0.22
   BaseDamageUsePercentUnique: 1
   SawPierceDamageRatio: 0
   SawPierceDamageRatioRare: 0

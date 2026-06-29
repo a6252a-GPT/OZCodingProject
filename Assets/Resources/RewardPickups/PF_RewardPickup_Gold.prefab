@@ -328,4 +328,6 @@ MonoBehaviour:
   HoverSpeed: 2.4
   RotationSpeed: 125
   GroundHeightOffset: 0.02
+  DropPopHeight: 1.15
+  DropPopDuration: 0.42
   CollectDistance: 0.55

@@ -14,9 +14,13 @@ public class CardSoundManager : MonoBehaviour
     [Tooltip("카드 선택(클릭) 시 재생되는 사운드")]
     [SerializeField] private AudioClip cardSelectClip;
 
-    [Header("볼륨")]
+    [Header("카드 등장 소리 조절")]
     [Range(0f, 1f)] public float appearVolume = 1f;
+
+    [Header("버튼클릭소리 조절")]
     [Range(0f, 1f)] public float selectVolume = 1f;
+
+    [Header("미리듣기 소리 조절")]
     [Range(0f, 1f)] public float previewVolume = 1f;
 
     // 외부에서 현재 할당 클립 조회/변경
@@ -49,7 +53,16 @@ public class CardSoundManager : MonoBehaviour
 
     private void Awake()
     {
-        _ = Src; // 미리 초기화
+        _ = Src;
+        EnsureSfxVolumeListener();
+    }
+
+    private void EnsureSfxVolumeListener()
+    {
+        if (GetComponent<SfxVolumeListener>() == null)
+        {
+            gameObject.AddComponent<SfxVolumeListener>();
+        }
     }
 
     // ─── 공개 API ─────────────────────────────
@@ -68,13 +81,17 @@ public class CardSoundManager : MonoBehaviour
         Src.PlayOneShot(cardSelectClip, selectVolume);
     }
 
+    /// <summary>리롤 버튼 클릭 시 호출 — selectClip 을 selectVolume 으로 재생</summary>
+    public void PlayRerollClick()
+    {
+        if (cardSelectClip == null) return;
+        Src.PlayOneShot(cardSelectClip, selectVolume);
+    }
+
     /// <summary>CardSoundSelector 에서 미리듣기 용으로 임의 클립 재생</summary>
     public void PreviewClip(AudioClip clip)
     {
         if (clip == null) return;
-        Src.Stop();
-        Src.clip   = clip;
-        Src.volume = previewVolume;
-        Src.Play();
+        Src.PlayOneShot(clip, previewVolume);
     }
 }

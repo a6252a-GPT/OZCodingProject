@@ -6,10 +6,20 @@ namespace TeamProject01.Gameplay
     {
         private void UpdateSawBounceProjectile() // 톱날 관통 연쇄 이동
         {
-            if (target == null)
+            if (!SegmentTargetQuery.IsEnemyUsable(target))
             {
-                UpdateSawLostTargetProjectile(); // 목표 사망 시 현재 방향 직진
-                return;
+                int lostTargetId = currentSawTargetId; // 사라진 대상 ID
+                if (TryFindSawChainTarget(transform.position, lostTargetId, out EnemyController nextTarget))
+                {
+                    target = nextTarget; // 즉시 새 대상 추적
+                    currentSawTargetId = nextTarget.EnemyId; // 새 대상 ID
+                }
+                else
+                {
+                    target = null; // 대상 없음
+                    UpdateSawLostTargetProjectile(); // 마지막 방향으로 직진
+                    return;
+                }
             }
 
             Vector3 targetPosition = GetEnemyHitPosition(target); // 목표 위치
@@ -51,7 +61,7 @@ namespace TeamProject01.Gameplay
 
         private void ApplySawPierceHits(Vector3 position, int excludedTargetId) // 톱날 경로 관통 피해
         {
-            float damageRatio = profile != null ? Mathf.Clamp01(profile.SawPierceDamageRatio) : 0.5f; // 관통 피해 비율
+            float damageRatio = profile != null ? weaponBonus.ResolveSawPierceDamageRatio(profile.SawPierceDamageRatio) : 0.5f; // 관통 피해 비율
             if (damageRatio <= 0f)
             {
                 return; // 관통 피해 없음
@@ -69,7 +79,7 @@ namespace TeamProject01.Gameplay
                 }
 
                 EnemyController enemy = hit.GetComponentInParent<EnemyController>(); // 몬스터
-                if (enemy == null || enemy.EnemyId == excludedTargetId || hitEnemyIds.Contains(enemy.EnemyId))
+                if (!SegmentTargetQuery.IsEnemyUsable(enemy) || enemy.EnemyId == excludedTargetId || hitEnemyIds.Contains(enemy.EnemyId))
                 {
                     continue; // 목표/중복 제외
                 }
@@ -84,7 +94,7 @@ namespace TeamProject01.Gameplay
 
         private void ApplySawTargetHit(EnemyController enemy, Vector3 position) // 톱날 목표 피해
         {
-            if (enemy == null)
+            if (!SegmentTargetQuery.IsEnemyUsable(enemy))
             {
                 return; // 목표 사라짐
             }
@@ -148,7 +158,7 @@ namespace TeamProject01.Gameplay
 
         private bool TryFindSawChainTarget(Vector3 origin, int excludedEnemyId, out EnemyController nextTarget) // 톱날 연쇄 대상 선택
         {
-            float range = profile != null ? Mathf.Max(0.1f, profile.ChainRange) : 0.1f; // 연쇄 사거리
+            float range = profile != null ? weaponBonus.ResolveChainRange(profile.ChainRange) : 0.1f; // 연쇄 사거리
             float aimHeight = profile != null ? profile.TargetAimHeight : 0.45f; // 조준 높이
             return SegmentTargetQuery.TryPickMidToLongRandomTarget(origin, range, GetSawTargetMinDistanceRatio(), excludedEnemyId, null, aimHeight, out nextTarget); // 공용 후보 선택
         }

@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG50_WarDrum
   DisplayName: "\uC804\uC7C1\uBD81"
-  Description: "\uC55E 2\uCE78\uACFC \uB4A4 2\uCE78 \uC544\uAD70 \uC138\uADF8\uBA3C\uD2B8\uC758
-    \uCD5C\uC885 \uB370\uBBF8\uC9C0\uB97C 5\uCD08\uAC04 30% \uC99D\uAC00\uC2DC\uD0A4\uB294
-    \uC9C0\uC6D0 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
+  Description: "<color=#2E7D59><b>[지원]</b></color> <color=#6B5B3A>[버프]</color> 주기적으로 앞뒤 아군 세그먼트의 피해량을 증가시킵니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

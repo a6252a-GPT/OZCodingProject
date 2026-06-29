@@ -133,9 +133,59 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        public readonly struct ExternalSpawnDirectionSet // 외부 Wave 시스템이 한 Stage 동안 고정해서 사용할 방향 묶음
+        {
+            private readonly int[] directionIndexes; // EnemySpawner 내부 방향 enum을 밖에 직접 노출하지 않기 위한 저장값
+
+            public ExternalSpawnDirectionSet(int[] directionIndexes)
+            {
+                this.directionIndexes = directionIndexes;
+            }
+
+            public bool IsValid
+            {
+                get
+                {
+                    return directionIndexes != null && directionIndexes.Length > 0;
+                }
+            }
+
+            internal int[] GetDirectionIndexes()
+            {
+                return directionIndexes;
+            }
+        }
+
+        public readonly struct ExternalSpawnCongestionOptions // 외부 Wave 시스템이 스폰 지점 혼잡도에 따라 생성 위치를 뒤로 미는 옵션
+        {
+            public readonly bool Enabled; // 꺼져 있으면 기존 스폰 위치를 그대로 사용한다.
+            public readonly float CheckRadius; // 스폰 예정 위치 주변을 얼마나 넓게 검사할지
+            public readonly int MonsterThreshold; // 이 수 이상 몬스터가 있으면 혼잡하다고 본다.
+            public readonly float PushDistance; // 혼잡할 때 한 번에 뒤로 미는 거리
+            public readonly float MaxPushDistance; // 한 스폰 묶음에서 최대한 뒤로 밀 수 있는 거리
+
+            public ExternalSpawnCongestionOptions(bool enabled, float checkRadius, int monsterThreshold, float pushDistance, float maxPushDistance)
+            {
+                Enabled = enabled;
+                CheckRadius = checkRadius;
+                MonsterThreshold = monsterThreshold;
+                PushDistance = pushDistance;
+                MaxPushDistance = maxPushDistance;
+            }
+
+            public static ExternalSpawnCongestionOptions Disabled
+            {
+                get
+                {
+                    return new ExternalSpawnCongestionOptions(false, 0.0f, 0, 0.0f, 0.0f);
+                }
+            }
+        }
+
         private Transform nexus; // Nexus Transform, Inspector에는 노출하지 않고 자동 탐색한다.
 
         private Transform monsterRoot; // 생성된 몬스터를 정리할 부모 Transform
+        private readonly List<EnemyController> congestionCheckResults = new List<EnemyController>(64); // 스폰 위치 혼잡도 검사에 재사용할 임시 목록
 
         [Header("Spawn Gates")]
         [SerializeField] private Transform[] frontGates; // 앞쪽 스폰 게이트 목록
@@ -163,7 +213,13 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float spawnGroundHeight = 0.72f; // 스폰 위치를 바닥 위로 올릴 높이
 
         [Range(1, 300)]
-        [SerializeField] private int maxActiveMonsters = 120; // 씬에 유지할 최대 몬스터 수
+        [SerializeField, HideInInspector] private int maxActiveMonsters = 120; // 기존 Stage Rules가 사용할 최대 활성 몬스터 수
+
+        [Header("Wave Spawn Limit")]
+        [SerializeField] private bool useWaveMaxActiveMonsterLimit = true; // WaveSystem 외부 스폰에 전용 최대 수 제한을 적용할지 정한다.
+
+        [Min(1)]
+        [SerializeField] private int waveMaxActiveMonsters = 3000; // WaveSystem 외부 스폰에서 허용할 최대 활성 몬스터 수
 
         [Min(0.0f)]
         [SerializeField] private float firstSpawnDelay = 1.0f; // 각 규칙이 켜진 뒤 첫 스폰까지 대기 시간
@@ -271,6 +327,16 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        private int GetExternalWaveSpawnCapacity() // WaveSystem 외부 스폰에서 사용할 남은 생성 가능 수
+        {
+            if (!useWaveMaxActiveMonsterLimit)
+            {
+                return int.MaxValue;
+            }
+
+            return Mathf.Max(0, waveMaxActiveMonsters - EnemyController.ActiveCount);
+        }
+
         public bool TrySpawnExternalEntries(ExternalSpawnEntry[] entries, int spawnGroupCount, int frontRowCount) // 외부 WaveController가 몬스터 조합 생성을 요청하는 입구
         {
             return TrySpawnExternalEntries(entries, spawnGroupCount, frontRowCount, spawnGroupCount); // 기존 호출은 요청 군단 수만큼 방향을 사용한다.
@@ -299,7 +365,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+            int capacity = GetExternalWaveSpawnCapacity(); // WaveSystem 외부 스폰 전용 생성 가능 수
 
             if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
             {
@@ -345,6 +411,31 @@ namespace TeamProject01.Gameplay
             return TrySpawnExternalEntriesDistributed(entries, directionCount, frontRowCount, null);
         }
 
+        public ExternalSpawnDirectionSet PickExternalSpawnDirections(int directionCount) // 한 Stage 동안 고정해서 사용할 방향 묶음을 뽑는다.
+        {
+            return new ExternalSpawnDirectionSet(ConvertToDirectionIndexes(PickRandomDirectionsForExternalWave(directionCount)));
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount) // 이미 뽑아둔 방향 묶음으로 외부 스폰을 처리한다.
+        {
+            return TrySpawnExternalEntriesDistributed(entries, directionSet, frontRowCount, null);
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, ExternalSpawnCongestionOptions congestionOptions) // 혼잡도 옵션을 적용해서 외부 스폰을 처리한다.
+        {
+            return TrySpawnExternalEntriesDistributed(entries, directionSet, frontRowCount, congestionOptions, null);
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, List<EnemyController> spawnedMonsters) // 생성 몬스터 기록까지 필요한 고정 방향 외부 스폰 입구
+        {
+            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled);
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, ExternalSpawnCongestionOptions congestionOptions, List<EnemyController> spawnedMonsters) // 생성 몬스터 기록과 혼잡도 옵션이 모두 필요한 외부 스폰 입구
+        {
+            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters, congestionOptions);
+        }
+
         public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, int directionCount, int frontRowCount, List<EnemyController> spawnedMonsters) // 생성된 몬스터 목록까지 필요한 외부 요청 입구
         {
             if (nexus == null) // Nexus가 아직 잡히지 않았다면
@@ -368,14 +459,46 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            int capacity = Mathf.Max(0, maxActiveMonsters - EnemyController.ActiveCount); // 현재 씬에 더 만들 수 있는 몬스터 수
+            int capacity = GetExternalWaveSpawnCapacity(); // WaveSystem 외부 스폰 전용 생성 가능 수
 
             if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
             {
                 return false;
             }
 
-            SpawnDirection[] selectedDirections = PickRandomDirectionsForExternalWave(directionCount); // 이번 특수 웨이브에서 사용할 방향을 고른다.
+            SpawnDirection[] selectedDirections = PickRandomDirectionsForExternalWave(directionCount); // 이번 요청에서 사용할 방향을 고른다.
+            return TrySpawnExternalEntriesDistributed(entries, selectedDirections, frontRowCount, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled);
+        }
+
+        private bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, SpawnDirection[] selectedDirections, int frontRowCount, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions) // 선택된 방향 목록을 기준으로 몬스터를 분산 생성한다.
+        {
+            if (nexus == null) // Nexus가 아직 잡히지 않았다면
+            {
+                GameObject nexusObject = GameObject.Find("Nexus_Core"); // 기존 Awake와 같은 기준으로 Nexus를 찾는다.
+                nexus = nexusObject != null ? nexusObject.transform : null; // 찾은 결과를 저장한다.
+            }
+
+            if (nexus == null) // Nexus가 없으면 스폰 기준이 아직 준비되지 않은 상태다.
+            {
+                return false;
+            }
+
+            if (monsterRoot == null) // 몬스터 정리 부모가 비어 있다면
+            {
+                monsterRoot = transform; // 기존 Awake와 같은 기준으로 자기 자신을 사용한다.
+            }
+
+            if (entries == null || entries.Length == 0) // 생성할 조합이 없다면
+            {
+                return false;
+            }
+
+            int capacity = GetExternalWaveSpawnCapacity(); // WaveSystem 외부 스폰 전용 생성 가능 수
+
+            if (capacity <= 0) // 이미 최대 몬스터 수에 도달했다면
+            {
+                return false;
+            }
 
             if (selectedDirections == null || selectedDirections.Length == 0) // 사용할 방향이 없다면
             {
@@ -389,7 +512,7 @@ namespace TeamProject01.Gameplay
                 distributedEntries[i] = new List<ExternalSpawnEntry>();
             }
 
-            int distributedIndex = 0; // 다음 몬스터를 넣을 방향 순서
+            List<ExternalSpawnEntry> shuffledEntries = new List<ExternalSpawnEntry>(); // 몬스터 종류가 줄 단위로 뭉치지 않게 한 마리 단위 목록으로 모은다.
 
             for (int entryIndex = 0; entryIndex < entries.Length; entryIndex++) // 요청된 몬스터 조합을 순회한다.
             {
@@ -402,15 +525,21 @@ namespace TeamProject01.Gameplay
 
                 for (int countIndex = 0; countIndex < entry.Count; countIndex++) // 몬스터를 한 마리 단위로 나눠 담는다.
                 {
-                    int groupIndex = distributedIndex % distributedEntries.Length; // 선택된 방향들에 번갈아 분배한다.
-                    distributedEntries[groupIndex].Add(new ExternalSpawnEntry(entry.Prefab, 1)); // 해당 방향에 한 마리 추가한다.
-                    distributedIndex++; // 다음 방향으로 이동한다.
+                    shuffledEntries.Add(new ExternalSpawnEntry(entry.Prefab, 1)); // 나중에 섞을 수 있도록 임시 목록에 모은다.
                 }
             }
 
-            if (distributedIndex <= 0) // 실제로 나눠 담은 몬스터가 없다면
+            if (shuffledEntries.Count <= 0) // 실제로 나눠 담을 몬스터가 없다면
             {
                 return false;
+            }
+
+            ShuffleExternalSpawnEntries(shuffledEntries); // 기본몹/스켈레톤/원거리 몬스터가 줄 단위로 뭉치지 않도록 섞는다.
+
+            for (int shuffledIndex = 0; shuffledIndex < shuffledEntries.Count; shuffledIndex++) // 섞인 몬스터 목록을 순회한다.
+            {
+                int groupIndex = shuffledIndex % distributedEntries.Length; // 선택된 방향들에 번갈아 분배한다.
+                distributedEntries[groupIndex].Add(shuffledEntries[shuffledIndex]); // 해당 방향에 한 마리 추가한다.
             }
 
             int safeFrontRowCount = Mathf.Max(1, frontRowCount); // 한 줄에 배치할 몬스터 수
@@ -435,13 +564,29 @@ namespace TeamProject01.Gameplay
                     continue; // 다른 방향은 계속 시도한다.
                 }
 
-                if (SpawnExternalGroupAtGate(distributedEntries[i].ToArray(), safeFrontRowCount, gate, ref capacity, spawnedMonsters)) // 배정된 몬스터만 이 게이트에 생성한다.
+                if (SpawnExternalGroupAtGate(distributedEntries[i].ToArray(), safeFrontRowCount, gate, ref capacity, spawnedMonsters, congestionOptions)) // 배정된 몬스터만 이 게이트에 생성한다.
                 {
                     spawnedAny = true;
                 }
             }
 
             return spawnedAny;
+        }
+
+        private static void ShuffleExternalSpawnEntries(List<ExternalSpawnEntry> entries) // 외부 웨이브 몬스터 배치 순서를 섞는다.
+        {
+            if (entries == null || entries.Count <= 1) // 섞을 필요가 없다면
+            {
+                return; // 그대로 둔다.
+            }
+
+            for (int i = entries.Count - 1; i > 0; i--) // 뒤에서부터 하나씩 무작위 위치와 교환한다.
+            {
+                int swapIndex = Random.Range(0, i + 1); // 0부터 현재 위치까지 중 하나를 고른다.
+                ExternalSpawnEntry temp = entries[i]; // 현재 값을 임시 저장한다.
+                entries[i] = entries[swapIndex]; // 무작위 위치 값을 현재 위치로 옮긴다.
+                entries[swapIndex] = temp; // 임시 저장한 값을 무작위 위치로 옮긴다.
+            }
         }
 
         private void SpawnStageGroups(StageSpawnRule rule) // 현재 Stage Rule의 군단 스폰
@@ -531,6 +676,11 @@ namespace TeamProject01.Gameplay
 
         private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity, List<EnemyController> spawnedMonsters) // 생성된 몬스터 목록까지 기록하는 외부 요청 처리
         {
+            return SpawnExternalGroupAtGate(entries, frontRowCount, gate, ref capacity, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled);
+        }
+
+        private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions) // 생성된 몬스터 목록과 혼잡도 옵션까지 처리하는 외부 요청
+        {
             if (entries == null || entries.Length == 0) // 몬스터 조합이 없다면
             {
                 return false; // 생성하지 않는다.
@@ -543,7 +693,9 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            Vector3 groupCenter = gate.position + gate.forward * groupForwardOffset; // 게이트 앞쪽으로 민 군단 앞줄 중심 위치
+            Vector3 outwardDirection = GetSpawnOutwardDirection(gate); // 넥서스에서 게이트로 향하는 바깥 방향
+            Vector3 groupCenter = gate.position + outwardDirection * groupForwardOffset; // 바깥 방향으로 민 군단 앞줄 중심 위치
+            groupCenter = ApplyCongestionPush(groupCenter, congestionOptions); // 스폰 위치가 이미 붐비면 넥서스 반대 방향으로 조금 더 밀어낸다.
             groupCenter = GroundService.ProjectToGround(groupCenter, spawnGroundHeight); // 바닥 높이에 맞춘다.
 
             int formationIndex = 0; // 오와열 배치 순서
@@ -565,7 +717,7 @@ namespace TeamProject01.Gameplay
                         return spawnedAny; // 생성 중지
                     }
 
-                    Vector3 formationOffset = GetFormationOffset(formationIndex, totalMonsterCount, frontRowCount, gate); // 오와열 위치 오프셋을 계산한다.
+                    Vector3 formationOffset = GetExternalWaveFormationOffset(formationIndex, totalMonsterCount, frontRowCount, outwardDirection); // 외부 웨이브용 오와열 위치 오프셋을 계산한다.
                     Vector3 spawnPosition = groupCenter + formationOffset; // 최종 생성 위치를 계산한다.
                     spawnPosition = GroundService.ProjectToGround(spawnPosition, spawnGroundHeight); // 바닥 높이에 맞춘다.
 
@@ -631,6 +783,118 @@ namespace TeamProject01.Gameplay
             }
 
             return totalCount; // 총 몬스터 수를 반환한다.
+        }
+
+        private Vector3 ApplyCongestionPush(Vector3 groupCenter, ExternalSpawnCongestionOptions options) // 스폰 위치가 붐비면 넥서스 반대 방향으로 생성 위치를 민다.
+        {
+            if (!options.Enabled || nexus == null) // 옵션이 꺼져 있거나 기준점이 없다면
+            {
+                return groupCenter; // 기존 위치 사용
+            }
+
+            float checkRadius = Mathf.Max(0.1f, options.CheckRadius); // 검사 반경은 0보다 커야 한다.
+            int monsterThreshold = Mathf.Max(1, options.MonsterThreshold); // 최소 1마리 이상부터 혼잡 판정 가능
+            float pushDistance = Mathf.Max(0.0f, options.PushDistance); // 한 번에 밀 거리
+            float maxPushDistance = Mathf.Max(0.0f, options.MaxPushDistance); // 최대 밀 거리
+
+            if (pushDistance <= 0.0f || maxPushDistance <= 0.0f) // 밀 거리가 없다면
+            {
+                return groupCenter; // 기존 위치 사용
+            }
+
+            Vector3 pushDirection = groupCenter - nexus.position; // 넥서스에서 스폰 위치로 향하는 방향
+            pushDirection.y = 0.0f; // 평면 방향만 사용
+
+            if (pushDirection.sqrMagnitude <= 0.0001f) // 방향 계산이 불가능하다면
+            {
+                return groupCenter; // 안전하게 기존 위치 사용
+            }
+
+            pushDirection.Normalize();
+
+            Vector3 adjustedCenter = groupCenter;
+            float pushedDistance = 0.0f;
+
+            while (pushedDistance < maxPushDistance) // 최대 거리 안에서 여러 번 재검사한다.
+            {
+                EnemyController.CollectActiveInRange(adjustedCenter, checkRadius, congestionCheckResults);
+
+                if (congestionCheckResults.Count < monsterThreshold) // 주변 몬스터가 기준보다 적다면
+                {
+                    break; // 더 밀 필요가 없다.
+                }
+
+                float stepDistance = Mathf.Min(pushDistance, maxPushDistance - pushedDistance);
+                adjustedCenter += pushDirection * stepDistance; // 한 단계 더 바깥쪽으로 이동
+                pushedDistance += stepDistance;
+            }
+
+            congestionCheckResults.Clear(); // 다음 검사에 남지 않게 비운다.
+            return adjustedCenter;
+        }
+
+        private Vector3 GetSpawnOutwardDirection(Transform gate) // 넥서스에서 게이트로 향하는 외부 웨이브 스폰 방향 계산
+        {
+            if (gate == null)
+            {
+                return Vector3.forward;
+            }
+
+            Vector3 outwardDirection = nexus != null ? gate.position - nexus.position : gate.forward;
+            outwardDirection.y = 0.0f;
+
+            if (outwardDirection.sqrMagnitude <= 0.0001f)
+            {
+                outwardDirection = gate.forward;
+                outwardDirection.y = 0.0f;
+            }
+
+            if (outwardDirection.sqrMagnitude <= 0.0001f)
+            {
+                return Vector3.forward;
+            }
+
+            outwardDirection.Normalize();
+            return outwardDirection;
+        }
+
+        private Vector3 GetExternalWaveFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Vector3 outwardDirection) // 외부 웨이브 전용 오와열 배치 오프셋 계산
+        {
+            int rowIndex = unitIndex / frontRowCount;
+            int columnIndex = unitIndex % frontRowCount;
+
+            int rowStartIndex = rowIndex * frontRowCount;
+            int remainingCount = totalMonsterCount - rowStartIndex;
+            int rowCount = Mathf.Min(frontRowCount, Mathf.Max(0, remainingCount));
+
+            if (rowCount <= 0)
+            {
+                rowCount = frontRowCount;
+            }
+
+            float centeredColumn = columnIndex - (rowCount - 1) * 0.5f;
+            float sideOffset = centeredColumn * columnSpacing;
+            float backOffset = rowIndex * rowSpacing;
+
+            Vector3 forward = outwardDirection;
+            forward.y = 0.0f;
+
+            if (forward.sqrMagnitude <= 0.0001f)
+            {
+                forward = Vector3.forward;
+            }
+
+            forward.Normalize();
+
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+
+            if (right.sqrMagnitude <= 0.0001f)
+            {
+                right = Vector3.right;
+            }
+
+            right.Normalize();
+            return right * sideOffset + forward * backOffset;
         }
 
         private Vector3 GetFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Transform gate) // 오와열 배치 오프셋 계산
@@ -740,6 +1004,40 @@ namespace TeamProject01.Gameplay
             }
 
             return selectedDirections; // 이번 웨이브 요청에서 사용할 방향 목록
+        }
+
+        private static int[] ConvertToDirectionIndexes(SpawnDirection[] directions) // 내부 방향 enum을 외부 저장용 숫자 배열로 바꾼다.
+        {
+            if (directions == null || directions.Length == 0)
+            {
+                return null;
+            }
+
+            int[] directionIndexes = new int[directions.Length];
+
+            for (int i = 0; i < directions.Length; i++)
+            {
+                directionIndexes[i] = (int)directions[i];
+            }
+
+            return directionIndexes;
+        }
+
+        private static SpawnDirection[] ConvertToSpawnDirections(int[] directionIndexes) // 외부 저장용 숫자 배열을 내부 방향 enum으로 되돌린다.
+        {
+            if (directionIndexes == null || directionIndexes.Length == 0)
+            {
+                return null;
+            }
+
+            SpawnDirection[] directions = new SpawnDirection[directionIndexes.Length];
+
+            for (int i = 0; i < directionIndexes.Length; i++)
+            {
+                directions[i] = (SpawnDirection)Mathf.Clamp(directionIndexes[i], 0, AllSpawnDirectionCount - 1);
+            }
+
+            return directions;
         }
 
         private Transform PickRandomGate(SpawnDirection direction) // 방향별 게이트 배열에서 하나 선택

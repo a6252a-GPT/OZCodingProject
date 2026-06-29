@@ -52,9 +52,9 @@ MonoBehaviour:
   ProjectileCount: 0
   ProjectileCountRare: 0
   ProjectileCountUnique: 0
-  CooldownReduction: 0.1
-  CooldownReductionRare: 0.15
-  CooldownReductionUnique: 0.2
+  CooldownReduction: 0
+  CooldownReductionRare: 0
+  CooldownReductionUnique: 0
   SideConeAngle: 0
   SideConeAngleRare: 0
   SideConeAngleUnique: 0
@@ -64,9 +64,9 @@ MonoBehaviour:
   LaserDurationUsePercentRare: 0
   LaserDurationUnique: 0
   LaserDurationUsePercentUnique: 0
-  LaserTickInterval: 0
-  LaserTickIntervalRare: 0
-  LaserTickIntervalUnique: 0
+  LaserTickInterval: 0.05
+  LaserTickIntervalRare: 0.08
+  LaserTickIntervalUnique: 0.12
   LandingRollDistance: 0
   LandingRollDistanceUsePercent: 0
   LandingRollDistanceRare: 0

@@ -18,13 +18,13 @@ MonoBehaviour:
     1\uBC1C\uC744 \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
   MoveType: 1
   ImpactType: 1
-  SearchRange: 34
+  SearchRange: 24
   TargetPriorityMode: 1
   AttackAreaMode: 0
   SideConeAngle: 100
   TargetAimHeight: 0.55
   AttackSpawnHeight: 0.72
-  BaseDamage: 14
+  BaseDamage: 24
   Cooldown: 3.2
   UseDamageTypeOverride: 1
   DamageTypeOverride: 1

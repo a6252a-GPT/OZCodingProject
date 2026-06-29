@@ -22,8 +22,8 @@ MonoBehaviour:
   SideConeAngle: 100
   TargetAimHeight: 0.55
   AttackSpawnHeight: 0.75
-  BaseDamage: 7
-  Cooldown: 3.45
+  BaseDamage: 18
+  Cooldown: 3.4
   ApplyMonsterFeedback: 1
   MonsterKnockbackDistance: 0.25
   MonsterKnockbackDuration: 0.08
@@ -55,8 +55,8 @@ MonoBehaviour:
   LaserDuration: 0.5
   LaserTickInterval: 0.15
   ChainRange: 10
-  MaxChainDepth: 4
-  ChainBranchCount: 3
+  MaxChainDepth: 3
+  ChainBranchCount: 2
   ChainDelay: 0.06
   ChainLineVfxLifetime: 0.3
   ChainDamageFalloff: 0.60999995

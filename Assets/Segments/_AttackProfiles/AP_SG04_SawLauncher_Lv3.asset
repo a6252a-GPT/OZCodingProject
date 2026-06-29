@@ -17,13 +17,13 @@ MonoBehaviour:
     damage, then bounces once by default.
   MoveType: 6
   ImpactType: 0
-  SearchRange: 28
+  SearchRange: 21
   AttackAreaMode: 1
   SideConeAngle: 100
   TargetAimHeight: 0.45
   AttackSpawnHeight: 0.5
-  BaseDamage: 6
-  Cooldown: 3.55
+  BaseDamage: 8
+  Cooldown: 4.6
   ApplyMonsterFeedback: 1
   MonsterKnockbackDistance: 0.25
   MonsterKnockbackDuration: 0.08
@@ -54,13 +54,13 @@ MonoBehaviour:
   ExplosionLifetime: 0.35
   LaserDuration: 0.5
   LaserTickInterval: 0.15
-  ChainRange: 16
+  ChainRange: 10.5
   MaxChainDepth: 2
   ChainBranchCount: 1
   ChainDelay: 0.06
   ChainLineVfxLifetime: 0.4
   ChainDamageFalloff: 0.5
-  SawPierceDamageRatio: 0.5
+  SawPierceDamageRatio: 0.28
   SawTargetMinDistanceRatio: 0.5
   SawSpinSpeed: 1440
   RequireAimBeforeFire: 1
