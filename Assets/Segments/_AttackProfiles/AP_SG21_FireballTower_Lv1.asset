@@ -71,6 +71,8 @@ MonoBehaviour:
   AreaTelegraphAlpha: 0.35
   SlowMoveSpeedMultiplier: 1
   SlowDuration: 0
+  StatusEffectOnHit: 1
+  StatusEffectVfxPrefab: {fileID: 1682007460361429981, guid: af6733430f704654a9b25e8ed8358749, type: 3}
   LaserDuration: 0.5
   LaserTickInterval: 0.15
   ChainRange: 4
@@ -93,9 +95,9 @@ MonoBehaviour:
   MuzzleVfxScale: {x: 1, y: 1, z: 1}
   HitVfxPrefab: {fileID: 0}
   HitVfxLifetime: 2
-  ExplosionVfxPrefab: {fileID: 1893165063647558810, guid: ba811f0b1e994e7419a11f2c631be0c0, type: 3}
-  ExplosionVfxLifetime: 0.45
-  ExplosionVfxAlpha: 0.32
+  ExplosionVfxPrefab: {fileID: 3549793700234520448, guid: 95ebfd51f55e3904f92225949a0b9e27, type: 3}
+  ExplosionVfxLifetime: 1.5
+  ExplosionVfxAlpha: 1
   RecoilDistance: 0.025
   RecoilTiltAngle: 0.7
   RecoilKickDuration: 0.05

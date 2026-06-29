@@ -73,6 +73,8 @@ MonoBehaviour:
   AreaTelegraphAlpha: 0.34
   SlowMoveSpeedMultiplier: 0.6
   SlowDuration: 2.4
+  StatusEffectOnHit: 2
+  StatusEffectVfxPrefab: {fileID: 5023800424400518386, guid: 0656b1bbd668f20498f723323f81813a, type: 3}
   LaserDuration: 0.5
   LaserTickInterval: 0.15
   ChainRange: 4

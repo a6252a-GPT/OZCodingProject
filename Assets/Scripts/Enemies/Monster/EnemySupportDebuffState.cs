@@ -1,10 +1,13 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
     public sealed class EnemySupportDebuffState : MonoBehaviour
     {
+        private const float StatusFloatingCooldownSeconds = 0.45f;
+        private const float StatusTickStaggerDuration = 0.04f;
+
         private float freezeTimer;
         private float incomingDamageMultiplier = 1f;
         private float incomingDamageTimer;
@@ -12,9 +15,53 @@ namespace TeamProject01.Gameplay
         private float moveSpeedSlowTimer;
         private readonly List<Behaviour> disabledByFreezeBehaviours = new List<Behaviour>(6);
         private bool freezeBehavioursDisabled;
+        private EnemyController enemyController;
+        private EnemyHealth enemyHealth;
+        private StatusBodyVfxController bodyVfx;
+        private CombatStatusEffectKind activeStatusEffect;
+        private GameObject activeStatusVfxPrefab;
+        private float activeStatusTimer;
+        private float activeStatusDuration;
+        private float activeStatusTickInterval;
+        private float activeStatusTickTimer;
+        private float activeStatusDamagePerSecond;
+        private float activeStatusMoveSpeedMultiplier = 1f;
+        private float activeStatusIncomingDamageMultiplier = 1f;
+        private DamageType activeStatusTickDamageType = DamageType.Direct;
+        private int activeStatusSourceSegmentIndex = -1;
+        private GameObject activeStatusSourceObject;
+        private float statusFloatingCooldown;
 
         public bool IsFrozen => freezeTimer > 0f;
-        public float MoveSpeedMultiplier => moveSpeedSlowTimer > 0f ? Mathf.Clamp(moveSpeedSlowMultiplier, 0.05f, 1f) : 1f;
+        public float MoveSpeedMultiplier
+        {
+            get
+            {
+                float multiplier = 1f;
+                if (moveSpeedSlowTimer > 0f)
+                {
+                    multiplier = Mathf.Min(multiplier, Mathf.Clamp(moveSpeedSlowMultiplier, 0.05f, 1f));
+                }
+
+                if (activeStatusTimer > 0f)
+                {
+                    multiplier = Mathf.Min(multiplier, Mathf.Clamp(activeStatusMoveSpeedMultiplier, 0.05f, 1f));
+                }
+
+                return multiplier;
+            }
+        }
+
+        private void Awake()
+        {
+            enemyController = GetComponent<EnemyController>();
+            enemyHealth = GetComponent<EnemyHealth>();
+        }
+
+        private void OnEnable()
+        {
+            SubscribeHealth();
+        }
 
         public static EnemySupportDebuffState GetOrAdd(EnemyController enemy)
         {
@@ -31,18 +78,18 @@ namespace TeamProject01.Gameplay
             return state;
         }
 
-        public static bool IsEnemyFrozen(EnemyController enemy) //Á¶¼º¿øÃß°¡-0622 µ¿°á ¸ó½ºÅÍ »óÅÂ È®ÀÎ
+        public static bool IsEnemyFrozen(EnemyController enemy) //ì¡°ì„±ì›ì¶”ê°€-0622 ë™ê²° ëª¬ìŠ¤í„° ìƒíƒœ í™•ì¸
         {
-            if (enemy == null) //Á¶¼º¿øÃß°¡-0622 È®ÀÎÇÒ ¸ó½ºÅÍ°¡ ¾øÀ¸¸é µ¿°á»óÅÂ°¡ ¾Æ´Ï´Ù.
+            if (enemy == null) //ì¡°ì„±ì›ì¶”ê°€-0622 í™•ì¸í•  ëª¬ìŠ¤í„°ê°€ ì—†ìœ¼ë©´ ë™ê²°ìƒíƒœê°€ ì•„ë‹ˆë‹¤.
             {
-                return false; //Á¶¼º¿øÃß°¡-0622 µ¿°áµÇÁö ¾ÊÀ½À¸·Î ¹İÈ¯
+                return false; //ì¡°ì„±ì›ì¶”ê°€-0622 ë™ê²°ë˜ì§€ ì•ŠìŒìœ¼ë¡œ ë°˜í™˜
             }
 
-            if (!enemy.TryGetComponent(out EnemySupportDebuffState state)) //Á¶¼º¿øÃß°¡-0622 µğ¹öÇÁ »óÅÂ È®ÀÎ
+            if (!enemy.TryGetComponent(out EnemySupportDebuffState state)) //ì¡°ì„±ì›ì¶”ê°€-0622 ë””ë²„í”„ ìƒíƒœ í™•ì¸
             {
-                return false; //Á¶¼º¿øÃß°¡-0622 µğ¹öÇÁ»óÅÂ°¡ ¾ø´Ù¸é µ¿°áµÇÁö ¾ÊÀº°ÍÀ¸·Î ¹İÈ¯
+                return false; //ì¡°ì„±ì›ì¶”ê°€-0622 ë””ë²„í”„ìƒíƒœê°€ ì—†ë‹¤ë©´ ë™ê²°ë˜ì§€ ì•Šì€ê²ƒìœ¼ë¡œ ë°˜í™˜
             }
-            return state.IsFrozen; //Á¶¼º¿øÃß°¡-0622 ÇöÀç µ¿°á»óÅÂ¸¦ ¹İÈ¯
+            return state.IsFrozen; //ì¡°ì„±ì›ì¶”ê°€-0622 í˜„ì¬ ë™ê²°ìƒíƒœë¥¼ ë°˜í™˜
         }
 
         public void ApplyFreeze(float duration)
@@ -52,11 +99,11 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            EnemySuicideCharger suicideCharger = GetComponent<EnemySuicideCharger>(); // Á¶¼º¿øÃß°¡-0626 - ÀÚÆø ¸ó½ºÅÍÀÇ ÇöÀç ÃæÀü »óÅÂ¸¦ È®ÀÎÇÑ´Ù.
+            EnemySuicideCharger suicideCharger = GetComponent<EnemySuicideCharger>(); // ì¡°ì„±ì›ì¶”ê°€-0626 - ìí­ ëª¬ìŠ¤í„°ì˜ í˜„ì¬ ì¶©ì „ ìƒíƒœë¥¼ í™•ì¸í•œë‹¤.
 
-            if (suicideCharger != null && suicideCharger.IsCharging) // Á¶¼º¿øÃß°¡-0626 - ÀÌ¹Ì ÀÚÆø ÁØºñ ÁßÀÌ¶ó¸é
+            if (suicideCharger != null && suicideCharger.IsCharging) // ì¡°ì„±ì›ì¶”ê°€-0626 - ì´ë¯¸ ìí­ ì¤€ë¹„ ì¤‘ì´ë¼ë©´
             {
-                return; // Á¶¼º¿øÃß°¡-0626 - µ¿°á »óÅÂ¿Í µ¿°á ½Ã°£À» Àû¿ëÇÏÁö ¾Ê¾Æ ÀÚÆøÀÌ Áß´ÜµÇÁö ¾Ê°Ô ÇÑ´Ù.
+                return; // ì¡°ì„±ì›ì¶”ê°€-0626 - ë™ê²° ìƒíƒœì™€ ë™ê²° ì‹œê°„ì„ ì ìš©í•˜ì§€ ì•Šì•„ ìí­ì´ ì¤‘ë‹¨ë˜ì§€ ì•Šê²Œ í•œë‹¤.
             }
 
             bool wasFrozen = IsFrozen;
@@ -74,8 +121,10 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            incomingDamageMultiplier = Mathf.Max(incomingDamageMultiplier, multiplier);
-            incomingDamageTimer = Mathf.Max(incomingDamageTimer, duration);
+            ClearActiveStatusEffect(true);
+            ClearMoveSpeedSlow();
+            incomingDamageMultiplier = Mathf.Max(1f, multiplier);
+            incomingDamageTimer = Mathf.Max(0f, duration);
         }
 
         public void ApplyMoveSpeedSlow(float multiplier, float duration)
@@ -85,29 +134,108 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            EnemySuicideCharger suicideCharger = GetComponent<EnemySuicideCharger>(); // Á¶¼º¿øÃß°¡-0626 - ÀÚÆø ¸ó½ºÅÍÀÇ ÇöÀç ÃæÀü »óÅÂ¸¦ È®ÀÎÇÑ´Ù.
+            EnemySuicideCharger suicideCharger = GetComponent<EnemySuicideCharger>(); // ì¡°ì„±ì›ì¶”ê°€-0626 - ìí­ ëª¬ìŠ¤í„°ì˜ í˜„ì¬ ì¶©ì „ ìƒíƒœë¥¼ í™•ì¸í•œë‹¤.
 
-            if (suicideCharger != null && suicideCharger.IsCharging) // Á¶¼º¿øÃß°¡-0626 - ÀÌ¹Ì ÀÚÆø ÁØºñ ÁßÀÌ¶ó¸é
+            if (suicideCharger != null && suicideCharger.IsCharging) // ì¡°ì„±ì›ì¶”ê°€-0626 - ì´ë¯¸ ìí­ ì¤€ë¹„ ì¤‘ì´ë¼ë©´
             {
-                return; // Á¶¼º¿øÃß°¡-0626 - ÀÌµ¿¼Óµµ °¨¼Ò¸¦ Àû¿ëÇÏÁö ¾Ê¾Æ ÀÚÆø ÁøÇà »óÅÂ¸¦ À¯ÁöÇÑ´Ù.
+                return; // ì¡°ì„±ì›ì¶”ê°€-0626 - ì´ë™ì†ë„ ê°ì†Œë¥¼ ì ìš©í•˜ì§€ ì•Šì•„ ìí­ ì§„í–‰ ìƒíƒœë¥¼ ìœ ì§€í•œë‹¤.
             }
 
-            moveSpeedSlowMultiplier = Mathf.Min(moveSpeedSlowMultiplier, Mathf.Clamp(multiplier, 0.05f, 1f));
-            moveSpeedSlowTimer = Mathf.Max(moveSpeedSlowTimer, duration);
+            ClearActiveStatusEffect(true);
+            ClearIncomingDamageMultiplier();
+            moveSpeedSlowMultiplier = Mathf.Clamp(multiplier, 0.05f, 1f);
+            moveSpeedSlowTimer = Mathf.Max(0f, duration);
+        }
+
+        public void ApplyStatusEffect(
+            CombatStatusEffectKind kind,
+            int sourceSegmentIndex,
+            GameObject sourceObject,
+            Vector3 hitPosition,
+            GameObject vfxPrefab,
+            float durationOverride = 0f,
+            float incomingDamageMultiplierOverride = 0f)
+        {
+            if (IsOwnerDead())
+            {
+                ClearAllDebuffs(true);
+                return;
+            }
+
+            if (!CombatStatusEffectCatalog.TryGet(kind, out CombatStatusEffectDefinition definition) || !definition.IsEnemyDebuff)
+            {
+                ClearActiveStatusEffect(true);
+                return;
+            }
+
+            bool sameStatus = activeStatusTimer > 0f && activeStatusEffect == kind && activeStatusVfxPrefab == vfxPrefab;
+            float retainedTickTimer = sameStatus ? activeStatusTickTimer : 0f;
+            if (!sameStatus)
+            {
+                ClearActiveStatusEffect(true);
+            }
+
+            ClearIncomingDamageMultiplier();
+            ClearMoveSpeedSlow();
+
+            activeStatusEffect = kind;
+            activeStatusVfxPrefab = vfxPrefab;
+            activeStatusDuration = durationOverride > 0f ? durationOverride : definition.Duration;
+            activeStatusTimer = Mathf.Max(0.05f, activeStatusDuration);
+            activeStatusTickInterval = Mathf.Max(0f, definition.TickInterval);
+            activeStatusDamagePerSecond = Mathf.Max(0f, definition.DamagePerSecond);
+            activeStatusTickTimer = sameStatus && activeStatusDamagePerSecond > 0f
+                ? Mathf.Clamp(retainedTickTimer, Time.deltaTime, activeStatusTickInterval)
+                : activeStatusTickInterval;
+            activeStatusMoveSpeedMultiplier = CanApplyMoveSpeedPenalty() ? definition.MoveSpeedMultiplier : 1f;
+            activeStatusIncomingDamageMultiplier = incomingDamageMultiplierOverride > 1f
+                ? incomingDamageMultiplierOverride
+                : Mathf.Max(1f, definition.IncomingDamageMultiplier);
+            activeStatusTickDamageType = definition.TickDamageType;
+            activeStatusSourceSegmentIndex = sourceSegmentIndex;
+            activeStatusSourceObject = sourceObject;
+
+            if (statusFloatingCooldown <= 0f || !sameStatus)
+            {
+                DamageFloatingSpawner.SpawnStatusEffect(definition.DisplayName, definition.FloatingColor, ResolveStatusFloatingPosition(hitPosition));
+                statusFloatingCooldown = StatusFloatingCooldownSeconds;
+            }
+
+            if (!sameStatus && vfxPrefab != null)
+            {
+                GetOrAddBodyVfx().Show(vfxPrefab, definition.VfxEffectName);
+            }
         }
 
         public DamageData ApplyIncomingDamageBonus(DamageData damage)
         {
-            if (incomingDamageTimer <= 0f || incomingDamageMultiplier <= 1f)
+            float multiplier = 1f;
+            if (incomingDamageTimer > 0f && incomingDamageMultiplier > 1f)
             {
-                return damage;
+                multiplier = Mathf.Max(multiplier, incomingDamageMultiplier);
             }
 
-            return damage.WithAmount(damage.Amount * incomingDamageMultiplier);
+            if (activeStatusTimer > 0f && activeStatusIncomingDamageMultiplier > 1f)
+            {
+                multiplier = Mathf.Max(multiplier, activeStatusIncomingDamageMultiplier);
+            }
+
+            return multiplier > 1f ? damage.WithAmount(damage.Amount * multiplier) : damage;
         }
 
         private void Update()
         {
+            if (IsOwnerDead())
+            {
+                ClearAllDebuffs(true);
+                return;
+            }
+
+            if (statusFloatingCooldown > 0f)
+            {
+                statusFloatingCooldown -= Time.deltaTime;
+            }
+
             if (freezeTimer > 0f)
             {
                 freezeTimer -= Time.deltaTime;
@@ -116,6 +244,8 @@ namespace TeamProject01.Gameplay
                     RestoreFreezeBehaviours();
                 }
             }
+
+            UpdateActiveStatusEffect();
 
             if (incomingDamageTimer <= 0f)
             {
@@ -134,7 +264,134 @@ namespace TeamProject01.Gameplay
 
         private void OnDisable()
         {
+            UnsubscribeHealth();
+            ClearAllDebuffs(true);
+        }
+
+        private void SubscribeHealth()
+        {
+            if (enemyHealth == null)
+            {
+                enemyHealth = GetComponent<EnemyHealth>();
+            }
+
+            if (enemyHealth != null)
+            {
+                enemyHealth.HealthChanged -= HandleHealthChanged;
+                enemyHealth.HealthChanged += HandleHealthChanged;
+            }
+        }
+
+        private void UnsubscribeHealth()
+        {
+            if (enemyHealth != null)
+            {
+                enemyHealth.HealthChanged -= HandleHealthChanged;
+            }
+        }
+
+        private void HandleHealthChanged(EnemyHealth changedHealth)
+        {
+            if (changedHealth != null && changedHealth.IsDead)
+            {
+                ClearAllDebuffs(true); // ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ì¤‘ì—ë„ ë””ë²„í”„ VFX ì¦‰ì‹œ ì œê±°
+            }
+        }
+
+        private bool IsOwnerDead()
+        {
+            if (enemyController == null)
+            {
+                enemyController = GetComponent<EnemyController>();
+            }
+
+            if (enemyHealth == null)
+            {
+                enemyHealth = GetComponent<EnemyHealth>();
+            }
+
+            return (enemyController != null && enemyController.IsDead) || (enemyHealth != null && enemyHealth.IsDead);
+        }
+
+        private void ClearAllDebuffs(bool stopVfx)
+        {
+            ClearActiveStatusEffect(stopVfx);
+            ClearIncomingDamageMultiplier();
+            ClearMoveSpeedSlow();
+            freezeTimer = 0f;
             RestoreFreezeBehaviours();
+        }
+
+        private void UpdateActiveStatusEffect()
+        {
+            if (activeStatusTimer <= 0f)
+            {
+                return;
+            }
+
+            activeStatusTimer -= Time.deltaTime;
+            TickActiveStatusDamage();
+            if (activeStatusTimer <= 0f)
+            {
+                ClearActiveStatusEffect(true);
+            }
+        }
+
+        private void TickActiveStatusDamage()
+        {
+            if (activeStatusDamagePerSecond <= 0f || activeStatusTickInterval <= 0f)
+            {
+                return;
+            }
+
+            activeStatusTickTimer -= Time.deltaTime;
+            if (activeStatusTickTimer > 0f)
+            {
+                return;
+            }
+
+            activeStatusTickTimer += activeStatusTickInterval;
+            EnemyController controller = enemyController != null ? enemyController : GetComponent<EnemyController>();
+            if (controller == null || controller.IsDead)
+            {
+                return;
+            }
+
+            float damageAmount = activeStatusDamagePerSecond * activeStatusTickInterval;
+            DamageData tickDamage = DamageData.Create(
+                damageAmount,
+                activeStatusTickDamageType,
+                activeStatusSourceSegmentIndex,
+                transform.position,
+                activeStatusSourceObject);
+            controller.ApplyDamage(tickDamage);
+            ApplyStatusTickStagger(tickDamage);
+        }
+
+        private void ApplyStatusTickStagger(DamageData tickDamage)
+        {
+            EnemyController controller = enemyController != null ? enemyController : GetComponent<EnemyController>();
+            if (controller == null)
+            {
+                return;
+            }
+
+            Vector3 origin = tickDamage.SourceObject != null
+                ? tickDamage.SourceObject.transform.position
+                : transform.position - transform.forward;
+            Vector3 direction = transform.position - origin;
+            direction.y = 0f;
+            MonsterFeedbackData feedback = MonsterFeedbackData.Create(
+                origin,
+                direction,
+                transform.position,
+                0f,
+                0.01f,
+                StatusTickStaggerDuration,
+                tickDamage.SourceSegmentIndex,
+                tickDamage.Type,
+                tickDamage.SourceObject);
+            MonsterFeedbackApi.TryApplyFeedback(controller, feedback);
         }
 
         private void UpdateMoveSpeedSlowTimer()
@@ -149,6 +406,65 @@ namespace TeamProject01.Gameplay
             {
                 moveSpeedSlowMultiplier = 1f;
             }
+        }
+
+        private void ClearActiveStatusEffect(bool stopVfx)
+        {
+            activeStatusEffect = CombatStatusEffectKind.None;
+            activeStatusVfxPrefab = null;
+            activeStatusTimer = 0f;
+            activeStatusDuration = 0f;
+            activeStatusTickInterval = 0f;
+            activeStatusTickTimer = 0f;
+            activeStatusDamagePerSecond = 0f;
+            activeStatusMoveSpeedMultiplier = 1f;
+            activeStatusIncomingDamageMultiplier = 1f;
+            activeStatusTickDamageType = DamageType.Direct;
+            activeStatusSourceSegmentIndex = -1;
+            activeStatusSourceObject = null;
+
+            if (stopVfx && bodyVfx != null)
+            {
+                bodyVfx.Clear();
+            }
+        }
+
+        private void ClearIncomingDamageMultiplier()
+        {
+            incomingDamageMultiplier = 1f;
+            incomingDamageTimer = 0f;
+        }
+
+        private void ClearMoveSpeedSlow()
+        {
+            moveSpeedSlowMultiplier = 1f;
+            moveSpeedSlowTimer = 0f;
+        }
+
+        private bool CanApplyMoveSpeedPenalty()
+        {
+            EnemySuicideCharger suicideCharger = GetComponent<EnemySuicideCharger>();
+            return suicideCharger == null || !suicideCharger.IsCharging;
+        }
+
+        private Vector3 ResolveStatusFloatingPosition(Vector3 hitPosition)
+        {
+            return hitPosition.sqrMagnitude > 0.0001f ? hitPosition : transform.position;
+        }
+
+        private StatusBodyVfxController GetOrAddBodyVfx()
+        {
+            if (bodyVfx == null)
+            {
+                bodyVfx = GetComponent<StatusBodyVfxController>();
+            }
+
+            if (bodyVfx == null)
+            {
+                bodyVfx = gameObject.AddComponent<StatusBodyVfxController>();
+            }
+
+            return bodyVfx;
         }
 
         private void DisableFreezeBehaviours()

@@ -91,6 +91,8 @@ namespace TeamProject01.Gameplay
         [Header("Debuff")]
         [Range(0.05f, 1f)] public float SlowMoveSpeedMultiplier = 1f; // 1이면 감속 없음
         [Min(0f)] public float SlowDuration = 0f; // 감속 지속 시간
+        public CombatStatusEffectKind StatusEffectOnHit = CombatStatusEffectKind.None; // 명중 시 적용할 상태효과
+        public GameObject StatusEffectVfxPrefab; // 상태효과 몸체 VFX
 
         [Header("Laser")]
         [Min(0.05f)] public float LaserDuration = 0.5f; // 레이저 지속 시간

@@ -234,7 +234,7 @@ namespace TeamProject01.Gameplay
             SetLevelDisplay(stats.Level);
             SetExpNumDisplay(stats.CurrentExperience, stats.ExperienceToNextLevel);
             SetGoldDisplay(stats.Gold);
-            SetGemDisplay();
+            SetGemDisplay(stats.CurrentRunDiamond);
         }
 
         private void SetFillRatio(float ratio)
@@ -284,14 +284,14 @@ namespace TeamProject01.Gameplay
             goldText.text = gold.ToString();
         }
 
-        private void SetGemDisplay()
+        private void SetGemDisplay(int currentRunDiamond)
         {
             if (gemText == null)
             {
                 return;
             }
 
-            gemText.text = "0";
+            gemText.text = Mathf.Max(0, currentRunDiamond).ToString();
         }
     }
 }

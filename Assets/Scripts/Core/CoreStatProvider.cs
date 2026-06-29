@@ -64,7 +64,7 @@ namespace TeamProject01.Gameplay
         public int ExperienceToNextLevel => CalculateRequiredExperience(CurrentLevel); // 다음 레벨 필요량
         public float ExperienceRatio => ExperienceToNextLevel <= 0 ? 0f : Mathf.Clamp01((float)CurrentExperience / ExperienceToNextLevel); // 경험치 비율
         public bool CanLevelUp => CurrentExperience >= ExperienceToNextLevel; // 레벨시스템 판단용
-        public CoreStatData CurrentStats => new CoreStatData(CurrentLevel, FlatDamageBonus, DamageMultiplier, AttackSpeedMultiplier, TurnSpeedBonus, RejoinRangeBonus, CollisionForceBonus, CurrentExperience, ExperienceToNextLevel, TotalExperience, CurrentGold); // 현재값
+        public CoreStatData CurrentStats => new CoreStatData(CurrentLevel, FlatDamageBonus, DamageMultiplier, AttackSpeedMultiplier, TurnSpeedBonus, RejoinRangeBonus, CollisionForceBonus, CurrentExperience, ExperienceToNextLevel, TotalExperience, CurrentGold, CurrentRunDiamond); // 현재값
 
         private readonly List<SegmentUpgradeData> segmentUpgrades = new List<SegmentUpgradeData>(); // 세그먼트별 강화 누적
         // 건춘 추가 시작 =======

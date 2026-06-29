@@ -175,6 +175,11 @@ namespace TeamProject01.Gameplay
 
         private void SpawnAreaTelegraph() // 실제 피해 범위 표시
         {
+            if (!RuntimeCombatDebugVisuals.TemporaryCombatDebugVisualsEnabled)
+            {
+                return; // 임시 범위 표시 비활성화
+            }
+
             if (profile == null || profile.AreaTelegraphPrefab == null || profile.ImpactType != SegmentAttackImpactType.ExplosionArea)
             {
                 return; // 표시 없음

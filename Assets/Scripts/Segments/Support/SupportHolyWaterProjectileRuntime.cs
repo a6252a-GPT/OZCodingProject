@@ -13,6 +13,8 @@ namespace TeamProject01.Gameplay
         private readonly List<EnemyController> enemyBuffer = new List<EnemyController>(32);
         private Mesh coneMesh;
         private Transform sourceAnchor;
+        private Transform directionAnchor;
+        private Vector3 anchoredLocalDirection;
         private Vector3 origin;
         private Vector3 direction;
         private float maxDistance;
@@ -23,10 +25,15 @@ namespace TeamProject01.Gameplay
         private float debuffDuration;
         private float debuffTickInterval;
         private float debuffTickTimer;
+        private int sourceSegmentIndex;
+        private GameObject sourceObject;
+        private CombatStatusEffectKind statusEffect;
+        private GameObject statusVfxPrefab;
 
         public static void SpawnCone(
             Transform parent,
             Transform sourceAnchor,
+            Transform directionAnchor,
             Vector3 position,
             Vector3 direction,
             float maxDistance,
@@ -35,7 +42,11 @@ namespace TeamProject01.Gameplay
             float incomingDamageMultiplier,
             float debuffDuration,
             float debuffTickInterval,
-            Color projectileColor)
+            Color projectileColor,
+            int sourceSegmentIndex,
+            GameObject sourceObject,
+            CombatStatusEffectKind statusEffect,
+            GameObject statusVfxPrefab)
         {
             GameObject instance = new GameObject("SG54_HolyWaterCone_Runtime");
             if (parent != null)
@@ -46,6 +57,7 @@ namespace TeamProject01.Gameplay
             SupportHolyWaterProjectileRuntime runtime = instance.AddComponent<SupportHolyWaterProjectileRuntime>();
             runtime.Configure(
                 sourceAnchor,
+                directionAnchor,
                 position,
                 direction,
                 maxDistance,
@@ -54,11 +66,16 @@ namespace TeamProject01.Gameplay
                 incomingDamageMultiplier,
                 debuffDuration,
                 debuffTickInterval,
-                projectileColor);
+                projectileColor,
+                sourceSegmentIndex,
+                sourceObject,
+                statusEffect,
+                statusVfxPrefab);
         }
 
         private void Configure(
             Transform sourceAnchor,
+            Transform directionAnchor,
             Vector3 origin,
             Vector3 fireDirection,
             float maxDistance,
@@ -67,17 +84,29 @@ namespace TeamProject01.Gameplay
             float incomingDamageMultiplier,
             float debuffDuration,
             float debuffTickInterval,
-            Color projectileColor)
+            Color projectileColor,
+            int sourceSegmentIndex,
+            GameObject sourceObject,
+            CombatStatusEffectKind statusEffect,
+            GameObject statusVfxPrefab)
         {
             this.sourceAnchor = sourceAnchor;
+            this.directionAnchor = directionAnchor != null ? directionAnchor : sourceAnchor;
             this.origin = origin;
             direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : Vector3.forward;
+            anchoredLocalDirection = this.directionAnchor != null
+                ? this.directionAnchor.InverseTransformDirection(direction)
+                : direction;
             this.maxDistance = Mathf.Max(0.1f, maxDistance);
             this.coneAngle = Mathf.Clamp(coneAngle, 1f, 180f);
             this.lifetime = Mathf.Max(0.05f, lifetime);
             this.incomingDamageMultiplier = Mathf.Max(1f, incomingDamageMultiplier);
             this.debuffDuration = Mathf.Max(0f, debuffDuration);
             this.debuffTickInterval = Mathf.Max(0.05f, debuffTickInterval);
+            this.sourceSegmentIndex = sourceSegmentIndex;
+            this.sourceObject = sourceObject;
+            this.statusEffect = statusEffect;
+            this.statusVfxPrefab = statusVfxPrefab;
             debuffTickTimer = 0f;
             age = 0f;
 
@@ -123,13 +152,23 @@ namespace TeamProject01.Gameplay
                 origin = sourceAnchor.position;
             }
 
+            if (directionAnchor != null)
+            {
+                Vector3 anchoredDirection = directionAnchor.TransformDirection(anchoredLocalDirection);
+                anchoredDirection.y = 0f;
+                if (anchoredDirection.sqrMagnitude > 0.0001f)
+                {
+                    direction = anchoredDirection.normalized;
+                }
+            }
+
             transform.position = origin;
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
         }
 
         private void ApplyDebuffInCone(float distance)
         {
-            if (incomingDamageMultiplier <= 1f || debuffDuration <= 0f || distance <= 0.01f)
+            if ((incomingDamageMultiplier <= 1f && statusEffect == CombatStatusEffectKind.None) || debuffDuration <= 0f || distance <= 0.01f)
             {
                 return;
             }
@@ -150,7 +189,22 @@ namespace TeamProject01.Gameplay
                 EnemySupportDebuffState state = EnemySupportDebuffState.GetOrAdd(enemy);
                 if (state != null)
                 {
-                    state.ApplyIncomingDamageMultiplier(incomingDamageMultiplier, debuffDuration);
+                    if (statusEffect != CombatStatusEffectKind.None)
+                    {
+                        Vector3 hitPosition = SegmentTargetQuery.GetEnemyHitPosition(enemy, enemy.transform.position, 0.5f);
+                        state.ApplyStatusEffect(
+                            statusEffect,
+                            sourceSegmentIndex,
+                            sourceObject,
+                            hitPosition,
+                            statusVfxPrefab,
+                            debuffDuration,
+                            incomingDamageMultiplier);
+                    }
+                    else
+                    {
+                        state.ApplyIncomingDamageMultiplier(incomingDamageMultiplier, debuffDuration);
+                    }
                 }
             }
         }

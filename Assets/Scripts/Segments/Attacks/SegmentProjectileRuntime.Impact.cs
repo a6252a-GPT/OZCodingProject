@@ -147,7 +147,11 @@ namespace TeamProject01.Gameplay
 
         private void ApplyExplosionDebuff(EnemyController enemy) // 폭발 부가 디버프
         {
-            if (!SegmentTargetQuery.IsEnemyUsable(enemy) || profile == null || profile.SlowDuration <= 0f || profile.SlowMoveSpeedMultiplier >= 1f)
+            if (!SegmentTargetQuery.IsEnemyUsable(enemy)
+                || profile == null
+                || profile.StatusEffectOnHit != CombatStatusEffectKind.None
+                || profile.SlowDuration <= 0f
+                || profile.SlowMoveSpeedMultiplier >= 1f)
             {
                 return; // 감속 없음
             }

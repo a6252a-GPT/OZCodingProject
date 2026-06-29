@@ -9,6 +9,7 @@ namespace TeamProject01.Gameplay
         private const float MinimumPickupMagnetMaxPullSpeed = 110f;
         private const float HolyWaterTargetRetrySeconds = 0.12f;
         private const float FreezeAreaTargetRetrySeconds = 0.2f;
+        private const float WormholeTargetRetrySeconds = 0.2f;
 
         public SegmentSupportAbilityProfile Profile;
         public Transform ActiveVfxRoot;
@@ -56,9 +57,11 @@ namespace TeamProject01.Gameplay
         private float activeTimer;
         private Vector3 freezeAreaCenter;
         private EnemyController holyWaterTarget;
+        private EnemyController wormholeTarget;
         private bool hasFreezeAreaCenter;
         private bool freezeAreaApplied;
         private bool holyWaterShotFired;
+        private bool wormholeShotFired;
         private float activeHeadSpinAngle;
         private Quaternion activeHeadBaseLocalRotation;
         private bool hasActiveHeadBaseRotation;
@@ -87,6 +90,7 @@ namespace TeamProject01.Gameplay
                 activeTimer = 0f;
                 ClearFreezeAreaState();
                 ClearHolyWaterState();
+                ClearWormholeState();
                 activeHeadSpinAngle = 0f;
                 RestoreActiveHeadRotation();
                 SupportSegmentRuntimeBuffs.ClearSource(this);
@@ -148,6 +152,9 @@ namespace TeamProject01.Gameplay
                 case SegmentSupportAbilityKind.HolyWaterVulnerabilitySpray:
                     ApplyHolyWaterSpray(deltaTime);
                     break;
+                case SegmentSupportAbilityKind.WormholePortal:
+                    ApplyWormholePortal(deltaTime);
+                    break;
             }
 
             if (isActive)
@@ -162,6 +169,7 @@ namespace TeamProject01.Gameplay
             activeTimer = 0f;
             ClearFreezeAreaState();
             ClearHolyWaterState();
+            ClearWormholeState();
             activeHeadSpinAngle = 0f;
             RestoreActiveHeadRotation();
             SupportSegmentRuntimeBuffs.ClearSource(this);
@@ -174,6 +182,13 @@ namespace TeamProject01.Gameplay
             if (IsHolyWaterProfile() && !TryAcquireHolyWaterTarget(out holyWaterTarget))
             {
                 cooldownTimer = HolyWaterTargetRetrySeconds;
+                SetVfxRootsActive(false);
+                return;
+            }
+
+            if (IsWormholeProfile() && !TryAcquireWormholeTarget(out wormholeTarget))
+            {
+                cooldownTimer = WormholeTargetRetrySeconds;
                 SetVfxRootsActive(false);
                 return;
             }
@@ -195,9 +210,10 @@ namespace TeamProject01.Gameplay
             activeTimer = GetActiveDurationSeconds();
             freezeAreaApplied = false;
             holyWaterShotFired = false;
+            wormholeShotFired = false;
             activeHeadSpinAngle = 0f;
             CacheActiveHeadRotationRoot();
-            SetVfxRootsActive(!IsHolyWaterProfile() && !IsFreezeAreaProfile());
+            SetVfxRootsActive(!IsHolyWaterProfile() && !IsFreezeAreaProfile() && !IsWormholeProfile());
             TickActiveSupportEffect(0f);
         }
 
@@ -207,6 +223,7 @@ namespace TeamProject01.Gameplay
             activeTimer = 0f;
             ClearFreezeAreaState();
             ClearHolyWaterState();
+            ClearWormholeState();
             activeHeadSpinAngle = 0f;
             RestoreActiveHeadRotation();
             SupportSegmentRuntimeBuffs.ClearSource(this);
@@ -282,6 +299,16 @@ namespace TeamProject01.Gameplay
                 if (state != null)
                 {
                     state.ApplyFreeze(duration);
+                    if (Profile.EnemyStatusEffect != CombatStatusEffectKind.None)
+                    {
+                        state.ApplyStatusEffect(
+                            Profile.EnemyStatusEffect,
+                            Segment != null ? Segment.ChainIndex : -1,
+                            gameObject,
+                            activeEnemyBuffer[i].transform.position,
+                            Profile.EnemyDebuffVfxPrefab,
+                            duration);
+                    }
                 }
             }
 
@@ -359,10 +386,10 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            FireHolyWaterCone(origin, targetDirection);
+            FireHolyWaterCone(origin, targetDirection, aimRoot);
         }
 
-        private void FireHolyWaterCone(Vector3 origin, Vector3 direction)
+        private void FireHolyWaterCone(Vector3 origin, Vector3 direction, Transform aimRoot)
         {
             Transform projectileRoot = Segment != null && Segment.Owner != null ? Segment.Owner.GetProjectileRoot() : null;
             float coneLength = GetHolyWaterConeLength();
@@ -372,6 +399,7 @@ namespace TeamProject01.Gameplay
             SupportHolyWaterProjectileRuntime.SpawnCone(
                 projectileRoot,
                 MuzzleVfxRoot != null ? MuzzleVfxRoot : transform,
+                aimRoot,
                 origin,
                 direction,
                 coneLength,
@@ -380,7 +408,11 @@ namespace TeamProject01.Gameplay
                 Profile != null ? Profile.IncomingDamageMultiplier : 1f,
                 GetEffectDurationSeconds(),
                 HolyWaterDebuffTickInterval,
-                HolyWaterProjectileColor);
+                HolyWaterProjectileColor,
+                Segment != null ? Segment.ChainIndex : -1,
+                gameObject,
+                Profile != null ? Profile.EnemyStatusEffect : CombatStatusEffectKind.None,
+                Profile != null ? Profile.EnemyDebuffVfxPrefab : null);
 
             holyWaterShotFired = true;
         }
@@ -390,6 +422,168 @@ namespace TeamProject01.Gameplay
             Transform sprayRoot = MuzzleVfxRoot != null ? MuzzleVfxRoot : transform;
             float range = Mathf.Max(0.1f, GetHolyWaterConeLength());
             return EnemyController.TryFindNearest(sprayRoot.position, range, SegmentTargetQuery.IsEnemyUsable, out target);
+        }
+
+        private void ApplyWormholePortal(float deltaTime)
+        {
+            if (wormholeShotFired)
+            {
+                return;
+            }
+
+            if (!SegmentTargetQuery.IsEnemyUsable(wormholeTarget) && !TryAcquireWormholeTarget(out wormholeTarget))
+            {
+                EndActivation();
+                return;
+            }
+
+            Transform muzzle = MuzzleVfxRoot != null ? MuzzleVfxRoot : transform;
+            Vector3 origin = muzzle.position;
+            Vector3 targetPosition = SegmentTargetQuery.GetEnemyHitPosition(wormholeTarget, wormholeTarget.transform.position, Profile.WormholeTargetAimHeight);
+            Vector3 targetDirection = targetPosition - origin;
+            targetDirection.y = 0f;
+
+            if (targetDirection.sqrMagnitude <= 0.0001f)
+            {
+                return;
+            }
+
+            targetDirection.Normalize();
+            Transform aimRoot = ResolveWormholeAimRoot();
+            if (!AimWormholeAtDirection(aimRoot, muzzle, targetDirection, deltaTime))
+            {
+                return;
+            }
+
+            FireWormholeProjectile(origin, targetDirection);
+        }
+
+        private void FireWormholeProjectile(Vector3 origin, Vector3 direction)
+        {
+            Transform projectileRoot = Segment != null && Segment.Owner != null ? Segment.Owner.GetProjectileRoot() : null;
+            SupportWormholeProjectileRuntime.Spawn(
+                projectileRoot,
+                Profile != null ? Profile.WormholeProjectilePrefab : null,
+                origin,
+                direction,
+                wormholeTarget,
+                ResolveNexusPosition(),
+                Profile);
+
+            wormholeShotFired = true;
+            EndActivation();
+        }
+
+        private bool TryAcquireWormholeTarget(out EnemyController target)
+        {
+            target = null;
+            if (Profile == null)
+            {
+                return false;
+            }
+
+            float searchRange = Mathf.Max(0.1f, Profile.Range);
+            return SegmentTargetQuery.TryPickNearestToPointTarget(
+                transform.position,
+                searchRange,
+                ResolveNexusPosition(),
+                IsWormholeTeleportCandidate,
+                Profile.WormholeTargetAimHeight,
+                out target);
+        }
+
+        private bool IsWormholeTeleportCandidate(EnemyController enemy)
+        {
+            if (!SegmentTargetQuery.IsEnemyUsable(enemy))
+            {
+                return false;
+            }
+
+            return Profile != null && (Profile.WormholeAffectBosses || enemy.Grade != EnemyGrade.Boss);
+        }
+
+        private bool AimWormholeAtDirection(Transform aimRoot, Transform muzzle, Vector3 targetDirection, float deltaTime)
+        {
+            if (aimRoot == null)
+            {
+                return true;
+            }
+
+            Vector3 currentDirection = GetWormholeCurrentMuzzleDirection(aimRoot, muzzle);
+            if (currentDirection.sqrMagnitude <= 0.0001f)
+            {
+                return true;
+            }
+
+            currentDirection.Normalize();
+            float signedAngle = Vector3.SignedAngle(currentDirection, targetDirection, Vector3.up);
+            float maxStep = Profile != null && Profile.WormholeAimTurnSpeed > 0f
+                ? Profile.WormholeAimTurnSpeed * Mathf.Max(0f, deltaTime)
+                : Mathf.Abs(signedAngle);
+            float step = Mathf.Clamp(signedAngle, -maxStep, maxStep);
+            aimRoot.Rotate(Vector3.up, step, Space.World);
+
+            currentDirection = GetWormholeCurrentMuzzleDirection(aimRoot, muzzle);
+            if (currentDirection.sqrMagnitude <= 0.0001f)
+            {
+                return true;
+            }
+
+            currentDirection.Normalize();
+            float tolerance = Profile != null ? Profile.WormholeFireAngleTolerance : 0f;
+            return Mathf.Abs(Vector3.SignedAngle(currentDirection, targetDirection, Vector3.up)) <= tolerance;
+        }
+
+        private Vector3 GetWormholeCurrentMuzzleDirection(Transform aimRoot, Transform muzzle)
+        {
+            if (muzzle != null)
+            {
+                Vector3 pivotToMuzzle = muzzle.position - aimRoot.position;
+                pivotToMuzzle.y = 0f;
+                if (pivotToMuzzle.sqrMagnitude > 0.0001f)
+                {
+                    return pivotToMuzzle;
+                }
+
+                Vector3 muzzleForward = muzzle.forward;
+                muzzleForward.y = 0f;
+                if (muzzleForward.sqrMagnitude > 0.0001f)
+                {
+                    return muzzleForward;
+                }
+            }
+
+            Vector3 rootForward = aimRoot.forward;
+            rootForward.y = 0f;
+            return rootForward;
+        }
+
+        private Transform ResolveWormholeAimRoot()
+        {
+            Transform yawPivot = FindChildRecursive(transform, "YawPivot");
+            if (yawPivot != null)
+            {
+                return yawPivot;
+            }
+
+            CacheActiveHeadRotationRoot();
+            return ActiveHeadRotationRoot != null ? ActiveHeadRotationRoot : transform;
+        }
+
+        private Vector3 ResolveNexusPosition()
+        {
+            if (NexusController.Active != null)
+            {
+                return NexusController.Active.transform.position;
+            }
+
+            GameObject nexusObject = GameObject.Find("Nexus_Core");
+            if (nexusObject != null)
+            {
+                return nexusObject.transform.position;
+            }
+
+            return Vector3.zero;
         }
 
         private bool AimHolyWaterAtDirection(Transform aimRoot, Transform muzzle, Vector3 targetDirection, float deltaTime)
@@ -479,6 +673,11 @@ namespace TeamProject01.Gameplay
             return Profile != null && Profile.AbilityKind == SegmentSupportAbilityKind.HolyWaterVulnerabilitySpray;
         }
 
+        private bool IsWormholeProfile()
+        {
+            return Profile != null && Profile.AbilityKind == SegmentSupportAbilityKind.WormholePortal;
+        }
+
         private bool IsFreezeAreaProfile()
         {
             return Profile != null && Profile.AbilityKind == SegmentSupportAbilityKind.FreezeArea;
@@ -495,6 +694,12 @@ namespace TeamProject01.Gameplay
         {
             holyWaterTarget = null;
             holyWaterShotFired = false;
+        }
+
+        private void ClearWormholeState()
+        {
+            wormholeTarget = null;
+            wormholeShotFired = false;
         }
 
         private void RefreshTemporarySupportVfx()
@@ -530,7 +735,7 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < root.childCount; i++)
             {
                 ConvoySegmentRuntime runtime = root.GetChild(i).GetComponent<ConvoySegmentRuntime>();
-                if (runtime == null || runtime == Segment || !runtime.IsAttached)
+                if (runtime == null || !runtime.IsAttached)
                 {
                     continue;
                 }
@@ -540,8 +745,15 @@ namespace TeamProject01.Gameplay
                     continue;
                 }
 
+                if (!SupportSegmentRuntimeBuffs.IsWinningSourceForSegment(this, runtime.ChainIndex))
+                {
+                    SupportBuffBodyVfxState.ClearIfSource(runtime, this);
+                    continue;
+                }
+
                 Transform targetRoot = FindChildRecursive(runtime.transform, "VFX_BuffBodyRoot");
                 SupportTemporaryVfx.ShowBuffTarget(targetRoot != null ? targetRoot : runtime.transform, Profile.AbilityKind);
+                SupportBuffBodyVfxState.Show(runtime, this, Profile.TargetBodyVfxPrefab);
             }
         }
 
@@ -568,7 +780,7 @@ namespace TeamProject01.Gameplay
             int offset = chainIndex - Segment.ChainIndex;
             if (offset == 0)
             {
-                return false;
+                return true;
             }
 
             if (offset > 0)
@@ -610,6 +822,7 @@ namespace TeamProject01.Gameplay
 
             return Profile.AbilityKind != SegmentSupportAbilityKind.HolyWaterVulnerabilitySpray
                 && Profile.AbilityKind != SegmentSupportAbilityKind.FreezeArea
+                && Profile.AbilityKind != SegmentSupportAbilityKind.WormholePortal
                 && ActiveHeadSpinSpeed > 0f;
         }
 

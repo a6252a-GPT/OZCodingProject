@@ -235,6 +235,12 @@ MonoBehaviour:
   PickupMagnetPullStrength: 225
   PickupMagnetMaxPullSpeed: 110
   PickupMagnetCollectDistance: 0.65
+  FreezeAreaRadius: 4.5
+  FreezeAreaClusterRadius: 4.5
+  FreezeAreaClusterMinEnemyCount: 3
+  FreezeAreaVfxLifetime: 5
+  FreezeAreaVfxAlpha: 1
+  ShowFreezeAreaRadiusVfx: 1
   HolyWaterSprayAngle: 36
   HolyWaterProjectileCount: 1
   HolyWaterProjectileInterval: 0.08
@@ -396,7 +402,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3551058119877539984, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3573585910390904870, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
       propertyPath: m_LocalScale.x
@@ -424,7 +430,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7480908261407387321, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7483754335716011427, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7483754335716011427, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7483754335716011427, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:

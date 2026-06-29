@@ -16,6 +16,7 @@ namespace TeamProject01.Gameplay
         public int ExperienceToNextLevel; // 다음 레벨 필요 경험치
         public int TotalExperience; // 누적 경험치
         public int Gold; // 보유 골드
+        public int CurrentRunDiamond; // 런 중 획득 다이아
 
         public float ExperienceRatio => ExperienceToNextLevel <= 0 ? 0f : Mathf.Clamp01((float)CurrentExperience / ExperienceToNextLevel); // 경험치 비율
         public bool CanLevelUp => CurrentExperience >= ExperienceToNextLevel; // 레벨시스템 판단용
@@ -28,6 +29,11 @@ namespace TeamProject01.Gameplay
         }
 
         public CoreStatData(int level, float flatDamageBonus, float damageMultiplier, float attackSpeedMultiplier, float turnSpeedBonus, float rejoinRangeBonus, float collisionForceBonus, int currentExperience, int experienceToNextLevel, int totalExperience, int gold) // 생성
+            : this(level, flatDamageBonus, damageMultiplier, attackSpeedMultiplier, turnSpeedBonus, rejoinRangeBonus, collisionForceBonus, currentExperience, experienceToNextLevel, totalExperience, gold, 0) // 기존 호환
+        {
+        }
+
+        public CoreStatData(int level, float flatDamageBonus, float damageMultiplier, float attackSpeedMultiplier, float turnSpeedBonus, float rejoinRangeBonus, float collisionForceBonus, int currentExperience, int experienceToNextLevel, int totalExperience, int gold, int currentRunDiamond) // 생성
         {
             Level = Mathf.Max(1, level); // 레벨 보정
             FlatDamageBonus = Mathf.Max(0f, flatDamageBonus); // 고정 피해 보정
@@ -40,6 +46,7 @@ namespace TeamProject01.Gameplay
             ExperienceToNextLevel = Mathf.Max(1, experienceToNextLevel); // 필요 경험치 보정
             TotalExperience = Mathf.Max(0, totalExperience); // 누적 경험치 보정
             Gold = Mathf.Max(0, gold); // 골드 보정
+            CurrentRunDiamond = Mathf.Max(0, currentRunDiamond); // 런 다이아 보정
         }
 
         public float ApplyDamage(float baseDamage) // 데미지 계산
