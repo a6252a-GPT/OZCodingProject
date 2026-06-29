@@ -5239,9 +5239,9 @@ MonoBehaviour:
   baseSpawnCount: 30
   spawnScaleSteps:
   - startStage: 1
-    spawnScalePercent: 2400
+    spawnScalePercent: 100
   - startStage: 5
-    spawnScalePercent: 2400
+    spawnScalePercent: 150
   - startStage: 8
     spawnScalePercent: 200
   - startStage: 12
