@@ -75,6 +75,7 @@ namespace TeamProject01.Gameplay
             RegisterAnimatedButtons();
             LoadSpeedPreference();
             RefreshSpeedButtonForAutoMode(true);
+            SyncVolumeSlidersFromAudio(); // 씬 슬라이더 기본값(0) 덮어쓰기 //안건준 추가 - 0629
         }
 
         private void Start()
@@ -335,15 +336,11 @@ namespace TeamProject01.Gameplay
         {
             suppressVolumeCallback = true;
 
-            float master = PlayerPrefs.HasKey(AudioManager.MasterVolumePrefKey)
-                ? PlayerPrefs.GetFloat(AudioManager.MasterVolumePrefKey)
-                : 1f;
-            float bgm = PlayerPrefs.HasKey(AudioManager.BgmVolumePrefKey)
-                ? PlayerPrefs.GetFloat(AudioManager.BgmVolumePrefKey)
-                : 1f;
-            float sfx = PlayerPrefs.HasKey(AudioManager.SfxVolumePrefKey)
-                ? PlayerPrefs.GetFloat(AudioManager.SfxVolumePrefKey)
-                : 1f;
+            AudioManager.EnsureVolumePreferencesLoaded(); // 슬라이더 동기화 전 볼륨 선로드 //안건준 추가 - 0629
+
+            float master = AudioManager.DefaultVolume;
+            float bgm = AudioManager.DefaultVolume;
+            float sfx = AudioManager.DefaultVolume;
 
             if (AudioManager.Instance != null)
             {

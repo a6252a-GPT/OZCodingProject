@@ -232,6 +232,37 @@ namespace TeamProject01.Gameplay
             StatsChanged?.Invoke(CurrentStats); // HUD/레벨업 UI 갱신
         }
 
+        public SegmentUpgradeData[] ExportSegmentUpgradeSnapshot() //안건준 추가 - 0629 (SaveData 저장용 — 코어에 누적된 세그먼트 강화 배열 반환)
+        {
+            if (segmentUpgrades.Count <= 0)
+            {
+                return Array.Empty<SegmentUpgradeData>(); // 강화 없음
+            }
+
+            return segmentUpgrades.ToArray(); // JSON 직렬화용 복사본
+        }
+
+        public void ApplySegmentUpgradeSnapshot(SegmentUpgradeData[] upgrades) //안건준 추가 - 0629 (SaveData 복원용 — 세그먼트 강화 목록 교체 후 HUD 갱신)
+        {
+            segmentUpgrades.Clear(); // 기존 강화 초기화
+            if (upgrades == null)
+            {
+                StatsChanged?.Invoke(CurrentStats); // UI 갱신
+                return;
+            }
+
+            for (int i = 0; i < upgrades.Length; i++)
+            {
+                SegmentUpgradeData upgrade = upgrades[i];
+                if (upgrade.IsValid) // 유효한 항목만 복원
+                {
+                    segmentUpgrades.Add(upgrade);
+                }
+            }
+
+            StatsChanged?.Invoke(CurrentStats); // HUD·전투 스탯 갱신
+        }
+
         public static CoreStatData GetCurrentOrDefault() // 공통 조회
         {
             return Active != null ? Active.CurrentStats : CoreStatData.Default; // 없으면 기본값
