@@ -30,6 +30,26 @@ namespace TeamProject01.Gameplay
             ShowRing(parent, $"Runtime_TempSupportVfx_Range_{kind}", kind, radius, 0.06f, DefaultVisibleDuration, 0.26f, 0.08f, 5f);
         }
 
+        public static void ShowWorldArea(Vector3 position, SegmentSupportAbilityKind kind, float radius, float duration)
+        {
+            float safeDuration = Mathf.Max(0.05f, duration);
+            GameObject instance = new GameObject($"Runtime_TempSupportVfx_WorldArea_{kind}");
+            instance.transform.position = position;
+            instance.transform.rotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one;
+
+            SupportTemporaryVfx vfx = instance.AddComponent<SupportTemporaryVfx>();
+            Color color = GetColor(kind);
+            color.a = Mathf.Clamp01(color.a * 1.25f);
+            vfx.Refresh(radius, 0.08f, color, safeDuration, 0.025f, 0f);
+            if (vfx.lineRenderer != null)
+            {
+                vfx.lineRenderer.widthMultiplier = 0.065f; // 실제 범위 확인용 굵기
+            }
+
+            Destroy(instance, safeDuration + 0.25f);
+        }
+
         public static void ShowBuffTarget(Transform parent, SegmentSupportAbilityKind kind)
         {
             ShowRing(parent, $"Runtime_TempSupportVfx_Target_{kind}", kind, 0.83f, 0.14f, DefaultVisibleDuration, 0.72f, 0.055f, 24f);

@@ -229,6 +229,26 @@ MonoBehaviour:
   RangeVfxRoot: {fileID: 4543010724616315958}
   MuzzleVfxRoot: {fileID: 1339037393426270298}
   TargetBodyVfxSocket: {fileID: 2071611929536568516}
+  UseTemporarySupportVfx: 1
+  ActiveHeadRotationRoot: {fileID: 0}
+  ActiveHeadSpinSpeed: 180
+  PickupMagnetPullStrength: 225
+  PickupMagnetMaxPullSpeed: 110
+  PickupMagnetCollectDistance: 0.65
+  HolyWaterSprayAngle: 36
+  HolyWaterProjectileCount: 1
+  HolyWaterProjectileInterval: 0.08
+  HolyWaterProjectileSpeed: 9
+  HolyWaterProjectileLifetime: 4
+  HolyWaterProjectileStartRadius: 0
+  HolyWaterProjectileEndRadius: 1.75
+  HolyWaterMuzzleInfluenceStrength: 0
+  HolyWaterConeLength: 0
+  HolyWaterAimTurnSpeed: 720
+  HolyWaterFireAngleTolerance: 5
+  HolyWaterDebuffTickInterval: 0.5
+  HolyWaterTargetAimHeight: 0.6
+  HolyWaterProjectileColor: {r: 0.86, g: 0.96, b: 1, a: 0.34}
 --- !u!1 &7613738130427986900
 GameObject:
   m_ObjectHideFlags: 0
@@ -402,8 +422,13 @@ PrefabInstance:
       propertyPath: m_Name
       value: Head
       objectReference: {fileID: 0}
+    - target: {fileID: 7480908261407387321, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 7345123652994035358, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}

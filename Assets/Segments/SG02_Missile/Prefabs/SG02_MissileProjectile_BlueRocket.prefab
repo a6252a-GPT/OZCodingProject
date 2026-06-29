@@ -168,6 +168,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: PPFX_RocketTailSmoke
       objectReference: {fileID: 0}
+    - target: {fileID: 2601890870762227599, guid: 462c3ffc5b036234bac885f5b837e6da, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3280490229310452344, guid: 462c3ffc5b036234bac885f5b837e6da, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.0003670007

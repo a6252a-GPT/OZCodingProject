@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace TeamProject01.Gameplay
 {
     public sealed class CoreStatProvider : MonoBehaviour // 코어 성장값 보관소
@@ -49,6 +53,11 @@ namespace TeamProject01.Gameplay
         public WeaponCatalogAsset WeaponCatalogAsset; // CardUI 무기 강화 카드 목록 조회용 카탈로그
         // 건춘 추가 끝 =====
         public SegmentCatalogEntry[] SegmentCatalog = Array.Empty<SegmentCatalogEntry>(); // 사용 가능한 세그먼트 목록
+        [Header("레벨업 VFX")]
+        public GameObject LevelUpVfxPrefab; // Text_Effect_36, 비어 있으면 기본 경로 사용
+        [Min(0f)] public float LevelUpVfxYOffset = 2.35f; // 플레이어 머리 위 높이
+        [Min(0.01f)] public float LevelUpVfxScale = 1f; // VFX 크기
+        [Min(0.1f)] public float LevelUpVfxLifetime = 3f; // VFX 제거 시간
 
         public event Action<CoreStatData> StatsChanged; // 성장값 변경 알림
 
@@ -843,7 +852,9 @@ namespace TeamProject01.Gameplay
                 return; // 레벨 변동 없음
             }
 
+            int beforeLevel = CurrentLevel; // VFX 중복 방지용
             ApplyLevelDeltaUnchecked(levelDelta); // 경험치 차감 + CurrentLevel 증가
+            PlayLevelUpVfxIfNeeded(beforeLevel, CurrentLevel); // 실제 레벨 증가 연출
         }
         // 건춘 추가 끝 =====
 
@@ -863,6 +874,35 @@ namespace TeamProject01.Gameplay
             }
 
             CurrentExperience = Mathf.Max(0, CurrentExperience); // 안전 보정
+        }
+
+        private void PlayLevelUpVfxIfNeeded(int beforeLevel, int afterLevel) // 플레이어 레벨업 VFX
+        {
+            if (afterLevel <= beforeLevel)
+            {
+                return; // 증가 없음
+            }
+
+            Vector3 position = ResolveLevelUpVfxPosition(); // 플레이어 위치
+            LevelUpVfxPlayer.Play(LevelUpVfxPrefab, position, LevelUpVfxScale, LevelUpVfxLifetime, this); // Text_Effect_36 재생
+        }
+
+        private Vector3 ResolveLevelUpVfxPosition() // 레벨업 VFX 위치
+        {
+            float yOffset = Mathf.Max(0f, LevelUpVfxYOffset); // 높이 보정
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
+            {
+                return convoyTarget.position + Vector3.up * yOffset; // 등록된 플레이어 컨보이
+            }
+
+            EnsureConvoyReference(); // 씬 참조 보강
+            if (Convoy != null)
+            {
+                Transform target = Convoy.HeadVisual != null ? Convoy.HeadVisual : Convoy.transform; // 머리 우선
+                return target.position + Vector3.up * yOffset; // 플레이어 위치
+            }
+
+            return transform.position + Vector3.up * yOffset; // 최후 fallback
         }
 
         private bool CanApplySegmentAdd(GrowthStatData growth) // 세그먼트 추가 가능 확인
@@ -1080,6 +1120,129 @@ namespace TeamProject01.Gameplay
         private static int ResolveExperienceRequirement(int configuredValue, int fallbackValue) // 경험치 구간값 보정
         {
             return configuredValue > 0 ? configuredValue : Mathf.Max(1, fallbackValue); // 신규 직렬화 0 방어
+        }
+    }
+
+    internal static class LevelUpVfxPlayer // 레벨업 VFX 공용 재생
+    {
+        private const string DefaultResourcePath = "LevelUpVfx/Text_Effect_36"; // 빌드용 Resources fallback
+        private const string EditorPrefabPath = "Assets/ThirdParty/00_Common/UI VFX Collection Megapack - URP/UIEffectCollecion_Megapack/Prefabs/Text_Effect_36.prefab";
+        private const string RuntimeObjectName = "LevelUp_Text_Effect_36_VFX";
+        private const float DefaultLifetime = 3f;
+
+        private static GameObject cachedDefaultPrefab; // 기본 프리팹 캐시
+        private static bool loadAttempted; // 중복 로드 방지
+        private static bool missingWarningLogged; // 누락 로그 1회 제한
+
+        public static GameObject ResolveDefaultPrefab() // 기본 Text_Effect_36 프리팹 조회
+        {
+            if (cachedDefaultPrefab != null)
+            {
+                return cachedDefaultPrefab; // 캐시 사용
+            }
+
+            if (loadAttempted)
+            {
+                return null; // 이미 실패
+            }
+
+            loadAttempted = true;
+            cachedDefaultPrefab = Resources.Load<GameObject>(DefaultResourcePath); // 빌드/연결용
+
+#if UNITY_EDITOR
+            if (cachedDefaultPrefab == null)
+            {
+                cachedDefaultPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(EditorPrefabPath); // 에디터 플레이 fallback
+            }
+#endif
+
+            return cachedDefaultPrefab;
+        }
+
+        public static void Play(GameObject prefab, Vector3 position, float scale, float lifetime, UnityEngine.Object context) // 월드 위치 재생
+        {
+            GameObject resolvedPrefab = prefab != null ? prefab : ResolveDefaultPrefab(); // 인스펙터 우선
+            if (resolvedPrefab == null)
+            {
+                LogMissingPrefabOnce(context);
+                return;
+            }
+
+            GameObject instance = UnityEngine.Object.Instantiate(resolvedPrefab, position, Quaternion.identity); // 플레이어 위치
+            instance.name = RuntimeObjectName;
+            instance.transform.localScale = Vector3.one * Mathf.Max(0.01f, scale); // 크기 보정
+            DisableRuntimeColliders(instance); // 충돌 영향 방지
+            PlayParticles(instance); // 즉시 재생
+            UnityEngine.Object.Destroy(instance, ResolveLifetime(instance, lifetime)); // 파티클 종료 후 정리
+        }
+
+        private static float ResolveLifetime(GameObject root, float fallback) // 파티클 수명 계산
+        {
+            float lifetime = Mathf.Max(0.1f, fallback > 0f ? fallback : DefaultLifetime);
+            if (root == null)
+            {
+                return lifetime; // 대상 없음
+            }
+
+            ParticleSystem[] particles = root.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particles.Length; i++)
+            {
+                ParticleSystem particle = particles[i];
+                if (particle == null)
+                {
+                    continue; // null 방지
+                }
+
+                ParticleSystem.MainModule main = particle.main;
+                if (main.loop)
+                {
+                    continue; // 루프형은 fallback 수명 사용
+                }
+
+                float particleLifetime = main.duration + main.startDelay.constantMax + main.startLifetime.constantMax;
+                lifetime = Mathf.Max(lifetime, particleLifetime + 0.25f);
+            }
+
+            return lifetime;
+        }
+
+        private static void PlayParticles(GameObject root) // 하위 파티클 재생
+        {
+            if (root == null)
+            {
+                return; // 대상 없음
+            }
+
+            ParticleSystem[] particles = root.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i].Play(true); // 강제 재생
+            }
+        }
+
+        private static void DisableRuntimeColliders(GameObject root) // VFX 충돌 제거
+        {
+            if (root == null)
+            {
+                return; // 대상 없음
+            }
+
+            Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                colliders[i].enabled = false; // 플레이어/몬스터 충돌과 분리
+            }
+        }
+
+        private static void LogMissingPrefabOnce(UnityEngine.Object context) // 누락 로그
+        {
+            if (missingWarningLogged)
+            {
+                return; // 1회만
+            }
+
+            missingWarningLogged = true;
+            Debug.LogWarning("[LevelUpVfx] Text_Effect_36 prefab을 찾지 못했습니다.", context);
         }
     }
 }

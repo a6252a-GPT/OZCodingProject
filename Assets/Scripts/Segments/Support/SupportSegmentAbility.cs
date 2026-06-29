@@ -7,6 +7,8 @@ namespace TeamProject01.Gameplay
     {
         private const float MinimumPickupMagnetPullStrength = 225f;
         private const float MinimumPickupMagnetMaxPullSpeed = 110f;
+        private const float HolyWaterTargetRetrySeconds = 0.12f;
+        private const float FreezeAreaTargetRetrySeconds = 0.2f;
 
         public SegmentSupportAbilityProfile Profile;
         public Transform ActiveVfxRoot;
@@ -26,21 +28,37 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)] public float PickupMagnetMaxPullSpeed = MinimumPickupMagnetMaxPullSpeed;
         [Min(0.05f)] public float PickupMagnetCollectDistance = 0.65f;
 
-        [Header("Holy Water Spray")]
-        [Range(1f, 180f)] public float HolyWaterSprayAngle = 55f;
-        [Min(1)] public int HolyWaterProjectileCount = 14;
+        [Header("Freeze Area")]
+        [Min(0.1f)] public float FreezeAreaRadius = 4.5f;
+        [Min(0.1f)] public float FreezeAreaClusterRadius = 4.5f;
+        [Min(1)] public int FreezeAreaClusterMinEnemyCount = 3;
+        [Min(0.05f)] public float FreezeAreaVfxLifetime = 5f;
+        [Range(0f, 1f)] public float FreezeAreaVfxAlpha = 1f;
+        public bool ShowFreezeAreaRadiusVfx = true;
+
+        [Header("Holy Water Cone Area")]
+        [Range(1f, 180f)] public float HolyWaterSprayAngle = 36f;
+        [Min(1)] public int HolyWaterProjectileCount = 1;
         [Min(0.02f)] public float HolyWaterProjectileInterval = 0.08f;
         [Min(0.1f)] public float HolyWaterProjectileSpeed = 9f;
-        [Min(0.05f)] public float HolyWaterProjectileLifetime = 1.05f;
-        [Min(0.05f)] public float HolyWaterProjectileStartRadius = 0.32f;
+        [Min(0.05f)] public float HolyWaterProjectileLifetime = 4f;
+        [Min(0f)] public float HolyWaterProjectileStartRadius = 0f;
         [Min(0.05f)] public float HolyWaterProjectileEndRadius = 1.75f;
         [Range(0f, 1f)] public float HolyWaterMuzzleInfluenceStrength = 0.3f;
+        [Min(0f)] public float HolyWaterConeLength = 0f;
+        [Min(0f)] public float HolyWaterAimTurnSpeed = 720f;
+        [Range(0f, 45f)] public float HolyWaterFireAngleTolerance = 5f;
+        [Min(0.05f)] public float HolyWaterDebuffTickInterval = 0.5f;
+        [Min(0f)] public float HolyWaterTargetAimHeight = 0.6f;
         public Color HolyWaterProjectileColor = new Color(0.86f, 0.96f, 1f, 0.34f);
 
         private float cooldownTimer;
         private float activeTimer;
-        private float holyWaterProjectileTimer;
-        private int holyWaterProjectilesRemaining;
+        private Vector3 freezeAreaCenter;
+        private EnemyController holyWaterTarget;
+        private bool hasFreezeAreaCenter;
+        private bool freezeAreaApplied;
+        private bool holyWaterShotFired;
         private float activeHeadSpinAngle;
         private Quaternion activeHeadBaseLocalRotation;
         private bool hasActiveHeadBaseRotation;
@@ -67,8 +85,8 @@ namespace TeamProject01.Gameplay
             {
                 isActive = false;
                 activeTimer = 0f;
-                holyWaterProjectileTimer = 0f;
-                holyWaterProjectilesRemaining = 0;
+                ClearFreezeAreaState();
+                ClearHolyWaterState();
                 activeHeadSpinAngle = 0f;
                 RestoreActiveHeadRotation();
                 SupportSegmentRuntimeBuffs.ClearSource(this);
@@ -86,6 +104,11 @@ namespace TeamProject01.Gameplay
             if (isActive)
             {
                 TickActiveSupportEffect(deltaTime);
+                if (!isActive)
+                {
+                    return;
+                }
+
                 TickActiveHeadSpin(deltaTime);
                 activeTimer -= deltaTime;
                 if (activeTimer <= 0f)
@@ -99,7 +122,7 @@ namespace TeamProject01.Gameplay
             cooldownTimer -= deltaTime;
             if (cooldownTimer <= 0f)
             {
-                BeginActivation();
+                TryBeginActivation();
             }
         }
 
@@ -127,15 +150,18 @@ namespace TeamProject01.Gameplay
                     break;
             }
 
-            RefreshTemporarySupportVfx();
+            if (isActive)
+            {
+                RefreshTemporarySupportVfx();
+            }
         }
 
         private void ResetCycle()
         {
             isActive = false;
             activeTimer = 0f;
-            holyWaterProjectileTimer = 0f;
-            holyWaterProjectilesRemaining = 0;
+            ClearFreezeAreaState();
+            ClearHolyWaterState();
             activeHeadSpinAngle = 0f;
             RestoreActiveHeadRotation();
             SupportSegmentRuntimeBuffs.ClearSource(this);
@@ -143,15 +169,35 @@ namespace TeamProject01.Gameplay
             SetVfxRootsActive(false);
         }
 
+        private void TryBeginActivation()
+        {
+            if (IsHolyWaterProfile() && !TryAcquireHolyWaterTarget(out holyWaterTarget))
+            {
+                cooldownTimer = HolyWaterTargetRetrySeconds;
+                SetVfxRootsActive(false);
+                return;
+            }
+
+            if (IsFreezeAreaProfile() && !TryAcquireFreezeAreaCenter(out freezeAreaCenter))
+            {
+                cooldownTimer = FreezeAreaTargetRetrySeconds;
+                SetVfxRootsActive(false);
+                return;
+            }
+
+            hasFreezeAreaCenter = IsFreezeAreaProfile();
+            BeginActivation();
+        }
+
         private void BeginActivation()
         {
             isActive = true;
             activeTimer = GetActiveDurationSeconds();
-            holyWaterProjectileTimer = 0f;
-            holyWaterProjectilesRemaining = GetHolyWaterProjectileCount();
+            freezeAreaApplied = false;
+            holyWaterShotFired = false;
             activeHeadSpinAngle = 0f;
             CacheActiveHeadRotationRoot();
-            SetVfxRootsActive(true);
+            SetVfxRootsActive(!IsHolyWaterProfile() && !IsFreezeAreaProfile());
             TickActiveSupportEffect(0f);
         }
 
@@ -159,8 +205,8 @@ namespace TeamProject01.Gameplay
         {
             isActive = false;
             activeTimer = 0f;
-            holyWaterProjectileTimer = 0f;
-            holyWaterProjectilesRemaining = 0;
+            ClearFreezeAreaState();
+            ClearHolyWaterState();
             activeHeadSpinAngle = 0f;
             RestoreActiveHeadRotation();
             SupportSegmentRuntimeBuffs.ClearSource(this);
@@ -186,12 +232,6 @@ namespace TeamProject01.Gameplay
             }
 
             float duration = Mathf.Max(0.05f, Profile.ActiveDurationSeconds);
-            if (Profile.AbilityKind == SegmentSupportAbilityKind.HolyWaterVulnerabilitySpray)
-            {
-                float sequenceDuration = Mathf.Max(0.05f, (GetHolyWaterProjectileCount() - 1) * Mathf.Max(0.02f, HolyWaterProjectileInterval) + 0.01f);
-                duration = Mathf.Max(duration, sequenceDuration);
-            }
-
             return duration;
         }
 
@@ -218,8 +258,22 @@ namespace TeamProject01.Gameplay
 
         private void ApplyFreezeArea()
         {
-            float range = Mathf.Max(0.1f, Profile.Range);
-            EnemyController.CollectActiveInRange(transform.position, range, activeEnemyBuffer);
+            if (freezeAreaApplied)
+            {
+                return; // 장판 1회 적용
+            }
+
+            if (!hasFreezeAreaCenter && !TryAcquireFreezeAreaCenter(out freezeAreaCenter))
+            {
+                EndActivation();
+                return; // 대상 없음
+            }
+
+            freezeAreaApplied = true;
+            hasFreezeAreaCenter = true;
+            Vector3 center = GroundService.ProjectToGround(freezeAreaCenter, 0f);
+            float radius = Mathf.Max(0.1f, FreezeAreaRadius);
+            EnemyController.CollectActiveInRange(center, radius, activeEnemyBuffer, SegmentTargetQuery.IsEnemyUsable);
 
             float duration = GetEffectDurationSeconds();
             for (int i = 0; i < activeEnemyBuffer.Count; i++)
@@ -230,59 +284,217 @@ namespace TeamProject01.Gameplay
                     state.ApplyFreeze(duration);
                 }
             }
+
+            PlayFreezeAreaVfx(center, radius);
+            EndActivation();
+        }
+
+        private bool TryAcquireFreezeAreaCenter(out Vector3 center)
+        {
+            center = transform.position;
+            if (Profile == null)
+            {
+                return false; // 프로필 없음
+            }
+
+            float searchRange = Mathf.Max(0.1f, Profile.Range);
+            bool found = SegmentTargetQuery.TryPickDensestClusterOrRandomTarget(
+                transform.position,
+                searchRange,
+                FreezeAreaClusterRadius,
+                FreezeAreaClusterMinEnemyCount,
+                SegmentTargetQuery.IsEnemyUsable,
+                0.5f,
+                out _,
+                out Vector3 impactPoint);
+
+            if (!found)
+            {
+                return false; // 사거리 내 대상 없음
+            }
+
+            center = GroundService.ProjectToGround(impactPoint, 0f);
+            return true;
+        }
+
+        private void PlayFreezeAreaVfx(Vector3 center, float radius)
+        {
+            GameObject prefab = Profile != null ? Profile.RangeVfxPrefab : null;
+            float lifetime = Mathf.Max(0.05f, FreezeAreaVfxLifetime);
+            SegmentAttackVfxPlayer.PlayExplosion(prefab, center, radius, lifetime, FreezeAreaVfxAlpha);
+            if (ShowFreezeAreaRadiusVfx)
+            {
+                SupportTemporaryVfx.ShowWorldArea(center, SegmentSupportAbilityKind.FreezeArea, radius, lifetime); // 실제 동결 반경 표시
+            }
         }
 
         private void ApplyHolyWaterSpray(float deltaTime)
         {
-            if (holyWaterProjectilesRemaining <= 0)
+            if (holyWaterShotFired)
             {
                 return;
             }
 
-            holyWaterProjectileTimer -= deltaTime;
-            if (holyWaterProjectileTimer > 0f)
+            if (!SegmentTargetQuery.IsEnemyUsable(holyWaterTarget) && !TryAcquireHolyWaterTarget(out holyWaterTarget))
             {
+                EndActivation();
                 return;
             }
 
             Transform sprayRoot = MuzzleVfxRoot != null ? MuzzleVfxRoot : transform;
             Vector3 origin = sprayRoot.position;
-            Vector3 forward = sprayRoot.forward;
-            forward.y = 0f;
+            Vector3 targetPosition = SegmentTargetQuery.GetEnemyHitPosition(holyWaterTarget, holyWaterTarget.transform.position, HolyWaterTargetAimHeight);
+            Vector3 targetDirection = targetPosition - origin;
+            targetDirection.y = 0f;
 
-            if (forward.sqrMagnitude <= 0.0001f)
-            {
-                forward = transform.forward;
-                forward.y = 0f;
-            }
-
-            if (forward.sqrMagnitude <= 0.0001f)
+            if (targetDirection.sqrMagnitude <= 0.0001f)
             {
                 return;
             }
 
-            forward.Normalize();
+            targetDirection.Normalize();
+            Transform aimRoot = ResolveHolyWaterAimRoot();
+            if (!AimHolyWaterAtDirection(aimRoot, sprayRoot, targetDirection, deltaTime))
+            {
+                return;
+            }
 
-            Transform projectileRoot = Segment != null && Segment.Owner != null ? Segment.Owner.GetProjectileRoot() : null;
-            SupportHolyWaterProjectileRuntime.Spawn(
-                projectileRoot,
-                origin,
-                forward,
-                sprayRoot,
-                HolyWaterProjectileSpeed,
-                HolyWaterProjectileLifetime,
-                HolyWaterProjectileStartRadius,
-                HolyWaterProjectileEndRadius,
-                HolyWaterMuzzleInfluenceStrength,
-                HolyWaterProjectileColor);
-
-            holyWaterProjectilesRemaining--;
-            holyWaterProjectileTimer = Mathf.Max(0.02f, HolyWaterProjectileInterval);
+            FireHolyWaterCone(origin, targetDirection);
         }
 
-        private int GetHolyWaterProjectileCount()
+        private void FireHolyWaterCone(Vector3 origin, Vector3 direction)
         {
-            return Mathf.Max(1, HolyWaterProjectileCount);
+            Transform projectileRoot = Segment != null && Segment.Owner != null ? Segment.Owner.GetProjectileRoot() : null;
+            float coneLength = GetHolyWaterConeLength();
+            float lifetime = GetActiveDurationSeconds();
+            SetVfxRootsActive(true);
+
+            SupportHolyWaterProjectileRuntime.SpawnCone(
+                projectileRoot,
+                MuzzleVfxRoot != null ? MuzzleVfxRoot : transform,
+                origin,
+                direction,
+                coneLength,
+                HolyWaterSprayAngle,
+                lifetime,
+                Profile != null ? Profile.IncomingDamageMultiplier : 1f,
+                GetEffectDurationSeconds(),
+                HolyWaterDebuffTickInterval,
+                HolyWaterProjectileColor);
+
+            holyWaterShotFired = true;
+        }
+
+        private bool TryAcquireHolyWaterTarget(out EnemyController target)
+        {
+            Transform sprayRoot = MuzzleVfxRoot != null ? MuzzleVfxRoot : transform;
+            float range = Mathf.Max(0.1f, GetHolyWaterConeLength());
+            return EnemyController.TryFindNearest(sprayRoot.position, range, SegmentTargetQuery.IsEnemyUsable, out target);
+        }
+
+        private bool AimHolyWaterAtDirection(Transform aimRoot, Transform muzzle, Vector3 targetDirection, float deltaTime)
+        {
+            if (aimRoot == null)
+            {
+                return true;
+            }
+
+            Vector3 currentDirection = GetHolyWaterCurrentMuzzleDirection(aimRoot, muzzle);
+            if (currentDirection.sqrMagnitude <= 0.0001f)
+            {
+                return true;
+            }
+
+            currentDirection.Normalize();
+            float signedAngle = Vector3.SignedAngle(currentDirection, targetDirection, Vector3.up);
+            float maxStep = HolyWaterAimTurnSpeed <= 0f
+                ? Mathf.Abs(signedAngle)
+                : HolyWaterAimTurnSpeed * Mathf.Max(0f, deltaTime);
+            float step = Mathf.Clamp(signedAngle, -maxStep, maxStep);
+            aimRoot.Rotate(Vector3.up, step, Space.World);
+
+            currentDirection = GetHolyWaterCurrentMuzzleDirection(aimRoot, muzzle);
+            if (currentDirection.sqrMagnitude <= 0.0001f)
+            {
+                return true;
+            }
+
+            currentDirection.Normalize();
+            return Mathf.Abs(Vector3.SignedAngle(currentDirection, targetDirection, Vector3.up)) <= HolyWaterFireAngleTolerance;
+        }
+
+        private Vector3 GetHolyWaterCurrentMuzzleDirection(Transform aimRoot, Transform muzzle)
+        {
+            if (muzzle != null)
+            {
+                Vector3 pivotToMuzzle = muzzle.position - aimRoot.position;
+                pivotToMuzzle.y = 0f;
+                if (pivotToMuzzle.sqrMagnitude > 0.0001f)
+                {
+                    return pivotToMuzzle;
+                }
+
+                Vector3 muzzleForward = muzzle.forward;
+                muzzleForward.y = 0f;
+                if (muzzleForward.sqrMagnitude > 0.0001f)
+                {
+                    return muzzleForward;
+                }
+            }
+
+            Vector3 rootForward = aimRoot.forward;
+            rootForward.y = 0f;
+            return rootForward;
+        }
+
+        private Transform ResolveHolyWaterAimRoot()
+        {
+            Transform yawPivot = FindChildRecursive(transform, "YawPivot");
+            if (yawPivot != null)
+            {
+                return yawPivot;
+            }
+
+            CacheActiveHeadRotationRoot();
+            return ActiveHeadRotationRoot != null ? ActiveHeadRotationRoot : transform;
+        }
+
+        private float GetHolyWaterConeLength()
+        {
+            if (HolyWaterConeLength > 0f)
+            {
+                return HolyWaterConeLength;
+            }
+
+            if (Profile != null && Profile.Range > 0f)
+            {
+                return Profile.Range;
+            }
+
+            return Mathf.Max(0.1f, HolyWaterProjectileSpeed * HolyWaterProjectileLifetime);
+        }
+
+        private bool IsHolyWaterProfile()
+        {
+            return Profile != null && Profile.AbilityKind == SegmentSupportAbilityKind.HolyWaterVulnerabilitySpray;
+        }
+
+        private bool IsFreezeAreaProfile()
+        {
+            return Profile != null && Profile.AbilityKind == SegmentSupportAbilityKind.FreezeArea;
+        }
+
+        private void ClearFreezeAreaState()
+        {
+            hasFreezeAreaCenter = false;
+            freezeAreaApplied = false;
+            freezeAreaCenter = Vector3.zero;
+        }
+
+        private void ClearHolyWaterState()
+        {
+            holyWaterTarget = null;
+            holyWaterShotFired = false;
         }
 
         private void RefreshTemporarySupportVfx()
@@ -343,8 +555,7 @@ namespace TeamProject01.Gameplay
         private bool ShouldShowTemporaryRangeVfx()
         {
             return Profile != null
-                && (Profile.AbilityKind == SegmentSupportAbilityKind.PickupMagnet
-                    || Profile.AbilityKind == SegmentSupportAbilityKind.FreezeArea);
+                && Profile.AbilityKind == SegmentSupportAbilityKind.PickupMagnet;
         }
 
         private bool IsSegmentInsideAllyBuffRange(int chainIndex)
@@ -397,7 +608,9 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            return Profile.AbilityKind != SegmentSupportAbilityKind.HolyWaterVulnerabilitySpray && ActiveHeadSpinSpeed > 0f;
+            return Profile.AbilityKind != SegmentSupportAbilityKind.HolyWaterVulnerabilitySpray
+                && Profile.AbilityKind != SegmentSupportAbilityKind.FreezeArea
+                && ActiveHeadSpinSpeed > 0f;
         }
 
         private void CacheActiveHeadRotationRoot()

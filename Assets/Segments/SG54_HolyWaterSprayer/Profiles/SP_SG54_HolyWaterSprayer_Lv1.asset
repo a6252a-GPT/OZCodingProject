@@ -14,17 +14,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentSupportAbilityProfile
   AbilityKind: 5
   StartsReady: 1
-  Cooldown: 3.9
-  ActiveDurationSeconds: 1.05
-  EffectDurationSeconds: 10
+  Cooldown: 10
+  ActiveDurationSeconds: 4
+  EffectDurationSeconds: 0.75
   Range: 7.5
   FrontSegmentCount: 0
   BackSegmentCount: 0
   FinalDamageMultiplier: 1
   FinalAttackSpeedMultiplier: 1
-  IncomingDamageMultiplier: 1.5
+  IncomingDamageMultiplier: 1.3
   ActiveVfxPrefab: {fileID: 0}
   RangeVfxPrefab: {fileID: 0}
   TargetBodyVfxPrefab: {fileID: 0}
   EnemyDebuffVfxPrefab: {fileID: 0}
-  Memo: "화염방사기 Lv1과 같은 성수 분사 타이밍을 사용함. 현재는 맞은 적에게 실제 디버프를 적용하지 않고, 후속 연결용 디버프 데이터만 발생시킴."
+  Memo: "\uC131\uC218\uBC1C\uC0AC\uAE30 Lv1 \uC9C0\uC18D \uBD84\uC0AC. 4\uCD08 \uB3D9\uC548
+    \uD22C\uBA85 \uC6D0\uBFD4 \uBC94\uC704\uB97C \uC720\uC9C0\uD558\uBA70 0.5\uCD08\uB9C8\uB2E4
+    \uACF5\uACA9 \uD53C\uD574 \uC5C6\uC774 \uBC1B\uB294 \uD53C\uD574 30% \uC99D\uAC00
+    \uB514\uBC84\uD504\uB97C \uB2E4\uC2DC \uC801\uC6A9\uD55C\uB2E4. \uCFE8\uD0C0\uC784
+    10\uCD08."

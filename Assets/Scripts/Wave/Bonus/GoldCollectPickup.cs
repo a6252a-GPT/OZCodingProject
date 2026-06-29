@@ -11,6 +11,7 @@ namespace TeamProject01.Gameplay
 
         [Header("Visual Motion")]
         [SerializeField] private Transform modelRoot;
+        [SerializeField] private Transform collectVfxRoot;
         [SerializeField] private float hoverHeight = 0.54f;
         [SerializeField] private float hoverAmplitude = 0.1f;
         [SerializeField] private float hoverSpeed = 2.4f;
@@ -143,6 +144,7 @@ namespace TeamProject01.Gameplay
             }
 
             collected = true;
+            RewardPickupCollectVfxPlayer.Play(ResolveCollectVfxPosition()); // 획득 VFX
 
             if (owner != null)
             {
@@ -161,6 +163,7 @@ namespace TeamProject01.Gameplay
             }
 
             modelRoot = ResolveModelRoot();
+            collectVfxRoot = ResolveCollectVfxRoot();
             hoverPhase = Random.Range(0f, Mathf.PI * 2f);
 
             Transform primaryModel = FindPrimaryModelTransform();
@@ -181,6 +184,16 @@ namespace TeamProject01.Gameplay
 
             Transform foundModelRoot = transform.Find("ModelRoot");
             return foundModelRoot != null ? foundModelRoot : transform;
+        }
+
+        private Transform ResolveCollectVfxRoot()
+        {
+            if (collectVfxRoot != null)
+            {
+                return collectVfxRoot;
+            }
+
+            return transform.Find("VFX_CollectRoot");
         }
 
         private Transform FindPrimaryModelTransform()
@@ -208,6 +221,11 @@ namespace TeamProject01.Gameplay
             {
                 visual.Rotate(0f, rotationSpeed * Time.deltaTime, 0f, Space.Self);
             }
+        }
+
+        private Vector3 ResolveCollectVfxPosition()
+        {
+            return collectVfxRoot != null ? collectVfxRoot.position : transform.position + Vector3.up * hoverHeight;
         }
 
         private void OnDrawGizmosSelected()

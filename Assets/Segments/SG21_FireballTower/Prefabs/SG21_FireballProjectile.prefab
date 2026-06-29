@@ -67,6 +67,8 @@ Transform:
   m_Children:
   - {fileID: 916490468663210474}
   - {fileID: 8404305287963854462}
+  - {fileID: 7562310283126211681}
+  - {fileID: 6897108658925917509}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6069649578805500890
@@ -232,6 +234,130 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1001 &1012597022112762793
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5315103660030141351}
+    m_Modifications:
+    - target: {fileID: 3021860868855185725, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_Name
+      value: VFX_CometOrangeProjectile
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+--- !u!4 &7562310283126211681 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7421877772171333576, guid: b2c9db5f76b109744a19619dd9bd06b8, type: 3}
+  m_PrefabInstance: {fileID: 1012597022112762793}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5230518868425730492
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5315103660030141351}
+    m_Modifications:
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7233660802807853310, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+      propertyPath: m_Name
+      value: VFX_Fireball03OrangeProjectile
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+--- !u!4 &6897108658925917509 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1666889291704483065, guid: fdd0665c8aed39d4fb4a92254cd17309, type: 3}
+  m_PrefabInstance: {fileID: 5230518868425730492}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5889355136345501942
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -283,6 +409,10 @@ PrefabInstance:
     - target: {fileID: 8619269842661320168, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
       propertyPath: m_Name
       value: VFX_TempFireball
+      objectReference: {fileID: 0}
+    - target: {fileID: 8619269842661320168, guid: 3cc8f4921cf8c0347b07b716c1539df2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

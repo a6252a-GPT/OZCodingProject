@@ -15,16 +15,20 @@ MonoBehaviour:
   AbilityKind: 3
   StartsReady: 1
   Cooldown: 10
-  ActiveDurationSeconds: 5
+  ActiveDurationSeconds: 0.1
   EffectDurationSeconds: 5
-  Range: 5.5
+  Range: 12
   FrontSegmentCount: 0
   BackSegmentCount: 0
   FinalDamageMultiplier: 1
   FinalAttackSpeedMultiplier: 1
   IncomingDamageMultiplier: 1
   ActiveVfxPrefab: {fileID: 0}
-  RangeVfxPrefab: {fileID: 0}
+  RangeVfxPrefab: {fileID: 3047794884592860430, guid: 9f03099fb63884043a1a31ebd8ee756d, type: 3}
   TargetBodyVfxPrefab: {fileID: 0}
   EnemyDebuffVfxPrefab: {fileID: 0}
-  Memo: "10초마다 5초 동안 주변 범위 안의 적을 동결시키고, 동결 중 이동과 공격 행동을 정지시킨다."
+  Memo: "10\uCD08\uB9C8\uB2E4 \uC0AC\uAC70\uB9AC 12 \uC548\uC5D0\uC11C \uC801 \uBC00\uC9D1
+    \uC9C0\uC810\uC744 \uC6B0\uC120 \uC120\uD0DD\uD574 \uBC18\uACBD 4.5 \uC6D0\uD615
+    \uC7A5\uD310\uC744 1\uD68C \uC0DD\uC131\uD558\uACE0, \uC7A5\uD310 \uBC94\uC704
+    \uC801\uC744 5\uCD08 \uB3D9\uC548 \uB3D9\uACB0\uC2DC\uD0A8\uB2E4. VFX\uB294 vfx_DebuffAoE02_Ice
+    \uAE30\uBC18 \uC2DC\uAC01 \uC694\uC18C\uB2E4."

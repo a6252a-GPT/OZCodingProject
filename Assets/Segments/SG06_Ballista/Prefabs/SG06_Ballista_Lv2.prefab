@@ -81,6 +81,7 @@ MonoBehaviour:
   AttackProfile: {fileID: 11400000, guid: 164471e57a579a940b733bbb6298ff1e, type: 2}
   HeadYawPivot: {fileID: 477951579337439947}
   Muzzle: {fileID: 8412342950328940401}
+  ProjectileMuzzles: []
   MuzzleVfxSocket: {fileID: 7616227744093803776}
   LoadedProjectileRoot: {fileID: 7509245756362520726}
 --- !u!1 &4942308203560153721
@@ -305,6 +306,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3389379776256367878, guid: c8de48518b1ae0040ae525492ffacc9c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482273338355161318, guid: c8de48518b1ae0040ae525492ffacc9c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5387568612066812908, guid: c8de48518b1ae0040ae525492ffacc9c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.873
@@ -348,6 +357,10 @@ PrefabInstance:
     - target: {fileID: 6218604080236833803, guid: c8de48518b1ae0040ae525492ffacc9c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
       value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 6301153681691662806, guid: c8de48518b1ae0040ae525492ffacc9c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7182284678440245857, guid: c8de48518b1ae0040ae525492ffacc9c, type: 3}
       propertyPath: m_LocalPosition.x
