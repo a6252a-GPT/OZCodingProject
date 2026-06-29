@@ -2,13 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class GoldCollectSpecialWave : MonoBehaviour
+    public sealed class ManaOrbCollectSpecialWave : MonoBehaviour
     {
         [Header("Special Wave Chance")]
-        [SerializeField] private bool enableSpecialWave = true; // 골드 수집 특수웨이브 사용 여부입니다.
         [Min(1)]
         [SerializeField] private int minStartStage = 6; // 이 Stage부터 등장 확률을 체크합니다.
         [Range(0, 100)]
@@ -21,23 +21,25 @@ namespace TeamProject01.Gameplay
         [SerializeField] private int cooldownStageCount = 5; // 한 번 등장한 뒤 다시 등장하기 전 대기 Stage 수입니다.
         [SerializeField] private bool blockBossStage = true; // 보스 Stage에서는 등장하지 않게 합니다.
 
-        [Header("Gold Collect")]
-        [SerializeField] private GameObject goldPickupPrefab; // 맵에 뿌릴 점수용 골드 오브젝트입니다.
-        [SerializeField] private Transform goldRoot; // 생성된 골드를 정리할 부모입니다.
-        [SerializeField] private Transform nexus; // 골드 생성 반경의 중심입니다.
+        [Header("Mana Orb Collect")]
+        [FormerlySerializedAs("goldPickupPrefab")]
+        [SerializeField] private GameObject manaOrbPickupPrefab; // 맵에 뿌릴 마력 구슬 오브젝트입니다.
+        [FormerlySerializedAs("goldRoot")]
+        [SerializeField] private Transform manaOrbRoot; // 생성된 마력 구슬을 정리할 부모입니다.
+        [SerializeField] private Transform nexus; // 마력 구슬 생성 반경의 중심입니다.
         [Min(1)]
-        [SerializeField] private int goldSpawnCount = 80; // 특수웨이브 중 생성할 골드 개수입니다.
+        [FormerlySerializedAs("goldSpawnCount")]
+        [SerializeField] private int manaOrbSpawnCount = 80; // 특수웨이브 중 생성할 마력 구슬 개수입니다.
         [Min(1.0f)]
-        [SerializeField] private float collectDurationSeconds = 20.0f; // 골드를 수집할 수 있는 시간입니다.
+        [SerializeField] private float collectDurationSeconds = 20.0f; // 마력 구슬을 수집할 수 있는 시간입니다.
         [Range(0.0f, 200.0f)]
         [SerializeField] private float minSpawnRadius = 15.0f; // Nexus 기준 최소 생성 반경입니다.
         [Range(0.0f, 250.0f)]
         [SerializeField] private float maxSpawnRadius = 45.0f; // Nexus 기준 최대 생성 반경입니다.
-        [SerializeField] private float goldHeightOffset = 0.35f; // 골드 생성 높이 보정값입니다.
+        [FormerlySerializedAs("goldHeightOffset")]
+        [SerializeField] private float manaOrbHeightOffset = 0.35f; // 마력 구슬 생성 높이 보정값입니다.
         [Min(0.1f)]
-        [SerializeField] private float collectRadius = 1.5f; // 골드 수집 판정 거리입니다.
-        [Min(0)]
-        [SerializeField] private int goldRewardPerPickup = 1; // 이벤트 골드 1개를 먹을 때 실제 지급할 골드입니다.
+        [SerializeField] private float collectRadius = 1.5f; // 마력 구슬 수집 판정 거리입니다.
 
         [Header("Reward Threshold")]
         [Range(0, 100)]
@@ -64,26 +66,25 @@ namespace TeamProject01.Gameplay
         [Min(0.0f)]
         [SerializeField] private float rewardStageMaxWaitSeconds = 0.0f; // 0이면 상자가 모두 사라질 때까지 기다립니다.
 
-        private readonly List<GoldCollectPickup> activeGoldPickups = new List<GoldCollectPickup>(); // 현재 이벤트 골드 목록입니다.
+        private readonly List<ManaOrbPickup> activeManaOrbPickups = new List<ManaOrbPickup>(); // 현재 이벤트 마력 구슬 목록입니다.
         private readonly List<BonusChest> activeRewardChests = new List<BonusChest>(); // 현재 보상 상자 목록입니다.
         private Coroutine runningRoutine; // 특수웨이브 진행 루틴입니다.
         private Action onFinished; // 특수웨이브 완료 시 WaveController로 돌려줄 콜백입니다.
         private int failedChanceCount; // 등장 실패 누적 횟수입니다.
         private int lastTriggeredStage = -99999; // 마지막으로 특수웨이브가 등장한 Stage입니다.
-        private int collectedGoldCount; // 이번 이벤트에서 먹은 골드 수입니다.
-        private int spawnedGoldCount; // 이번 이벤트에서 생성한 골드 수입니다.
+        private int collectedManaOrbCount; // 이번 이벤트에서 먹은 마력 구슬 수입니다.
+        private int spawnedManaOrbCount; // 이번 이벤트에서 생성한 마력 구슬 수입니다.
         private bool rewardStageActive; // 보상 상자 대기 중인지 여부입니다.
-        private bool collectStageActive; // 골드를 먹을 수 있는 수집 시간인지 기록합니다.
+        private bool collectStageActive; // 마력 구슬을 먹을 수 있는 수집 시간인지 기록합니다.
         private float collectEndTime; // 수집 단계가 끝나는 Time.time 기준 시각입니다.
 
         public bool IsRunning => runningRoutine != null;
         public bool IsCollectStageActive => collectStageActive;
         public bool IsRewardStageActive => rewardStageActive;
-        public int CollectedGoldCount => collectedGoldCount;
-        public int SpawnedGoldCount => spawnedGoldCount;
-        public int GoldRewardPerPickup => Mathf.Max(0, goldRewardPerPickup);
+        public int CollectedManaOrbCount => collectedManaOrbCount;
+        public int SpawnedManaOrbCount => spawnedManaOrbCount;
         public float RemainingCollectSeconds => collectStageActive ? Mathf.Max(0.0f, collectEndTime - Time.time) : 0.0f;
-        public float CollectedPercent => spawnedGoldCount > 0 ? collectedGoldCount / (float)spawnedGoldCount * 100.0f : 0.0f;
+        public float CollectedPercent => spawnedManaOrbCount > 0 ? collectedManaOrbCount / (float)spawnedManaOrbCount * 100.0f : 0.0f;
         public int CurrentChancePercent => Mathf.Clamp(baseChancePercent + failedChanceCount * chanceIncreaseOnFailPercent, baseChancePercent, maxChancePercent);
 
         public bool TryBeginStage(int stage, bool isBossStage, Action finishedCallback)
@@ -123,7 +124,7 @@ namespace TeamProject01.Gameplay
                 runningRoutine = null;
             }
 
-            ClearGoldPickups();
+            ClearManaOrbPickups();
             ClearRewardChests();
             collectStageActive = false;
             rewardStageActive = false;
@@ -134,18 +135,18 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        public void NotifyGoldCollected(GoldCollectPickup pickup)
+        public void NotifyManaOrbCollected(ManaOrbPickup pickup)
         {
             if (pickup == null)
             {
                 return;
             }
 
-            activeGoldPickups.Remove(pickup);
-            collectedGoldCount = Mathf.Min(spawnedGoldCount, collectedGoldCount + 1);
+            activeManaOrbPickups.Remove(pickup);
+            collectedManaOrbCount = Mathf.Min(spawnedManaOrbCount, collectedManaOrbCount + 1);
         }
 
-        [ContextMenu("Test Start Gold Collect Special Wave")]
+        [ContextMenu("Test Start Mana Orb Collect Special Wave")]
         public void TestStartSpecialWave()
         {
             BeginSpecialWave(null);
@@ -159,7 +160,7 @@ namespace TeamProject01.Gameplay
 
         private bool CanCheckStage(int stage, bool isBossStage)
         {
-            if (!enableSpecialWave || IsRunning)
+            if (IsRunning)
             {
                 return false;
             }
@@ -184,22 +185,22 @@ namespace TeamProject01.Gameplay
 
         private IEnumerator RunSpecialWaveRoutine()
         {
-            collectedGoldCount = 0;
-            spawnedGoldCount = Mathf.Max(0, goldSpawnCount);
+            collectedManaOrbCount = 0;
+            spawnedManaOrbCount = Mathf.Max(0, manaOrbSpawnCount);
             collectStageActive = true;
             rewardStageActive = false;
 
-            SpawnGoldPickups();
+            SpawnManaOrbPickups();
 
             collectEndTime = Time.time + Mathf.Max(0.1f, collectDurationSeconds);
             while (Time.time < collectEndTime)
             {
-                CleanupGoldList();
+                CleanupManaOrbList();
                 yield return null;
             }
 
             collectStageActive = false;
-            ClearGoldPickups();
+            ClearManaOrbPickups();
             SpawnRewardChests();
             rewardStageActive = true;
 
@@ -220,33 +221,33 @@ namespace TeamProject01.Gameplay
             NotifyFinished();
         }
 
-        private void SpawnGoldPickups()
+        private void SpawnManaOrbPickups()
         {
-            ClearGoldPickups();
+            ClearManaOrbPickups();
 
-            Transform root = goldRoot != null ? goldRoot : transform;
+            Transform root = manaOrbRoot != null ? manaOrbRoot : transform;
             Vector3 center = ResolveNexusPosition();
 
-            for (int i = 0; i < spawnedGoldCount; i++)
+            for (int i = 0; i < spawnedManaOrbCount; i++)
             {
-                Vector3 position = GetRandomGoldPosition(center);
-                GameObject goldObject = goldPickupPrefab != null
-                    ? Instantiate(goldPickupPrefab, position, Quaternion.identity, root)
-                    : CreateFallbackGoldPickup(position, root);
+                Vector3 position = GetRandomManaOrbPosition(center);
+                GameObject manaOrbObject = manaOrbPickupPrefab != null
+                    ? Instantiate(manaOrbPickupPrefab, position, Quaternion.identity, root)
+                    : CreateFallbackManaOrbPickup(position, root);
 
-                if (goldObject == null)
+                if (manaOrbObject == null)
                 {
                     continue;
                 }
 
-                GoldCollectPickup pickup = goldObject.GetComponent<GoldCollectPickup>();
+                ManaOrbPickup pickup = manaOrbObject.GetComponent<ManaOrbPickup>();
                 if (pickup == null)
                 {
-                    pickup = goldObject.AddComponent<GoldCollectPickup>();
+                    pickup = manaOrbObject.AddComponent<ManaOrbPickup>();
                 }
 
                 pickup.Configure(this, collectRadius);
-                activeGoldPickups.Add(pickup);
+                activeManaOrbPickups.Add(pickup);
             }
         }
 
@@ -319,22 +320,22 @@ namespace TeamProject01.Gameplay
             return activeRewardChests.Count <= 0;
         }
 
-        private void CleanupGoldList()
+        private void CleanupManaOrbList()
         {
-            for (int i = activeGoldPickups.Count - 1; i >= 0; i--)
+            for (int i = activeManaOrbPickups.Count - 1; i >= 0; i--)
             {
-                if (activeGoldPickups[i] == null)
+                if (activeManaOrbPickups[i] == null)
                 {
-                    activeGoldPickups.RemoveAt(i);
+                    activeManaOrbPickups.RemoveAt(i);
                 }
             }
         }
 
-        private void ClearGoldPickups()
+        private void ClearManaOrbPickups()
         {
-            for (int i = activeGoldPickups.Count - 1; i >= 0; i--)
+            for (int i = activeManaOrbPickups.Count - 1; i >= 0; i--)
             {
-                GoldCollectPickup pickup = activeGoldPickups[i];
+                ManaOrbPickup pickup = activeManaOrbPickups[i];
 
                 if (pickup != null)
                 {
@@ -342,7 +343,7 @@ namespace TeamProject01.Gameplay
                 }
             }
 
-            activeGoldPickups.Clear();
+            activeManaOrbPickups.Clear();
         }
 
         private void ClearRewardChests()
@@ -360,7 +361,7 @@ namespace TeamProject01.Gameplay
             activeRewardChests.Clear();
         }
 
-        private Vector3 GetRandomGoldPosition(Vector3 center)
+        private Vector3 GetRandomManaOrbPosition(Vector3 center)
         {
             float safeMinRadius = Mathf.Min(minSpawnRadius, maxSpawnRadius);
             float safeMaxRadius = Mathf.Max(minSpawnRadius, maxSpawnRadius);
@@ -368,7 +369,7 @@ namespace TeamProject01.Gameplay
             float angle = UnityEngine.Random.Range(0.0f, Mathf.PI * 2.0f);
             Vector3 offset = new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
             Vector3 position = center + offset;
-            position.y += goldHeightOffset;
+            position.y += manaOrbHeightOffset;
             return position;
         }
 
@@ -426,10 +427,10 @@ namespace TeamProject01.Gameplay
             callback?.Invoke();
         }
 
-        private static GameObject CreateFallbackGoldPickup(Vector3 position, Transform root)
+        private static GameObject CreateFallbackManaOrbPickup(Vector3 position, Transform root)
         {
             GameObject fallback = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            fallback.name = "GoldCollectPickup_Fallback";
+            fallback.name = "ManaOrbPickup_Fallback";
             fallback.transform.SetParent(root, false);
             fallback.transform.position = position;
             fallback.transform.localScale = Vector3.one * 0.7f;

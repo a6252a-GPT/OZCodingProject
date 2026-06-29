@@ -2,9 +2,9 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class GoldCollectPickup : MonoBehaviour
+    public sealed class ManaOrbPickup : MonoBehaviour
     {
-        private static readonly Quaternion GoldModelUprightRotation = Quaternion.Euler(90f, 0f, 0f);
+        private static readonly Quaternion ManaOrbModelUprightRotation = Quaternion.Euler(90f, 0f, 0f);
 
         [Header("Collect")]
         [SerializeField] private float collectDistance = 0.6f;
@@ -21,7 +21,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float pullStrength = 570f;
         [SerializeField] private float maxPullSpeed = 252f;
 
-        private GoldCollectSpecialWave owner;
+        private ManaOrbCollectSpecialWave owner;
         private ConvoyController cachedConvoy;
         private Vector3 velocity;
         private float hoverPhase;
@@ -40,7 +40,7 @@ namespace TeamProject01.Gameplay
             collected = false;
         }
 
-        public void Configure(GoldCollectSpecialWave waveOwner, float radius)
+        public void Configure(ManaOrbCollectSpecialWave waveOwner, float radius)
         {
             owner = waveOwner;
             velocity = Vector3.zero;
@@ -48,7 +48,7 @@ namespace TeamProject01.Gameplay
             hoverPhase = Random.Range(0f, Mathf.PI * 2f);
 
             // The special wave may pass a wider pickup radius, but this object should
-            // keep the normal gold feel: close approach first, then fast attraction.
+            // keep the normal pickup feel: close approach first, then fast attraction.
             collectDistance = Mathf.Min(Mathf.Max(0.05f, radius), Mathf.Max(0.05f, collectDistance));
 
             InitializeVisual();
@@ -146,8 +146,7 @@ namespace TeamProject01.Gameplay
 
             if (owner != null)
             {
-                owner.NotifyGoldCollected(this);
-                RewardGateway.SubmitReward(RewardData.Create(0, owner.GoldRewardPerPickup, 0, transform.position));
+                owner.NotifyManaOrbCollected(this);
             }
 
             Destroy(gameObject);
@@ -166,7 +165,7 @@ namespace TeamProject01.Gameplay
             Transform primaryModel = FindPrimaryModelTransform();
             if (primaryModel != null)
             {
-                primaryModel.localRotation = GoldModelUprightRotation;
+                primaryModel.localRotation = ManaOrbModelUprightRotation;
             }
 
             initialized = true;
