@@ -163,6 +163,16 @@ namespace TeamProject01.Gameplay
         [Min(1)]
         [SerializeField] private int frontRowCount = 5; // 한 게이트에서 앞줄에 몇 마리씩 세울지입니다.
 
+        [Header("스폰 대형 설정")]
+        [SerializeField] private EnemySpawner.ExternalSpawnFormationMode spawnFormationMode = EnemySpawner.ExternalSpawnFormationMode.FilledCircleRows; // 일반 웨이브가 사용할 기본 대형입니다.
+
+        [SerializeField] private bool disableWaveSpawnRedistribution = true; // 임시: 몬스터 단위 재섞기와 방향별 재분배를 끄고 한 묶음을 하나의 대형으로 유지합니다.
+
+        [Min(0.0f)]
+        [SerializeField] private float circleFormationCenterJitterRadius = 6.0f; // 대형 중심을 선택된 게이트 바깥쪽 반원 범위 안에서 랜덤 이동할 반경입니다.
+
+        [SerializeField] private bool randomizeCircleFormationRotation = true; // FilledCircleRows에서만 원형 오와열 방향을 묶음마다 랜덤 회전합니다.
+
         [Header("스폰 퍼짐 설정")]
         [SerializeField] private bool useSpawnSpread = false; // 켜면 선택된 방향 안에서 몬스터 위치를 조금 퍼뜨립니다.
 
@@ -234,6 +244,7 @@ namespace TeamProject01.Gameplay
             WaveStageDifficulty difficulty = ResolveDifficultyForStage(stage);
             EnemySpawner.ExternalSpawnCongestionOptions congestionOptions = BuildCongestionOptions();
             EnemySpawner.ExternalSpawnSpreadOptions spreadOptions = BuildSpreadOptions();
+            EnemySpawner.ExternalSpawnFormationOptions formationOptions = BuildFormationOptions();
             List<EnemyController> spawnedBatchMonsters = new List<EnemyController>();
 
             for (int batchIndex = 0; batchIndex < safeBatchCount; batchIndex++)
@@ -250,7 +261,7 @@ namespace TeamProject01.Gameplay
                 {
                     spawnedBatchMonsters.Clear();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, spawnedBatchMonsters))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, formationOptions, spawnedBatchMonsters))
                     {
                         ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
                         waveTracker?.RegisterCurrentStageEnemies(stage, spawnedBatchMonsters);
@@ -263,7 +274,7 @@ namespace TeamProject01.Gameplay
                 {
                     spawnedBatchMonsters.Clear();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, spawnedBatchMonsters))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, formationOptions, spawnedBatchMonsters))
                     {
                         ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
                         MarkSpawnedElites(spawnedBatchMonsters, GetEliteCombinationType(totalEntries));
@@ -299,6 +310,15 @@ namespace TeamProject01.Gameplay
             }
 
             return new EnemySpawner.ExternalSpawnSpreadOptions(true, spawnSpreadAmount);
+        }
+
+        private EnemySpawner.ExternalSpawnFormationOptions BuildFormationOptions()
+        {
+            return new EnemySpawner.ExternalSpawnFormationOptions(
+                spawnFormationMode,
+                disableWaveSpawnRedistribution,
+                circleFormationCenterJitterRadius,
+                randomizeCircleFormationRotation);
         }
 
         private void StopCurrentRoutine()

@@ -8,6 +8,17 @@ namespace TeamProject01.Gameplay
 {
     public sealed class ManaOrbCollectSpecialWave : MonoBehaviour
     {
+        private enum ManaOrbSpawnShape
+        {
+            Star = 0,
+            Square = 1,
+            Triangle = 2,
+            Circle = 3,
+            Diamond = 4,
+        }
+
+        private const int ManaOrbSpawnShapeCount = 5;
+
         [Header("Special Wave Chance")]
         [Min(1)]
         [SerializeField] private int minStartStage = 6; // 이 Stage부터 등장 확률을 체크합니다.
@@ -36,6 +47,12 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float minSpawnRadius = 15.0f; // Nexus 기준 최소 생성 반경입니다.
         [Range(0.0f, 250.0f)]
         [SerializeField] private float maxSpawnRadius = 45.0f; // Nexus 기준 최대 생성 반경입니다.
+        [FormerlySerializedAs("useStarSpawnPattern")]
+        [SerializeField] private bool randomizeSpawnShape = true; // 특수웨이브마다 배치 도형을 랜덤 선택합니다.
+        [SerializeField] private ManaOrbSpawnShape fixedSpawnShape = ManaOrbSpawnShape.Star; // 랜덤을 끌 때 사용할 고정 도형입니다.
+        [Range(-180.0f, 180.0f)]
+        [FormerlySerializedAs("starSpawnRotationDegrees")]
+        [SerializeField] private float shapeSpawnRotationDegrees = 90.0f; // 도형 첫 꼭짓점이 향하는 각도입니다.
         [FormerlySerializedAs("goldHeightOffset")]
         [SerializeField] private float manaOrbHeightOffset = 0.35f; // 마력 구슬 생성 높이 보정값입니다.
         [Min(0.1f)]
@@ -77,12 +94,14 @@ namespace TeamProject01.Gameplay
         private bool rewardStageActive; // 보상 상자 대기 중인지 여부입니다.
         private bool collectStageActive; // 마력 구슬을 먹을 수 있는 수집 시간인지 기록합니다.
         private float collectEndTime; // 수집 단계가 끝나는 Time.time 기준 시각입니다.
+        private ManaOrbSpawnShape currentSpawnShape = ManaOrbSpawnShape.Star; // 이번 특수웨이브에서 선택된 배치 도형입니다.
 
         public bool IsRunning => runningRoutine != null;
         public bool IsCollectStageActive => collectStageActive;
         public bool IsRewardStageActive => rewardStageActive;
         public int CollectedManaOrbCount => collectedManaOrbCount;
         public int SpawnedManaOrbCount => spawnedManaOrbCount;
+        public int RemainingManaOrbCount => Mathf.Clamp(spawnedManaOrbCount - collectedManaOrbCount, 0, spawnedManaOrbCount);
         public float RemainingCollectSeconds => collectStageActive ? Mathf.Max(0.0f, collectEndTime - Time.time) : 0.0f;
         public float CollectedPercent => spawnedManaOrbCount > 0 ? collectedManaOrbCount / (float)spawnedManaOrbCount * 100.0f : 0.0f;
         public int CurrentChancePercent => Mathf.Clamp(baseChancePercent + failedChanceCount * chanceIncreaseOnFailPercent, baseChancePercent, maxChancePercent);
@@ -196,6 +215,12 @@ namespace TeamProject01.Gameplay
             while (Time.time < collectEndTime)
             {
                 CleanupManaOrbList();
+
+                if (HasCollectedAllManaOrbs())
+                {
+                    break;
+                }
+
                 yield return null;
             }
 
@@ -227,10 +252,11 @@ namespace TeamProject01.Gameplay
 
             Transform root = manaOrbRoot != null ? manaOrbRoot : transform;
             Vector3 center = ResolveNexusPosition();
+            currentSpawnShape = ResolveManaOrbSpawnShape();
 
             for (int i = 0; i < spawnedManaOrbCount; i++)
             {
-                Vector3 position = GetRandomManaOrbPosition(center);
+                Vector3 position = GetManaOrbSpawnPosition(center, i, spawnedManaOrbCount, currentSpawnShape);
                 GameObject manaOrbObject = manaOrbPickupPrefab != null
                     ? Instantiate(manaOrbPickupPrefab, position, Quaternion.identity, root)
                     : CreateFallbackManaOrbPickup(position, root);
@@ -320,6 +346,112 @@ namespace TeamProject01.Gameplay
             return activeRewardChests.Count <= 0;
         }
 
+        private bool HasCollectedAllManaOrbs()
+        {
+            return spawnedManaOrbCount > 0 && RemainingManaOrbCount <= 0;
+        }
+
+        private ManaOrbSpawnShape ResolveManaOrbSpawnShape()
+        {
+            if (!randomizeSpawnShape)
+            {
+                return fixedSpawnShape;
+            }
+
+            return (ManaOrbSpawnShape)UnityEngine.Random.Range(0, ManaOrbSpawnShapeCount);
+        }
+
+        private Vector3 GetManaOrbSpawnPosition(Vector3 center, int index, int count, ManaOrbSpawnShape shape)
+        {
+            float innerRadius = Mathf.Min(minSpawnRadius, maxSpawnRadius);
+            float outerRadius = Mathf.Max(minSpawnRadius, maxSpawnRadius);
+
+            if (outerRadius <= 0.001f)
+            {
+                Vector3 fallbackPosition = center;
+                fallbackPosition.y += manaOrbHeightOffset;
+                return fallbackPosition;
+            }
+
+            if (innerRadius <= 0.001f)
+            {
+                innerRadius = outerRadius * 0.42f;
+            }
+
+            Vector3 position = center + GetShapePerimeterOffset(shape, index, count, innerRadius, outerRadius);
+            position.y += manaOrbHeightOffset;
+            return position;
+        }
+
+        private Vector3 GetShapePerimeterOffset(ManaOrbSpawnShape shape, int index, int count, float innerRadius, float outerRadius)
+        {
+            switch (shape)
+            {
+                case ManaOrbSpawnShape.Square:
+                    return GetRegularPolygonPerimeterOffset(index, count, 4, outerRadius, 45.0f);
+                case ManaOrbSpawnShape.Triangle:
+                    return GetRegularPolygonPerimeterOffset(index, count, 3, outerRadius, 0.0f);
+                case ManaOrbSpawnShape.Circle:
+                    return GetCirclePerimeterOffset(index, count, outerRadius);
+                case ManaOrbSpawnShape.Diamond:
+                    return GetRegularPolygonPerimeterOffset(index, count, 4, outerRadius, 0.0f);
+                default:
+                    return GetStarPerimeterOffset(index, count, innerRadius, outerRadius);
+            }
+        }
+
+        private Vector3 GetStarPerimeterOffset(int index, int count, float innerRadius, float outerRadius)
+        {
+            const int starPointCount = 5;
+            const int starVertexCount = starPointCount * 2;
+
+            float normalizedIndex = count <= 1 ? 0.0f : Mathf.Repeat(index / (float)count, 1.0f);
+            float segmentPosition = normalizedIndex * starVertexCount;
+            int segmentIndex = Mathf.FloorToInt(segmentPosition) % starVertexCount;
+            int nextSegmentIndex = (segmentIndex + 1) % starVertexCount;
+            float segmentT = segmentPosition - Mathf.Floor(segmentPosition);
+
+            Vector3 start = GetStarVertexOffset(segmentIndex, innerRadius, outerRadius);
+            Vector3 end = GetStarVertexOffset(nextSegmentIndex, innerRadius, outerRadius);
+            return Vector3.Lerp(start, end, segmentT);
+        }
+
+        private Vector3 GetStarVertexOffset(int vertexIndex, float innerRadius, float outerRadius)
+        {
+            const int starPointCount = 5;
+
+            float radius = vertexIndex % 2 == 0 ? outerRadius : innerRadius;
+            float angle = shapeSpawnRotationDegrees * Mathf.Deg2Rad + vertexIndex * Mathf.PI / starPointCount;
+            return new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
+        }
+
+        private Vector3 GetRegularPolygonPerimeterOffset(int index, int count, int vertexCount, float radius, float rotationOffsetDegrees)
+        {
+            float normalizedIndex = count <= 1 ? 0.0f : Mathf.Repeat(index / (float)count, 1.0f);
+            float segmentPosition = normalizedIndex * vertexCount;
+            int segmentIndex = Mathf.FloorToInt(segmentPosition) % vertexCount;
+            int nextSegmentIndex = (segmentIndex + 1) % vertexCount;
+            float segmentT = segmentPosition - Mathf.Floor(segmentPosition);
+
+            Vector3 start = GetRegularPolygonVertexOffset(segmentIndex, vertexCount, radius, rotationOffsetDegrees);
+            Vector3 end = GetRegularPolygonVertexOffset(nextSegmentIndex, vertexCount, radius, rotationOffsetDegrees);
+            return Vector3.Lerp(start, end, segmentT);
+        }
+
+        private Vector3 GetRegularPolygonVertexOffset(int vertexIndex, int vertexCount, float radius, float rotationOffsetDegrees)
+        {
+            float angleStep = Mathf.PI * 2.0f / vertexCount;
+            float angle = (shapeSpawnRotationDegrees + rotationOffsetDegrees) * Mathf.Deg2Rad + vertexIndex * angleStep;
+            return new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
+        }
+
+        private Vector3 GetCirclePerimeterOffset(int index, int count, float radius)
+        {
+            float normalizedIndex = count <= 1 ? 0.0f : Mathf.Repeat(index / (float)count, 1.0f);
+            float angle = shapeSpawnRotationDegrees * Mathf.Deg2Rad + normalizedIndex * Mathf.PI * 2.0f;
+            return new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
+        }
+
         private void CleanupManaOrbList()
         {
             for (int i = activeManaOrbPickups.Count - 1; i >= 0; i--)
@@ -359,18 +491,6 @@ namespace TeamProject01.Gameplay
             }
 
             activeRewardChests.Clear();
-        }
-
-        private Vector3 GetRandomManaOrbPosition(Vector3 center)
-        {
-            float safeMinRadius = Mathf.Min(minSpawnRadius, maxSpawnRadius);
-            float safeMaxRadius = Mathf.Max(minSpawnRadius, maxSpawnRadius);
-            float radius = UnityEngine.Random.Range(safeMinRadius, safeMaxRadius);
-            float angle = UnityEngine.Random.Range(0.0f, Mathf.PI * 2.0f);
-            Vector3 offset = new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
-            Vector3 position = center + offset;
-            position.y += manaOrbHeightOffset;
-            return position;
         }
 
         private Vector3 ResolveNexusPosition()
@@ -476,8 +596,52 @@ namespace TeamProject01.Gameplay
             Gizmos.DrawWireSphere(center, minSpawnRadius);
             Gizmos.DrawWireSphere(center, maxSpawnRadius);
 
+            ManaOrbSpawnShape previewShape = Application.isPlaying && IsRunning ? currentSpawnShape : fixedSpawnShape;
+            DrawShapeSpawnGizmo(center, previewShape);
+
             Gizmos.color = new Color(0.3f, 0.8f, 1.0f, 0.85f);
             Gizmos.DrawWireSphere(ResolveRewardCenter(), 0.6f);
+        }
+
+        private void DrawShapeSpawnGizmo(Vector3 center, ManaOrbSpawnShape shape)
+        {
+            float innerRadius = Mathf.Min(minSpawnRadius, maxSpawnRadius);
+            float outerRadius = Mathf.Max(minSpawnRadius, maxSpawnRadius);
+
+            if (outerRadius <= 0.001f)
+            {
+                return;
+            }
+
+            if (innerRadius <= 0.001f)
+            {
+                innerRadius = outerRadius * 0.42f;
+            }
+
+            Gizmos.color = new Color(1.0f, 0.95f, 0.15f, 0.95f);
+
+            int lineCount = shape == ManaOrbSpawnShape.Circle ? 64 : GetShapeGizmoLineCount(shape);
+            Vector3 previous = center + GetShapePerimeterOffset(shape, 0, lineCount, innerRadius, outerRadius);
+            for (int i = 1; i <= lineCount; i++)
+            {
+                Vector3 next = center + GetShapePerimeterOffset(shape, i % lineCount, lineCount, innerRadius, outerRadius);
+                Gizmos.DrawLine(previous, next);
+                previous = next;
+            }
+        }
+
+        private static int GetShapeGizmoLineCount(ManaOrbSpawnShape shape)
+        {
+            switch (shape)
+            {
+                case ManaOrbSpawnShape.Square:
+                case ManaOrbSpawnShape.Diamond:
+                    return 4;
+                case ManaOrbSpawnShape.Triangle:
+                    return 3;
+                default:
+                    return 10;
+            }
         }
     }
 }

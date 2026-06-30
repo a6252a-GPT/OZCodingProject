@@ -28,6 +28,9 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "collectDurationSeconds", "수집 제한 시간 (초)");
             WaveInspectorUtility.DrawProperty(serializedObject, "minSpawnRadius", "최소 생성 반경");
             WaveInspectorUtility.DrawProperty(serializedObject, "maxSpawnRadius", "최대 생성 반경");
+            WaveInspectorUtility.DrawProperty(serializedObject, "randomizeSpawnShape", "도형 랜덤 선택");
+            WaveInspectorUtility.DrawProperty(serializedObject, "fixedSpawnShape", "고정 도형");
+            WaveInspectorUtility.DrawProperty(serializedObject, "shapeSpawnRotationDegrees", "도형 회전 각도");
             WaveInspectorUtility.DrawProperty(serializedObject, "manaOrbHeightOffset", "마력 구슬 높이 보정");
             WaveInspectorUtility.DrawProperty(serializedObject, "collectRadius", "획득 거리");
 

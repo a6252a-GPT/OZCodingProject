@@ -6,6 +6,8 @@ namespace TeamProject01.Gameplay
 {
     public sealed class WaveRuntimeDebugOverlay : MonoBehaviour
     {
+        private const string DefaultManaOrbRemainingFormat = "남은 마력구슬 {0}/{1}개";
+
         [Header("참조")]
         [SerializeField] private WaveController waveController; // 표시할 실제 WaveController입니다.
 
@@ -25,6 +27,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private string bonusRewardWaitText = "상자를 획득하세요"; // 보상 상자 대기 중 표시할 문구입니다.
         [FormerlySerializedAs("goldCollectLabel")]
         [SerializeField] private string manaOrbCollectLabel = "마력 구슬 수집"; // 마력 구슬 수집 진행도 제목입니다.
+        [SerializeField] private string manaOrbRemainingFormat = DefaultManaOrbRemainingFormat; // 수집 중 남은 마력 구슬 표시입니다.
         [SerializeField] private string activeMonsterLabel = "이번 웨이브 남은 적"; // 이번 Stage 기준 남은 몬스터 수 줄 제목입니다.
         [SerializeField] private string fieldMonsterLabel = "현재 필드 적"; // 씬에 실제로 살아있는 전체 몬스터 수 줄 제목입니다.
         [SerializeField] private string normalStateText = "일반"; // 일반 상태 표시 문구입니다.
@@ -144,7 +147,7 @@ namespace TeamProject01.Gameplay
             {
                 return $"{stateLabel}: 마력 구슬 수집\n" +
                        $"{nextStageTimeLabel}: {FormatTime(manaOrbWave.RemainingCollectSeconds)}\n" +
-                       $"{manaOrbCollectLabel}: {manaOrbWave.CollectedManaOrbCount}/{manaOrbWave.SpawnedManaOrbCount}";
+                       FormatManaOrbRemainingText(manaOrbWave);
             }
 
             if (manaOrbWave.IsRewardStageActive)
@@ -178,6 +181,28 @@ namespace TeamProject01.Gameplay
             int safeTargetCount = Mathf.Max(0, targetCount);
             int safeRemainingCount = Mathf.Clamp(remainingCount, 0, safeTargetCount);
             return $"{safeRemainingCount}/{safeTargetCount}";
+        }
+
+        private string FormatManaOrbRemainingText(ManaOrbCollectSpecialWave manaOrbWave)
+        {
+            int total = manaOrbWave != null ? manaOrbWave.SpawnedManaOrbCount : 0;
+            int remaining = manaOrbWave != null ? manaOrbWave.RemainingManaOrbCount : 0;
+            return string.Format(ResolveManaOrbRemainingFormat(manaOrbRemainingFormat), remaining, total);
+        }
+
+        private static string ResolveManaOrbRemainingFormat(string format)
+        {
+            if (string.IsNullOrWhiteSpace(format) || IsLegacyManaOrbRemainingFormat(format))
+            {
+                return DefaultManaOrbRemainingFormat;
+            }
+
+            return format;
+        }
+
+        private static bool IsLegacyManaOrbRemainingFormat(string format)
+        {
+            return format.Contains("마력구슬이") || format.Contains("개 남았습니다");
         }
 
         private string GetStateText(WaveController.WaveRunState state)

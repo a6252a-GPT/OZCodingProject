@@ -4,6 +4,13 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
+    public enum NexusScreenFeedbackKind
+    {
+        ShieldHit,
+        HealthHit,
+        Heal
+    }
+
     public sealed class NexusController : MonoBehaviour // 넥서스 체력 입구
     {
         public static NexusController Active { get; private set; } // 현재 넥서스
@@ -41,6 +48,7 @@ namespace TeamProject01.Gameplay
         public event Action<int, int> HealthChanged; // 현재/최대 체력
         public event Action<int, int> ShieldChanged; // 현재/최대 보호막
         public event Action<NexusController> StateChanged; // 전체 상태 변경
+        public event Action<NexusScreenFeedbackKind, int> ScreenFeedbackRequested; // 피격/회복 화면 연출
         public event Action<NexusController> Died; // 사망 알림
 
         private float lastDamageTime = -999f; // 마지막 피해 시각
@@ -102,9 +110,10 @@ namespace TeamProject01.Gameplay
             shieldRegenBank = 0f; // 피해 직후 소수 회복 누적 제거
 
             int remainingDamage = amount; // 남은 피해량
+            int shieldDamage = 0; // 보호막 실제 피해
             if (CurrentShield > 0)
             {
-                int shieldDamage = Mathf.Min(CurrentShield, remainingDamage); // 보호막 흡수량
+                shieldDamage = Mathf.Min(CurrentShield, remainingDamage); // 보호막 흡수량
                 CurrentShield -= shieldDamage; // 보호막 감소
                 remainingDamage -= shieldDamage; // 남은 피해 계산
                 NotifyShieldChanged(); // 보호막 변경 알림
@@ -112,11 +121,22 @@ namespace TeamProject01.Gameplay
 
             if (remainingDamage <= 0)
             {
+                if (shieldDamage > 0)
+                {
+                    NotifyScreenFeedback(NexusScreenFeedbackKind.ShieldHit, shieldDamage); // 보호막 피격 연출
+                }
+
                 return; // 체력 피해 없음
             }
 
+            int previousHealth = CurrentHealth; // 실제 체력 피해 계산용
             CurrentHealth = Mathf.Max(0, CurrentHealth - remainingDamage); // 체력 감소
+            int healthDamage = previousHealth - CurrentHealth; // 실제 체력 피해
             NotifyHealthChanged(); // 변경 알림
+            if (healthDamage > 0)
+            {
+                NotifyScreenFeedback(NexusScreenFeedbackKind.HealthHit, healthDamage); // 체력 피격 연출
+            }
 
             if (CurrentHealth <= 0)
             {
@@ -132,8 +152,14 @@ namespace TeamProject01.Gameplay
                 return; // 처리 없음
             }
 
+            int previousHealth = CurrentHealth; // 실제 회복량 계산용
             CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + amount); // 체력 회복
+            int healedAmount = CurrentHealth - previousHealth; // 실제 회복량
             NotifyHealthChanged(); // 변경 알림
+            if (healedAmount > 0)
+            {
+                NotifyScreenFeedback(NexusScreenFeedbackKind.Heal, healedAmount); // 회복 연출
+            }
         }
 
         public void AddShield(int amount) // 보호막 추가
@@ -274,6 +300,11 @@ namespace TeamProject01.Gameplay
         {
             ShieldChanged?.Invoke(CurrentShield, MaxShield); // 보호막 전용 알림
             StateChanged?.Invoke(this); // 전체 상태 알림
+        }
+
+        private void NotifyScreenFeedback(NexusScreenFeedbackKind kind, int amount) // 화면 연출 알림
+        {
+            ScreenFeedbackRequested?.Invoke(kind, Mathf.Max(0, amount));
         }
 
         private void ConfigureSceneVfx() // 넥서스 부착 VFX 설정

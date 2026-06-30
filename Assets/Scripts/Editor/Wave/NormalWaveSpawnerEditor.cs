@@ -35,6 +35,12 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "lateGateCount", "후반 사용 게이트 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "frontRowCount", "앞줄 배치 수");
 
+            WaveInspectorUtility.DrawSection("스폰 대형 설정", "Rows는 기존 사각 오와열, FilledCircleRows는 몬스터를 원형으로 채웁니다. 중심 랜덤 범위는 넥서스 반대쪽 반원만 사용합니다.");
+            WaveInspectorUtility.DrawProperty(serializedObject, "spawnFormationMode", "스폰 대형");
+            WaveInspectorUtility.DrawProperty(serializedObject, "disableWaveSpawnRedistribution", "임시 재분배 비활성화");
+            WaveInspectorUtility.DrawProperty(serializedObject, "circleFormationCenterJitterRadius", "대형 중심 반원 랜덤 반경");
+            WaveInspectorUtility.DrawProperty(serializedObject, "randomizeCircleFormationRotation", "원형 대형 랜덤 회전");
+
             WaveInspectorUtility.DrawSection("스폰 퍼짐 설정", "선택된 방향 안에서 몬스터가 한 줄로만 나오지 않게 살짝 퍼뜨립니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "useSpawnSpread", "스폰 퍼짐 사용");
             WaveInspectorUtility.DrawProperty(serializedObject, "spawnSpreadAmount", "퍼짐 정도");

@@ -8,6 +8,8 @@ namespace TeamProject01.Gameplay
     // It only switches UI groups and updates text from WaveController state.
     public sealed class WaveHudPanel : MonoBehaviour
     {
+        private const string DefaultBonusCollectRemainingFormat = "남은 마력구슬 {0}/{1}개";
+
         private WaveController waveController;
         private BossWaveController bossWaveController;
 
@@ -24,6 +26,7 @@ namespace TeamProject01.Gameplay
         private GameObject bossRewardMessageObject;
 
         private TMP_Text bonusTitleText;
+        private TMP_Text bonusCollectMessageText;
         private GameObject bonusCollectMessageObject;
         private GameObject bonusRewardMessageObject;
         private TMP_Text bonusTimeText;
@@ -44,6 +47,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private string normalEnemyFormat = "{0} Enemies Left";
         [SerializeField] private string bossTitle = "BOSS STAGE";
         [SerializeField] private string bonusTitle = "BONUS STAGE";
+        [SerializeField] private string bonusCollectRemainingFormat = DefaultBonusCollectRemainingFormat;
         [SerializeField] private string missingControllerText = "WaveController Missing";
 
         [Header("Stage Banner Tween")]
@@ -108,6 +112,7 @@ namespace TeamProject01.Gameplay
 
             bonusTitleText = bonusTitleText != null ? bonusTitleText : FindGroupText(bonusGroup, "TitleText");
             bonusCollectMessageObject = bonusCollectMessageObject != null ? bonusCollectMessageObject : FindGroupObject(bonusGroup, "CollectMessageText");
+            bonusCollectMessageText = bonusCollectMessageText != null ? bonusCollectMessageText : GetComponentFromObject<TMP_Text>(bonusCollectMessageObject);
             bonusRewardMessageObject = bonusRewardMessageObject != null ? bonusRewardMessageObject : FindGroupObject(bonusGroup, "RewardMessageText");
             bonusTimeText = bonusTimeText != null ? bonusTimeText : FindGroupText(bonusGroup, "TimeText");
 
@@ -305,6 +310,7 @@ namespace TeamProject01.Gameplay
             {
                 float seconds = manaOrbWave != null ? manaOrbWave.RemainingCollectSeconds : waveController.RemainingStageSeconds;
                 SetText(bonusTimeText, FormatTime(seconds));
+                SetText(bonusCollectMessageText, FormatManaOrbRemainingText(manaOrbWave));
             }
         }
 
@@ -383,6 +389,28 @@ namespace TeamProject01.Gameplay
             int minutes = totalSeconds / 60;
             int remainSeconds = totalSeconds % 60;
             return $"{minutes:00}:{remainSeconds:00}";
+        }
+
+        private string FormatManaOrbRemainingText(ManaOrbCollectSpecialWave manaOrbWave)
+        {
+            int total = manaOrbWave != null ? manaOrbWave.SpawnedManaOrbCount : 0;
+            int remaining = manaOrbWave != null ? manaOrbWave.RemainingManaOrbCount : 0;
+            return string.Format(ResolveManaOrbRemainingFormat(bonusCollectRemainingFormat), remaining, total);
+        }
+
+        private static string ResolveManaOrbRemainingFormat(string format)
+        {
+            if (string.IsNullOrWhiteSpace(format) || IsLegacyManaOrbRemainingFormat(format))
+            {
+                return DefaultBonusCollectRemainingFormat;
+            }
+
+            return format;
+        }
+
+        private static bool IsLegacyManaOrbRemainingFormat(string format)
+        {
+            return format.Contains("마력구슬이") || format.Contains("개 남았습니다");
         }
 
         private static void SetText(TMP_Text text, string value)
