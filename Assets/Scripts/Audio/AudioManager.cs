@@ -14,6 +14,7 @@ public class AudioManager : AudioSingleton<AudioManager>
     [SerializeField] private SFXClipData[] sfxClips; //인스펙터에서 등록할 효과음
 
     private static readonly HashSet<SfxVolumeListener> sfxListeners = new HashSet<SfxVolumeListener>();
+    private static readonly Dictionary<int, float> sfxBaseVolumes = new Dictionary<int, float>();
 
     private Dictionary<BGMType, BGMClipData> bgmDictionary;
     private Dictionary<SFXType, SFXClipData> sfxDictionary;
@@ -25,9 +26,98 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     public const string BgmVolumePrefKey = "Settings.BGMVolume";
     public const string SfxVolumePrefKey = "Settings.SFXVolume";
+    public const string MasterVolumePrefKey = "Settings.MasterVolume"; //안건준 추가 - 0628
+    public const float DefaultVolume = 1f; // 저장값 없을 때 기본 볼륨 100% //안건준 추가 - 0629
 
     public float BgmVolume => bgmVolume;
     public float SfxVolume => sfxVolume;
+    public float MasterVolume => masterVolume;
+
+    public static float GlobalSfxVolume { get; private set; } = 1f;
+    public static float GlobalBgmVolume { get; private set; } = 1f;
+    public static float GlobalMasterVolume { get; private set; } = 1f;
+
+    public static AudioManager EnsureExists()
+    {
+        AudioManager manager = Instance;
+        if (manager != null)
+        {
+            manager.EnsureRuntimeReady();
+            manager.TryRecoverClipConfiguration(); // 클립/딕셔너리 유실 시 씬 AudioManager에서 복구 //안건준 수정 - 0629
+            return manager;
+        }
+
+        manager = FindFirstObjectByType<AudioManager>(FindObjectsInactive.Include);
+        if (manager != null)
+        {
+            manager.EnsureRuntimeReady();
+            return Instance ?? manager; // Awake 전이면 씬 인스턴스 반환 //안건준 수정 - 0629
+        }
+
+        Debug.LogWarning("[AudioManager] 씬에 AudioManager가 없어 런타임 생성합니다. TitleScene AudioManager를 사용하는 것을 권장합니다."); //안건준 추가 - 0629
+        GameObject go = new GameObject("AudioManager");
+        DontDestroyOnLoad(go);
+        manager = go.AddComponent<AudioManager>();
+        manager.EnsureRuntimeReady();
+        return manager;
+    }
+
+    public static void PlayClickButtonSfx() // 타이틀/UI 공통 클릭음 — 복구 후 재생 //안건준 추가 - 0629
+    {
+        AudioManager manager = EnsureExists();
+        if (manager == null)
+        {
+            Debug.LogWarning("[AudioManager] AudioManager를 찾을 수 없습니다.");
+            return;
+        }
+
+        if (!manager.TryGetSfxClip(SFXType.ClickButton, out AudioClip clip, out float localVolume))
+        {
+            Debug.LogWarning("[AudioManager] ClickButton 클립이 없습니다. TitleScene → AudioManager → SFX List를 확인하세요.");
+            return;
+        }
+
+        float effectiveVolume = manager.GetEffectiveSfxVolume(localVolume);
+        if (effectiveVolume <= 0.0001f)
+        {
+            Debug.LogWarning(
+                $"[AudioManager] 클릭음 볼륨이 0입니다. 설정에서 Master/SFX 볼륨을 확인하세요. (Master={manager.masterVolume:F2}, SFX={manager.sfxVolume:F2})");
+            return;
+        }
+
+        manager.PlaySfxOneShotDirect(clip, localVolume);
+    }
+
+    public static void SetGlobalSfxVolume(float volume)
+    {
+        GlobalSfxVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(SfxVolumePrefKey, GlobalSfxVolume);
+        PlayerPrefs.Save();
+
+        AudioManager manager = EnsureExists();
+        manager.sfxVolume = GlobalSfxVolume;
+        manager.RefreshAllSfxSources();
+    }
+
+    public static void SetGlobalBgmVolume(float volume)
+    {
+        GlobalBgmVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(BgmVolumePrefKey, GlobalBgmVolume);
+        PlayerPrefs.Save();
+
+        AudioManager manager = EnsureExists();
+        manager.SetBGMVolume(GlobalBgmVolume);
+    }
+
+    public static void SetGlobalMasterVolume(float volume)
+    {
+        GlobalMasterVolume = Mathf.Clamp01(volume);
+        PlayerPrefs.SetFloat(MasterVolumePrefKey, GlobalMasterVolume);
+        PlayerPrefs.Save();
+
+        AudioManager manager = EnsureExists();
+        manager.SetMasterVolume(GlobalMasterVolume);
+    }
 
     public static void RegisterSfxListener(SfxVolumeListener listener)
     {
@@ -52,6 +142,31 @@ public class AudioManager : AudioSingleton<AudioManager>
         sfxListeners.Remove(listener);
     }
 
+    public static void NotifySfxSourceReady(AudioSource source, float baseVolume)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        RegisterSfxBaseVolume(source, baseVolume);
+
+        if (Instance != null)
+        {
+            Instance.ApplySfxVolumeToSource(source);
+        }
+    }
+
+    public static void RegisterSfxBaseVolume(AudioSource source, float baseVolume)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        sfxBaseVolumes[source.GetInstanceID()] = Mathf.Clamp01(baseVolume);
+    }
+
     public float GetEffectiveSfxVolume(float localVolume = 1f)
     {
         return Mathf.Clamp01(localVolume * sfxVolume * masterVolume);
@@ -61,6 +176,13 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private float sfxScanAccumulator;
     private const float SfxScanInterval = 0.25f; // 런타임 생성 AudioSource 탐색 주기 //안건준 추가 - 0628
+    private bool volumePreferencesLoaded; // PlayerPrefs 볼륨 로드 완료 여부 //안건준 추가 - 0629
+
+    public static void EnsureVolumePreferencesLoaded() // 설정 UI·SFX 재생 전 볼륨 선로드 //안건준 추가 - 0629
+    {
+        AudioManager manager = EnsureExists();
+        manager?.EnsureVolumePreferencesLoadedInternal();
+    }
 
     protected override void Awake()
     {
@@ -74,6 +196,7 @@ public class AudioManager : AudioSingleton<AudioManager>
         }
 
         EnsureRuntimeReady();
+        EnsureVolumePreferencesLoadedInternal(); // Start() 전에도 볼륨 적용 //안건준 추가 - 0629
     }
 
     protected override void OnDestroy()
@@ -88,17 +211,191 @@ public class AudioManager : AudioSingleton<AudioManager>
             return;
         }
 
-        if (!HasAssignedBgmClips() && donor.HasAssignedBgmClips())
-        {
-            bgmClips = donor.bgmClips;
-        }
+        bool bgmMerged = MergeClipArrayIfNeeded(
+            ref bgmClips,
+            donor.bgmClips,
+            HasAssignedBgmClips(),
+            donor.HasAssignedBgmClips());
 
-        if (!HasAssignedSfxClips() && donor.HasAssignedSfxClips())
+        bool sfxMerged = MergeClipArrayIfNeeded(
+            ref sfxClips,
+            donor.sfxClips,
+            HasAssignedSfxClips(),
+            donor.HasAssignedSfxClips());
+
+        if (bgmMerged || sfxMerged || NeedsDictionaryRebuild())
         {
-            sfxClips = donor.sfxClips;
+            InitializDictionary(); // 흡수 후 딕셔너리 강제 재구성 //안건준 수정 - 0629
         }
 
         EnsureRuntimeReady();
+    }
+
+    private void TryRecoverClipConfiguration() // DDOL 인스턴스에 클립이 없을 때 씬 AudioManager에서 복구 //안건준 추가 - 0629
+    {
+        if (HasAssignedSfxClips() && CanPlaySfx(SFXType.ClickButton))
+        {
+            return; // 이미 클릭음 재생 가능
+        }
+
+        AudioManager[] managers = FindObjectsByType<AudioManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        AudioManager bestDonor = null;
+        int bestSfxCount = CountAssignedClips(sfxClips);
+
+        for (int i = 0; i < managers.Length; i++)
+        {
+            AudioManager candidate = managers[i];
+            if (candidate == null || candidate == this)
+            {
+                continue;
+            }
+
+            int candidateCount = CountAssignedClips(candidate.sfxClips);
+            if (candidateCount > bestSfxCount)
+            {
+                bestDonor = candidate;
+                bestSfxCount = candidateCount;
+            }
+        }
+
+        if (bestDonor != null)
+        {
+            AbsorbConfiguration(bestDonor);
+        }
+    }
+
+    private static bool MergeClipArrayIfNeeded(
+        ref BGMClipData[] survivorClips,
+        BGMClipData[] donorClips,
+        bool survivorHasClips,
+        bool donorHasClips)
+    {
+        if (!donorHasClips)
+        {
+            return false;
+        }
+
+        if (!survivorHasClips || CountAssignedClips(survivorClips) < CountAssignedClips(donorClips))
+        {
+            survivorClips = donorClips;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool MergeClipArrayIfNeeded(
+        ref SFXClipData[] survivorClips,
+        SFXClipData[] donorClips,
+        bool survivorHasClips,
+        bool donorHasClips)
+    {
+        if (!donorHasClips)
+        {
+            return false;
+        }
+
+        if (!survivorHasClips || CountAssignedClips(survivorClips) < CountAssignedClips(donorClips))
+        {
+            survivorClips = donorClips;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool NeedsDictionaryRebuild() // Inspector 클립은 있는데 Dictionary만 비어 있는 경우 //안건준 추가 - 0629
+    {
+        if (bgmDictionary == null || sfxDictionary == null)
+        {
+            return true;
+        }
+
+        if (HasAssignedBgmClips() && bgmDictionary.Count == 0)
+        {
+            return true;
+        }
+
+        if (HasAssignedSfxClips() && !sfxDictionary.ContainsKey(SFXType.ClickButton))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool CanPlaySfx(SFXType type)
+    {
+        EnsureRuntimeReady();
+        return sfxSource != null && sfxDictionary != null && sfxDictionary.ContainsKey(type);
+    }
+
+    public bool TryGetSfxClip(SFXType type, out AudioClip clip, out float localVolume) // SFX 클립 조회 (Dictionary + 배열 fallback) //안건준 추가 - 0629
+    {
+        clip = null;
+        localVolume = 1f;
+        EnsureRuntimeReady();
+        TryRecoverClipConfiguration();
+
+        if (sfxDictionary != null && sfxDictionary.TryGetValue(type, out SFXClipData clipData) && clipData.clip != null)
+        {
+            clip = clipData.clip;
+            localVolume = clipData.volume;
+            return true;
+        }
+
+        if (sfxClips == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < sfxClips.Length; i++)
+        {
+            SFXClipData entry = sfxClips[i];
+            if (entry == null || entry.type != type || entry.clip == null)
+            {
+                continue;
+            }
+
+            clip = entry.clip;
+            localVolume = entry.volume;
+            InitializDictionary();
+            return true;
+        }
+
+        return false;
+    }
+
+    public void PlaySfxOneShotDirect(AudioClip clip, float localVolume = 1f) // Dictionary 없이 클립 직접 재생 //안건준 추가 - 0629
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        EnsureRuntimeReady();
+        PrepareSfxSourceForUi();
+        if (sfxSource == null)
+        {
+            Debug.LogWarning("[AudioManager] SFX AudioSource가 없습니다.");
+            return;
+        }
+
+        sfxSource.PlayOneShot(clip, GetEffectiveSfxVolume(localVolume));
+    }
+
+    private void PrepareSfxSourceForUi() // UI 효과음용 SFX Source 상태 보정 //안건준 추가 - 0629
+    {
+        EnsureAudioSources();
+        if (sfxSource == null)
+        {
+            return;
+        }
+
+        sfxSource.enabled = true;
+        sfxSource.mute = false;
+        sfxSource.ignoreListenerPause = true;
+        sfxSource.spatialBlend = 0f;
     }
 
     private void EnsureRuntimeReady()
@@ -208,6 +505,7 @@ public class AudioManager : AudioSingleton<AudioManager>
         source.loop = loop;
         source.playOnAwake = false;
         source.spatialBlend = 0f;
+        source.ignoreListenerPause = true; // 게임 오버/일시정지 중 UI 효과음 재생 //안건준 추가 - 0629
         return source;
     }
 
@@ -224,7 +522,7 @@ public class AudioManager : AudioSingleton<AudioManager>
     private void Start()
     {
         EnsureRuntimeReady();
-        LoadVolumePreferences();
+        EnsureVolumePreferencesLoadedInternal();
         PlayBGMForActiveScene();
         BindSceneSfxSources(SceneManager.GetActiveScene());
     }
@@ -241,21 +539,51 @@ public class AudioManager : AudioSingleton<AudioManager>
         ScanUnboundSfxSources();
     }
 
-    private void LoadVolumePreferences()
+    private void EnsureVolumePreferencesLoadedInternal() // PlayerPrefs → 전역·인스턴스 볼륨 (1회) //안건준 추가 - 0629
     {
-        if (PlayerPrefs.HasKey(BgmVolumePrefKey))
+        if (volumePreferencesLoaded)
         {
-            SetBGMVolume(PlayerPrefs.GetFloat(BgmVolumePrefKey));
+            return;
         }
 
-        if (PlayerPrefs.HasKey(SfxVolumePrefKey))
+        LoadVolumePreferences();
+        volumePreferencesLoaded = true;
+    }
+
+    private void LoadVolumePreferences()
+    {
+        GlobalMasterVolume = ReadOrInitializeVolumePref(MasterVolumePrefKey, DefaultVolume);
+        SetMasterVolume(GlobalMasterVolume);
+
+        GlobalBgmVolume = ReadOrInitializeVolumePref(BgmVolumePrefKey, DefaultVolume);
+        SetBGMVolume(GlobalBgmVolume);
+
+        GlobalSfxVolume = ReadOrInitializeVolumePref(SfxVolumePrefKey, DefaultVolume);
+        SetSFXVolume(GlobalSfxVolume);
+
+        if (masterVolume <= 0.0001f || sfxVolume <= 0.0001f)
         {
-            SetSFXVolume(PlayerPrefs.GetFloat(SfxVolumePrefKey));
+            Debug.LogWarning(
+                $"[AudioManager] 효과음/BGM이 꺼져 있습니다. 설정 슬라이더 확인 (Master={masterVolume:F2}, SFX={sfxVolume:F2})"); //안건준 추가 - 0629
         }
+    }
+
+    private static float ReadOrInitializeVolumePref(string key, float defaultValue) // 키 없으면 100% 저장 후 반환 //안건준 추가 - 0629
+    {
+        if (!PlayerPrefs.HasKey(key))
+        {
+            float initial = Mathf.Clamp01(defaultValue);
+            PlayerPrefs.SetFloat(key, initial);
+            PlayerPrefs.Save();
+            return initial;
+        }
+
+        return Mathf.Clamp01(PlayerPrefs.GetFloat(key));
     }
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        TryRecoverClipConfiguration(); // 타이틀/스테이지 재진입 시 클립 복구 //안건준 수정 - 0629
         EnsureRuntimeReady();
         PlayBGMForScene(scene.name);
         BindSceneSfxSources(scene);
@@ -273,37 +601,99 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private void ScanUnboundSfxSources()
     {
-        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        bool addedAny = false;
-
-        for (int i = 0; i < sources.Length; i++)
-        {
-            if (TryBindSfxSource(sources[i]))
-            {
-                addedAny = true;
-            }
-        }
-
-        if (addedAny)
-        {
-            ApplySfxVolumeToListeners();
-        }
+        RefreshAllSfxSources();
     }
 
-    private bool TryBindSfxSource(AudioSource source)
+    private void RefreshAllSfxSources()
     {
-        if (source == null || source == bgmSource || source == sfxSource)
+        EnsureRuntimeReady();
+
+        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < sources.Length; i++)
         {
-            return false; // BGM 전용 소스·AudioManager PlaySFX 소스만 제외 //안건준 수정 - 0628
+            AudioSource source = sources[i];
+            if (source == null || ShouldSkipSfxVolumeApply(source))
+            {
+                continue;
+            }
+
+            EnsureSfxListener(source);
+            ApplySfxVolumeToSource(source);
         }
 
-        if (source.GetComponent<SfxVolumeListener>() != null)
+        ApplySfxVolumeToListeners();
+    }
+
+    private void EnsureSfxListener(AudioSource source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        SfxVolumeListener listener = source.GetComponent<SfxVolumeListener>();
+        if (listener != null)
+        {
+            return;
+        }
+
+        float baseVolume = GetOrCaptureBaseVolume(source);
+        listener = source.gameObject.AddComponent<SfxVolumeListener>();
+        listener.SetBaseVolume(baseVolume);
+    }
+
+    private void ApplySfxVolumeToSource(AudioSource source)
+    {
+        if (source == null || ShouldSkipSfxVolumeApply(source))
+        {
+            return;
+        }
+
+        float baseVolume = GetOrCaptureBaseVolume(source);
+        source.volume = Mathf.Clamp01(baseVolume * sfxVolume * masterVolume);
+    }
+
+    private float GetOrCaptureBaseVolume(AudioSource source)
+    {
+        int id = source.GetInstanceID();
+        if (sfxBaseVolumes.TryGetValue(id, out float storedBaseVolume))
+        {
+            return storedBaseVolume;
+        }
+
+        SfxVolumeListener listener = source.GetComponent<SfxVolumeListener>();
+        float baseVolume = listener != null
+            ? listener.BaseVolume
+            : ReverseCalculateBaseVolume(source.volume);
+
+        RegisterSfxBaseVolume(source, baseVolume);
+        return baseVolume;
+    }
+
+    private float ReverseCalculateBaseVolume(float currentVolume)
+    {
+        float scale = Mathf.Max(sfxVolume * masterVolume, 0.0001f);
+        return Mathf.Clamp01(currentVolume / scale);
+    }
+
+    private bool ShouldSkipSfxVolumeApply(AudioSource source)
+    {
+        return IsBgmSource(source) || source == sfxSource;
+    }
+
+    private bool IsBgmSource(AudioSource source)
+    {
+        if (source == null)
         {
             return false;
         }
 
-        source.gameObject.AddComponent<SfxVolumeListener>();
-        return true;
+        if (source == bgmSource)
+        {
+            return true;
+        }
+
+        return source.gameObject.name == "BGM Source";
     }
 
     private void ApplySfxVolumeToListeners()
@@ -428,37 +818,74 @@ public class AudioManager : AudioSingleton<AudioManager>
     public void PlaySFX(SFXType type)
     {
         EnsureRuntimeReady();
-        if (sfxSource == null || sfxDictionary == null || !sfxDictionary.ContainsKey(type))
+        if (sfxSource == null)
         {
             return;
         }
+
+        if (sfxDictionary == null || !sfxDictionary.ContainsKey(type))
+        {
+            if (HasAssignedSfxClips())
+            {
+                InitializDictionary(); // 클립은 있는데 Dictionary만 비어 있을 때 재구성 //안건준 수정 - 0629
+            }
+
+            if (sfxDictionary == null || !sfxDictionary.ContainsKey(type))
+            {
+                TryRecoverClipConfiguration(); // StageScene 등에서 빈 DDOL AudioManager가 생긴 경우 복구 //안건준 수정 - 0629
+            }
+        }
+
+        if (sfxDictionary == null || !sfxDictionary.ContainsKey(type))
+        {
+            return;
+        }
+
+        sfxSource.ignoreListenerPause = true; // UI 클릭음은 Listener Pause 영향 받지 않게 //안건준 추가 - 0629
+        PrepareSfxSourceForUi();
         SFXClipData clipData = sfxDictionary[type];
-        float volume = clipData.volume * sfxVolume * masterVolume;
+        float volume = GetEffectiveSfxVolume(clipData.volume);
         sfxSource.PlayOneShot(clipData.clip, volume);
         UpdateBGMVolume();
+    }
+
+    // UI 버튼 등 Inspector 클립 직접 재생 — 마스터·효과음 볼륨 반영 //안건준 추가 - 0628
+    public void PlayUIClickSfx(AudioClip clip, float localVolume = 1f)
+    {
+        PlaySfxOneShotDirect(clip, localVolume);
+    }
+
+    public static void PlayUiSfxClip(AudioClip clip, float localVolume = 1f)
+    {
+        AudioManager manager = EnsureExists();
+        if (manager == null)
+        {
+            return;
+        }
+
+        manager.PlayUIClickSfx(clip, localVolume);
     }
 
     //BGM볼륨을 변경
     public void SetBGMVolume(float volume)
     {
-        bgmVolume = Mathf.Clamp01(volume);
+        bgmVolume = GlobalBgmVolume = Mathf.Clamp01(volume);
         UpdateBGMVolume();
 
     }
     //효과음볼륨을 변경
     public void SetSFXVolume(float volume)
     {
-        sfxVolume = Mathf.Clamp01(volume);
-        ScanUnboundSfxSources();
-        ApplySfxVolumeToListeners();
+        sfxVolume = GlobalSfxVolume = Mathf.Clamp01(volume);
+        RefreshAllSfxSources();
     }
 
-    //전체 볼륨을 변경
+    //전체 볼륨을 변경 — BGM·효과음 전부 //안건준 수정 - 0628
     public void SetMasterVolume(float volume)
     {
-        masterVolume = Mathf.Clamp01(volume);
+        masterVolume = GlobalMasterVolume = Mathf.Clamp01(volume);
         UpdateBGMVolume();
-        ApplySfxVolumeToListeners();
+        RefreshAllSfxSources();
     }
     //현재 재생중인 BGM의 볼륨을 계산
     private void UpdateBGMVolume()

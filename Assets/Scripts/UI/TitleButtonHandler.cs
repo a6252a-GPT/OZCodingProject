@@ -14,6 +14,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float hoverDuration = 0.15f; // 호버 스케일 전환 시간
         [SerializeField] private float clickUpSeconds = 0.15f; // 클릭 시 커지는 시간
         [SerializeField] private float clickDownSeconds = 0.1f; // 클릭 후 원래 크기로 돌아오는 시간
+        [SerializeField] private AudioClip fallbackClickClip; // AudioManager SFX 실패 시 직접 재생용 (선택) //안건준 추가 - 0629
 
         private readonly HashSet<Button> registeredButtons = new HashSet<Button>();
         private readonly Dictionary<Button, bool> hoverStates = new Dictionary<Button, bool>();
@@ -24,6 +25,11 @@ namespace TeamProject01.Gameplay
             {
                 buttonRoot = transform; // 기본은 자신 하위 버튼 탐색
             }
+        }
+
+        private void OnEnable()
+        {
+            RefreshButtons(); // 패널 전환 후 버튼 재등록 //안건준 수정 - 0629
         }
 
         private void Start()
@@ -84,12 +90,29 @@ namespace TeamProject01.Gameplay
 
         private void HandleButtonClicked(Button button)
         {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlaySFX(SFXType.ClickButton); // Inspector에 등록한 클릭 효과음 재생
-            }
+            PlayTitleButtonClickSfx(); // 클릭 효과음 //안건준 수정 - 0629
 
             PlayClickTween(button);
+        }
+
+        private void PlayTitleButtonClickSfx()
+        {
+            AudioManager manager = AudioManager.EnsureExists();
+            if (manager != null
+                && manager.TryGetSfxClip(SFXType.ClickButton, out AudioClip clip, out float localVolume)
+                && manager.GetEffectiveSfxVolume(localVolume) > 0.0001f)
+            {
+                manager.PlaySfxOneShotDirect(clip, localVolume);
+                return;
+            }
+
+            if (fallbackClickClip != null)
+            {
+                AudioManager.PlayUiSfxClip(fallbackClickClip, 1f);
+                return;
+            }
+
+            AudioManager.PlayClickButtonSfx(); // 실패 원인 Console 경고 출력
         }
 
         private void PlayClickTween(Button button)

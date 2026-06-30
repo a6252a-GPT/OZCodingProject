@@ -102,6 +102,7 @@ namespace TeamProject01.Gameplay
                 selectedWormId); // 메타 적용용 결과
 
             RunResultContext.SetPendingResult(result); // 타이틀 복귀 후 보상 적용
+            SaveData.NotifyRunFinished(); //안건준 추가 - 0629 (런 종료 시 중간 저장 삭제)
 
             previousTimeScale = Time.timeScale > 0f ? Time.timeScale : 1f;
             Time.timeScale = 0f; // 월드 정지, UI는 unscaled DOTween 사용

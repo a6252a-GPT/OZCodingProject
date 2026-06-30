@@ -1,3 +1,4 @@
+using System; //안건준 추가 - 0629 (CurrentStageChanged 이벤트용 Action<T>)
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -60,6 +61,7 @@ namespace TeamProject01.Gameplay
         private int currentStageTrackingStage; // 현재 추적 중인 Stage 번호입니다.
 
         public int CurrentStage => currentStage;
+        public event Action<int> CurrentStageChanged; //안건준 추가 - 0629 (웨이브 변경 시 SaveData에 기록용 웨이브 번호 저장 알림)
         public float StageDurationSeconds => stageDurationSeconds;
         public float RemainingStageSeconds => Mathf.Max(0.0f, stageDurationSeconds - elapsedStageSeconds);
         public bool IsSpecialWaveActive => enableSpecialWaveExtension && specialWaveActive;
@@ -150,7 +152,7 @@ namespace TeamProject01.Gameplay
             ResolveReferences();
         }
 
-        private void OnEnable()
+        private void Start() //안건준 수정 - 0629 (SaveData 다이아·강화 복원 후 웨이브 1부터 시작)
         {
             if (autoStart)
             {
@@ -203,6 +205,7 @@ namespace TeamProject01.Gameplay
             isRunning = true;
 
             SegmentDpsDebugMeter.ResetRun(); // DPS 미터 전체 누적 초기화
+            CurrentStageChanged?.Invoke(currentStage); //안건준 추가 - 0629 (웨이브 시작 시 구독자에게 현재 Stage 알림)
             StartCurrentStage();
         }
 
@@ -324,6 +327,7 @@ namespace TeamProject01.Gameplay
             elapsedStageSeconds = 0.0f;
             skipSpecialWaveCheckOnce = false;
             currentStage++;
+            CurrentStageChanged?.Invoke(currentStage); //안건준 추가 - 0629 (다음 웨이브 진입 시 구독자에게 Stage 알림)
             StartCurrentStage();
         }
 
