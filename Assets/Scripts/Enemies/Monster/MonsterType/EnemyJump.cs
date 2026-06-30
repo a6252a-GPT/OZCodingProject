@@ -6,77 +6,77 @@ using UnityEngine.AI;
 namespace TeamProject01.Gameplay
 {
     [RequireComponent(typeof(EnemyMovement))]
-    public sealed class EnemyJump : MonoBehaviour // ¼¼±×¸ÕÆ®¸¦ °¨ÁöÇÏ¸é ¾ÕÀ¸·Î Á¡ÇÁÇÑ´Ù.
+    public sealed class EnemyJump : MonoBehaviour // ï¿½ï¿½ï¿½×¸ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
     {
         [Header("Jump Setting")]
         [Min(0.0f)]
-        [SerializeField] private float jumpHeight = 2.0f; // Á¡ÇÁ ³ôÀÌ
+        [SerializeField] private float jumpHeight = 2.0f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
         [Min(0.05f)]
-        [SerializeField] private float jumpDuration = 0.5f; // Á¡ÇÁ ½Ã°£
+        [SerializeField] private float jumpDuration = 0.5f; // ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
 
-        // Á¶¼º¿øÃß°¡-0626 - ÂøÁö ÈÄ ¿õÅ©¸° ÀÚ¼¼¸¦ À¯ÁöÇÏ¸ç ÀÌµ¿°ú °ø°ÝÀ» Àá½Ã ¸ØÃâ ½Ã°£
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Å©ï¿½ï¿½ ï¿½Ú¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
         [Min(0.0f)]
         [SerializeField] private float landingRecoveryDuration = 0.25f;
 
         [Header("Segment Detection")]
         [Min(0.1f)]
-        [SerializeField] private float segmentDetectDistance = 2.0f; // ¾ÕÂÊ ¼¼±×¸ÕÆ® °¨Áö °Å¸®
+        [SerializeField] private float segmentDetectDistance = 2.0f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½
 
         [Min(0.1f)]
-        [SerializeField] private float jumpLandingDistance = 5.0f; // ¼¼±×¸ÕÆ®¸¦ ³ÑÀº µÚ Ãß°¡ ÂøÁö °Å¸®
+        [SerializeField] private float jumpLandingDistance = 5.0f; // ï¿½ï¿½ï¿½×¸ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Å¸ï¿½
 
         [Min(0.0f)]
-        [SerializeField] private float jumpCooldown = 1.5f; // ÂøÁö ÈÄ ÀçÁ¡ÇÁ ´ë±â½Ã°£
+        [SerializeField] private float jumpCooldown = 1.5f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ã°ï¿½
 
         [Header("Landing Shockwave")]
         [Min(0.1f)]
-        [SerializeField] private float shockwaveRadius = 7.0f; // ÂøÁö Ãæ°ÝÆÄ ¹üÀ§
+        [SerializeField] private float shockwaveRadius = 7.0f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
         [Min(0.0f)]
-        [SerializeField] private float shockwavePushDistance = 3.0f; // ¼¼±×¸ÕÆ® ¹Ð¸² °Å¸®
+        [SerializeField] private float shockwavePushDistance = 3.0f; // ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½Ð¸ï¿½ ï¿½Å¸ï¿½
 
         [Min(0.01f)]
-        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // ¿ø·¡ °æ·Î·Î º¹±¸µÇ´Â ½Ã°£
+        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Î·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ ï¿½Ã°ï¿½
 
-        // Á¶¼º¿øÃß°¡-0630 - ¼¼±×¸ÕÆ® Á¡ÇÁ ÂøÁö ¼ø°£ ¶¥°¥¶óÁü VFX¸¦ »ý¼ºÇÏ±â À§ÇÑ ¼³Á¤
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ VFXï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         [Header("Landing Crack VFX")]
-        [SerializeField] private GameObject landingCrackVfxPrefab; // Á¶¼º¿øÃß°¡-0630 - ÂøÁö ¼ø°£ »ý¼ºÇÒ ¶¥°¥¶óÁü VFX Prefab
+        [SerializeField] private GameObject landingCrackVfxPrefab; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ VFX Prefab
 
         [Min(0.0f)]
-        [SerializeField] private float landingCrackGroundHeight = 0.03f; // Á¶¼º¿øÃß°¡-0630 - VFX°¡ ¹Ù´Ú¿¡ ¹¯È÷Áö ¾Êµµ·Ï ¿Ã¸± ³ôÀÌ
+        [SerializeField] private float landingCrackGroundHeight = 0.03f; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - VFXï¿½ï¿½ ï¿½Ù´Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ï¿½ï¿½ ï¿½Ã¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 
         [Min(0.1f)]
-        [SerializeField] private float landingCrackScale = 0.65f; // Á¶¼º¿øÃß°¡-0630 - ¿¤¸®Æ® ¸ó½ºÅÍ¿ë ¶¥°¥¶óÁü VFX Å©±â ¹èÀ²
+        [SerializeField] private float landingCrackScale = 0.65f; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ VFX Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
         [Min(0.01f)]
-        [SerializeField] private float landingCrackLifeTime = 2.0f; // Á¶¼º¿øÃß°¡-0630 - »ý¼ºµÈ ¶¥°¥¶óÁü VFX Á¦°Å ½Ã°£
+        [SerializeField] private float landingCrackLifeTime = 2.0f; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ VFX ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - EnemyJumpTestÀÇ ÀÌµ¿ Script Component ÂüÁ¶ ±¸Á¶¸¦ °¡Á®¿Â´Ù.
+        ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - EnemyJumpTestï¿½ï¿½ ï¿½Ìµï¿½ Script Component ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â´ï¿½.
         private EnemyMovement enemyMovement;
         private NavMeshAgent navAgent;
         private Coroutine jumpRoutine;
         private float cooldownTimer;
 
-        // Á¶¼º¿øÃß°¡-0626 - Á¡ÇÁ ¾Ö´Ï¸ÞÀÌ¼Ç Bridge°¡ ÇöÀç Á¡ÇÁ »óÅÂ¸¦ ÀÐÀ» ¼ö ÀÖµµ·Ï °ø°³ÇÑ´Ù.
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ Bridgeï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Öµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
         public bool IsJumping { get; private set; }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - SegmentBlockerÀÇ È°¼º ¸ñ·ÏÀ» ÀÐ±â À§ÇÑ ÂüÁ¶¸¦ °¡Á®¿Â´Ù.
+        ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - SegmentBlockerï¿½ï¿½ È°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ð±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Â´ï¿½.
         private static FieldInfo activeBlockersField;
 
         private void Awake()
         {
-            ////// ¾È°ÇÁØÃß°¡-0622 - °°Àº GameObjectÀÇ ÀÌµ¿°ú AI Navigation Component¸¦ Ã£´Â´Ù.
+            ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - ï¿½ï¿½ï¿½ï¿½ GameObjectï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ AI Navigation Componentï¿½ï¿½ Ã£ï¿½Â´ï¿½.
             enemyMovement = GetComponent<EnemyMovement>();
             navAgent = GetComponent<NavMeshAgent>();
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - SegmentBlockerÀÇ È°¼º ¼¼±×¸ÕÆ® ¸ñ·ÏÀ» Ã£´Â´Ù.
+            ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - SegmentBlockerï¿½ï¿½ È°ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ Ã£ï¿½Â´ï¿½.
             if (activeBlockersField == null)
             {
                 activeBlockersField = typeof(SegmentBlocker).GetField("ActiveBlockers", BindingFlags.NonPublic | BindingFlags.Static);
             }
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - Off-Mesh Link ÀÌµ¿Àº EnemyJump°¡ Á÷Á¢ Ã³¸®ÇÑ´Ù.
+            ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - Off-Mesh Link ï¿½Ìµï¿½ï¿½ï¿½ EnemyJumpï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Ñ´ï¿½.
             if (navAgent != null)
             {
                 navAgent.autoTraverseOffMeshLink = false;
@@ -85,26 +85,26 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
-            if (jumpRoutine != null) // ÀÌ¹Ì Á¡ÇÁ ÁßÀÌ¶ó¸é
+            if (jumpRoutine != null) // ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¶ï¿½ï¿½
             {
                 return;
             }
 
             cooldownTimer -= Time.deltaTime;
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - NavMeshAgent°¡ Off-Mesh Link¿¡ µµÂøÇÏ¸é ÁöÇü Á¡ÇÁ¸¦ ½ÃÀÛÇÑ´Ù.
+            ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - NavMeshAgentï¿½ï¿½ Off-Mesh Linkï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh && navAgent.isOnOffMeshLink)
             {
                 jumpRoutine = StartCoroutine(JumpOffMeshLink());
                 return;
             }
 
-            if (cooldownTimer > 0.0f) // ÀçÁ¡ÇÁ ´ë±â½Ã°£ÀÌ ³²¾Ò´Ù¸é
+            if (cooldownTimer > 0.0f) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ã°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ò´Ù¸ï¿½
             {
                 return;
             }
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - ¾ÕÂÊ ¼¼±×¸ÕÆ®¸¦ °¨ÁöÇÏ¸é ¼¼±×¸ÕÆ® ³Ê¸Ó·Î Á¡ÇÁÇÑ´Ù.
+            ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½Ê¸Ó·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             if (IsSegmentAhead(out Vector3 landingPoint))
             {
                 jumpRoutine = StartCoroutine(JumpOverSegment(landingPoint));
@@ -113,14 +113,14 @@ namespace TeamProject01.Gameplay
 
         private void OnDisable()
         {
-            // Á¡ÇÁ µµÁß ºñÈ°¼ºÈ­µÇ¾îµµ ÀÌµ¿ »óÅÂ°¡ ³²Áö ¾Êµµ·Ï º¹±¸ÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È°ï¿½ï¿½È­ï¿½Ç¾îµµ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½Â°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             if (jumpRoutine != null)
             {
                 StopCoroutine(jumpRoutine);
                 jumpRoutine = null;
             }
 
-            // Á¶¼º¿øÃß°¡-0626 - ºñÈ°¼ºÈ­µÉ ¶§ Á¡ÇÁ ¾Ö´Ï¸ÞÀÌ¼Ç »óÅÂ°¡ ³²Áö ¾Êµµ·Ï ÇØÁ¦ÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½È°ï¿½ï¿½È­ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½Â°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             IsJumping = false;
 
             SetEnemyMovementEnabled(true);
@@ -133,10 +133,10 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - Off-Mesh LinkÀÇ ½ÃÀÛÁ¡¿¡¼­ ³¡Á¡±îÁö Æ÷¹°¼±À¸·Î ÀÌµ¿ÇÑ´Ù.
+        ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - Off-Mesh Linkï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Ñ´ï¿½.
         private IEnumerator JumpOffMeshLink()
         {
-            // Á¶¼º¿øÃß°¡-0626 - ÁöÇü Á¡ÇÁ°¡ ½ÃÀÛµÆ´Ù°í ÀúÀåÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ÛµÆ´Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             IsJumping = true;
 
             SetEnemyMovementEnabled(false);
@@ -159,11 +159,11 @@ namespace TeamProject01.Gameplay
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
 
-                // Á¶¼º¿ø¼öÁ¤-0626 - ÂøÁö È¸º¹ÀÌ ³¡³¯ ¶§±îÁö NavMeshAgent´Â Á¤Áö »óÅÂ¸¦ À¯ÁöÇÑ´Ù.
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ NavMeshAgentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
                 navAgent.isStopped = true;
             }
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö ÈÄ ³²Àº ¿õÅ©¸° ¾Ö´Ï¸ÞÀÌ¼Ç µ¿¾È ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å©ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´Â´ï¿½.
             if (landingRecoveryDuration > 0.0f)
             {
                 yield return new WaitForSeconds(landingRecoveryDuration);
@@ -171,12 +171,12 @@ namespace TeamProject01.Gameplay
 
             cooldownTimer = jumpCooldown;
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹±îÁö ³¡³­ µÚ Á¡ÇÁ »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             IsJumping = false;
 
             SetEnemyMovementEnabled(true);
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹ÀÌ ³¡³­ µÚ NavMeshAgent ÀÌµ¿À» ´Ù½Ã Çã¿ëÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ NavMeshAgent ï¿½Ìµï¿½ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
             {
                 navAgent.isStopped = false;
@@ -185,7 +185,7 @@ namespace TeamProject01.Gameplay
             jumpRoutine = null;
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - ¸ó½ºÅÍ ¾ÕÂÊ¿¡ Á¡ÇÁÇÒ ¼¼±×¸ÕÆ®°¡ ÀÖ´ÂÁö È®ÀÎÇÑ´Ù.
+        ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ê¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ®ï¿½ï¿½ ï¿½Ö´ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ñ´ï¿½.
         private bool IsSegmentAhead(out Vector3 landingPoint)
         {
             landingPoint = Vector3.zero;
@@ -200,7 +200,7 @@ namespace TeamProject01.Gameplay
             Vector3 myPosition = transform.position;
             Vector3 forward;
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - NavMeshAgent ¼Óµµ°¡ ÀÖÀ¸¸é ÀÌµ¿ ¹æÇâÀ¸·Î »ç¿ëÇÑ´Ù.
+            ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - NavMeshAgent ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             if (navAgent != null && navAgent.velocity.sqrMagnitude > 0.01f)
             {
                 forward = navAgent.velocity;
@@ -260,10 +260,10 @@ namespace TeamProject01.Gameplay
             return false;
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - EnemyMovement¸¦ ¸ØÃß°í ¼¼±×¸ÕÆ® ³Ê¸Ó·Î Á¡ÇÁÇÑ´Ù.
+        ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - EnemyMovementï¿½ï¿½ ï¿½ï¿½ï¿½ß°ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½Ê¸Ó·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
         private IEnumerator JumpOverSegment(Vector3 landingPoint)
         {
-            // Á¶¼º¿øÃß°¡-0626 - ¼¼±×¸ÕÆ® Á¡ÇÁ°¡ ½ÃÀÛµÆ´Ù°í ÀúÀåÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ÛµÆ´Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             IsJumping = true;
 
             SetEnemyMovementEnabled(false);
@@ -283,7 +283,7 @@ namespace TeamProject01.Gameplay
 
             transform.position = landingPoint;
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - ÂøÁö À§Ä¡ ±ÙÃ³ÀÇ NavMesh À§Ä¡·Î Agent¸¦ ¸ÂÃá´Ù.
+            ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½Ã³ï¿½ï¿½ NavMesh ï¿½ï¿½Ä¡ï¿½ï¿½ Agentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½.
             if (canControlAgent)
             {
                 if (NavMesh.SamplePosition(landingPoint, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
@@ -295,15 +295,15 @@ namespace TeamProject01.Gameplay
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
 
-                // Á¶¼º¿ø¼öÁ¤-0626 - ÂøÁö È¸º¹ÀÌ ³¡³¯ ¶§±îÁö NavMeshAgent´Â Á¤Áö »óÅÂ¸¦ À¯ÁöÇÑ´Ù.
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ NavMeshAgentï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
                 navAgent.isStopped = true;
             }
 
-            SpawnLandingCrackVfx(transform.position); // Á¶¼º¿øÃß°¡-0630 - ÂøÁö À§Ä¡°¡ È®Á¤µÈ µÚ ¶¥°¥¶óÁü VFX¸¦ »ý¼ºÇÑ´Ù.
+            SpawnLandingCrackVfx(transform.position); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ VFXï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
 
-            ApplyLandingShockwave(); // ¼¼±×¸ÕÆ® Á¡ÇÁ ÂøÁö ÁöÁ¡¿¡ Ãæ°ÝÆÄ ¹ß»ý
+            ApplyLandingShockwave(); // ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß»ï¿½
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö ÈÄ ³²Àº ¿õÅ©¸° ¾Ö´Ï¸ÞÀÌ¼Ç µ¿¾È ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å©ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´Â´ï¿½.
             if (landingRecoveryDuration > 0.0f)
             {
                 yield return new WaitForSeconds(landingRecoveryDuration);
@@ -311,12 +311,12 @@ namespace TeamProject01.Gameplay
 
             cooldownTimer = jumpCooldown;
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹±îÁö ³¡³­ µÚ Á¡ÇÁ »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             IsJumping = false;
 
             SetEnemyMovementEnabled(true);
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹ÀÌ ³¡³­ µÚ NavMeshAgent ÀÌµ¿À» ´Ù½Ã Çã¿ëÇÑ´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0626 - ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ NavMeshAgent ï¿½Ìµï¿½ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
             if (canControlAgent && navAgent.enabled && navAgent.isOnNavMesh)
             {
                 navAgent.isStopped = false;
@@ -325,13 +325,13 @@ namespace TeamProject01.Gameplay
             jumpRoutine = null;
         }
 
-        // Á¶¼º¿øÃß°¡-0630 - ¼¼±×¸ÕÆ® Á¡ÇÁ ÂøÁö À§Ä¡¿¡ ¶¥°¥¶óÁü VFX¸¦ »ý¼ºÇÑ´Ù.
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - ï¿½ï¿½ï¿½×¸ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ VFXï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
         private void SpawnLandingCrackVfx(Vector3 position)
         {
             SpawnOneShotVfx(landingCrackVfxPrefab, position, landingCrackGroundHeight, landingCrackScale, landingCrackLifeTime);
         }
 
-        // Á¶¼º¿øÃß°¡-0630 - ´Ü¹ß¼º VFX¸¦ »ý¼ºÇÏ°í ÁöÁ¤ ½Ã°£ µÚ Á¦°ÅÇÑ´Ù.
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0630 - ï¿½Ü¹ß¼ï¿½ VFXï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
         private void SpawnOneShotVfx(GameObject prefab, Vector3 position, float groundHeight, float scaleMultiplier, float lifeTime)
         {
             if (prefab == null)
@@ -347,12 +347,12 @@ namespace TeamProject01.Gameplay
             Destroy(vfx, lifeTime);
         }
 
-        private void ApplyLandingShockwave() // ÂøÁö ÁÖº¯ÀÇ ¿¬°á ¼¼±×¸ÕÆ®¸¦ ¹Ù±ùÂÊÀ¸·Î ¹Î´Ù.
+        private void ApplyLandingShockwave() // ï¿½ï¿½ï¿½ï¿½ ï¿½Öºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½×¸ï¿½Æ®ï¿½ï¿½ ï¿½Ù±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î´ï¿½.
         {
             MonsterInteractionApi.RequestSegmentShockwave(transform.position, shockwaveRadius, shockwavePushDistance, shockwaveRecoveryDuration);
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - ½ÃÀÛÁ¡°ú ÂøÁöÁ¡ »çÀÌ¸¦ Æ÷¹°¼±À¸·Î ÀÌµ¿ÇÑ´Ù.
+        ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Ñ´ï¿½.
         private IEnumerator ArcMove(Vector3 from, Vector3 to, float height, float duration)
         {
             float elapsed = 0.0f;
@@ -383,7 +383,7 @@ namespace TeamProject01.Gameplay
             transform.position = to;
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - Á¡ÇÁ Áß¿¡´Â EnemyMovement¸¦ ²ô°í ÂøÁö ÈÄ ´Ù½Ã ÄÒ´Ù.
+        ////// ï¿½È°ï¿½ï¿½ï¿½ï¿½ß°ï¿½-0622 - ï¿½ï¿½ï¿½ï¿½ ï¿½ß¿ï¿½ï¿½ï¿½ EnemyMovementï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½Ò´ï¿½.
         private void SetEnemyMovementEnabled(bool enabled)
         {
             if (enemyMovement != null)
