@@ -23,6 +23,24 @@ namespace TeamProject01.Gameplay
         ShieldRegenStart = 18,
         NexusHeal = 19,
         HudSkill3LoopA = 20,
-        HudSkill3LoopB = 21
+        HudSkill3LoopB = 21,
+        BossTeleport = 22,
+        BossDiamondCharge = 23,
+        BossDiamondLaunch = 24,
+        BossDiamondBurstLarge = 25,
+        BossDiamondBurstSmall = 26,
+        BossJumpImpact = 27,
+        BossDeath = 28,
+        MonsterDeath = 30,
+        MonsterJumpLanding = 31,
+        MonsterSuicideExplosion = 32,
+        MonsterSlowZoneCast = 33,
+        MonsterRangedFire = 34,
+        MonsterSegmentCutCast = 35,
+        MonsterSegmentCutLaunch = 36,
+        MonsterObstacleSummon = 37,
+        MonsterMeleeImpact = 38,
+        MonsterShieldLoop = 39,
+        MonsterPortalTeleport = 40
     }
 }

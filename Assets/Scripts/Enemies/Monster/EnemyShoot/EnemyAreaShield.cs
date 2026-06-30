@@ -3,29 +3,29 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyAreaShield : MonoBehaviour // ÀÏÁ¤ ½Ã°£¸¶´Ù ¹üÀ§ ¹æ¾î¸·À» ÄÑ°í ²ö´Ù.
+    public sealed class EnemyAreaShield : MonoBehaviour // ì¼ì • ì‹œê°„ë§ˆë‹¤ ë²”ìœ„ ë°©ì–´ë§‰ì„ ì¼œê³  ëˆë‹¤.
     {
         [Header("Shield Setting")]
         [Min(0.1f)]
-        [SerializeField] private float shieldRadius = 7.5f; // ¹æ¾î¸· ¹İ°æ
+        [SerializeField] private float shieldRadius = 7.5f; // ë°©ì–´ë§‰ ë°˜ê²½
 
         [Min(0.0f)]
-        [SerializeField] private float firstShieldDelay = 3.0f; // »ı¼º ÈÄ Ã¹ ¹æ¾î¸· ´ë±â ½Ã°£
+        [SerializeField] private float firstShieldDelay = 3.0f; // ìƒì„± í›„ ì²« ë°©ì–´ë§‰ ëŒ€ê¸° ì‹œê°„
 
         [Min(0.1f)]
-        [SerializeField] private float shieldDuration = 6.0f; // ¹æ¾î¸· À¯Áö ½Ã°£
+        [SerializeField] private float shieldDuration = 6.0f; // ë°©ì–´ë§‰ ìœ ì§€ ì‹œê°„
 
         [Min(0.1f)]
-        [SerializeField] private float shieldInterval = 12.0f; // ¹æ¾î¸· Á¾·á ÈÄ ´Ù½Ã ÄÑÁú ¶§±îÁöÀÇ ´ë±â ½Ã°£
+        [SerializeField] private float shieldInterval = 12.0f; // ë°©ì–´ë§‰ ì¢…ë£Œ í›„ ë‹¤ì‹œ ì¼œì§ˆ ë•Œê¹Œì§€ì˜ ëŒ€ê¸° ì‹œê°„
 
-        [SerializeField] private GameObject shieldVisualRoot; // ¹æ¾î¸· ½Ã°¢ ¿ÀºêÁ§Æ®
+        [SerializeField] private GameObject shieldVisualRoot; // ë°©ì–´ë§‰ ì‹œê° ì˜¤ë¸Œì íŠ¸
 
         [Header("Shield Animation")]
-        [SerializeField] private Animator shieldAnimator; // ¹æ¾î¸· ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Àç»ıÇÒ Animator
-        [SerializeField] private string shieldTriggerName = "Shield"; // Animator ControllerÀÇ Shield Trigger ÀÌ¸§
+        [SerializeField] private Animator shieldAnimator; // ë°©ì–´ë§‰ ì• ë‹ˆë©”ì´ì…˜ì„ ì¬ìƒí•  Animator
+        [SerializeField] private string shieldTriggerName = "Shield"; // Animator Controllerì˜ Shield Trigger ì´ë¦„
 
         private Coroutine shieldCycleCoroutine;
-        private int shieldTriggerHash; // Shield Trigger ÀÌ¸§À» Hash·Î ÀúÀåÇÑ´Ù.
+        private int shieldTriggerHash; // Shield Trigger ì´ë¦„ì„ Hashë¡œ ì €ì¥í•œë‹¤.
 
         public float ShieldRadius
         {
@@ -35,21 +35,22 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        public bool IsShieldActive { get; private set; } // ÇöÀç ¹æ¾î¸· È°¼º »óÅÂ
+        public bool IsShieldActive { get; private set; } // í˜„ì¬ ë°©ì–´ë§‰ í™œì„± ìƒíƒœ
+        public event System.Action<EnemyAreaShield, bool> ShieldStateChanged;
 
         private void Awake()
         {
-            shieldTriggerHash = Animator.StringToHash(shieldTriggerName); // Trigger ÀÌ¸§À» Hash·Î º¯È¯ÇÑ´Ù.
+            shieldTriggerHash = Animator.StringToHash(shieldTriggerName); // Trigger ì´ë¦„ì„ Hashë¡œ ë³€í™˜í•œë‹¤.
 
-            if (shieldAnimator == null) // Inspector¿¡ Animator°¡ ¿¬°áµÇÁö ¾Ê¾Ò´Ù¸é
+            if (shieldAnimator == null) // Inspectorì— Animatorê°€ ì—°ê²°ë˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                shieldAnimator = GetComponentInChildren<Animator>(); // ÀÚ½Ä ¿ÀºêÁ§Æ®¿¡¼­ Animator¸¦ ÀÚµ¿À¸·Î Ã£´Â´Ù.
+                shieldAnimator = GetComponentInChildren<Animator>(); // ìì‹ ì˜¤ë¸Œì íŠ¸ì—ì„œ Animatorë¥¼ ìë™ìœ¼ë¡œ ì°¾ëŠ”ë‹¤.
             }
         }
 
         private void OnEnable()
         {
-            SetShieldActive(false); // »ı¼º Á÷ÈÄ¿¡´Â ¹æ¾î¸·À» ²ö´Ù.
+            SetShieldActive(false); // ìƒì„± ì§í›„ì—ëŠ” ë°©ì–´ë§‰ì„ ëˆë‹¤.
             shieldCycleCoroutine = StartCoroutine(ShieldCycleRoutine());
         }
 
@@ -61,10 +62,10 @@ namespace TeamProject01.Gameplay
                 shieldCycleCoroutine = null;
             }
 
-            SetShieldActive(false); // »ç¸ÁÇÏ°Å³ª ºñÈ°¼ºÈ­µÇ¸é ¹æ¾î¸·À» ÇØÁ¦ÇÑ´Ù.
+            SetShieldActive(false); // ì‚¬ë§í•˜ê±°ë‚˜ ë¹„í™œì„±í™”ë˜ë©´ ë°©ì–´ë§‰ì„ í•´ì œí•œë‹¤.
         }
 
-        private IEnumerator ShieldCycleRoutine() // ¹æ¾î¸· È°¼º°ú ´ë±â¸¦ ¹İº¹ÇÑ´Ù.
+        private IEnumerator ShieldCycleRoutine() // ë°©ì–´ë§‰ í™œì„±ê³¼ ëŒ€ê¸°ë¥¼ ë°˜ë³µí•œë‹¤.
         {
             yield return new WaitForSeconds(firstShieldDelay);
 
@@ -80,13 +81,14 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void SetShieldActive(bool active) // º¸È£ ÆÇÁ¤°ú ½Ã°¢ È¿°ú¸¦ ÇÔ²² º¯°æÇÑ´Ù.
+        private void SetShieldActive(bool active) // ë³´í˜¸ íŒì •ê³¼ ì‹œê° íš¨ê³¼ë¥¼ í•¨ê»˜ ë³€ê²½í•œë‹¤.
         {
+            bool changed = IsShieldActive != active;
             IsShieldActive = active;
 
-            if (active) // ¹æ¾î¸·ÀÌ ÄÑÁö´Â ¼ø°£
+            if (active) // ë°©ì–´ë§‰ì´ ì¼œì§€ëŠ” ìˆœê°„
             {
-                PlayShieldAnimation(); // Shield ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Àç»ıÇÑ´Ù.
+                PlayShieldAnimation(); // Shield ì• ë‹ˆë©”ì´ì…˜ì„ ì¬ìƒí•œë‹¤.
             }
 
             if (shieldVisualRoot != null)
@@ -102,22 +104,27 @@ namespace TeamProject01.Gameplay
             {
                 EnemyShieldRegistry.Unregister(transform);
             }
+
+            if (changed)
+            {
+                ShieldStateChanged?.Invoke(this, active);
+            }
         }
 
-        private void PlayShieldAnimation() // Animator¿¡ Shield Trigger¸¦ Àü´ŞÇÑ´Ù.
+        private void PlayShieldAnimation() // Animatorì— Shield Triggerë¥¼ ì „ë‹¬í•œë‹¤.
         {
-            if (shieldAnimator == null) // Animator°¡ ¾øÀ¸¸é ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Àç»ıÇÏÁö ¾Ê´Â´Ù.
+            if (shieldAnimator == null) // Animatorê°€ ì—†ìœ¼ë©´ ì• ë‹ˆë©”ì´ì…˜ì„ ì¬ìƒí•˜ì§€ ì•ŠëŠ”ë‹¤.
             {
                 return;
             }
 
-            if (string.IsNullOrEmpty(shieldTriggerName)) // Trigger ÀÌ¸§ÀÌ ºñ¾î ÀÖÀ¸¸é ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+            if (string.IsNullOrEmpty(shieldTriggerName)) // Trigger ì´ë¦„ì´ ë¹„ì–´ ìˆìœ¼ë©´ ì‹¤í–‰í•˜ì§€ ì•ŠëŠ”ë‹¤.
             {
                 return;
             }
 
-            shieldAnimator.ResetTrigger(shieldTriggerHash); // ÀÌÀü Shield Trigger »óÅÂ¸¦ Á¤¸®ÇÑ´Ù.
-            shieldAnimator.SetTrigger(shieldTriggerHash); // Shield ¾Ö´Ï¸ŞÀÌ¼ÇÀ» ½ÇÇàÇÑ´Ù.
+            shieldAnimator.ResetTrigger(shieldTriggerHash); // ì´ì „ Shield Trigger ìƒíƒœë¥¼ ì •ë¦¬í•œë‹¤.
+            shieldAnimator.SetTrigger(shieldTriggerHash); // Shield ì• ë‹ˆë©”ì´ì…˜ì„ ì‹¤í–‰í•œë‹¤.
         }
     }
 }

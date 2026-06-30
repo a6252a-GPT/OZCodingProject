@@ -58,6 +58,8 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        public event System.Action<Vector3> ObstacleSummoned;
+
         private Coroutine summonCoroutine; // 현재 실행 중인 장애물 소환 Coroutine
         private GameObject currentTelegraph; // 현재 생성되어 있는 범위 표시 오브젝트
 
@@ -173,6 +175,7 @@ namespace TeamProject01.Gameplay
 
             EnemyObstacle obstacle = Instantiate(obstaclePrefab, obstaclePosition, Quaternion.identity, runtimeRoot); // 실제 장애물 Prefab을 Monsters 밑에 생성한다.
             obstacle.Configure(obstacleRadius, obstacleLifeTime); // 장애물 반경과 유지 시간을 장애물에게 전달한다.
+            ObstacleSummoned?.Invoke(obstaclePosition);
 
             spawnedObstacles.Add(obstacle); // 생성된 장애물을 현재 장애물 목록에 등록한다.
 

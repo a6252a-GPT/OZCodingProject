@@ -431,6 +431,7 @@ GameObject:
   - component: {fileID: 6812909663992130495}
   - component: {fileID: 1945035534130181191}
   - component: {fileID: 6362418274911170065}
+  - component: {fileID: 308245562760762355}
   m_Layer: 0
   m_Name: Enemy_Ranged_SkeletonCrossbow
   m_TagString: Untagged
@@ -586,6 +587,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyReward
   experienceReward: 1
   goldReward: 1
+  experienceDropChance: 0.5
+  goldDropChance: 0.5
+  worldRewardAmountMultiplier: 2
   enableEliteDiamondDrop: 1
   eliteDiamondDropChance: 0.5
   eliteDiamondReward: 2
@@ -659,6 +663,29 @@ MonoBehaviour:
   useDirectDeathState: 1
   deathStateFullPath: Base Layer.Death
   deathCrossFadeDuration: 0.03
+--- !u!114 &308245562760762355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8131765808429881157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f8b54773e0ea94699c0c26022cbfc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySfxBridge
+  deathCue: 0
+  jumpLandingCue: 0
+  suicideExplosionCue: 0
+  slowZoneCastCue: 0
+  rangedAttackCue: 0
+  segmentCutCastCue: 0
+  segmentCutLaunchCue: 0
+  obstacleSummonCue: 0
+  meleeAttackCue: 0
+  shieldLoopCue: 0
+  portalTeleportCue: 0
 --- !u!1001 &514377774032128770
 PrefabInstance:
   m_ObjectHideFlags: 0

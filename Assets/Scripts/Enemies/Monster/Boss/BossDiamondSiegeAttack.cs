@@ -254,7 +254,7 @@ namespace TeamProject01.Gameplay
             ReleaseActionLock();
         }
 
-        // 현재 보스 Phase에 맞춰 Normal 손바닥 공격 또는 Berserk 대형 공격을 실행한다.
+        // ?꾩옱 蹂댁뒪 Phase??留욎떠 Normal ?먮컮??怨듦꺽 ?먮뒗 Berserk ???怨듦꺽???ㅽ뻾?쒕떎.
         private IEnumerator AttackRoutine(BossPhase attackPhase)
         {
             IsAttacking = true;
@@ -288,7 +288,7 @@ namespace TeamProject01.Gameplay
             FinishAttack();
         }
 
-        // Diamond 애니메이션을 재생하고 Animation Event 또는 fallback 타이밍에서 발사한다.
+        // Diamond ?좊땲硫붿씠?섏쓣 ?ъ깮?섍퀬 Animation Event ?먮뒗 fallback ??대컢?먯꽌 諛쒖궗?쒕떎.
         private IEnumerator NormalAnimationAttackRoutine()
         {
             waitsForNormalAnimationEvent = true;
@@ -329,7 +329,7 @@ namespace TeamProject01.Gameplay
             waitsForNormalAnimationEvent = false;
         }
 
-        // Animation Event가 손을 내민 정확한 프레임에서 호출하는 함수다.
+        // Animation Event媛 ?먯쓣 ?대? ?뺥솗???꾨젅?꾩뿉???몄텧?섎뒗 ?⑥닔??
         public void OnDiamondAnimationFire()
         {
             if (!waitsForNormalAnimationEvent)
@@ -392,7 +392,7 @@ namespace TeamProject01.Gameplay
             yield return StartCoroutine(SpawnChargedProjectile(handFirePoint, normalSingleChargeDuration, normalSingleChargeScaleMultiplier, normalSingleChargeForwardOffset, normalFireShakeDuration, normalFireShakeDistance, normalFireShakeSpeed));
         }
 
-        // 3연발은 각 발사 순간마다 짧은 몸 흔들림과 손/팔 미니 반동을 반복한다.
+        // 3?곕컻? 媛?諛쒖궗 ?쒓컙留덈떎 吏㏃? 紐??붾뱾由쇨낵 ????誘몃땲 諛섎룞??諛섎났?쒕떎.
         private IEnumerator FireNormalBurstFromHand()
         {
             int shotCount = Mathf.Max(1, normalBurstShotCount);
@@ -420,7 +420,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        // 손바닥 앞에서 다이아몬드를 키우고, 필요하면 커지는 동안 앞으로 밀어낸 뒤 발사한다.
+        // ?먮컮???욎뿉???ㅼ씠?꾨が?쒕? ?ㅼ슦怨? ?꾩슂?섎㈃ 而ㅼ????숈븞 ?욎쑝濡?諛?대궦 ??諛쒖궗?쒕떎.
         private IEnumerator SpawnChargedProjectile(Transform selectedFirePoint, float chargeDuration, float scaleMultiplier, float forwardOffset, float shakeDuration, float shakeDistance, float shakeSpeed)
         {
             Vector3 spawnPosition = selectedFirePoint.position;
@@ -432,6 +432,7 @@ namespace TeamProject01.Gameplay
 
             projectile.SetNexusDamage(normalProjectileNexusDamage);
             chargingProjectile = projectile;
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossDiamondCharge, spawnPosition, true);
 
             Transform projectileTransform = projectile.transform;
             Vector3 originalScale = projectileTransform.localScale;
@@ -477,6 +478,7 @@ namespace TeamProject01.Gameplay
 
             PlayNormalFireShake(shakeDuration, shakeDistance, shakeSpeed);
             ClearChargingProjectile(projectile);
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossDiamondLaunch, chargedPosition, true);
             projectile.Configure(nexus);
         }
 
@@ -503,10 +505,12 @@ namespace TeamProject01.Gameplay
         {
             int shotCount = Mathf.Max(1, berserkShotCount);
             Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent);
+            Vector3 burstPosition = burstCenter != null ? burstCenter.position : transform.position;
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossDiamondBurstLarge, burstPosition, true);
 
             for (int i = 0; i < shotCount; i++)
             {
-                Vector3 spawnPosition = burstCenter.position;
+                Vector3 spawnPosition = burstPosition;
                 Vector3 formationPosition = CalculateFormationPosition(i);
                 Vector3 homingTargetOffset = CalculateHomingTargetOffset(i, shotCount);
                 Vector3 formationDirection = formationPosition - spawnPosition;
@@ -700,7 +704,7 @@ namespace TeamProject01.Gameplay
             isAnimatorPausedByAttack = true;
         }
 
-        // 발사 후 손을 다시 가져오는 애니메이션 구간만 빠르게 재생한다.
+        // 諛쒖궗 ???먯쓣 ?ㅼ떆 媛?몄삤???좊땲硫붿씠??援ш컙留?鍮좊Ⅴ寃??ъ깮?쒕떎.
         private IEnumerator PlayNormalRecoilAnimationRoutine()
         {
             if (bossAnimator == null)
@@ -775,7 +779,7 @@ namespace TeamProject01.Gameplay
             normalFireShakeCoroutine = StartCoroutine(NormalFireShakeRoutine(shakeDuration, shakeDistance, shakeSpeed));
         }
 
-        // 발사 순간 보스 Visual만 짧게 뒤로 흔들어 반동을 만든다.
+        // 諛쒖궗 ?쒓컙 蹂댁뒪 Visual留?吏㏐쾶 ?ㅻ줈 ?붾뱾??諛섎룞??留뚮뱺??
         private IEnumerator NormalFireShakeRoutine(float shakeDuration, float shakeDistance, float shakeSpeed)
         {
             Transform shakeTarget = normalFireShakeTarget;
@@ -835,7 +839,7 @@ namespace TeamProject01.Gameplay
             normalBurstHandRecoilCoroutine = StartCoroutine(NormalBurstHandRecoilRoutine());
         }
 
-        // 3연발 발사마다 손/팔 본을 짧게 뒤로 밀었다가 원위치시킨다.
+        // 3?곕컻 諛쒖궗留덈떎 ????蹂몄쓣 吏㏐쾶 ?ㅻ줈 諛?덈떎媛 ?먯쐞移섏떆?⑤떎.
         private IEnumerator NormalBurstHandRecoilRoutine()
         {
             Transform recoilTarget = normalBurstHandRecoilTarget;
