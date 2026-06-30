@@ -17,7 +17,6 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "bonusChestWaveSpawner", "보너스 상자 스포너");
 
             WaveInspectorUtility.DrawSection("보스 진행 설정", "보스는 등록된 순서대로 등장합니다.");
-            WaveInspectorUtility.DrawProperty(serializedObject, "enableBossWave", "보스 웨이브 사용");
             WaveInspectorUtility.DrawProperty(serializedObject, "bossStartStage", "첫 보스 Stage");
             WaveInspectorUtility.DrawProperty(serializedObject, "bossIntervalStage", "보스 등장 간격 Stage");
             WaveInspectorUtility.DrawProperty(serializedObject, "blockAdditionalBossWhileAlive", "보스 생존 중 추가 등장 금지");

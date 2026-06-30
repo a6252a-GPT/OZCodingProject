@@ -163,6 +163,12 @@ namespace TeamProject01.Gameplay
         [Min(1)]
         [SerializeField] private int frontRowCount = 5; // 한 게이트에서 앞줄에 몇 마리씩 세울지입니다.
 
+        [Header("스폰 퍼짐 설정")]
+        [SerializeField] private bool useSpawnSpread = false; // 켜면 선택된 방향 안에서 몬스터 위치를 조금 퍼뜨립니다.
+
+        [Min(0.0f)]
+        [SerializeField] private float spawnSpreadAmount = 8.0f; // 숫자가 클수록 한 줄이 아니라 넓게 퍼져서 생성됩니다.
+
         [Header("스폰 혼잡 보정")]
         [SerializeField] private bool useCongestionPush = false; // 켜면 스폰 예정 위치가 붐빌 때 넥서스 반대 방향으로 조금 더 멀리 생성합니다.
 
@@ -227,6 +233,7 @@ namespace TeamProject01.Gameplay
             float spawnWindowSeconds = Mathf.Max(0.1f, stageDurationSeconds * (spawnWindowPercent / 100.0f));
             WaveStageDifficulty difficulty = ResolveDifficultyForStage(stage);
             EnemySpawner.ExternalSpawnCongestionOptions congestionOptions = BuildCongestionOptions();
+            EnemySpawner.ExternalSpawnSpreadOptions spreadOptions = BuildSpreadOptions();
             List<EnemyController> spawnedBatchMonsters = new List<EnemyController>();
 
             for (int batchIndex = 0; batchIndex < safeBatchCount; batchIndex++)
@@ -243,7 +250,7 @@ namespace TeamProject01.Gameplay
                 {
                     spawnedBatchMonsters.Clear();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spawnedBatchMonsters))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, spawnedBatchMonsters))
                     {
                         ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
                         waveTracker?.RegisterCurrentStageEnemies(stage, spawnedBatchMonsters);
@@ -256,7 +263,7 @@ namespace TeamProject01.Gameplay
                 {
                     spawnedBatchMonsters.Clear();
 
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spawnedBatchMonsters))
+                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, spawnedBatchMonsters))
                     {
                         ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
                         MarkSpawnedElites(spawnedBatchMonsters, GetEliteCombinationType(totalEntries));
@@ -282,6 +289,16 @@ namespace TeamProject01.Gameplay
                 congestionMonsterThreshold,
                 congestionPushDistance,
                 congestionMaxPushDistance);
+        }
+
+        private EnemySpawner.ExternalSpawnSpreadOptions BuildSpreadOptions()
+        {
+            if (!useSpawnSpread)
+            {
+                return EnemySpawner.ExternalSpawnSpreadOptions.Disabled;
+            }
+
+            return new EnemySpawner.ExternalSpawnSpreadOptions(true, spawnSpreadAmount);
         }
 
         private void StopCurrentRoutine()

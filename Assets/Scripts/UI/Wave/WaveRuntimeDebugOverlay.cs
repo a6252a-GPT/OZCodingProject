@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace TeamProject01.Gameplay
@@ -14,15 +15,16 @@ namespace TeamProject01.Gameplay
         [Header("표시 문구")]
         [SerializeField] private string normalStageHeaderFormat = "STAGE {0:00}"; // 일반 Stage 제목 형식입니다.
         [SerializeField] private string bossStageHeaderFormat = "BOSS STAGE {0:00}"; // 보스 Stage 제목 형식입니다.
-        [SerializeField] private string bonusStageHeaderText = "BONUS STAGE"; // 골드 수집 특수 Stage 제목입니다.
+        [SerializeField] private string bonusStageHeaderText = "BONUS STAGE"; // 마력 구슬 수집 특수 Stage 제목입니다.
         [SerializeField] private string normalPopupFormat = "STAGE {0:00} START"; // 일반 Stage 시작 팝업 형식입니다.
         [SerializeField] private string bossPopupFormat = "BOSS STAGE {0:00}"; // 보스 Stage 시작 팝업 형식입니다.
-        [SerializeField] private string bonusPopupText = "BONUS STAGE START"; // 골드 수집 특수 Stage 시작 팝업입니다.
+        [SerializeField] private string bonusPopupText = "BONUS STAGE START"; // 마력 구슬 수집 특수 Stage 시작 팝업입니다.
         [SerializeField] private string stateLabel = "상태"; // 상태 줄 제목입니다.
         [SerializeField] private string nextStageTimeLabel = "다음 Stage까지"; // 일반 Stage 타이머 줄 제목입니다.
         [SerializeField] private string bossWaitText = "보스 처치 대기"; // 보스 Stage에서 타이머 대신 표시할 문구입니다.
         [SerializeField] private string bonusRewardWaitText = "상자를 획득하세요"; // 보상 상자 대기 중 표시할 문구입니다.
-        [SerializeField] private string goldCollectLabel = "골드 수집"; // 골드 수집 진행도 제목입니다.
+        [FormerlySerializedAs("goldCollectLabel")]
+        [SerializeField] private string manaOrbCollectLabel = "마력 구슬 수집"; // 마력 구슬 수집 진행도 제목입니다.
         [SerializeField] private string activeMonsterLabel = "이번 웨이브 남은 적"; // 이번 Stage 기준 남은 몬스터 수 줄 제목입니다.
         [SerializeField] private string fieldMonsterLabel = "현재 필드 적"; // 씬에 실제로 살아있는 전체 몬스터 수 줄 제목입니다.
         [SerializeField] private string normalStateText = "일반"; // 일반 상태 표시 문구입니다.
@@ -43,23 +45,7 @@ namespace TeamProject01.Gameplay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateInEditorPlayMode()
         {
-            if (!Application.isPlaying)
-            {
-                return;
-            }
-
-            if (FindFirstObjectByType<WaveController>() == null)
-            {
-                return;
-            }
-
-            if (FindFirstObjectByType<WaveRuntimeDebugOverlay>() != null)
-            {
-                return;
-            }
-
-            GameObject overlayObject = new GameObject("WaveRuntimeDebugOverlay_Runtime");
-            overlayObject.AddComponent<WaveRuntimeDebugOverlay>();
+            return;
         }
 #endif
 
@@ -147,29 +133,29 @@ namespace TeamProject01.Gameplay
 
         private string BuildSpecialStageBody()
         {
-            GoldCollectSpecialWave goldWave = waveController != null ? waveController.CurrentGoldCollectSpecialWave : null;
+            ManaOrbCollectSpecialWave manaOrbWave = waveController != null ? waveController.CurrentManaOrbCollectSpecialWave : null;
 
-            if (goldWave == null)
+            if (manaOrbWave == null)
             {
                 return $"{stateLabel}: {specialStateText}\n{bonusRewardWaitText}";
             }
 
-            if (goldWave.IsCollectStageActive)
+            if (manaOrbWave.IsCollectStageActive)
             {
-                return $"{stateLabel}: 골드 수집\n" +
-                       $"{nextStageTimeLabel}: {FormatTime(goldWave.RemainingCollectSeconds)}\n" +
-                       $"{goldCollectLabel}: {goldWave.CollectedGoldCount}/{goldWave.SpawnedGoldCount}";
+                return $"{stateLabel}: 마력 구슬 수집\n" +
+                       $"{nextStageTimeLabel}: {FormatTime(manaOrbWave.RemainingCollectSeconds)}\n" +
+                       $"{manaOrbCollectLabel}: {manaOrbWave.CollectedManaOrbCount}/{manaOrbWave.SpawnedManaOrbCount}";
             }
 
-            if (goldWave.IsRewardStageActive)
+            if (manaOrbWave.IsRewardStageActive)
             {
                 return $"{stateLabel}: 보상 선택\n" +
                        $"{bonusRewardWaitText}\n" +
-                       $"{goldCollectLabel}: {goldWave.CollectedGoldCount}/{goldWave.SpawnedGoldCount}";
+                       $"{manaOrbCollectLabel}: {manaOrbWave.CollectedManaOrbCount}/{manaOrbWave.SpawnedManaOrbCount}";
             }
 
             return $"{stateLabel}: {specialStateText}\n" +
-                   $"{goldCollectLabel}: {goldWave.CollectedGoldCount}/{goldWave.SpawnedGoldCount}";
+                   $"{manaOrbCollectLabel}: {manaOrbWave.CollectedManaOrbCount}/{manaOrbWave.SpawnedManaOrbCount}";
         }
 
         private string GetProgressLine()
