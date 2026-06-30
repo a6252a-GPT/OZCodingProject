@@ -20,6 +20,29 @@ namespace TeamProject01.Gameplay
         [Range(0.01f, 1.0f)]
         [SerializeField] private float telegraphEndAlpha = 1.0f; // 점프 직전 예고 표시의 투명도
 
+        [Header("Jump VFX")]
+        [SerializeField] private GameObject takeoffVfxPrefab; // 점프 전 땅치기 순간 생성할 VFX
+
+        [SerializeField] private GameObject landingImpactVfxPrefab; // 착지 순간 생성할 VFX
+
+        [Min(0.0f)]
+        [SerializeField] private float takeoffVfxGroundHeight = 0.03f; // 점프 전 VFX가 지면에 묻히지 않도록 적용할 높이
+
+        [Min(0.0f)]
+        [SerializeField] private float landingImpactVfxGroundHeight = 0.03f; // 착지 VFX가 지면에 묻히지 않도록 적용할 높이
+
+        [Min(0.1f)]
+        [SerializeField] private float takeoffVfxScale = 1.0f; // 점프 전 VFX 크기 배율
+
+        [Min(0.1f)]
+        [SerializeField] private float landingImpactVfxScale = 1.5f; // 착지 VFX 크기 배율
+
+        [Min(0.01f)]
+        [SerializeField] private float takeoffVfxLifeTime = 2.0f; // 점프 전 VFX 제거 시간
+
+        [Min(0.01f)]
+        [SerializeField] private float landingImpactVfxLifeTime = 2.5f; // 착지 VFX 제거 시간
+
         [Header("Landing Position")]
         [Min(0.0f)]
         [SerializeField] private float minimumLandingDistance = 2.5f; // 컨보이 중심에서 착지 지점까지의 최소 거리
@@ -56,8 +79,6 @@ namespace TeamProject01.Gameplay
 
         private BossController bossController; // 보스 Phase와 행동 잠금을 관리하는 Script Component
 
-        private Rigidbody bossRigidbody; // 점프 중 물리 낙하와 충돌 간섭을 막기 위한 Rigidbody 참조
-
         private Transform convoyTarget; // 보스가 점프할 위치의 기준이 되는 컨보이 Transform
 
         private Coroutine attackCoroutine; // 현재 실행 중인 점프 공격 Coroutine
@@ -74,16 +95,11 @@ namespace TeamProject01.Gameplay
 
         private bool jumpInterrupted; // 점프 도중 보스가 사망해 공격이 중단됐는지 나타내는 값
 
-        private bool previousIsKinematic; // 점프 전 Rigidbody의 Is Kinematic 상태
-
-        private bool previousUseGravity; // 점프 전 Rigidbody의 Use Gravity 상태
-
         public bool IsAttacking { get; private set; } // 현재 점프 충격파 패턴이 진행 중인지 나타내는 값
 
         private void Awake()
         {
             bossController = GetComponent<BossController>(); // 같은 Boss01에 붙어 있는 BossController를 가져온다.
-            bossRigidbody = GetComponent<Rigidbody>(); // 같은 Boss01에 붙어 있는 Rigidbody를 가져온다.
             TryFindConvoyTarget(); // MonsterInteractionApi에 등록된 현재 컨보이를 찾는다.
         }
 
@@ -155,7 +171,6 @@ namespace TeamProject01.Gameplay
                 transform.position = groundedPosition; // Boss01이 공중에 남지 않도록 위치를 적용한다.
             }
 
-            RestoreRigidbodyState(); // 점프 전에 사용하던 Rigidbody 상태로 복구한다.
             CleanupTelegraph(); // 남아 있는 착지 예고 표시를 제거한다.
 
             IsAttacking = false; // 공격 상태를 해제한다.
@@ -207,11 +222,11 @@ namespace TeamProject01.Gameplay
                 yield break; // 점프하지 않고 종료한다.
             }
 
-            PrepareRigidbodyForJump(jumpStartPosition.y); // 점프 중 Rigidbody 물리 간섭이 없도록 설정한다.
+            SpawnTakeoffVfx(jumpStartPosition); // 점프 직전 땅치기 VFX를 생성한다.
+            BeginJumpState(jumpStartPosition.y); // 점프 중 비활성화 안전 처리를 위해 지면 높이와 점프 상태를 저장한다.
 
             yield return ArcMove(jumpStartPosition, landingPosition); // Boss01을 착지 위치까지 포물선으로 이동시킨다.
 
-            RestoreRigidbodyState(); // 점프 전 Rigidbody 상태로 되돌린다.
             isAirborne = false; // 공중 상태를 해제한다.
 
             if (jumpInterrupted || bossController == null || bossController.IsDead) // 점프 도중 보스가 사망했다면
@@ -224,6 +239,7 @@ namespace TeamProject01.Gameplay
             transform.position = landingPosition; // 포물선 계산 후 최종 착지 위치를 정확하게 맞춘다.
 
             CleanupTelegraph(); // 착지와 동시에 예고 표시를 제거한다.
+            SpawnLandingImpactVfx(landingPosition); // 착지 순간 충격 VFX를 생성한다.
 
             ApplyLandingShockwave(); // 기존 컨보이 세그먼트 충격파 API를 호출한다.
 
@@ -291,32 +307,34 @@ namespace TeamProject01.Gameplay
             transform.position = to; // 점프가 끝나면 최종 착지 위치를 정확하게 적용한다.
         }
 
-        private void PrepareRigidbodyForJump(float groundHeight) // 점프 중 Rigidbody 물리 간섭을 방지하는 함수
+        private void BeginJumpState(float groundHeight) // 점프 중 비활성화 상황에 대비해 현재 지면 높이와 점프 상태를 저장한다.
         {
             jumpGroundHeight = groundHeight; // 점프 시작 당시의 Boss01 지면 높이를 저장한다.
             isAirborne = true; // Boss01이 점프 상태라고 저장한다.
-
-            if (bossRigidbody == null) // Boss01에 Rigidbody가 없다면
-            {
-                return; // 물리 상태를 변경하지 않는다.
-            }
-
-            previousIsKinematic = bossRigidbody.isKinematic; // 점프 전 Is Kinematic 상태를 저장한다.
-            previousUseGravity = bossRigidbody.useGravity; // 점프 전 Use Gravity 상태를 저장한다.
-
-            bossRigidbody.isKinematic = true; // 점프 위치를 Script가 직접 제어하도록 Kinematic으로 설정한다.
-            bossRigidbody.useGravity = false; // 점프 도중 중력이 중복 적용되지 않도록 비활성화한다.
         }
 
-        private void RestoreRigidbodyState() // 점프 전에 사용하던 Rigidbody 상태로 되돌리는 함수
+        private void SpawnTakeoffVfx(Vector3 position) // 점프 전 땅치기 VFX를 생성한다.
         {
-            if (bossRigidbody == null) // Boss01에 Rigidbody가 없다면
+            SpawnOneShotVfx(takeoffVfxPrefab, position, takeoffVfxGroundHeight, takeoffVfxScale, takeoffVfxLifeTime);
+        }
+
+        private void SpawnLandingImpactVfx(Vector3 position) // 착지 순간 충격 VFX를 생성한다.
+        {
+            SpawnOneShotVfx(landingImpactVfxPrefab, position, landingImpactVfxGroundHeight, landingImpactVfxScale, landingImpactVfxLifeTime);
+        }
+
+        private void SpawnOneShotVfx(GameObject prefab, Vector3 position, float groundHeight, float scaleMultiplier, float lifeTime) // 단발성 VFX를 바닥에 생성하고 자동 제거한다.
+        {
+            if (prefab == null)
             {
-                return; // 복구할 물리 상태가 없다.
+                return;
             }
 
-            bossRigidbody.isKinematic = previousIsKinematic; // 점프 전 Is Kinematic 상태로 복구한다.
-            bossRigidbody.useGravity = previousUseGravity; // 점프 전 Use Gravity 상태로 복구한다.
+            Vector3 spawnPosition = GroundService.ProjectToGround(position, groundHeight);
+            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent);
+            GameObject vfx = Instantiate(prefab, spawnPosition, Quaternion.identity, runtimeRoot);
+            vfx.transform.localScale = vfx.transform.localScale * scaleMultiplier;
+            Destroy(vfx, lifeTime);
         }
 
         private void ApplyLandingShockwave() // 착지 위치를 중심으로 기존 컨보이 충격파 시스템을 호출하는 함수
@@ -360,8 +378,7 @@ namespace TeamProject01.Gameplay
         {
             CleanupTelegraph(); // 이전 공격에서 남아 있을 수 있는 예고 표시를 제거한다.
 
-            Vector3 telegraphPosition = landingPosition; // 계산된 착지 위치를 가져온다.
-            telegraphPosition.y = telegraphGroundHeight; // 예고 표시 전용 지면 높이를 적용한다.
+            Vector3 telegraphPosition = GroundService.ProjectToGround(landingPosition, telegraphGroundHeight);
 
             Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monsters Runtime Root를 가져온다.
 
@@ -431,7 +448,6 @@ namespace TeamProject01.Gameplay
         private void FinishAttack() // 점프 충격파 공격 상태를 정리하는 함수
         {
             CleanupTelegraph(); // 남아 있을 수 있는 착지 예고 표시를 제거한다.
-            RestoreRigidbodyState(); // Rigidbody 상태를 원래대로 복구한다.
 
             IsAttacking = false; // 공격 진행 상태를 해제한다.
             isAirborne = false; // 점프 상태를 해제한다.

@@ -29,7 +29,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3733567387587629225}
   - {fileID: 8257454498682522247}
   m_Father: {fileID: 455114429101644103}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -49,10 +48,13 @@ GameObject:
   - component: {fileID: 7003265240441916549}
   - component: {fileID: 1640011034776616740}
   - component: {fileID: 3892447527216183174}
-  - component: {fileID: 2539157941389820013}
   - component: {fileID: 5021765745943545633}
   - component: {fileID: 3205997752453735538}
   - component: {fileID: 8068359793800653395}
+  - component: {fileID: 5447380061138248389}
+  - component: {fileID: 7237134880412702041}
+  - component: {fileID: 6854103985637493060}
+  - component: {fileID: 2998984664303431488}
   m_Layer: 0
   m_Name: Enemy_Elite_PortalTotemCaster
   m_TagString: Untagged
@@ -74,7 +76,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2899567691947323570}
-  - {fileID: 4065668330829946220}
+  - {fileID: 7752823849469874613}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &2402161337901533491
@@ -203,22 +205,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyReward
   experienceReward: 5
   goldReward: 5
---- !u!114 &2539157941389820013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3633461487991058746}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff6a18c6442c92443b60d453f7e930af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyGrowthOrbDropper
-  growthOrbPrefab: {fileID: 5524355113652086816, guid: 45c9b8c8988fc6a4bb32859e0acc92e6, type: 3}
-  dropCount: 1
-  dropRandomRadius: 5
-  dropHeightOffset: 3
+  enableEliteDiamondDrop: 1
+  eliteDiamondDropChance: 0.5
+  eliteDiamondReward: 2
 --- !u!114 &5021765745943545633
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -261,97 +250,63 @@ MonoBehaviour:
   attackDamage: 3
   attackRange: 6
   attackDelay: 1
---- !u!1 &7400279788784723552
-GameObject:
+--- !u!114 &5447380061138248389
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3733567387587629225}
-  - component: {fileID: 356881323808584820}
-  - component: {fileID: 7326005724408321760}
-  m_Layer: 0
-  m_Name: CasterBody
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &3733567387587629225
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7400279788784723552}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2899567691947323570}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &356881323808584820
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7400279788784723552}
-  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &7326005724408321760
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7400279788784723552}
+  m_GameObject: {fileID: 3633461487991058746}
   m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 5c43f0e7338467f429a411a48a3fbe2a, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!1001 &5612829569005931232
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dc90e42da02ea64d89ae6b89fc3949a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyPortalTotemCasterAnimatorBridge
+  animator: {fileID: 7091259633117504749}
+--- !u!114 &7237134880412702041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3633461487991058746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 068d9518ac4236a4dbbab65f395610c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMeleeAnimatorBridge
+  animator: {fileID: 7091259633117504749}
+--- !u!114 &6854103985637493060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3633461487991058746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d0b741422c3f8d4f8dd74673ad36758, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyDeathAnimatorBridge
+  animator: {fileID: 7091259633117504749}
+  deathDuration: 3
+  hpBarRoot: {fileID: 5478006242599163562}
+  useDirectDeathState: 1
+  deathStateFullPath: Base Layer.Death
+  deathCrossFadeDuration: 0.03
+--- !u!114 &2998984664303431488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3633461487991058746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
+--- !u!1001 &2170578031235614265
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -360,9 +315,17 @@ PrefabInstance:
     m_TransformParent: {fileID: 455114429101644103}
     m_Modifications:
     - target: {fileID: 62207697838962261, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
-      propertyPath: health
-      value: 
-      objectReference: {fileID: 464322772614052711}
+      propertyPath: fixedFillWidth
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 62207697838962261, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
+      propertyPath: fillVerticalPadding
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 62207697838962261, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
+      propertyPath: fillHorizontalPadding
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5916244055597912211, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_Name
       value: EnemyHpBar_Elite
@@ -393,11 +356,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 150
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 40
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_LocalPosition.x
@@ -433,7 +396,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 3.8
+      value: 3.7
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -452,10 +415,15 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
---- !u!224 &4065668330829946220 stripped
+--- !u!1 &5478006242599163562 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5916244055597912211, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
+  m_PrefabInstance: {fileID: 2170578031235614265}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &7752823849469874613 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
-  m_PrefabInstance: {fileID: 5612829569005931232}
+  m_PrefabInstance: {fileID: 2170578031235614265}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7365784074236260739
 PrefabInstance:
@@ -466,16 +434,20 @@ PrefabInstance:
     m_TransformParent: {fileID: 2691159892429520367}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 22e1f7aec1abda54b89516bfb5befef3, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.9
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 22e1f7aec1abda54b89516bfb5befef3, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 22e1f7aec1abda54b89516bfb5befef3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 0.327
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 22e1f7aec1abda54b89516bfb5befef3, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.154
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 22e1f7aec1abda54b89516bfb5befef3, type: 3}
       propertyPath: m_LocalRotation.w
@@ -579,6 +551,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7531195672572720767, guid: 38aad49323e093242968db0a4551f7a4, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: ecd9be16a41984e42a282a96cdd835f9, type: 2}
     - target: {fileID: 919132149155446097, guid: 38aad49323e093242968db0a4551f7a4, type: 3}
       propertyPath: m_Name
       value: BlackKnight
@@ -594,6 +570,11 @@ PrefabInstance:
 --- !u!4 &2691159892429520367 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5785451829565001859, guid: 38aad49323e093242968db0a4551f7a4, type: 3}
+  m_PrefabInstance: {fileID: 8436058354699283820}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &7091259633117504749 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: -7531195672572720767, guid: 38aad49323e093242968db0a4551f7a4, type: 3}
   m_PrefabInstance: {fileID: 8436058354699283820}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &8257454498682522247 stripped

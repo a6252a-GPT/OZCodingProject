@@ -285,6 +285,7 @@ GameObject:
   - component: {fileID: 5788007034385828927}
   - component: {fileID: 561168228479154300}
   - component: {fileID: 7545327022618642168}
+  - component: {fileID: 5835925850707274760}
   m_Layer: 0
   m_Name: Enemy_Elite_DragonHatchling
   m_TagString: Untagged
@@ -400,7 +401,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMovement
   moveSpeed: 1.25
   bodyRadius: 0.7
-  groundHeight: 0.5
+  groundHeight: 0.72
 --- !u!114 &2163354638074835725
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -512,6 +513,18 @@ MonoBehaviour:
   useDirectDeathState: 1
   deathStateFullPath: Base Layer.Death
   deathCrossFadeDuration: 0.03
+--- !u!114 &5835925850707274760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4908572894271289537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
 --- !u!1 &7006627359300088648
 GameObject:
   m_ObjectHideFlags: 0
@@ -879,7 +892,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5909652121366725933, guid: 4b28b01f2feb50c43bec048a4206f627, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.72
+      value: -0.023
       objectReference: {fileID: 0}
     - target: {fileID: 5909652121366725933, guid: 4b28b01f2feb50c43bec048a4206f627, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1030,7 +1043,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1.5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8469266554293639052, guid: 36b438806b996c14f89acaa101af7dba, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

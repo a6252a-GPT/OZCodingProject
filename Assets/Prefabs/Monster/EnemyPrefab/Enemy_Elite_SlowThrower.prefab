@@ -314,10 +314,10 @@ GameObject:
   - component: {fileID: 3145102882194568359}
   - component: {fileID: 6285566132274669943}
   - component: {fileID: 1828938407891327768}
-  - component: {fileID: 7405672191153917853}
   - component: {fileID: 5015554468395719231}
   - component: {fileID: 306471315320194517}
   - component: {fileID: 5040398450297536752}
+  - component: {fileID: 8413668640631527016}
   m_Layer: 0
   m_Name: Enemy_Elite_SlowThrower
   m_TagString: Untagged
@@ -529,22 +529,6 @@ MonoBehaviour:
   attackPowerAura: {fileID: 6900043716245973653}
   moveSpeedAura: {fileID: 5125238159379053450}
   attackSpeedAura: {fileID: 1642785248788689160}
---- !u!114 &7405672191153917853
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5488452328038482880}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff6a18c6442c92443b60d453f7e930af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyGrowthOrbDropper
-  growthOrbPrefab: {fileID: 5524355113652086816, guid: 45c9b8c8988fc6a4bb32859e0acc92e6, type: 3}
-  dropCount: 1
-  dropRandomRadius: 5
-  dropHeightOffset: 3
 --- !u!114 &5015554468395719231
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -590,6 +574,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySlowZoneThrowerAnimatorBridge
   animator: {fileID: 3104811170976160000}
   throwLockDuration: 0.8
+--- !u!114 &8413668640631527016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5488452328038482880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
 --- !u!1 &6900043716245973653
 GameObject:
   m_ObjectHideFlags: 0

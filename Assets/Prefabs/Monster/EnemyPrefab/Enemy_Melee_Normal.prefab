@@ -20,7 +20,6 @@ GameObject:
   - component: {fileID: 5680843919327838414}
   - component: {fileID: 5735232627420272555}
   - component: {fileID: 800151134672067444}
-  - component: {fileID: 2871896729067683312}
   - component: {fileID: 4172602233752267069}
   - component: {fileID: 4161754835057380908}
   - component: {fileID: -2533752562893233888}
@@ -196,7 +195,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMovement
   moveSpeed: 1.25
   bodyRadius: 0.6
-  groundHeight: 0.83
+  groundHeight: 0.72
 --- !u!114 &1753462700800549454
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -256,22 +255,6 @@ MonoBehaviour:
   attackPowerAura: {fileID: 7768208560845351925}
   moveSpeedAura: {fileID: 6280874183795697455}
   attackSpeedAura: {fileID: 7343622168687193848}
---- !u!114 &2871896729067683312
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1708190925259269492}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff6a18c6442c92443b60d453f7e930af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyGrowthOrbDropper
-  growthOrbPrefab: {fileID: 5524355113652086816, guid: 45c9b8c8988fc6a4bb32859e0acc92e6, type: 3}
-  dropCount: 1
-  dropRandomRadius: 5
-  dropHeightOffset: 3
 --- !u!114 &4172602233752267069
 MonoBehaviour:
   m_ObjectHideFlags: 0
