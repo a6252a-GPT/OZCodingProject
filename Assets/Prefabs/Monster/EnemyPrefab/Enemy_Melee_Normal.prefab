@@ -180,7 +180,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deb41073b7dba46abc3fa1481667f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHealth
-  maxHp: 30
+  maxHp: 36
 --- !u!114 &914317281394858524
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -193,7 +193,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9237098381bfde43b55d90ccba4bfc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMovement
-  moveSpeed: 1.25
+  moveSpeed: 1.1
   bodyRadius: 0.6
   groundHeight: 0.72
 --- !u!114 &1753462700800549454
@@ -210,7 +210,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMeleeAttack
   attackDamage: 1
   attackRange: 6
-  attackDelay: 1.8
+  attackDelay: 2
 --- !u!114 &5680843919327838414
 MonoBehaviour:
   m_ObjectHideFlags: 0

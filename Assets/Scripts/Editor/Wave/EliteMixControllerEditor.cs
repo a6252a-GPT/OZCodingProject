@@ -13,6 +13,9 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawScriptField(target);
             EditorGUILayout.HelpBox("엘리트는 일반 웨이브 수량 일부를 대체하며, 일반 웨이브와 같은 게이트에서 함께 등장합니다.", MessageType.Info);
 
+            WaveInspectorUtility.DrawSection("엘리트 등장 스케줄", "Stage별 엘리트 종류/수량만 정합니다. 실제 스폰 위치와 분배 방식은 기존 스폰 흐름을 사용합니다.");
+            DrawScriptedSchedule();
+
             WaveInspectorUtility.DrawSection("엘리트 비율 설정", "전체 웨이브 수량 중 몇 %를 엘리트로 바꿀지 정합니다.");
             DrawRatioSteps();
 
@@ -23,6 +26,14 @@ namespace TeamProject01.Gameplay.EditorTools
             DrawBlockedCombinations();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawScriptedSchedule()
+        {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("useScriptedEliteSchedule"), new GUIContent("고정 등장 스케줄 사용"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("challengeStartStage"), new GUIContent("도전모드 시작 Stage"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("challengeBaseEliteCount"), new GUIContent("도전모드 시작 엘리트 수"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("challengeEliteIncreaseIntervalStages"), new GUIContent("엘리트 +1 증가 Stage 간격"));
         }
 
         private void DrawRatioSteps()

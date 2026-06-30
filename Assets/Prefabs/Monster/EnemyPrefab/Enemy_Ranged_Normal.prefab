@@ -622,7 +622,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deb41073b7dba46abc3fa1481667f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHealth
-  maxHp: 30
+  maxHp: 24
 --- !u!114 &5001276309469232124
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -635,7 +635,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9237098381bfde43b55d90ccba4bfc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMovement
-  moveSpeed: 1.05
+  moveSpeed: 0.95
   bodyRadius: 0.6
   groundHeight: 0.72
 --- !u!114 &657459249462421414
@@ -654,8 +654,8 @@ MonoBehaviour:
   attackType: 0
   projectilePrefab: {fileID: 8954812500281710710, guid: 57e9224a8ac16e1458989fda358c8deb, type: 3}
   impactPrefab: {fileID: 0}
-  attackRange: 15
-  attackDelay: 1.5
+  attackRange: 13
+  attackDelay: 2
   impactLifeTimeMin: 0.5
   impactLifeTimeMax: 1
   impactSurfaceOffset: 1.2

@@ -99,12 +99,29 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            if (nexus == null) //이동 목표가 없으면
+            bool isSegmentCutFollower = segmentCutCaster != null; // 전찬우수정-0630 - 절단 몬스터는 넥서스가 아니라 컨보이 꼬리를 따라간다.
+            Transform movementTarget = nexus; // 기본 몬스터는 Nexus를 이동 목표로 사용한다.
+
+            if (isSegmentCutFollower)
+            {
+                assignedPortalTotem = null; // 전찬우수정-0630 - 절단 몬스터는 포탈 토템 유도 대신 꼬리 추적만 사용한다.
+
+                if (!segmentCutCaster.TryGetTailFollowTarget(out movementTarget))
+                {
+                    IsInStopRange = false;
+
+                    Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius);
+                    transform.position = resolvedPosition;
+
+                    return;
+                }
+            }
+            else if (nexus == null) //이동 목표가 없으면
             {
                 return; //종료한다.
             }
 
-            if (portalTotemCaster != null && portalTotemCaster.IsChanneling) // 토템 소환 몬스터가 집결 과정을 진행 중이라면
+            if (!isSegmentCutFollower && portalTotemCaster != null && portalTotemCaster.IsChanneling) // 토템 소환 몬스터가 집결 과정을 진행 중이라면
             {
                 IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
 
@@ -114,11 +131,14 @@ namespace TeamProject01.Gameplay
                 return; // 토템을 유지하는 동안 이동하지 않는다.
             }
 
-            UpdateAssignedPortalTotem(); // 현재 이동할 입구 토템을 찾거나 기존 토템 상태를 확인한다.
+            if (!isSegmentCutFollower)
+            {
+                UpdateAssignedPortalTotem(); // 현재 이동할 입구 토템을 찾거나 기존 토템 상태를 확인한다.
+            }
 
-            bool isMovingToPortalTotem = assignedPortalTotem != null; // 현재 입구 토템으로 이동 중인지 확인한다.
+            bool isMovingToPortalTotem = !isSegmentCutFollower && assignedPortalTotem != null; // 현재 입구 토템으로 이동 중인지 확인한다.
 
-            Vector3 offset = nexus.position - transform.position; // 현재 몬스터 위치에서 Nexus까지의 방향과 거리 벡터를 구한다.
+            Vector3 offset = movementTarget.position - transform.position; // 현재 몬스터 위치에서 이동 목표까지의 방향과 거리 벡터를 구한다.
 
             if (isMovingToPortalTotem) // 이동할 입구 토템이 있다면
             {
@@ -127,7 +147,7 @@ namespace TeamProject01.Gameplay
 
             offset.y = 0f; //높이 차이는 제거한다.
 
-            float stopDistance = GetStopDistance(); // 공격 Script의 AttackRange 또는 예비 정지 거리를 가져온다.
+            float stopDistance = isSegmentCutFollower ? segmentCutCaster.CastRange : GetStopDistance(); // 전찬우수정-0630 - 절단 몬스터는 절단 사거리를 꼬리 추적 정지 거리로 사용한다.
 
             if (isMovingToPortalTotem) // 입구 토템으로 이동 중이라면
             {
@@ -136,15 +156,16 @@ namespace TeamProject01.Gameplay
 
             bool isTargetInStopRange = offset.sqrMagnitude <= stopDistance * stopDistance; // 현재 이동 목표가 멈춤 거리 안에 있는지 확인한다.
 
-            bool isNexusInStopRange = !isMovingToPortalTotem && isTargetInStopRange; // Nexus가 공격 사거리 안에 있는지 확인한다.
+            bool isNexusInStopRange = !isSegmentCutFollower && !isMovingToPortalTotem && isTargetInStopRange; // Nexus가 공격 사거리 안에 있는지 확인한다.
+            bool isSegmentCutTailInStopRange = isSegmentCutFollower && isTargetInStopRange; // 전찬우수정-0630 - 꼬리 세그먼트가 절단 사거리 안인지 확인한다.
 
-            bool isSlowTargetInRange = !isMovingToPortalTotem && slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
+            bool isSlowTargetInRange = !isSegmentCutFollower && !isMovingToPortalTotem && slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
             bool isObstacleSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; // 장애물 소환 과정이 진행 중인지 확인한다.
 
             // 조성원삭제-0626 - 절단 마법 쿨타임 중에도 20 사거리에서 계속 정지하므로 단순 사거리 조건을 사용하지 않는다.
             // bool isSegmentCutTargetInRange = !isMovingToPortalTotem && segmentCutCaster != null && segmentCutCaster.IsTargetInCastRange(); //컨보이가 절단 마법 시전 범위 안에 있는지 확인한다.
 
-            bool shouldPrioritizeSegmentCut = !isMovingToPortalTotem && segmentCutCaster != null && segmentCutCaster.ShouldPrioritizeCast; // 조성원추가-0626 - 절단 마법을 우선해야 할 때만 이동을 멈춘다.
+            bool shouldPrioritizeSegmentCut = isSegmentCutFollower && segmentCutCaster.ShouldPrioritizeCast; // 전찬우수정-0630 - 절단 몬스터는 꼬리 사거리 안에서만 절단 마법을 우선한다.
 
             if (isMovingToPortalTotem && isTargetInStopRange) // 입구 토템의 Entry Radius 안에 도착했다면
             {
@@ -159,9 +180,14 @@ namespace TeamProject01.Gameplay
             // 조성원삭제-0626 - 절단 마법 사거리 안에 있다는 이유만으로 계속 정지하는 기존 조건을 사용하지 않는다.
             // if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning || isSegmentCutTargetInRange) // 공격 가능 거리거나, 투척 가능 거리거나, 장애물 소환 중이거나 절단마법 중이 거나
 
-            if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning || shouldPrioritizeSegmentCut) // 조성원추가-0626 - 절단 마법 우선 상태일 때만 정지한다.
+            if (isNexusInStopRange || isSegmentCutTailInStopRange || isSlowTargetInRange || isObstacleSummoning || shouldPrioritizeSegmentCut) // 전찬우수정-0630 - 절단 몬스터는 꼬리 사거리 안에서 정지한다.
             {
-                IsInStopRange = isNexusInStopRange; // 이 값은 Nexus 공격 사거리 여부만 저장한다.
+                IsInStopRange = isNexusInStopRange || isSegmentCutTailInStopRange || shouldPrioritizeSegmentCut; // 절단 몬스터의 정지 상태도 이동 애니메이션에 반영한다.
+
+                if (isSegmentCutFollower && offset.sqrMagnitude > 0.0001f)
+                {
+                    transform.rotation = Quaternion.LookRotation(offset.normalized, Vector3.up); // 꼬리 정지 중에도 꼬리 방향을 바라본다.
+                }
 
                 ////// 전찬우추가-0619 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
                 Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-0619 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.

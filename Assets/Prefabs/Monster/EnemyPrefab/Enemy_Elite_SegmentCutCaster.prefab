@@ -533,7 +533,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deb41073b7dba46abc3fa1481667f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHealth
-  maxHp: 50
+  maxHp: 520
 --- !u!114 &6973016663869105545
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -608,9 +608,9 @@ MonoBehaviour:
   castPoint: {fileID: 3240025722427183840}
   magicEffectPrefab: {fileID: 2038064133065469409, guid: 9fb4f701665eb494594e861ce9729cc8, type: 3}
   projectilePrefab: {fileID: 6121782625727900641, guid: d87acd185d3eb7d439999f65760bede3, type: 3}
-  firstCastDelay: 3
+  firstCastDelay: 5
   castRange: 20
-  castInterval: 8
+  castInterval: 15
   castDelay: 2
 --- !u!114 &2376961750950944762
 MonoBehaviour:

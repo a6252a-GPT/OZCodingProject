@@ -18,6 +18,9 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "baseSpawnCount", "기본 스폰 수");
             DrawScaleSteps();
 
+            WaveInspectorUtility.DrawSection("초중반 일반 수량 보정", "정확히 일치하는 Stage의 일반 몬스터 수만 덮어씁니다. 엘리트 수량은 그대로 둡니다.");
+            DrawNormalSpawnCountOverrides();
+
             WaveInspectorUtility.DrawSection("난이도 배율", "Stage별로 생성 직후 몬스터 체력/이동속도/Nexus 피해 배율을 적용합니다.");
             DrawDifficultySteps();
 
@@ -26,7 +29,16 @@ namespace TeamProject01.Gameplay.EditorTools
 
             WaveInspectorUtility.DrawSection("고급 설정", "초반에 집중해서 나오게 하는 시간/게이트 설정입니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "spawnWindowPercent", "스폰 집중 비율 (%)");
-            WaveInspectorUtility.DrawProperty(serializedObject, "spawnBatchCount", "스폰 묶음 횟수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "spawnBatchCount", "기존 묶음 횟수 Fallback");
+
+            WaveInspectorUtility.DrawSection("일반 스폰 분할", "일반 몬스터 총량을 기준으로 1회 스폰 수를 제한하고, 지정 시간 안에 반복 스폰합니다.");
+            WaveInspectorUtility.DrawProperty(serializedObject, "normalSpawnWindowSeconds", "일반 스폰 완료 시간");
+            WaveInspectorUtility.DrawProperty(serializedObject, "normalSpawnSplitDivisor", "총량 분할 기준");
+            WaveInspectorUtility.DrawProperty(serializedObject, "minMonstersPerSpawnTick", "1회 최소 스폰 수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "maxMonstersPerSpawnTick", "1회 최대 스폰 수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "avoidPreviousSpawnDirections", "직전 방향 제외");
+
+            WaveInspectorUtility.DrawSection("게이트 설정", "Stage별 활성 게이트 방향 수와 한 번에 사용할 방향 수입니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "batchGateCount", "묶음당 사용 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "earlyGateCount", "초반 사용 게이트 방향 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "midGateStartStage", "중반 게이트 시작 Stage");
@@ -92,6 +104,31 @@ namespace TeamProject01.Gameplay.EditorTools
 
             int value = EditorGUILayout.IntField($"{label} (%)", property.intValue);
             property.intValue = UnityEngine.Mathf.Max(0, value);
+        }
+
+        private void DrawNormalSpawnCountOverrides()
+        {
+            SerializedProperty overrides = serializedObject.FindProperty("normalSpawnCountOverrides");
+            WaveInspectorUtility.DrawArray(
+                overrides,
+                "일반 몬스터 수량 보정",
+                GetNormalSpawnCountOverrideLabel,
+                DrawNormalSpawnCountOverrideBody,
+                "+ 수량 보정 추가",
+                "- 마지막 수량 보정 삭제");
+        }
+
+        private static string GetNormalSpawnCountOverrideLabel(SerializedProperty element, int index)
+        {
+            int stage = element.FindPropertyRelative("stage")?.intValue ?? 1;
+            int count = element.FindPropertyRelative("normalSpawnCount")?.intValue ?? 0;
+            return $"Stage {stage} - 일반 {count}";
+        }
+
+        private static void DrawNormalSpawnCountOverrideBody(SerializedProperty element)
+        {
+            EditorGUILayout.PropertyField(element.FindPropertyRelative("stage"), new UnityEngine.GUIContent("Stage"));
+            EditorGUILayout.PropertyField(element.FindPropertyRelative("normalSpawnCount"), new UnityEngine.GUIContent("일반 몬스터 수"));
         }
 
         private void DrawDifficultySteps()

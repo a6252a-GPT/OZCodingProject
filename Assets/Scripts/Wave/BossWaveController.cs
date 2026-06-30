@@ -48,6 +48,32 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        [Serializable]
+        public sealed class BossStageProfile
+        {
+            [Min(1)]
+            public int stage = 20; // 이 Stage를 보스 Stage로 사용합니다.
+
+            public string profileName = "20 웨이브 보스"; // Inspector에서 구분하기 위한 이름입니다.
+
+            [Min(1)]
+            public float maxHp = 6000.0f; // 보스 생성 직후 적용할 최대 HP입니다.
+
+            [Min(0)]
+            public int normalProjectileDamage = 2; // 일반 다이아 발사 피해입니다.
+
+            [Min(0)]
+            public int berserkProjectileDamage = 1; // 버서크 다이아 난사 피해입니다.
+
+            [Min(0)]
+            public int eliteSummonTotalCount = 4; // 소환 패턴 1회당 총 엘리트 수입니다.
+
+            [Min(1)]
+            public int maximumActiveSummonedMonsters = 80; // 보스 소환 몬스터 활성 상한입니다.
+
+            public string[] elitePrefabNameTokens = Array.Empty<string>(); // EliteMixController에 등록된 Prefab 이름 일부입니다.
+        }
+
         [Header("참조")]
         [SerializeField] private EnemySpawner enemySpawner; // 실제 생성은 기존 EnemySpawner API에 맡깁니다.
         [SerializeField] private BonusChestWaveSpawner bonusChestWaveSpawner; // 보스 처치 후 상자 생성에 사용합니다.
@@ -66,6 +92,9 @@ namespace TeamProject01.Gameplay
         [SerializeField] private bool spawnChestAfterBossClear = true; // 보스를 처치하면 보너스 상자를 생성합니다.
         [SerializeField] private bool pauseNormalSpawnWhileBossAlive = true; // 보스 Stage에서는 새 일반/엘리트 스폰을 멈춥니다.
         [SerializeField] private bool endBossStageOnBossClear = true; // 보스 Stage는 시간 대신 보스 처치로 종료합니다.
+
+        [Header("보스 Stage 프로필")]
+        [SerializeField] private BossStageProfile[] bossStageProfiles = CreateDefaultBossStageProfiles(); // Stage별 보스 체력/피해/소환 구성입니다.
 
         [Header("보스 등장 순서")]
         [SerializeField] private BossEntry[] bossSequence =
@@ -86,6 +115,7 @@ namespace TeamProject01.Gameplay
 
         private readonly List<EnemyController> activeBosses = new List<EnemyController>(); // 현재 살아있는 보스 목록입니다.
         private bool waitingBossClearReward; // 보스 처치 보상 상자를 한 번만 주기 위한 플래그입니다.
+        private EliteMixController eliteMixController; // 보스 소환용 엘리트 Prefab을 기존 엘리트 등장표에서 재사용합니다.
 
         public bool HasActiveBoss
         {
@@ -108,20 +138,14 @@ namespace TeamProject01.Gameplay
 
         public bool IsBossStage(int stage)
         {
-            if (stage < bossStartStage)
-            {
-                return false;
-            }
-
-            int safeInterval = Mathf.Max(1, bossIntervalStage);
-            return (stage - bossStartStage) % safeInterval == 0;
+            return TryGetBossStageProfile(stage, out _);
         }
 
         public bool BeginStage(int stage)
         {
             CleanupActiveBosses();
 
-            if (!CanSpawnBoss(stage))
+            if (!CanSpawnBoss(stage) || !TryGetBossStageProfile(stage, out BossStageProfile stageProfile))
             {
                 return false;
             }
@@ -155,6 +179,7 @@ namespace TeamProject01.Gameplay
 
                 if (spawnedBoss != null)
                 {
+                    ApplyBossStageProfile(spawnedBoss, stageProfile);
                     activeBosses.Add(spawnedBoss);
                 }
             }
@@ -299,7 +324,97 @@ namespace TeamProject01.Gameplay
 
         private int GetBossWaveIndex(int stage)
         {
+            if (TryGetBossStageProfileIndex(stage, out int profileIndex))
+            {
+                return profileIndex;
+            }
+
             return Mathf.Max(0, (stage - bossStartStage) / Mathf.Max(1, bossIntervalStage));
+        }
+
+        private bool TryGetBossStageProfile(int stage, out BossStageProfile profile)
+        {
+            if (TryGetBossStageProfileIndex(stage, out int profileIndex))
+            {
+                profile = GetBossStageProfiles()[profileIndex];
+                return profile != null;
+            }
+
+            profile = null;
+            return false;
+        }
+
+        private bool TryGetBossStageProfileIndex(int stage, out int profileIndex)
+        {
+            BossStageProfile[] profiles = GetBossStageProfiles();
+
+            for (int i = 0; i < profiles.Length; i++)
+            {
+                BossStageProfile profile = profiles[i];
+
+                if (profile != null && profile.stage == stage)
+                {
+                    profileIndex = i;
+                    return true;
+                }
+            }
+
+            profileIndex = -1;
+            return false;
+        }
+
+        private BossStageProfile[] GetBossStageProfiles()
+        {
+            if (bossStageProfiles != null && bossStageProfiles.Length > 0)
+            {
+                return bossStageProfiles;
+            }
+
+            return CreateDefaultBossStageProfiles();
+        }
+
+        private void ApplyBossStageProfile(EnemyController boss, BossStageProfile profile)
+        {
+            if (boss == null || profile == null)
+            {
+                return;
+            }
+
+            EnemyHealth health = boss.GetComponent<EnemyHealth>();
+
+            if (health != null)
+            {
+                health.SetMaxHp(profile.maxHp, true);
+            }
+
+            BossDiamondSiegeAttack diamondAttack = boss.GetComponent<BossDiamondSiegeAttack>();
+
+            if (diamondAttack != null)
+            {
+                diamondAttack.ApplyRuntimeDamageProfile(profile.normalProjectileDamage, profile.berserkProjectileDamage);
+            }
+
+            BossSummonAttack summonAttack = boss.GetComponent<BossSummonAttack>();
+
+            if (summonAttack != null)
+            {
+                EnemyController[] elitePrefabs = ResolveBossEliteSummonPrefabs(profile.elitePrefabNameTokens);
+                summonAttack.ApplyRuntimeSummonProfile(elitePrefabs, profile.eliteSummonTotalCount, profile.maximumActiveSummonedMonsters);
+            }
+        }
+
+        private EnemyController[] ResolveBossEliteSummonPrefabs(string[] nameTokens)
+        {
+            List<EnemyController> results = new List<EnemyController>();
+
+            ResolveReferences();
+
+            if (eliteMixController != null)
+            {
+                eliteMixController.CollectElitePrefabsByNameTokens(nameTokens, results);
+            }
+
+            return results.ToArray();
         }
 
         private void CleanupActiveBosses()
@@ -318,6 +433,51 @@ namespace TeamProject01.Gameplay
             {
                 bonusChestWaveSpawner = FindFirstObjectByType<BonusChestWaveSpawner>();
             }
+
+            if (eliteMixController == null)
+            {
+                eliteMixController = FindFirstObjectByType<EliteMixController>();
+            }
+        }
+
+        private static BossStageProfile[] CreateDefaultBossStageProfiles()
+        {
+            return new[]
+            {
+                new BossStageProfile
+                {
+                    stage = 20,
+                    profileName = "20 웨이브 보스",
+                    maxHp = 6000.0f,
+                    normalProjectileDamage = 2,
+                    berserkProjectileDamage = 1,
+                    eliteSummonTotalCount = 4,
+                    maximumActiveSummonedMonsters = 80,
+                    elitePrefabNameTokens = new[] { "SuicideCharger", "SlowThrower", "SkeletonGolemJumper" }
+                },
+                new BossStageProfile
+                {
+                    stage = 40,
+                    profileName = "40 웨이브 보스",
+                    maxHp = 20000.0f,
+                    normalProjectileDamage = 3,
+                    berserkProjectileDamage = 2,
+                    eliteSummonTotalCount = 8,
+                    maximumActiveSummonedMonsters = 120,
+                    elitePrefabNameTokens = new[] { "ObstacleSingle", "BuffCaster", "AreaShield", "SegmentCutCaster", "PortalTotemCaster" }
+                },
+                new BossStageProfile
+                {
+                    stage = 60,
+                    profileName = "60 웨이브 보스",
+                    maxHp = 40000.0f,
+                    normalProjectileDamage = 3,
+                    berserkProjectileDamage = 2,
+                    eliteSummonTotalCount = 10,
+                    maximumActiveSummonedMonsters = 150,
+                    elitePrefabNameTokens = new[] { "SlowThrower", "ObstacleSingle", "AreaShield", "SegmentCutCaster", "PortalTotemCaster" }
+                }
+            };
         }
     }
 }

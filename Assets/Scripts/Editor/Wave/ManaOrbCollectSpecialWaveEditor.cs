@@ -30,6 +30,7 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "maxSpawnRadius", "최대 생성 반경");
             WaveInspectorUtility.DrawProperty(serializedObject, "randomizeSpawnShape", "도형 랜덤 선택");
             WaveInspectorUtility.DrawProperty(serializedObject, "fixedSpawnShape", "고정 도형");
+            WaveInspectorUtility.DrawPercentProperty(serializedObject.FindProperty("safetyTextShapeChancePercent"), "안전조차 글자 확률");
             WaveInspectorUtility.DrawProperty(serializedObject, "shapeSpawnRotationDegrees", "도형 회전 각도");
             WaveInspectorUtility.DrawProperty(serializedObject, "manaOrbHeightOffset", "마력 구슬 높이 보정");
             WaveInspectorUtility.DrawProperty(serializedObject, "collectRadius", "획득 거리");

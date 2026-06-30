@@ -26,6 +26,7 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "disableSpawnerStageRulesUpdate", "기존 스폰 규칙 중지");
             WaveInspectorUtility.DrawProperty(serializedObject, "normalWaveSpawner", "일반 웨이브 스포너");
             WaveInspectorUtility.DrawProperty(serializedObject, "eliteMixController", "엘리트 섞기 컨트롤러");
+            WaveInspectorUtility.DrawProperty(serializedObject, "eliteWaveSpawner", "엘리트 웨이브 스포너");
             WaveInspectorUtility.DrawProperty(serializedObject, "enableBossWave", "보스 웨이브 사용");
             WaveInspectorUtility.DrawProperty(serializedObject, "bossWaveController", "보스 웨이브 컨트롤러");
             WaveInspectorUtility.DrawProperty(serializedObject, "bonusChestWaveSpawner", "보너스 상자 스포너");

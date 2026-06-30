@@ -16,9 +16,7 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "enemySpawner", "몬스터 스포너");
             WaveInspectorUtility.DrawProperty(serializedObject, "bonusChestWaveSpawner", "보너스 상자 스포너");
 
-            WaveInspectorUtility.DrawSection("보스 진행 설정", "보스는 등록된 순서대로 등장합니다.");
-            WaveInspectorUtility.DrawProperty(serializedObject, "bossStartStage", "첫 보스 Stage");
-            WaveInspectorUtility.DrawProperty(serializedObject, "bossIntervalStage", "보스 등장 간격 Stage");
+            WaveInspectorUtility.DrawSection("보스 진행 설정", "보스는 Stage 프로필에 등록된 웨이브에서만 등장합니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "blockAdditionalBossWhileAlive", "보스 생존 중 추가 등장 금지");
             WaveInspectorUtility.DrawProperty(serializedObject, "spawnChestAfterBossClear", "보스 처치 후 상자 생성");
 
@@ -26,10 +24,22 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "pauseNormalSpawnWhileBossAlive", "보스 Stage 중 새 일반 스폰 중지");
             WaveInspectorUtility.DrawProperty(serializedObject, "endBossStageOnBossClear", "보스 Stage는 처치 시 종료");
 
+            DrawBossStageProfiles();
             DrawBossSequence();
             DrawBossCombinations();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawBossStageProfiles()
+        {
+            WaveInspectorUtility.DrawSection("보스 Stage 프로필", "Stage / HP / 다이아 피해 / 엘리트 소환 구성을 관리합니다.");
+            SerializedProperty profiles = serializedObject.FindProperty("bossStageProfiles");
+
+            if (profiles != null)
+            {
+                EditorGUILayout.PropertyField(profiles, new GUIContent("보스 Stage 목록"), true);
+            }
         }
 
         private void DrawBossSequence()

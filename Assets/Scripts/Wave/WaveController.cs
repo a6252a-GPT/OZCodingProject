@@ -40,6 +40,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private bool disableSpawnerStageRulesUpdate = true; // 기존 Stage Rules 자동 스폰과 중복되지 않게 막습니다.
         [SerializeField] private NormalWaveSpawner normalWaveSpawner; // 일반 몬스터 수량/조합 담당입니다.
         [SerializeField] private EliteMixController eliteMixController; // 엘리트 비율/조합 담당입니다.
+        [SerializeField] private EliteWaveSpawner eliteWaveSpawner; // 엘리트 몬스터 지연 스폰 담당입니다.
         [SerializeField] private bool enableBossWave = true; // 보스 웨이브 사용 여부는 지휘자인 WaveController가 관리합니다.
         [SerializeField] private BossWaveController bossWaveController; // 보스 등장 담당입니다.
         [SerializeField] private BonusChestWaveSpawner bonusChestWaveSpawner; // 보스/보상 상자 담당 컴포넌트 연결용입니다.
@@ -220,6 +221,7 @@ namespace TeamProject01.Gameplay
             ResolveReferences();
             SegmentDpsDebugMeter.BeginWave(currentStage); // 이번 웨이브 기록 초기화
 
+            eliteWaveSpawner?.StopCurrentStage(); // 이전 Stage의 지연 엘리트 루틴이 남아 있으면 정리
             BeginCurrentStageEnemyTracking(currentStage, 0);
             specialWaveActive = false;
             waitingForSpecialWaveStage = false;
@@ -262,7 +264,9 @@ namespace TeamProject01.Gameplay
                 : default;
 
             int normalSpawnCount = Mathf.Max(0, totalSpawnCount - elitePlan.TotalCount);
-            normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, elitePlan, this);
+            normalSpawnCount = normalWaveSpawner.ResolveNormalSpawnCount(currentStage, normalSpawnCount);
+            normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, this);
+            eliteWaveSpawner?.BeginStage(currentStage, elitePlan, normalWaveSpawner.ResolveDifficultyForStage(currentStage), normalWaveSpawner, this);
             NotifyRunStateChanged(); //안건준 추가 - 0630: 일반 웨이브 시작 → Stage BGM
         }
 
@@ -341,7 +345,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            return EnemyController.ActiveCount <= 0;
+            return CurrentStageRemainingEnemyCount <= 0;
         }
 
         private void AdvanceStage()
@@ -409,6 +413,16 @@ namespace TeamProject01.Gameplay
             if (eliteMixController == null)
             {
                 eliteMixController = ResolveWaveSiblingOrSceneComponent<EliteMixController>();
+            }
+
+            if (eliteWaveSpawner == null)
+            {
+                eliteWaveSpawner = ResolveWaveSiblingOrSceneComponent<EliteWaveSpawner>();
+            }
+
+            if (eliteWaveSpawner == null)
+            {
+                eliteWaveSpawner = gameObject.AddComponent<EliteWaveSpawner>(); // 기존 씬 수정 없이 런타임에서 분리 스포너를 보강
             }
 
             if (bossWaveController == null)

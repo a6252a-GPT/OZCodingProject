@@ -2,79 +2,140 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyBuffVisual : MonoBehaviour //¹ŞÀº ¹öÇÁ Á¾·ù¿¡ µû¶ó ±¸ºĞ
+    public sealed class EnemyBuffVisual : MonoBehaviour //ë°›ì€ ë²„í”„ ì¢…ë¥˜ì— ë”°ë¼ êµ¬ë¶„
     {
-        private EnemyBuffReceiver buffReceiver;//¹öÇÁ »óÅÂ¸¦ ÀĞÀ» EnemyBuffReceiver Component
+        private EnemyBuffReceiver buffReceiver;//ë²„í”„ ìƒíƒœë¥¼ ì½ì„ EnemyBuffReceiver Component
+        private EnemyHealth enemyHealth; // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì¦‰ì‹œ ì˜¤ë¼ë¥¼ ë„ê¸° ìœ„í•œ ì²´ë ¥ ì°¸ì¡°
+        private EnemyController enemyController; // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ì¤‘ ì˜¤ë¼ ì¬ì ë“± ë°©ì§€
 
-        [SerializeField] private GameObject attackPowerAura; //°ø°İ·Â ¹öÇÁ Ç¥½Ã
-        [SerializeField] private GameObject moveSpeedAura; //ÀÌµ¿¼Óµµ ¹öÇÁ Ç¥½Ã
-        [SerializeField] private GameObject attackSpeedAura; //°ø°İ¼Óµµ ¹öÇÁ Ç¥½Ã
+        [SerializeField] private GameObject attackPowerAura; //ê³µê²©ë ¥ ë²„í”„ í‘œì‹œ
+        [SerializeField] private GameObject moveSpeedAura; //ì´ë™ì†ë„ ë²„í”„ í‘œì‹œ
+        [SerializeField] private GameObject attackSpeedAura; //ê³µê²©ì†ë„ ë²„í”„ í‘œì‹œ
 
-        private EnemyBuffType visibleBuffType = EnemyBuffType.None; //ÇöÀç Àû¿ëÁßÀÎ ¹öÇÁ Ç¥½Ã(None)
+        private EnemyBuffType visibleBuffType = EnemyBuffType.None; //í˜„ì¬ ì ìš©ì¤‘ì¸ ë²„í”„ í‘œì‹œ(None)
 
         private void Awake()
         {
-            if(buffReceiver == null) //ÇöÀç buffReceiver°¡ ¿¬°áµÇ¾î ÀÖÁö ¾Ê´Ù¸é
+            if(buffReceiver == null) //í˜„ì¬ buffReceiverê°€ ì—°ê²°ë˜ì–´ ìˆì§€ ì•Šë‹¤ë©´
             {
-                buffReceiver = GetComponent<EnemyBuffReceiver>(); //¿¬°áÇÑ´Ù.
+                buffReceiver = GetComponent<EnemyBuffReceiver>(); //ì—°ê²°í•œë‹¤.
             }
 
-            ClearVisual(); //Ã³À½ ½ÃÀÛÇÒ ‹š ¸ğµç ¾Æ¿ì¶ó¸¦ ²ö´Ù.
+            enemyHealth = GetComponent<EnemyHealth>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì´ë²¤íŠ¸ êµ¬ë…ìš© ì²´ë ¥ ì»´í¬ë„ŒíŠ¸ ì—°ê²°
+            enemyController = GetComponent<EnemyController>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì»¨íŠ¸ë¡¤ëŸ¬ ì‚¬ë§ í”Œë˜ê·¸ í™•ì¸
+            ClearVisual(); //ì²˜ìŒ ì‹œì‘í•  ë–„ ëª¨ë“  ì•„ìš°ë¼ë¥¼ ëˆë‹¤.
+        }
+
+        private void OnEnable()
+        {
+            SubscribeHealth(); // ì „ì°¬ìš°ìˆ˜ì • -0630 HP ì‚¬ë§ ì´ë²¤íŠ¸ ë°œìƒ ì‹œ ì¦‰ì‹œ ì˜¤ë¼ ì œê±°
         }
 
         private void Update()
         {
-            EnemyBuffType targetBuffType = EnemyBuffType.None; //ÀÌ¹ø ÇÁ·¹ÀÓ¿¡ Ç¥½ÃÇÒ ¹öÇÁ Á¾·ù¸¦ None·Î ÀúÀåÇÑ´Ù.
-
-            if (buffReceiver != null && buffReceiver.HasActiveBuff) //ÇöÀç ¹öÇÁ°¡ Àû¿ëÁßÀÌ¶ó¸é
+            if (IsOwnerDead()) // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ë™ì•ˆ ì˜¤ë¼ê°€ ë‹¤ì‹œ ì¼œì§€ì§€ ì•Šê²Œ ë°©ì–´
             {
-                targetBuffType = buffReceiver.ActiveBuffType; //ÇöÀç ¾Æ¿ì¶ó Ç¥½ÃÇÒ ´ë»óÀ¸·Î ÀúÀåÇÑ´Ù.
+                ClearVisual();
+                return;
             }
 
-            if(visibleBuffType == targetBuffType) //°°Àº ¾Æ¿ì¶ó ¹öÇÁ°¡ Ç¥½Ã ÁßÀÌ¶ó¸é
+            EnemyBuffType targetBuffType = EnemyBuffType.None; //ì´ë²ˆ í”„ë ˆì„ì— í‘œì‹œí•  ë²„í”„ ì¢…ë¥˜ë¥¼ Noneë¡œ ì €ì¥í•œë‹¤.
+
+            if (buffReceiver != null && buffReceiver.HasActiveBuff) //í˜„ì¬ ë²„í”„ê°€ ì ìš©ì¤‘ì´ë¼ë©´
             {
-                return; //Á¾·áÇÑ´Ù.
+                targetBuffType = buffReceiver.ActiveBuffType; //í˜„ì¬ ì•„ìš°ë¼ í‘œì‹œí•  ëŒ€ìƒìœ¼ë¡œ ì €ì¥í•œë‹¤.
             }
 
-            ApplyVisual(targetBuffType); //¹öÇÁ Á¾·ù¿¡ ¸Â°Ô ¾Æ¿ì¶ó Ç¥½Ã¸¦ °»½ÅÇÑ´Ù.
+            if(visibleBuffType == targetBuffType) //ê°™ì€ ì•„ìš°ë¼ ë²„í”„ê°€ í‘œì‹œ ì¤‘ì´ë¼ë©´
+            {
+                return; //ì¢…ë£Œí•œë‹¤.
+            }
+
+            ApplyVisual(targetBuffType); //ë²„í”„ ì¢…ë¥˜ì— ë§ê²Œ ì•„ìš°ë¼ í‘œì‹œë¥¼ ê°±ì‹ í•œë‹¤.
         }
 
         private void OnDisable()
         {
-            ClearVisual(); //¾Æ¿ì¶ó¸¦ ²ö´Ù.
+            UnsubscribeHealth(); // ì „ì°¬ìš°ìˆ˜ì • -0630 íŒŒê´´/ë¹„í™œì„±í™” ì‹œ ì´ë²¤íŠ¸ ì°¸ì¡° í•´ì œ
+            ClearVisual(); //ì•„ìš°ë¼ë¥¼ ëˆë‹¤.
         }
 
-        public void ApplyVisual(EnemyBuffType buffType) //¾Æ¿ì¶ó È¿°ú¸¦ ÄÑ´Â ÇÔ¼ö
+        private void SubscribeHealth()
         {
-            visibleBuffType = buffType; //ÇöÀç Àû¿ëÁßÀÎ ¹öÇÁ »óÅÂ¿¡ ¸Â°Ô ¾Æ¿ì¶ó¸¦ Àû¿ëÇÑ´Ù.
-
-            SetAuraActive(attackPowerAura, buffType == EnemyBuffType.AttackPower); //°ø°İ Áõ°¡ ¾Æ¿ì¶ó¸¦ ÄÒ´Ù.
-            SetAuraActive(moveSpeedAura, buffType == EnemyBuffType.MoveSpeed); //ÀÌµ¿¼Óµµ Áõ°¡ ¾Æ¿ì¶ó¸¦ ÄÒ´Ù.
-            SetAuraActive(attackSpeedAura, buffType == EnemyBuffType.AttackSpeed); //°ø°İ¼Óµµ Áõ°¡ ¾Æ¿ì¶ó¸¦ ÄÒ´Ù.
-        }
-
-        public void ClearVisual() //¾Æ¿ì¶ó È¿°ú¸¦ ²ô´Â ÇÔ¼ö
-        {
-            visibleBuffType = EnemyBuffType.None; //ÇöÀç Àû¿ëÁßÀÎ ¹öÇÁ »óÅÂ¸¦ None·Î ÇÑ´Ù.
-
-            SetAuraActive(attackPowerAura, false); //°ø°İ Áõ°¡ ¾Æ¿ì¶ó¸¦ Á¾·áÇÑ´Ù.
-            SetAuraActive(moveSpeedAura, false); //ÀÌµ¿¼Óµµ Áõ°¡ ¾Æ¿ì¶ó¸¦ Á¾·áÇÑ´Ù.
-            SetAuraActive(attackSpeedAura, false); //°ø°İ¼Óµµ Áõ°¡ ¾Æ¿ì¶ó¸¦ Á¾·áÇÑ´Ù.
-        }
-
-        private void SetAuraActive(GameObject auraObject, bool active) //GameObject È°¼ºÈ­ »óÅÂ¸¦ ¹Ù²Ù´Â ÇÔ¼ö
-        {
-            if(auraObject == null) // auraObject°¡ ¿¬°áµÇ¾î ÀÖÁö ¾Ê´Ù¸é
+            if (enemyHealth == null)
             {
-                return; //Á¾·áÇÑ´Ù.
+                enemyHealth = GetComponent<EnemyHealth>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ëŸ°íƒ€ì„ ì¶”ê°€/ì¬í™œì„±í™” ëŒ€ì‘
             }
 
-            if(auraObject.activeSelf == active) //auraObject°¡ È°¼ºÈ­ »óÅÂ¶ó¸é
+            if (enemyHealth != null)
             {
-                return; //Á¾·áÇÑ´Ù.
+                enemyHealth.HealthChanged -= HandleHealthChanged;
+                enemyHealth.HealthChanged += HandleHealthChanged;
+            }
+        }
+
+        private void UnsubscribeHealth()
+        {
+            if (enemyHealth != null)
+            {
+                enemyHealth.HealthChanged -= HandleHealthChanged;
+            }
+        }
+
+        private void HandleHealthChanged(EnemyHealth changedHealth)
+        {
+            if (changedHealth != null && changedHealth.IsDead) // ì „ì°¬ìš°ìˆ˜ì • -0630 HP ì‚¬ë§ ì¦‰ì‹œ ë²„í”„ ì˜¤ë¼ ì œê±°
+            {
+                ClearVisual();
+            }
+        }
+
+        private bool IsOwnerDead()
+        {
+            if (enemyController == null)
+            {
+                enemyController = GetComponent<EnemyController>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì§€ì—° ì‚¬ë§ ì œê±° ëŒ€ê¸° ìƒíƒœ í™•ì¸
             }
 
-            auraObject.SetActive(active); //auraObject GameObject¸¦ ÄÑ°Å³ª ²ö´Ù.
+            if (enemyHealth == null)
+            {
+                enemyHealth = GetComponent<EnemyHealth>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì²´ë ¥ ì‚¬ë§ ìƒíƒœ í™•ì¸
+            }
+
+            return (enemyController != null && enemyController.IsDead) || (enemyHealth != null && enemyHealth.IsDead);
+        }
+
+        public void ApplyVisual(EnemyBuffType buffType) //ì•„ìš°ë¼ íš¨ê³¼ë¥¼ ì¼œëŠ” í•¨ìˆ˜
+        {
+            visibleBuffType = buffType; //í˜„ì¬ ì ìš©ì¤‘ì¸ ë²„í”„ ìƒíƒœì— ë§ê²Œ ì•„ìš°ë¼ë¥¼ ì ìš©í•œë‹¤.
+
+            SetAuraActive(attackPowerAura, buffType == EnemyBuffType.AttackPower); //ê³µê²© ì¦ê°€ ì•„ìš°ë¼ë¥¼ ì¼ ë‹¤.
+            SetAuraActive(moveSpeedAura, buffType == EnemyBuffType.MoveSpeed); //ì´ë™ì†ë„ ì¦ê°€ ì•„ìš°ë¼ë¥¼ ì¼ ë‹¤.
+            SetAuraActive(attackSpeedAura, buffType == EnemyBuffType.AttackSpeed); //ê³µê²©ì†ë„ ì¦ê°€ ì•„ìš°ë¼ë¥¼ ì¼ ë‹¤.
+        }
+
+        public void ClearVisual() //ì•„ìš°ë¼ íš¨ê³¼ë¥¼ ë„ëŠ” í•¨ìˆ˜
+        {
+            visibleBuffType = EnemyBuffType.None; //í˜„ì¬ ì ìš©ì¤‘ì¸ ë²„í”„ ìƒíƒœë¥¼ Noneë¡œ í•œë‹¤.
+
+            SetAuraActive(attackPowerAura, false); //ê³µê²© ì¦ê°€ ì•„ìš°ë¼ë¥¼ ì¢…ë£Œí•œë‹¤.
+            SetAuraActive(moveSpeedAura, false); //ì´ë™ì†ë„ ì¦ê°€ ì•„ìš°ë¼ë¥¼ ì¢…ë£Œí•œë‹¤.
+            SetAuraActive(attackSpeedAura, false); //ê³µê²©ì†ë„ ì¦ê°€ ì•„ìš°ë¼ë¥¼ ì¢…ë£Œí•œë‹¤.
+        }
+
+        private void SetAuraActive(GameObject auraObject, bool active) //GameObject í™œì„±í™” ìƒíƒœë¥¼ ë°”ê¾¸ëŠ” í•¨ìˆ˜
+        {
+            if(auraObject == null) // auraObjectê°€ ì—°ê²°ë˜ì–´ ìˆì§€ ì•Šë‹¤ë©´
+            {
+                return; //ì¢…ë£Œí•œë‹¤.
+            }
+
+            if(auraObject.activeSelf == active) //auraObjectê°€ í™œì„±í™” ìƒíƒœë¼ë©´
+            {
+                return; //ì¢…ë£Œí•œë‹¤.
+            }
+
+            auraObject.SetActive(active); //auraObject GameObjectë¥¼ ì¼œê±°ë‚˜ ëˆë‹¤.
         }
     }    
 }
