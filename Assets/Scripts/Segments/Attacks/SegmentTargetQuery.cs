@@ -209,6 +209,45 @@ namespace TeamProject01.Gameplay
             return target != null; // 밀집 실패 시 랜덤 적
         }
 
+        public static bool TryPickNearestToPointTarget(
+            Vector3 origin,
+            float range,
+            Vector3 point,
+            Func<EnemyController, bool> isValidTarget,
+            float targetAimHeight,
+            out EnemyController target) // 지정 지점에 가장 가까운 후보
+        {
+            target = null; // 기본값
+            if (range <= 0f)
+            {
+                return false; // 사거리 없음
+            }
+
+            List<EnemyController> candidates = new List<EnemyController>(32);
+            EnemyController.CollectActiveInRange(origin, range, candidates, isValidTarget); // 사거리 후보
+            float bestDistance = float.PositiveInfinity; // 지점 기준 거리
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                EnemyController enemy = candidates[i]; // 후보
+                if (!IsEnemyUsable(enemy))
+                {
+                    continue; // 빈 후보
+                }
+
+                Vector3 hitPosition = GetEnemyHitPosition(enemy, enemy.transform.position, targetAimHeight); // 중심
+                float distance = GetHorizontalDistance(point, hitPosition); // 넥서스 등 기준점 거리
+                if (distance >= bestDistance)
+                {
+                    continue; // 더 멂
+                }
+
+                bestDistance = distance; // 최단 갱신
+                target = enemy; // 대상 저장
+            }
+
+            return target != null; // 발견 여부
+        }
+
         public static Vector3 GetEnemyHitPosition(EnemyController enemy, Vector3 fallbackPosition, float targetAimHeight) // 몬스터 중심
         {
             if (enemy == null)

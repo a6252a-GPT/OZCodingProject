@@ -368,11 +368,20 @@ namespace TeamProject01.EditorTools
                 case ColumnId.HolyWaterProjectileStartRadius:
                     row.Working.HolyWaterProjectileStartRadius = FloatCell(row.Working.HolyWaterProjectileStartRadius, row.Original.HolyWaterProjectileStartRadius, info.Width);
                     break;
-                case ColumnId.HolyWaterProjectileEndRadius:
-                    row.Working.HolyWaterProjectileEndRadius = FloatCell(row.Working.HolyWaterProjectileEndRadius, row.Original.HolyWaterProjectileEndRadius, info.Width);
+                case ColumnId.HolyWaterConeLength:
+                    row.Working.HolyWaterConeLength = FloatCell(row.Working.HolyWaterConeLength, row.Original.HolyWaterConeLength, info.Width);
                     break;
-                case ColumnId.HolyWaterMuzzleInfluenceStrength:
-                    row.Working.HolyWaterMuzzleInfluenceStrength = FloatCell(row.Working.HolyWaterMuzzleInfluenceStrength, row.Original.HolyWaterMuzzleInfluenceStrength, info.Width);
+                case ColumnId.HolyWaterAimTurnSpeed:
+                    row.Working.HolyWaterAimTurnSpeed = FloatCell(row.Working.HolyWaterAimTurnSpeed, row.Original.HolyWaterAimTurnSpeed, info.Width);
+                    break;
+                case ColumnId.HolyWaterFireAngleTolerance:
+                    row.Working.HolyWaterFireAngleTolerance = FloatCell(row.Working.HolyWaterFireAngleTolerance, row.Original.HolyWaterFireAngleTolerance, info.Width);
+                    break;
+                case ColumnId.HolyWaterDebuffTickInterval:
+                    row.Working.HolyWaterDebuffTickInterval = FloatCell(row.Working.HolyWaterDebuffTickInterval, row.Original.HolyWaterDebuffTickInterval, info.Width);
+                    break;
+                case ColumnId.HolyWaterTargetAimHeight:
+                    row.Working.HolyWaterTargetAimHeight = FloatCell(row.Working.HolyWaterTargetAimHeight, row.Original.HolyWaterTargetAimHeight, info.Width);
                     break;
                 case ColumnId.ProjectileCount:
                     row.Working.ProjectileCount = IntCell(row.Working.ProjectileCount, row.Original.ProjectileCount, info.Width);
@@ -750,13 +759,12 @@ namespace TeamProject01.EditorTools
                 if (usesHolyWaterRuntime)
                 {
                     columns.Add(ColumnId.HolyWaterSprayAngle);
-                    columns.Add(ColumnId.HolyWaterProjectileCount);
-                    columns.Add(ColumnId.HolyWaterProjectileInterval);
-                    columns.Add(ColumnId.HolyWaterProjectileSpeed);
                     columns.Add(ColumnId.HolyWaterProjectileLifetime);
-                    columns.Add(ColumnId.HolyWaterProjectileStartRadius);
-                    columns.Add(ColumnId.HolyWaterProjectileEndRadius);
-                    columns.Add(ColumnId.HolyWaterMuzzleInfluenceStrength);
+                    columns.Add(ColumnId.HolyWaterConeLength);
+                    columns.Add(ColumnId.HolyWaterAimTurnSpeed);
+                    columns.Add(ColumnId.HolyWaterFireAngleTolerance);
+                    columns.Add(ColumnId.HolyWaterDebuffTickInterval);
+                    columns.Add(ColumnId.HolyWaterTargetAimHeight);
                 }
             }
 
@@ -1044,14 +1052,13 @@ namespace TeamProject01.EditorTools
             AppendDiff(builder, "자석 끌어당김 힘", before.PickupMagnetPullStrength, after.PickupMagnetPullStrength);
             AppendDiff(builder, "자석 최대 속도", before.PickupMagnetMaxPullSpeed, after.PickupMagnetMaxPullSpeed);
             AppendDiff(builder, "자석 획득 거리", before.PickupMagnetCollectDistance, after.PickupMagnetCollectDistance);
-            AppendDiff(builder, "성수 분사각", before.HolyWaterSprayAngle, after.HolyWaterSprayAngle);
-            AppendDiff(builder, "성수 발사 수", before.HolyWaterProjectileCount, after.HolyWaterProjectileCount);
-            AppendDiff(builder, "성수 발사 간격", before.HolyWaterProjectileInterval, after.HolyWaterProjectileInterval);
-            AppendDiff(builder, "성수 속도", before.HolyWaterProjectileSpeed, after.HolyWaterProjectileSpeed);
-            AppendDiff(builder, "성수 수명", before.HolyWaterProjectileLifetime, after.HolyWaterProjectileLifetime);
-            AppendDiff(builder, "성수 시작 반경", before.HolyWaterProjectileStartRadius, after.HolyWaterProjectileStartRadius);
-            AppendDiff(builder, "성수 끝 반경", before.HolyWaterProjectileEndRadius, after.HolyWaterProjectileEndRadius);
-            AppendDiff(builder, "성수 머즐 영향", before.HolyWaterMuzzleInfluenceStrength, after.HolyWaterMuzzleInfluenceStrength);
+            AppendDiff(builder, "성수 원뿔각", before.HolyWaterSprayAngle, after.HolyWaterSprayAngle);
+            AppendDiff(builder, "성수 표시 시간", before.HolyWaterProjectileLifetime, after.HolyWaterProjectileLifetime);
+            AppendDiff(builder, "성수 원뿔 길이", before.HolyWaterConeLength, after.HolyWaterConeLength);
+            AppendDiff(builder, "성수 조준 속도", before.HolyWaterAimTurnSpeed, after.HolyWaterAimTurnSpeed);
+            AppendDiff(builder, "성수 발사 허용각", before.HolyWaterFireAngleTolerance, after.HolyWaterFireAngleTolerance);
+            AppendDiff(builder, "성수 디버프 틱", before.HolyWaterDebuffTickInterval, after.HolyWaterDebuffTickInterval);
+            AppendDiff(builder, "성수 조준 높이", before.HolyWaterTargetAimHeight, after.HolyWaterTargetAimHeight);
         }
 
         private static void AppendDiff<T>(StringBuilder builder, string label, T before, T after)
@@ -1128,21 +1135,23 @@ namespace TeamProject01.EditorTools
                 case ColumnId.PickupMagnetCollectDistance:
                     return new ColumnInfo("획득거리", 66f);
                 case ColumnId.HolyWaterSprayAngle:
-                    return new ColumnInfo("분사각", 58f);
-                case ColumnId.HolyWaterProjectileCount:
-                    return new ColumnInfo("성수수", 54f);
-                case ColumnId.HolyWaterProjectileInterval:
-                    return new ColumnInfo("성수간격", 66f);
+                    return new ColumnInfo("원뿔각", 58f);
                 case ColumnId.HolyWaterProjectileSpeed:
                     return new ColumnInfo("성수속도", 66f);
                 case ColumnId.HolyWaterProjectileLifetime:
-                    return new ColumnInfo("성수수명", 66f);
+                    return new ColumnInfo("표시시간", 66f);
                 case ColumnId.HolyWaterProjectileStartRadius:
                     return new ColumnInfo("시작반경", 66f);
-                case ColumnId.HolyWaterProjectileEndRadius:
-                    return new ColumnInfo("끝반경", 58f);
-                case ColumnId.HolyWaterMuzzleInfluenceStrength:
-                    return new ColumnInfo("머즐영향", 66f);
+                case ColumnId.HolyWaterConeLength:
+                    return new ColumnInfo("원뿔길이", 66f);
+                case ColumnId.HolyWaterAimTurnSpeed:
+                    return new ColumnInfo("조준속도", 66f);
+                case ColumnId.HolyWaterFireAngleTolerance:
+                    return new ColumnInfo("허용각", 58f);
+                case ColumnId.HolyWaterDebuffTickInterval:
+                    return new ColumnInfo("디버프틱", 66f);
+                case ColumnId.HolyWaterTargetAimHeight:
+                    return new ColumnInfo("조준높이", 66f);
                 case ColumnId.ProjectileCount:
                     return new ColumnInfo("발사 수", 54f);
                 case ColumnId.SpreadAngle:
@@ -1247,21 +1256,23 @@ namespace TeamProject01.EditorTools
                 case ColumnId.PickupMagnetCollectDistance:
                     return "단위: m. 픽업 아이템이 이 거리 안에 들어오면 획득 처리됩니다.";
                 case ColumnId.HolyWaterSprayAngle:
-                    return "단위: 도. 성수 분사의 좌우 퍼짐 각도입니다. 값이 클수록 넓게 흩뿌립니다.";
-                case ColumnId.HolyWaterProjectileCount:
-                    return "단위: 개. 성수 발동 1회에 발사되는 성수 구체 개수입니다.";
-                case ColumnId.HolyWaterProjectileInterval:
-                    return "단위: 초. 성수 구체를 연속 발사할 때 각 구체 사이의 간격입니다.";
+                    return "단위: 도. 투명 성수 원뿔 범위의 각도입니다. 값이 클수록 넓은 적에게 받피증을 묻힙니다.";
                 case ColumnId.HolyWaterProjectileSpeed:
-                    return "단위: m/s. 성수 구체가 앞으로 이동하는 속도입니다.";
+                    return "이전 분사 방식용 필드입니다. 현재 원뿔 범위 표시에는 사용하지 않습니다.";
                 case ColumnId.HolyWaterProjectileLifetime:
-                    return "단위: 초. 성수 구체가 사라지기 전까지 유지되는 시간입니다.";
+                    return "단위: 초. 임시 투명 원뿔 범위가 보이는 시간입니다.";
                 case ColumnId.HolyWaterProjectileStartRadius:
-                    return "단위: m. 성수 구체가 생성 직후 가지는 시작 반경입니다.";
-                case ColumnId.HolyWaterProjectileEndRadius:
-                    return "단위: m. 성수 구체가 수명 끝에 도달하는 최종 반경입니다.";
-                case ColumnId.HolyWaterMuzzleInfluenceStrength:
-                    return "단위: 0~1 비율. 성수 구체가 머즐 방향 영향을 얼마나 따라갈지 정합니다. 0은 영향 없음, 1은 강한 영향입니다.";
+                    return "이전 분사 방식용 필드입니다. 현재 원뿔은 머즐 위치를 꼭짓점으로 사용합니다.";
+                case ColumnId.HolyWaterConeLength:
+                    return "단위: m. 0이면 지원 프로필 Range를 원뿔 길이로 사용합니다.";
+                case ColumnId.HolyWaterAimTurnSpeed:
+                    return "단위: 도/초. 성수발사기 헤드가 적을 향해 회전하는 속도입니다. 0이면 즉시 조준합니다.";
+                case ColumnId.HolyWaterFireAngleTolerance:
+                    return "단위: 도. 현재 조준 방향과 목표 방향 차이가 이 값 이하일 때 투명 원뿔 범위를 표시합니다.";
+                case ColumnId.HolyWaterDebuffTickInterval:
+                    return "단위: 초. 투명 원뿔 범위 안의 적에게 받피증 디버프를 다시 거는 간격입니다.";
+                case ColumnId.HolyWaterTargetAimHeight:
+                    return "단위: m. 콜라이더가 없는 적을 조준할 때 사용하는 목표 높이 보정입니다.";
                 case ColumnId.ProjectileCount:
                     return "단위: 개. 공격 1회에 발사되는 투사체 개수입니다.";
                 case ColumnId.SpreadAngle:
@@ -1647,6 +1658,11 @@ namespace TeamProject01.EditorTools
             HolyWaterProjectileStartRadius,
             HolyWaterProjectileEndRadius,
             HolyWaterMuzzleInfluenceStrength,
+            HolyWaterConeLength,
+            HolyWaterAimTurnSpeed,
+            HolyWaterFireAngleTolerance,
+            HolyWaterDebuffTickInterval,
+            HolyWaterTargetAimHeight,
             ProjectileCount,
             SpreadAngle,
             FireProjectilesSequentially,
@@ -1845,6 +1861,11 @@ namespace TeamProject01.EditorTools
             public float HolyWaterProjectileStartRadius;
             public float HolyWaterProjectileEndRadius;
             public float HolyWaterMuzzleInfluenceStrength;
+            public float HolyWaterConeLength;
+            public float HolyWaterAimTurnSpeed;
+            public float HolyWaterFireAngleTolerance;
+            public float HolyWaterDebuffTickInterval;
+            public float HolyWaterTargetAimHeight;
 
             public static BalanceValues FromAttackProfile(SegmentAttackProfile profile)
             {
@@ -1918,6 +1939,11 @@ namespace TeamProject01.EditorTools
                     values.HolyWaterProjectileStartRadius = ability.HolyWaterProjectileStartRadius;
                     values.HolyWaterProjectileEndRadius = ability.HolyWaterProjectileEndRadius;
                     values.HolyWaterMuzzleInfluenceStrength = ability.HolyWaterMuzzleInfluenceStrength;
+                    values.HolyWaterConeLength = ability.HolyWaterConeLength;
+                    values.HolyWaterAimTurnSpeed = ability.HolyWaterAimTurnSpeed;
+                    values.HolyWaterFireAngleTolerance = ability.HolyWaterFireAngleTolerance;
+                    values.HolyWaterDebuffTickInterval = ability.HolyWaterDebuffTickInterval;
+                    values.HolyWaterTargetAimHeight = ability.HolyWaterTargetAimHeight;
                 }
 
                 return values;
@@ -2009,9 +2035,14 @@ namespace TeamProject01.EditorTools
                 ability.HolyWaterProjectileInterval = Mathf.Max(0.02f, HolyWaterProjectileInterval);
                 ability.HolyWaterProjectileSpeed = Mathf.Max(0.1f, HolyWaterProjectileSpeed);
                 ability.HolyWaterProjectileLifetime = Mathf.Max(0.05f, HolyWaterProjectileLifetime);
-                ability.HolyWaterProjectileStartRadius = Mathf.Max(0.05f, HolyWaterProjectileStartRadius);
+                ability.HolyWaterProjectileStartRadius = Mathf.Max(0f, HolyWaterProjectileStartRadius);
                 ability.HolyWaterProjectileEndRadius = Mathf.Max(0.05f, HolyWaterProjectileEndRadius);
                 ability.HolyWaterMuzzleInfluenceStrength = Mathf.Clamp01(HolyWaterMuzzleInfluenceStrength);
+                ability.HolyWaterConeLength = Mathf.Max(0f, HolyWaterConeLength);
+                ability.HolyWaterAimTurnSpeed = Mathf.Max(0f, HolyWaterAimTurnSpeed);
+                ability.HolyWaterFireAngleTolerance = Mathf.Clamp(HolyWaterFireAngleTolerance, 0f, 45f);
+                ability.HolyWaterDebuffTickInterval = Mathf.Max(0.05f, HolyWaterDebuffTickInterval);
+                ability.HolyWaterTargetAimHeight = Mathf.Max(0f, HolyWaterTargetAimHeight);
             }
 
             public bool EqualsTo(BalanceValues other)
@@ -2075,7 +2106,12 @@ namespace TeamProject01.EditorTools
                     && Approximately(HolyWaterProjectileLifetime, other.HolyWaterProjectileLifetime)
                     && Approximately(HolyWaterProjectileStartRadius, other.HolyWaterProjectileStartRadius)
                     && Approximately(HolyWaterProjectileEndRadius, other.HolyWaterProjectileEndRadius)
-                    && Approximately(HolyWaterMuzzleInfluenceStrength, other.HolyWaterMuzzleInfluenceStrength);
+                    && Approximately(HolyWaterMuzzleInfluenceStrength, other.HolyWaterMuzzleInfluenceStrength)
+                    && Approximately(HolyWaterConeLength, other.HolyWaterConeLength)
+                    && Approximately(HolyWaterAimTurnSpeed, other.HolyWaterAimTurnSpeed)
+                    && Approximately(HolyWaterFireAngleTolerance, other.HolyWaterFireAngleTolerance)
+                    && Approximately(HolyWaterDebuffTickInterval, other.HolyWaterDebuffTickInterval)
+                    && Approximately(HolyWaterTargetAimHeight, other.HolyWaterTargetAimHeight);
             }
         }
 

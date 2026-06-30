@@ -25,6 +25,27 @@ MonoBehaviour:
   IncomingDamageMultiplier: 1
   ActiveVfxPrefab: {fileID: 0}
   RangeVfxPrefab: {fileID: 0}
-  TargetBodyVfxPrefab: {fileID: 0}
+  TargetBodyVfxPrefab: {fileID: 6239187421053961884, guid: 824e47cd314741d8a8d2a9f812ab0f3e, type: 3}
   EnemyDebuffVfxPrefab: {fileID: 0}
-  Memo: "발동 중 앞뒤 3칸 아군 세그먼트의 최종 공격속도를 30% 증가시켜 공격 쿨타임을 감소시킨다."
+  EnemyStatusEffect: 0
+  WormholeProjectilePrefab: {fileID: 0}
+  WormholeImpactVfxPrefab: {fileID: 0}
+  WormholeTeleportOutVfxPrefab: {fileID: 0}
+  WormholeTeleportArrivalVfxPrefab: {fileID: 0}
+  WormholeProjectileSpeed: 18
+  WormholeProjectileHitRadius: 0.6
+  WormholeProjectileLifetime: 4
+  WormholeExplosionRadius: 5
+  WormholeTeleportMinNexusDistance: 40
+  WormholeTeleportMaxNexusDistance: 50
+  WormholeMaxTeleportTargets: 12
+  WormholeAffectBosses: 0
+  WormholeTargetAimHeight: 0.6
+  WormholeAimTurnSpeed: 720
+  WormholeFireAngleTolerance: 6
+  WormholeVfxLifetime: 1.5
+  WormholeVfxAlpha: 1
+  WormholeShowDebugRadius: 1
+  Memo: "\uBC1C\uB3D9 \uC911 \uC55E\uB4A4 3\uCE78 \uC544\uAD70 \uC138\uADF8\uBA3C\uD2B8\uC758
+    \uCD5C\uC885 \uACF5\uACA9\uC18D\uB3C4\uB97C 30% \uC99D\uAC00\uC2DC\uCF1C \uACF5\uACA9
+    \uCFE8\uD0C0\uC784\uC744 \uAC10\uC18C\uC2DC\uD0A8\uB2E4."

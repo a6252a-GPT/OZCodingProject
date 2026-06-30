@@ -61,6 +61,24 @@ namespace TeamProject01.Gameplay
             return convoyController.TryGetRandomAttachedWeaponSegment(out targetSegment);
         }
 
+        public static bool TeleportMonster(EnemyController enemy, Vector3 destination) // 지원형 웜홀 몬스터 이동
+        {
+            if (enemy == null || enemy.IsDead)
+            {
+                return false; // 대상 없음
+            }
+
+            EnemyMovement movement = enemy.GetComponent<EnemyMovement>();
+            if (movement != null)
+            {
+                movement.ForceTeleport(destination); // 이동 상태까지 정리
+                return true;
+            }
+
+            enemy.transform.position = GroundService.ProjectToGround(destination, 0f); // fallback
+            return true;
+        }
+
         public static bool HasAvailableSegmentCutTarget() //조성원추가-0626 절단 가능한 무기 세그먼트가 존재하는지 확인
         {
             if (!TryGetConvoyController(out ConvoyController convoyController)) //조성원추가-0626 등록된 컨보이 또는 ConvoyController를 찾지 못했다면

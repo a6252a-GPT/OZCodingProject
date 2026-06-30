@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG54_HolyWaterSprayer
   DisplayName: "\uC131\uC218\uBC1C\uC0AC\uAE30"
-  Description: "<color=#2E7D59><b>[지원]</b></color> <color=#6B5B3A>[디버프]</color> 전방에 성수를 분사해 적이 받는 피해를 증가시킵니다."
+  Description: "<color=#2E7D59><b>[\uC9C0\uC6D0]</b></color> <color=#6B5B3A>[\uB514\uBC84\uD504]</color>
+    4\uCD08 \uB3D9\uC548 \uD22C\uBA85 \uC6D0\uBFD4 \uC131\uC218 \uBC94\uC704\uB97C
+    \uC720\uC9C0\uD558\uBA70 0.5\uCD08\uB9C8\uB2E4 \uBC1B\uD53C\uC99D 30%\uB97C \uC801\uC6A9\uD569\uB2C8\uB2E4."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1
@@ -27,10 +29,10 @@ MonoBehaviour:
     BodyPrefab: {fileID: 2894136110198890850, guid: 87dcfb70d87b2264d83db394c1d4c959, type: 3}
     HeadPrefab: {fileID: 5606047459754514579, guid: 3767a3eaeab6e994797dec7e9263e381, type: 3}
     AttackProfile: {fileID: 0}
-    Memo: "SP_SG54_HolyWaterSprayer_Lv1 \uD504\uB85C\uD544 \uC0AC\uC6A9. \uD654\uC5FC\uBC29\uC0AC\uAE30\uC2DD
-      \uC131\uC218 \uAD6C\uCCB4\uB97C \uBC1C\uC0AC\uD558\uACE0, \uC2E4\uC81C \uBAAC\uC2A4\uD130
-      \uB514\uBC84\uD504 \uC801\uC6A9 \uC804\uAE4C\uC9C0 \uD6C4\uC18D \uC5F0\uACB0\uC6A9
-      \uB370\uC774\uD130\uB9CC \uBC1C\uC0DD\uC2DC\uD0B4."
+    Memo: "SP_SG54_HolyWaterSprayer_Lv1 \uD504\uB85C\uD544 \uC0AC\uC6A9. 4\uCD08
+      \uB3D9\uC548 \uBA38\uC990 \uAF2D\uC9D3\uC810 \uD22C\uBA85 \uC6D0\uBFD4 \uBC94\uC704\uB97C
+      \uC720\uC9C0\uD558\uACE0, \uBC94\uC704 \uC548 \uBAAC\uC2A4\uD130\uC5D0\uAC8C
+      0.5\uCD08\uB9C8\uB2E4 \uBC1B\uD53C\uC99D 30% \uB514\uBC84\uD504\uB9CC \uC801\uC6A9\uD568."
   CardIconSpritesPerLevel:
   - {fileID: 21300000, guid: 6c1172ab62c27b14ba02a23201a36b18, type: 3}
   CardIconSizeOffset: 0

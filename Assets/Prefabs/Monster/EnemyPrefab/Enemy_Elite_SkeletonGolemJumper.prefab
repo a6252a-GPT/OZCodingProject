@@ -54,7 +54,6 @@ GameObject:
   - component: {fileID: 5919623954854531749}
   - component: {fileID: 3706297954351901036}
   - component: {fileID: 5616565028096346394}
-  - component: {fileID: 9195186717281808622}
   - component: {fileID: 5411611179007261207}
   - component: {fileID: 6076174856285995503}
   - component: {fileID: 2486757782221906673}
@@ -196,6 +195,10 @@ MonoBehaviour:
   shockwaveRadius: 10
   shockwavePushDistance: 5
   shockwaveRecoveryDuration: 0.12
+  landingCrackVfxPrefab: {fileID: 8520088679802897592, guid: e8576f614e358e44296b6f587ad45760, type: 3}
+  landingCrackGroundHeight: 0.03
+  landingCrackScale: 1
+  landingCrackLifeTime: 5
 --- !u!195 &6579760196455012896
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -277,22 +280,6 @@ MonoBehaviour:
   attackPowerAura: {fileID: 4031045078670521527}
   moveSpeedAura: {fileID: 7681971176602295030}
   attackSpeedAura: {fileID: 6215951687460092150}
---- !u!114 &9195186717281808622
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2812495242053123969}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff6a18c6442c92443b60d453f7e930af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyGrowthOrbDropper
-  growthOrbPrefab: {fileID: 5524355113652086816, guid: 45c9b8c8988fc6a4bb32859e0acc92e6, type: 3}
-  dropCount: 1
-  dropRandomRadius: 5
-  dropHeightOffset: 3
 --- !u!114 &5411611179007261207
 MonoBehaviour:
   m_ObjectHideFlags: 0

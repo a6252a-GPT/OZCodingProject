@@ -81,6 +81,7 @@ MonoBehaviour:
   AttackProfile: {fileID: 11400000, guid: 74b6d17abc58dcc42a07621873cadb55, type: 2}
   HeadYawPivot: {fileID: 7065082820653107434}
   Muzzle: {fileID: 7183264057958521499}
+  ProjectileMuzzles: []
   MuzzleVfxSocket: {fileID: 7936278579580900235}
   LoadedProjectileRoot: {fileID: 6787062481946623711}
 --- !u!1 &5282694934966488028

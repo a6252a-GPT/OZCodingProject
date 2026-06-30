@@ -53,7 +53,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private BonusChestWaveSpawner bonusChestWaveSpawner; // 보스 처치 후 상자 생성에 사용합니다.
 
         [Header("보스 진행 설정")]
-        [SerializeField] private bool enableBossWave = true; // 꺼두면 보스 로직을 사용하지 않습니다.
+        [HideInInspector]
+        [SerializeField] private bool enableBossWave = true; // 이전 씬 데이터 호환용입니다. 사용 여부는 WaveController가 관리합니다.
 
         [Min(1)]
         [SerializeField] private int bossStartStage = 15; // 첫 보스가 나올 수 있는 Stage입니다.
@@ -107,11 +108,6 @@ namespace TeamProject01.Gameplay
 
         public bool IsBossStage(int stage)
         {
-            if (!enableBossWave)
-            {
-                return false;
-            }
-
             if (stage < bossStartStage)
             {
                 return false;

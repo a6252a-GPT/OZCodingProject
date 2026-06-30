@@ -149,6 +149,7 @@ namespace TeamProject01.Gameplay
             ResolveTitleLogoReference(); // 로고 참조
             WireMapCardButtons(); // 씬 오브젝트 리스너 보강
             WireUpgradeButtons(); // 강화 리스너 보강
+            SaveData.TryApplyMetaSnapshot(Meta); // 진행 중 저장의 다이아·지렁이 해금 반영 //안건준 추가 - 0629
             TryConsumePendingRunResult(); // 스테이지 결과 보상 반영
             ShowMainMenu(); // 기본 화면
             RefreshAll(); // 즉시 갱신

@@ -14,9 +14,9 @@ GameObject:
   - component: {fileID: 481509068142100999}
   - component: {fileID: 4814483391243747896}
   - component: {fileID: 3100941582179570668}
-  - component: {fileID: 5024727712078807983}
   - component: {fileID: 4567309343360231999}
   - component: {fileID: 5502619405837869736}
+  - component: {fileID: 1087367105318344765}
   m_Layer: 0
   m_Name: Enemy_Elite_SuicideCharger
   m_TagString: Untagged
@@ -136,22 +136,6 @@ MonoBehaviour:
   telegraphGroundHeight: 0.03
   telegraphStartAlpha: 0.1
   telegraphEndAlpha: 1
---- !u!114 &5024727712078807983
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1486986997461958262}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff6a18c6442c92443b60d453f7e930af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyGrowthOrbDropper
-  growthOrbPrefab: {fileID: 5524355113652086816, guid: 45c9b8c8988fc6a4bb32859e0acc92e6, type: 3}
-  dropCount: 1
-  dropRandomRadius: 5
-  dropHeightOffset: 3
 --- !u!114 &4567309343360231999
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -188,6 +172,18 @@ MonoBehaviour:
   useDirectDeathState: 1
   deathStateFullPath: Base Layer.Death
   deathCrossFadeDuration: 0.03
+--- !u!114 &1087367105318344765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486986997461958262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
 --- !u!1 &2718801514984512411
 GameObject:
   m_ObjectHideFlags: 0

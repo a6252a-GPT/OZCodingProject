@@ -92,13 +92,13 @@ public partial class CardUI : MonoBehaviour
 
     [Header("카드 선택 후 닫기 (A/B 공통)")]
     [Tooltip("선택 카드만 보여준 뒤 패널을 닫기까지 대기(초). 기존 0.5")]
-    [SerializeField] private float selectionCloseHoldSeconds = 0.15f; // 선택 후 홀드
+    [SerializeField] private float selectionCloseHoldSeconds = 0.06f; // 선택 후 홀드
     [Tooltip("선택 카드 강조 트윈 — 커지는 시간")]
-    [SerializeField] private float selectionSelectUpSeconds = 0.15f; // 기존 0.2
+    [SerializeField] private float selectionSelectUpSeconds = 0.105f; // 기존 0.2
     [Tooltip("선택 카드 강조 트윈 — 원래 크기 복귀")]
-    [SerializeField] private float selectionSelectDownSeconds = 0.1f; // 기존 0.15
+    [SerializeField] private float selectionSelectDownSeconds = 0.07f; // 기존 0.15
     [Tooltip("레벨업 패널 페이드 아웃 (일시정지 해제 직전)")]
-    [SerializeField] private float selectionPanelCloseFadeSeconds = 0.15f; // 기존 LevelUpUi 0.25
+    [SerializeField] private float selectionPanelCloseFadeSeconds = 0.12f; // 기존 LevelUpUi 0.25
 
     [Header("레벨업 패널 감지")]
     [SerializeField] private CanvasGroup levelUpPanelCanvasGroup; // LevelUpPanel Canvas Group

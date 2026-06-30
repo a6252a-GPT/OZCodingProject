@@ -528,18 +528,19 @@ namespace TeamProject01.Gameplay
                 return false; // 무기 없음
             }
 
+            weapon.SetWeaponActive(false); // 교체 전 발사/반동 상태 정리
             Transform oldHead = FindWeaponHeadRoot(segment, weapon); // 기존 헤드
             string headName = oldHead != null ? oldHead.name : "SG01_CannonHead"; // 이름 유지
             int siblingIndex = oldHead != null ? oldHead.GetSiblingIndex() : segment.childCount; // 순서 유지
             Vector3 localPosition = oldHead != null ? oldHead.localPosition : Vector3.zero; // 위치 유지
-            Quaternion localRotation = oldHead != null ? oldHead.localRotation : Quaternion.identity; // 회전 유지
+            Quaternion localRotation = Quaternion.identity; // 스타터 조준 피벗 회전은 새 헤드 기본 자세로 넘기지 않음
             Vector3 localScale = oldHead != null ? oldHead.localScale : Vector3.one; // 스케일 유지
 
             GameObject instance = Instantiate(levelData.HeadPrefab, segment, false); // 새 헤드
             Transform newHead = instance.transform; // 새 헤드 루트
             newHead.name = headName; // 기존 이름 유지
             newHead.localPosition = localPosition; // 마운트 위치 유지
-            newHead.localRotation = localRotation; // 마운트 회전 유지
+            newHead.localRotation = localRotation; // 조준 누적 없는 기본 자세
             newHead.localScale = localScale; // 마운트 스케일 유지
             newHead.SetSiblingIndex(Mathf.Clamp(siblingIndex, 0, segment.childCount - 1)); // 계층 순서
 

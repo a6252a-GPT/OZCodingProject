@@ -229,6 +229,9 @@ MonoBehaviour:
   IdleVfxRoot: {fileID: 2681536524078370715}
   CollectVfxRoot: {fileID: 2424866653318469991}
   MagnetTrailVfxRoot: {fileID: 2656389153522381249}
+  SpecialDropIdleVfxPrefab: {fileID: 826770313348891590, guid: fec631d734ba3644e9ce46fd4506b5f9, type: 3}
+  SpecialDropIdleVfxScale: 1
+  SpecialDropIdleVfxLocalOffset: {x: 0, y: 0, z: 0}
   HoverHeight: 0.68
   HoverAmplitude: 0.14
   HoverSpeed: 2.55

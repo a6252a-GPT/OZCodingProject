@@ -11,7 +11,7 @@ namespace TeamProject01.Gameplay
         private const string FontResourcesPath = "UI/Fonts/DamageFloating"; // 테스트 폰트 경로
         private const string SourceFontResourcesPath = "UI/Fonts/DamageFloatingSource"; // 원본 TTF 경로
         private const string ExcludedFontNameFragment = "Tium";
-        private const string RequiredFloatingCharacters = "골드경험치0123456789+- .";
+        private const string RequiredFloatingCharacters = "골드경험치0123456789+- .화상빙결성수전쟁북깃발";
         private const string SampleDisplayText = "골드 123";
 
         [SerializeField] private DamageFloatingPopup popupPrefab; // 선택 프리팹
@@ -56,6 +56,16 @@ namespace TeamProject01.Gameplay
             }
 
             Instance.SpawnReward(kind, amount, fallbackPosition); // 표시 요청
+        }
+
+        public static void SpawnStatusEffect(string displayText, Color color, Vector3 fallbackPosition)
+        {
+            if (string.IsNullOrWhiteSpace(displayText))
+            {
+                return;
+            }
+
+            Instance.SpawnStatus(displayText, color, fallbackPosition);
         }
 
         public static string CycleFontAndSpawnSample() // 테스트 폰트 순환
@@ -108,6 +118,13 @@ namespace TeamProject01.Gameplay
             Vector3 position = ResolvePlayerRewardPosition(fallbackPosition); // 플레이어 머리 위
             string displayText = FormatReward(kind, amount); // 한글 보상 문구
             popup.Initialize(displayText, ResolveRewardColor(kind), position, 2.55f, GetActiveFontForText(displayText), ReleasePopup); // 팝업 시작
+        }
+
+        private void SpawnStatus(string displayText, Color color, Vector3 fallbackPosition)
+        {
+            DamageFloatingPopup popup = GetPopup();
+            Vector3 position = fallbackPosition + Vector3.up * 1.45f;
+            popup.Initialize(displayText, color, position, 2.35f, GetActiveFontForText(displayText), ReleasePopup);
         }
 
         private void SpawnSample() // 폰트 확인용 샘플

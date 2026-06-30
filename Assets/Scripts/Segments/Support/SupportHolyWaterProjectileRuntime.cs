@@ -1,178 +1,286 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
     public sealed class SupportHolyWaterProjectileRuntime : MonoBehaviour
     {
-        private static Material debugMaterial;
-        private static Color debugMaterialColor;
+        private const int ConeSegments = 28;
 
+        private static Material coneMaterial;
+        private static Color coneMaterialColor;
+
+        private readonly List<EnemyController> enemyBuffer = new List<EnemyController>(32);
+        private Mesh coneMesh;
+        private Transform sourceAnchor;
+        private Transform directionAnchor;
+        private Vector3 anchoredLocalDirection;
+        private Vector3 origin;
         private Vector3 direction;
-        private Transform muzzleInfluenceAnchor;
-        private Vector3 lastMuzzleInfluenceAnchorPosition;
-        private bool hasLastMuzzleInfluenceAnchorPosition;
-        private float speed;
+        private float maxDistance;
+        private float coneAngle;
         private float lifetime;
         private float age;
-        private float startRadius;
-        private float endRadius;
-        private float muzzleInfluenceStrength;
+        private float incomingDamageMultiplier;
+        private float debuffDuration;
+        private float debuffTickInterval;
+        private float debuffTickTimer;
+        private int sourceSegmentIndex;
+        private GameObject sourceObject;
+        private CombatStatusEffectKind statusEffect;
+        private GameObject statusVfxPrefab;
 
-        public static void Spawn(
+        public static void SpawnCone(
             Transform parent,
+            Transform sourceAnchor,
+            Transform directionAnchor,
             Vector3 position,
             Vector3 direction,
-            Transform muzzleInfluenceAnchor,
-            float speed,
+            float maxDistance,
+            float coneAngle,
             float lifetime,
-            float startRadius,
-            float endRadius,
-            float muzzleInfluenceStrength,
-            Color projectileColor)
+            float incomingDamageMultiplier,
+            float debuffDuration,
+            float debuffTickInterval,
+            Color projectileColor,
+            int sourceSegmentIndex,
+            GameObject sourceObject,
+            CombatStatusEffectKind statusEffect,
+            GameObject statusVfxPrefab)
         {
-            GameObject instance = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            instance.name = "SG54_HolyWaterDebugSphere_Runtime";
-
-            Collider collider = instance.GetComponent<Collider>();
-            if (collider != null)
-            {
-                Destroy(collider);
-            }
-
+            GameObject instance = new GameObject("SG54_HolyWaterCone_Runtime");
             if (parent != null)
             {
                 instance.transform.SetParent(parent, true);
             }
 
-            instance.transform.position = position;
-
             SupportHolyWaterProjectileRuntime runtime = instance.AddComponent<SupportHolyWaterProjectileRuntime>();
             runtime.Configure(
+                sourceAnchor,
+                directionAnchor,
+                position,
                 direction,
-                muzzleInfluenceAnchor,
-                speed,
+                maxDistance,
+                coneAngle,
                 lifetime,
-                startRadius,
-                endRadius,
-                muzzleInfluenceStrength,
-                projectileColor);
+                incomingDamageMultiplier,
+                debuffDuration,
+                debuffTickInterval,
+                projectileColor,
+                sourceSegmentIndex,
+                sourceObject,
+                statusEffect,
+                statusVfxPrefab);
         }
 
         private void Configure(
+            Transform sourceAnchor,
+            Transform directionAnchor,
+            Vector3 origin,
             Vector3 fireDirection,
-            Transform muzzleInfluenceAnchor,
-            float speed,
+            float maxDistance,
+            float coneAngle,
             float lifetime,
-            float startRadius,
-            float endRadius,
-            float muzzleInfluenceStrength,
-            Color projectileColor)
+            float incomingDamageMultiplier,
+            float debuffDuration,
+            float debuffTickInterval,
+            Color projectileColor,
+            int sourceSegmentIndex,
+            GameObject sourceObject,
+            CombatStatusEffectKind statusEffect,
+            GameObject statusVfxPrefab)
         {
-            direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : transform.forward;
-            this.muzzleInfluenceAnchor = muzzleInfluenceAnchor;
-            this.speed = Mathf.Max(0.1f, speed);
+            this.sourceAnchor = sourceAnchor;
+            this.directionAnchor = directionAnchor != null ? directionAnchor : sourceAnchor;
+            this.origin = origin;
+            direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : Vector3.forward;
+            anchoredLocalDirection = this.directionAnchor != null
+                ? this.directionAnchor.InverseTransformDirection(direction)
+                : direction;
+            this.maxDistance = Mathf.Max(0.1f, maxDistance);
+            this.coneAngle = Mathf.Clamp(coneAngle, 1f, 180f);
             this.lifetime = Mathf.Max(0.05f, lifetime);
-            this.startRadius = Mathf.Max(0.05f, startRadius);
-            this.endRadius = Mathf.Max(this.startRadius, endRadius);
-            this.muzzleInfluenceStrength = Mathf.Clamp01(muzzleInfluenceStrength);
+            this.incomingDamageMultiplier = Mathf.Max(1f, incomingDamageMultiplier);
+            this.debuffDuration = Mathf.Max(0f, debuffDuration);
+            this.debuffTickInterval = Mathf.Max(0.05f, debuffTickInterval);
+            this.sourceSegmentIndex = sourceSegmentIndex;
+            this.sourceObject = sourceObject;
+            this.statusEffect = statusEffect;
+            this.statusVfxPrefab = statusVfxPrefab;
+            debuffTickTimer = 0f;
             age = 0f;
-            hasLastMuzzleInfluenceAnchorPosition = this.muzzleInfluenceAnchor != null;
-            lastMuzzleInfluenceAnchorPosition = hasLastMuzzleInfluenceAnchorPosition ? this.muzzleInfluenceAnchor.position : Vector3.zero;
 
-            ApplyVisual(projectileColor);
-            ApplyScale(GetCurrentRadius());
+            RefreshConeTransform();
+
+            MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
+            MeshRenderer meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            coneMesh = new Mesh
+            {
+                name = "SG54_HolyWaterConeMesh_Runtime"
+            };
+            coneMesh.MarkDynamic();
+            meshFilter.sharedMesh = coneMesh;
+            meshRenderer.sharedMaterial = GetConeMaterial(projectileColor);
+
+            UpdateConeMesh(this.maxDistance);
+            ApplyDebuffInCone(this.maxDistance);
+            debuffTickTimer = this.debuffTickInterval;
         }
 
         private void Update()
         {
             age += Time.deltaTime;
+            RefreshConeTransform();
+
+            debuffTickTimer -= Time.deltaTime;
+            if (debuffTickTimer <= 0f)
+            {
+                ApplyDebuffInCone(maxDistance);
+                debuffTickTimer = debuffTickInterval;
+            }
+
             if (age >= lifetime)
             {
                 Destroy(gameObject);
-                return;
-            }
-
-            transform.position += direction * (speed * Time.deltaTime);
-            ApplyMuzzleInfluence();
-            if (direction.sqrMagnitude > 0.0001f)
-            {
-                transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
-            }
-
-            float radius = GetCurrentRadius();
-            ApplyScale(radius);
-        }
-
-        private void ApplyMuzzleInfluence()
-        {
-            if (muzzleInfluenceAnchor == null)
-            {
-                hasLastMuzzleInfluenceAnchorPosition = false;
-                return;
-            }
-
-            if (muzzleInfluenceStrength <= 0f)
-            {
-                return;
-            }
-
-            Vector3 anchorPosition = muzzleInfluenceAnchor.position;
-            if (!hasLastMuzzleInfluenceAnchorPosition)
-            {
-                lastMuzzleInfluenceAnchorPosition = anchorPosition;
-                hasLastMuzzleInfluenceAnchorPosition = true;
-                return;
-            }
-
-            Vector3 anchorDelta = anchorPosition - lastMuzzleInfluenceAnchorPosition;
-            lastMuzzleInfluenceAnchorPosition = anchorPosition;
-            anchorDelta.y = 0f;
-            if (anchorDelta.sqrMagnitude <= 0.000001f)
-            {
-                return;
-            }
-
-            Vector3 offset = transform.position - anchorPosition;
-            offset.y = 0f;
-            float influenceRange = Mathf.Max(0.5f, speed * lifetime);
-            float nearFactor = Mathf.Clamp01(1f - offset.magnitude / influenceRange);
-            float influence = muzzleInfluenceStrength * nearFactor * nearFactor;
-            transform.position += anchorDelta * influence;
-        }
-
-        private float GetCurrentRadius()
-        {
-            float progress = lifetime > 0f ? Mathf.Clamp01(age / lifetime) : 1f;
-            progress = Mathf.SmoothStep(0f, 1f, progress);
-            return Mathf.Lerp(startRadius, endRadius, progress);
-        }
-
-        private void ApplyScale(float radius)
-        {
-            float diameter = Mathf.Max(0.05f, radius) * 2f;
-            transform.localScale = new Vector3(diameter, diameter, diameter);
-        }
-
-        private void ApplyVisual(Color projectileColor)
-        {
-            Renderer[] renderers = GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0)
-            {
-                return;
-            }
-
-            Material material = GetDebugMaterial(projectileColor);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                renderers[i].sharedMaterial = material;
             }
         }
 
-        private static Material GetDebugMaterial(Color color)
+        private void RefreshConeTransform()
         {
-            if (debugMaterial != null && debugMaterialColor == color)
+            if (sourceAnchor != null)
             {
-                return debugMaterial;
+                origin = sourceAnchor.position;
+            }
+
+            if (directionAnchor != null)
+            {
+                Vector3 anchoredDirection = directionAnchor.TransformDirection(anchoredLocalDirection);
+                anchoredDirection.y = 0f;
+                if (anchoredDirection.sqrMagnitude > 0.0001f)
+                {
+                    direction = anchoredDirection.normalized;
+                }
+            }
+
+            transform.position = origin;
+            transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+        }
+
+        private void ApplyDebuffInCone(float distance)
+        {
+            if ((incomingDamageMultiplier <= 1f && statusEffect == CombatStatusEffectKind.None) || debuffDuration <= 0f || distance <= 0.01f)
+            {
+                return;
+            }
+
+            float endRadius = GetConeRadius(distance);
+            Vector3 queryCenter = origin + direction * (distance * 0.5f);
+            float queryRadius = distance * 0.5f + endRadius;
+            EnemyController.CollectActiveInRange(queryCenter, queryRadius, enemyBuffer, SegmentTargetQuery.IsEnemyUsable);
+
+            for (int i = 0; i < enemyBuffer.Count; i++)
+            {
+                EnemyController enemy = enemyBuffer[i];
+                if (enemy == null || !IsEnemyInsideCone(enemy, distance))
+                {
+                    continue;
+                }
+
+                EnemySupportDebuffState state = EnemySupportDebuffState.GetOrAdd(enemy);
+                if (state != null)
+                {
+                    if (statusEffect != CombatStatusEffectKind.None)
+                    {
+                        Vector3 hitPosition = SegmentTargetQuery.GetEnemyHitPosition(enemy, enemy.transform.position, 0.5f);
+                        state.ApplyStatusEffect(
+                            statusEffect,
+                            sourceSegmentIndex,
+                            sourceObject,
+                            hitPosition,
+                            statusVfxPrefab,
+                            debuffDuration,
+                            incomingDamageMultiplier);
+                    }
+                    else
+                    {
+                        state.ApplyIncomingDamageMultiplier(incomingDamageMultiplier, debuffDuration);
+                    }
+                }
+            }
+        }
+
+        private bool IsEnemyInsideCone(EnemyController enemy, float distance)
+        {
+            Vector3 hitPosition = SegmentTargetQuery.GetEnemyHitPosition(enemy, enemy.transform.position, 0.5f);
+            Vector3 toTarget = hitPosition - origin;
+            toTarget.y = 0f;
+
+            float projectedDistance = Vector3.Dot(toTarget, direction);
+            if (projectedDistance < 0f || projectedDistance > distance)
+            {
+                return false;
+            }
+
+            Vector3 perpendicular = toTarget - direction * projectedDistance;
+            float progress = distance > 0.0001f ? Mathf.Clamp01(projectedDistance / distance) : 1f;
+            float allowedRadius = GetConeRadius(distance * progress);
+            return perpendicular.sqrMagnitude <= allowedRadius * allowedRadius;
+        }
+
+        private void UpdateConeMesh(float distance)
+        {
+            if (coneMesh == null)
+            {
+                return;
+            }
+
+            float endRadius = GetConeRadius(distance);
+            Vector3[] vertices = new Vector3[ConeSegments + 2];
+            int[] triangles = new int[ConeSegments * 6];
+
+            vertices[0] = Vector3.zero;
+            int capCenterIndex = ConeSegments + 1;
+            vertices[capCenterIndex] = new Vector3(0f, 0f, distance);
+
+            for (int i = 0; i < ConeSegments; i++)
+            {
+                float angle = i / (float)ConeSegments * Mathf.PI * 2f;
+                vertices[i + 1] = new Vector3(Mathf.Cos(angle) * endRadius, Mathf.Sin(angle) * endRadius, distance);
+            }
+
+            int triangleIndex = 0;
+            for (int i = 0; i < ConeSegments; i++)
+            {
+                int current = i + 1;
+                int next = i == ConeSegments - 1 ? 1 : current + 1;
+
+                triangles[triangleIndex++] = 0;
+                triangles[triangleIndex++] = current;
+                triangles[triangleIndex++] = next;
+
+                triangles[triangleIndex++] = capCenterIndex;
+                triangles[triangleIndex++] = next;
+                triangles[triangleIndex++] = current;
+            }
+
+            coneMesh.Clear();
+            coneMesh.vertices = vertices;
+            coneMesh.triangles = triangles;
+            coneMesh.RecalculateNormals();
+            coneMesh.RecalculateBounds();
+        }
+
+        private float GetConeRadius(float distance)
+        {
+            float halfAngleRadians = coneAngle * 0.5f * Mathf.Deg2Rad;
+            return Mathf.Max(0f, Mathf.Tan(halfAngleRadians) * distance);
+        }
+
+        private static Material GetConeMaterial(Color color)
+        {
+            if (coneMaterial != null && coneMaterialColor == color)
+            {
+                return coneMaterial;
             }
 
             Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
@@ -191,42 +299,49 @@ namespace TeamProject01.Gameplay
                 shader = Shader.Find("Standard");
             }
 
-            debugMaterial = new Material(shader);
-            debugMaterial.name = "Runtime_SG54_HolyWaterDebugSphere";
-            debugMaterialColor = color;
-
-            if (debugMaterial.HasProperty("_BaseColor"))
+            coneMaterial = new Material(shader)
             {
-                debugMaterial.SetColor("_BaseColor", color);
+                name = "Runtime_SG54_HolyWaterCone"
+            };
+            coneMaterialColor = color;
+
+            if (coneMaterial.HasProperty("_BaseColor"))
+            {
+                coneMaterial.SetColor("_BaseColor", color);
             }
 
-            if (debugMaterial.HasProperty("_Color"))
+            if (coneMaterial.HasProperty("_Color"))
             {
-                debugMaterial.SetColor("_Color", color);
+                coneMaterial.SetColor("_Color", color);
             }
 
-            if (debugMaterial.HasProperty("_Surface"))
+            if (coneMaterial.HasProperty("_Surface"))
             {
-                debugMaterial.SetFloat("_Surface", 1f);
+                coneMaterial.SetFloat("_Surface", 1f);
             }
 
-            if (debugMaterial.HasProperty("_Mode"))
+            if (coneMaterial.HasProperty("_Mode"))
             {
-                debugMaterial.SetFloat("_Mode", 3f);
+                coneMaterial.SetFloat("_Mode", 3f);
             }
 
-            if (debugMaterial.HasProperty("_Blend"))
+            if (coneMaterial.HasProperty("_Blend"))
             {
-                debugMaterial.SetFloat("_Blend", 0f);
+                coneMaterial.SetFloat("_Blend", 0f);
             }
 
-            debugMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            debugMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            debugMaterial.SetInt("_ZWrite", 0);
-            debugMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            debugMaterial.EnableKeyword("_ALPHABLEND_ON");
-            debugMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            return debugMaterial;
+            if (coneMaterial.HasProperty("_Cull"))
+            {
+                coneMaterial.SetFloat("_Cull", 0f);
+            }
+
+            coneMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            coneMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            coneMaterial.SetInt("_ZWrite", 0);
+            coneMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            coneMaterial.EnableKeyword("_ALPHABLEND_ON");
+            coneMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            return coneMaterial;
         }
     }
 }

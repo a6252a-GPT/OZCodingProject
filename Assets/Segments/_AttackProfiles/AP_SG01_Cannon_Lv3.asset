@@ -59,6 +59,7 @@ MonoBehaviour:
   RollAfterArcLanding: 0
   LandingImpactRadius: 1.1
   LandingRollDamageRadius: 0.75
+  LandingRollDamageRatio: 1
   LandingRollDistance: 0
   LandingRollDuration: 0.35
   LandingRollSpinSpeed: 720

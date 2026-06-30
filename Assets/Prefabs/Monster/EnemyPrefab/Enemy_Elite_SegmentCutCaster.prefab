@@ -427,12 +427,12 @@ GameObject:
   - component: {fileID: 6361577037873080478}
   - component: {fileID: 2933459157522195837}
   - component: {fileID: 6415568136480640669}
-  - component: {fileID: 1901294406961794764}
   - component: {fileID: 1159680236896386367}
   - component: {fileID: 2376961750950944762}
   - component: {fileID: 5220885748468871970}
   - component: {fileID: 4800286374471986320}
   - component: {fileID: 1524027360320416919}
+  - component: {fileID: 7791079855498918439}
   m_Layer: 0
   m_Name: Enemy_Elite_SegmentCutCaster
   m_TagString: Untagged
@@ -593,22 +593,6 @@ MonoBehaviour:
   attackPowerAura: {fileID: 6470661702489972594}
   moveSpeedAura: {fileID: 1527777514336882373}
   attackSpeedAura: {fileID: 3854443874600158962}
---- !u!114 &1901294406961794764
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8429794112031723472}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff6a18c6442c92443b60d453f7e930af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyGrowthOrbDropper
-  growthOrbPrefab: {fileID: 0}
-  dropCount: 1
-  dropRandomRadius: 5
-  dropHeightOffset: 3
 --- !u!114 &1159680236896386367
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -697,6 +681,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyRangedAnimatorBridge
   animator: {fileID: 1938102452445435797}
+--- !u!114 &7791079855498918439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8429794112031723472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
 --- !u!1001 &631224397446548319
 PrefabInstance:
   m_ObjectHideFlags: 0
