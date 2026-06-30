@@ -14973,6 +14973,60 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1083654398177831203, guid: 6ce336f5f97635242b98cdbc59c11be8, type: 3}
   m_PrefabInstance: {fileID: 405072082}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &406785494
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 406785496}
+  - component: {fileID: 406785495}
+  m_Layer: 0
+  m_Name: NexusAttackSlotManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &406785495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406785494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a9858727a55bb64a99e72ba7d27caf7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.NexusAttackSlotManager
+  minAttackRadius: 1
+  slotOccupyRadius: 0.8
+  minCandidateCount: 8
+  maxCandidateCount: 48
+  slotGroundHeight: 0.72
+  drawSlotGizmos: 1
+  drawSlotLines: 1
+  previewAttackRadii:
+  - 6
+  - 10
+--- !u!4 &406785496
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406785494}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.46508, y: 0, z: 8.45423}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &413495300
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21533,93 +21587,35 @@ MonoBehaviour:
     startTime: 1
     spawnInterval: 10
     spawnGroupCount: 1
-    frontRowCount: 3
+    frontRowCount: 10
     monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 3
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+    - prefab: {fileID: 6409752787900454463, guid: 2ccdee97b4f0a9142be5618c8e0381d2, type: 3}
       count: 1
-  - stageName: Stage 2
-    startTime: 30
-    spawnInterval: 15
-    spawnGroupCount: 1
-    frontRowCount: 3
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 3
     - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 3
-    - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
       count: 1
-  - stageName: Stage 3
-    startTime: 60
-    spawnInterval: 15
-    spawnGroupCount: 1
-    frontRowCount: 3
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 3
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 3
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 2
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
+    - prefab: {fileID: 7315199729453545029, guid: 08f4864f548160d4095a041f9a181d21, type: 3}
       count: 1
-  - stageName: Stage 4
-    startTime: 90
-    spawnInterval: 15
-    spawnGroupCount: 1
-    frontRowCount: 5
-    monsterEntries:
     - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 5
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 4
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 3
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      count: 2
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
       count: 1
-  - stageName: Stage 5
-    startTime: 120
-    spawnInterval: 20
-    spawnGroupCount: 2
-    frontRowCount: 7
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 5
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 5
-    - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 5
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      count: 3
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
-      count: 3
     - prefab: {fileID: 6993012898605508961, guid: 98b45b9f6e483cf4f91f10dbc420d09f, type: 3}
       count: 1
+    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
+      count: 1
+    - prefab: {fileID: 8503523623773363453, guid: 5773da492ef404849a9e1800a588b739, type: 3}
+      count: 1
+    - prefab: {fileID: 5342407866216693720, guid: 65b75a732e1e5d844a4d9aeeaa5a0c6c, type: 3}
+      count: 1
     - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
       count: 1
-  - stageName: Stage 6
-    startTime: 140
-    spawnInterval: 25
-    spawnGroupCount: 2
-    frontRowCount: 7
-    monsterEntries:
-    - prefab: {fileID: 2416634690904808033, guid: bc834127c9b2b6a4f8c6a6136a3ce389, type: 3}
-      count: 8
-    - prefab: {fileID: 3150474345066653839, guid: 7e60e6de22e6fff418f2a40be154cbcc, type: 3}
-      count: 7
     - prefab: {fileID: 5828734262995713150, guid: bb310c249af509a43944ad5a7ea38bf2, type: 3}
-      count: 5
-    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
-      count: 5
-    - prefab: {fileID: 1536631838507410836, guid: 032390567bae6ac439e8df30f6e22a01, type: 3}
-      count: 5
-    - prefab: {fileID: 80010254629016614, guid: 4b5a686a8b62a3847a055809fd4086af, type: 3}
       count: 1
     - prefab: {fileID: 1640916881346023661, guid: 29a9a0a462dc4be448d78327da828489, type: 3}
+      count: 1
+    - prefab: {fileID: 656552028678833695, guid: bf4becde07d2de246943fbd5cf9db073, type: 3}
+      count: 1
+    - prefab: {fileID: 9194778320841374434, guid: e1261b4e636b2b040884415fbe7c845b, type: 3}
+      count: 1
+    - prefab: {fileID: 824607774837057934, guid: 94fe31a0770c6fa479eff15faa1be3e1, type: 3}
       count: 1
 --- !u!1 &615177118
 GameObject:
@@ -71347,3 +71343,4 @@ SceneRoots:
   - {fileID: 595282933}
   - {fileID: 337732748}
   - {fileID: 376933907}
+  - {fileID: 406785496}
