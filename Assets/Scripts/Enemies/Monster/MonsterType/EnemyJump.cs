@@ -39,6 +39,19 @@ namespace TeamProject01.Gameplay
         [Min(0.01f)]
         [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // 원래 경로로 복구되는 시간
 
+        // 조성원추가-0630 - 세그먼트 점프 착지 순간 땅갈라짐 VFX를 생성하기 위한 설정
+        [Header("Landing Crack VFX")]
+        [SerializeField] private GameObject landingCrackVfxPrefab; // 조성원추가-0630 - 착지 순간 생성할 땅갈라짐 VFX Prefab
+
+        [Min(0.0f)]
+        [SerializeField] private float landingCrackGroundHeight = 0.03f; // 조성원추가-0630 - VFX가 바닥에 묻히지 않도록 올릴 높이
+
+        [Min(0.1f)]
+        [SerializeField] private float landingCrackScale = 0.65f; // 조성원추가-0630 - 엘리트 몬스터용 땅갈라짐 VFX 크기 배율
+
+        [Min(0.01f)]
+        [SerializeField] private float landingCrackLifeTime = 2.0f; // 조성원추가-0630 - 생성된 땅갈라짐 VFX 제거 시간
+
         ////// 안건준추가-0622 - EnemyJumpTest의 이동 Script Component 참조 구조를 가져온다.
         private EnemyMovement enemyMovement;
         private NavMeshAgent navAgent;
@@ -60,9 +73,7 @@ namespace TeamProject01.Gameplay
             ////// 안건준추가-0622 - SegmentBlocker의 활성 세그먼트 목록을 찾는다.
             if (activeBlockersField == null)
             {
-                activeBlockersField = typeof(SegmentBlocker).GetField(
-                    "ActiveBlockers",
-                    BindingFlags.NonPublic | BindingFlags.Static);
+                activeBlockersField = typeof(SegmentBlocker).GetField("ActiveBlockers", BindingFlags.NonPublic | BindingFlags.Static);
             }
 
             ////// 안건준추가-0622 - Off-Mesh Link 이동은 EnemyJump가 직접 처리한다.
@@ -82,10 +93,7 @@ namespace TeamProject01.Gameplay
             cooldownTimer -= Time.deltaTime;
 
             ////// 안건준추가-0622 - NavMeshAgent가 Off-Mesh Link에 도착하면 지형 점프를 시작한다.
-            if (navAgent != null &&
-                navAgent.enabled &&
-                navAgent.isOnNavMesh &&
-                navAgent.isOnOffMeshLink)
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh && navAgent.isOnOffMeshLink)
             {
                 jumpRoutine = StartCoroutine(JumpOffMeshLink());
                 return;
@@ -117,9 +125,7 @@ namespace TeamProject01.Gameplay
 
             SetEnemyMovementEnabled(true);
 
-            if (navAgent != null &&
-                navAgent.enabled &&
-                navAgent.isOnNavMesh)
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
             {
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
@@ -143,11 +149,7 @@ namespace TeamProject01.Gameplay
             Vector3 from = transform.position;
             Vector3 to = link.endPos + Vector3.up * navAgent.baseOffset;
 
-            yield return ArcMove(
-                from,
-                to,
-                jumpHeight,
-                jumpDuration);
+            yield return ArcMove(from, to, jumpHeight, jumpDuration);
 
             transform.position = to;
 
@@ -188,8 +190,7 @@ namespace TeamProject01.Gameplay
         {
             landingPoint = Vector3.zero;
 
-            var blockers = activeBlockersField?.GetValue(null)
-                as System.Collections.Generic.List<SegmentBlocker>;
+            var blockers = activeBlockersField?.GetValue(null) as System.Collections.Generic.List<SegmentBlocker>;
 
             if (blockers == null || blockers.Count == 0)
             {
@@ -200,8 +201,7 @@ namespace TeamProject01.Gameplay
             Vector3 forward;
 
             ////// 안건준추가-0622 - NavMeshAgent 속도가 있으면 이동 방향으로 사용한다.
-            if (navAgent != null &&
-                navAgent.velocity.sqrMagnitude > 0.01f)
+            if (navAgent != null && navAgent.velocity.sqrMagnitude > 0.01f)
             {
                 forward = navAgent.velocity;
             }
@@ -299,6 +299,8 @@ namespace TeamProject01.Gameplay
                 navAgent.isStopped = true;
             }
 
+            SpawnLandingCrackVfx(transform.position); // 조성원추가-0630 - 착지 위치가 확정된 뒤 땅갈라짐 VFX를 생성한다.
+
             ApplyLandingShockwave(); // 세그먼트 점프 착지 지점에 충격파 발생
 
             // 조성원추가-0626 - 착지 후 남은 웅크린 애니메이션 동안 이동하지 않는다.
@@ -321,6 +323,28 @@ namespace TeamProject01.Gameplay
             }
 
             jumpRoutine = null;
+        }
+
+        // 조성원추가-0630 - 세그먼트 점프 착지 위치에 땅갈라짐 VFX를 생성한다.
+        private void SpawnLandingCrackVfx(Vector3 position)
+        {
+            SpawnOneShotVfx(landingCrackVfxPrefab, position, landingCrackGroundHeight, landingCrackScale, landingCrackLifeTime);
+        }
+
+        // 조성원추가-0630 - 단발성 VFX를 생성하고 지정 시간 뒤 제거한다.
+        private void SpawnOneShotVfx(GameObject prefab, Vector3 position, float groundHeight, float scaleMultiplier, float lifeTime)
+        {
+            if (prefab == null)
+            {
+                return;
+            }
+
+            Vector3 spawnPosition = position;
+            spawnPosition.y += groundHeight;
+
+            GameObject vfx = Instantiate(prefab, spawnPosition, Quaternion.identity, transform.parent);
+            vfx.transform.localScale = vfx.transform.localScale * scaleMultiplier;
+            Destroy(vfx, lifeTime);
         }
 
         private void ApplyLandingShockwave() // 착지 주변의 연결 세그먼트를 바깥쪽으로 민다.

@@ -120,6 +120,7 @@ namespace TeamProject01.Gameplay
             lastFlameInfluenceAnchorPosition = hasLastFlameInfluenceAnchorPosition ? this.flameInfluenceAnchor.position : Vector3.zero;
             direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : transform.forward; // 방향
             ApplyProjectileScale(); // 프로필 크기 적용
+            ApplyProjectileVfxScale(); // 투사체 안 VFX만 별도 보정
             lifeTimer = profile != null ? Mathf.Max(0.1f, profile.ProjectileLifetime) : 0.1f; // 수명
             effectiveProjectileSpeed = profile != null
                 ? weaponBonus.ResolveProjectileSpeed(profile.ProjectileSpeed) // 기본+강화 속도
@@ -174,6 +175,11 @@ namespace TeamProject01.Gameplay
 
         private void SpawnAreaTelegraph() // 실제 피해 범위 표시
         {
+            if (!RuntimeCombatDebugVisuals.TemporaryCombatDebugVisualsEnabled)
+            {
+                return; // 임시 범위 표시 비활성화
+            }
+
             if (profile == null || profile.AreaTelegraphPrefab == null || profile.ImpactType != SegmentAttackImpactType.ExplosionArea)
             {
                 return; // 표시 없음
@@ -256,6 +262,61 @@ namespace TeamProject01.Gameplay
             }
 
             transform.localScale = scale; // 런타임 투사체 크기
+        }
+
+        private void ApplyProjectileVfxScale() // 투사체 자식 VFX만 별도 크기 적용
+        {
+            if (profile == null)
+            {
+                return;
+            }
+
+            Vector3 scale = profile.ProjectileVfxScale; // 보이는 VFX 목표 크기
+            if (scale.x <= 0f || scale.y <= 0f || scale.z <= 0f)
+            {
+                return; // VFX 기본 크기 유지
+            }
+
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i); // 투사체 직속 자식
+                if (!IsProjectileVfxChild(child))
+                {
+                    continue; // 소켓/모델 제외
+                }
+
+                child.localScale = ResolveLocalScaleForWorldScale(child, scale); // 부모 스케일 보정
+            }
+        }
+
+        private static bool IsProjectileVfxChild(Transform child) // 투사체 본체 VFX 대상 판별
+        {
+            if (child == null || child.name == "VFX_Hit")
+            {
+                return false; // 명중 위치 소켓 제외
+            }
+
+            return child.name.StartsWith("VFX_"); // VFX_ 자식만 조절
+        }
+
+        private static Vector3 ResolveLocalScaleForWorldScale(Transform target, Vector3 worldScale) // 부모 스케일 보정
+        {
+            Transform parent = target.parent;
+            if (parent == null)
+            {
+                return worldScale; // 루트면 그대로
+            }
+
+            Vector3 parentScale = parent.lossyScale; // 루트 투사체 스케일 포함
+            return new Vector3(
+                DivideScale(worldScale.x, parentScale.x),
+                DivideScale(worldScale.y, parentScale.y),
+                DivideScale(worldScale.z, parentScale.z));
+        }
+
+        private static float DivideScale(float value, float divisor) // 0 스케일 보호
+        {
+            return Mathf.Abs(divisor) > 0.0001f ? value / divisor : value;
         }
     }
 }

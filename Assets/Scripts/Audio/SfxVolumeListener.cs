@@ -5,18 +5,14 @@ public sealed class SfxVolumeListener : MonoBehaviour // 씬 SFX AudioSource —
 {
     [SerializeField] private AudioSource target;
     [SerializeField] private float baseVolume = 1f;
-    [SerializeField] private bool captureBaseVolumeOnAwake = true;
+
+    public float BaseVolume => baseVolume;
 
     private void Awake()
     {
         if (target == null)
         {
             target = GetComponent<AudioSource>();
-        }
-
-        if (target != null && captureBaseVolumeOnAwake)
-        {
-            baseVolume = target.volume;
         }
     }
 
@@ -25,13 +21,41 @@ public sealed class SfxVolumeListener : MonoBehaviour // 씬 SFX AudioSource —
         AudioManager.RegisterSfxListener(this);
     }
 
+    private void Start()
+    {
+        if (target != null)
+        {
+            AudioManager.NotifySfxSourceReady(target, baseVolume);
+        }
+    }
+
     private void OnDisable()
     {
         AudioManager.UnregisterSfxListener(this);
     }
 
+    public void SetBaseVolume(float volume)
+    {
+        baseVolume = Mathf.Clamp01(volume);
+
+        if (target == null)
+        {
+            target = GetComponent<AudioSource>();
+        }
+
+        if (target != null)
+        {
+            AudioManager.RegisterSfxBaseVolume(target, baseVolume);
+        }
+    }
+
     public void ApplyVolume(float sfxVolume, float masterVolume)
     {
+        if (target == null)
+        {
+            target = GetComponent<AudioSource>();
+        }
+
         if (target == null)
         {
             return;

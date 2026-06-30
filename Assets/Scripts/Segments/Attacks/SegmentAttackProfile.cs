@@ -49,6 +49,7 @@ namespace TeamProject01.Gameplay
         public bool UseLoadedProjectileVisuals; // 장전 미사일 표시 사용
         [Range(0f, 1f)] public float LoadedProjectileReloadRatio = 0.5f; // 쿨타임 중 복구 시점
         public Vector3 ProjectileScale = Vector3.zero; // 0 이하면 프리팹 기본 크기 유지
+        public Vector3 ProjectileVfxScale = Vector3.zero; // 0 이하면 투사체 VFX 자식 크기 유지
         [Min(0.1f)] public float ProjectileSpeed = 20f; // 투사체 속도
         [Min(0.05f)] public float ProjectileHitRadius = 0.5f; // 명중 반경
         [Min(0.1f)] public float ProjectileLifetime = 5f; // 생존 시간
@@ -90,6 +91,8 @@ namespace TeamProject01.Gameplay
         [Header("Debuff")]
         [Range(0.05f, 1f)] public float SlowMoveSpeedMultiplier = 1f; // 1이면 감속 없음
         [Min(0f)] public float SlowDuration = 0f; // 감속 지속 시간
+        public CombatStatusEffectKind StatusEffectOnHit = CombatStatusEffectKind.None; // 명중 시 적용할 상태효과
+        public GameObject StatusEffectVfxPrefab; // 상태효과 몸체 VFX
 
         [Header("Laser")]
         [Min(0.05f)] public float LaserDuration = 0.5f; // 레이저 지속 시간

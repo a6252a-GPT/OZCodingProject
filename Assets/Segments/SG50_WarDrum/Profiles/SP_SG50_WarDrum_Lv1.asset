@@ -25,6 +25,26 @@ MonoBehaviour:
   IncomingDamageMultiplier: 1
   ActiveVfxPrefab: {fileID: 0}
   RangeVfxPrefab: {fileID: 0}
-  TargetBodyVfxPrefab: {fileID: 0}
+  TargetBodyVfxPrefab: {fileID: 5271859627431015221, guid: 2c4df4b9e7394d74981511d8187bc151, type: 3}
   EnemyDebuffVfxPrefab: {fileID: 0}
-  Memo: "발동 중 앞 2칸/뒤 2칸 아군 세그먼트의 최종 데미지를 30% 증가시킨다."
+  EnemyStatusEffect: 0
+  WormholeProjectilePrefab: {fileID: 0}
+  WormholeImpactVfxPrefab: {fileID: 0}
+  WormholeTeleportOutVfxPrefab: {fileID: 0}
+  WormholeTeleportArrivalVfxPrefab: {fileID: 0}
+  WormholeProjectileSpeed: 18
+  WormholeProjectileHitRadius: 0.6
+  WormholeProjectileLifetime: 4
+  WormholeExplosionRadius: 5
+  WormholeTeleportMinNexusDistance: 40
+  WormholeTeleportMaxNexusDistance: 50
+  WormholeMaxTeleportTargets: 12
+  WormholeAffectBosses: 0
+  WormholeTargetAimHeight: 0.6
+  WormholeAimTurnSpeed: 720
+  WormholeFireAngleTolerance: 6
+  WormholeVfxLifetime: 1.5
+  WormholeVfxAlpha: 1
+  WormholeShowDebugRadius: 1
+  Memo: "\uBC1C\uB3D9 \uC911 \uC55E 2\uCE78/\uB4A4 2\uCE78 \uC544\uAD70 \uC138\uADF8\uBA3C\uD2B8\uC758
+    \uCD5C\uC885 \uB370\uBBF8\uC9C0\uB97C 30% \uC99D\uAC00\uC2DC\uD0A8\uB2E4."

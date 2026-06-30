@@ -31,6 +31,21 @@ namespace TeamProject01.Gameplay
 
             MonsterFeedbackData feedback = CreateFeedback(enemy, resolvedDamage, profile, hitPosition, feedbackOrigin, feedbackKind);
             MonsterFeedbackApi.TryApplyFeedback(enemy, feedback);
+            ApplyStatusEffect(enemy, resolvedDamage, profile, hitPosition);
+        }
+
+        private static void ApplyStatusEffect(EnemyController enemy, DamageData damage, SegmentAttackProfile profile, Vector3 hitPosition)
+        {
+            if (profile == null || profile.StatusEffectOnHit == CombatStatusEffectKind.None)
+            {
+                return;
+            }
+
+            EnemySupportDebuffState state = EnemySupportDebuffState.GetOrAdd(enemy);
+            if (state != null)
+            {
+                state.ApplyStatusEffect(profile.StatusEffectOnHit, damage.SourceSegmentIndex, damage.SourceObject, hitPosition, profile.StatusEffectVfxPrefab);
+            }
         }
 
         private static MonsterFeedbackData CreateFeedback(

@@ -3,82 +3,31 @@ using UnityEngine;
 namespace TeamProject01.Gameplay
 {
     [DisallowMultipleComponent]
-    public sealed class ParticleSystemWarmStart : MonoBehaviour // 파티클 VFX를 약간 진행된 상태로 시작
+    public sealed class ParticleSystemWarmStart : MonoBehaviour
     {
-        [SerializeField, Min(0f)] private float warmStartSeconds = 0.3f;
-        [SerializeField] private bool playAfterWarmStart = true;
-
-        private ParticleSystem rootParticle;
-        private ParticleSystem[] childParticles;
-
-        private void Awake()
-        {
-            CacheParticles();
-        }
+        [SerializeField, Min(0f)] private float warmStartSeconds = 0.5f; // 시작 건너뛰기
+        [SerializeField] private bool playAfterWarmStart = true; // 시뮬레이션 후 재생
 
         private void OnEnable()
         {
-            ApplyWarmStart();
+            WarmStart();
         }
 
-        public void Configure(float seconds, bool playAfterWarmStart)
+        private void WarmStart()
         {
-            warmStartSeconds = Mathf.Max(0f, seconds);
-            this.playAfterWarmStart = playAfterWarmStart;
-        }
-
-        private void ApplyWarmStart()
-        {
-            if (warmStartSeconds <= 0f)
+            ParticleSystem[] systems = GetComponentsInChildren<ParticleSystem>(true); // 하위 파티클 포함
+            for (int i = 0; i < systems.Length; i++)
             {
-                return;
-            }
-
-            LoadedProjectileRegrowVisual regrowVisual = GetComponent<LoadedProjectileRegrowVisual>();
-            if (regrowVisual != null)
-            {
-                regrowVisual.ApplyParticleIntensity();
-            }
-
-            if (rootParticle == null && childParticles == null)
-            {
-                CacheParticles();
-            }
-
-            if (rootParticle != null)
-            {
-                WarmParticle(rootParticle, true);
-                return;
-            }
-
-            if (childParticles == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < childParticles.Length; i++)
-            {
-                ParticleSystem particle = childParticles[i];
-                if (particle != null)
+                ParticleSystem system = systems[i]; // 대상
+                if (warmStartSeconds > 0f)
                 {
-                    WarmParticle(particle, false);
+                    system.Simulate(warmStartSeconds, true, true, true); // 초반부 건너뛰기
                 }
-            }
-        }
 
-        private void CacheParticles()
-        {
-            rootParticle = GetComponent<ParticleSystem>();
-            childParticles = rootParticle == null ? GetComponentsInChildren<ParticleSystem>(true) : null;
-        }
-
-        private void WarmParticle(ParticleSystem particle, bool withChildren)
-        {
-            particle.Stop(withChildren, ParticleSystemStopBehavior.StopEmittingAndClear);
-            particle.Simulate(warmStartSeconds, withChildren, true, false);
-            if (playAfterWarmStart)
-            {
-                particle.Play(withChildren);
+                if (playAfterWarmStart)
+                {
+                    system.Play(true); // 이어서 재생
+                }
             }
         }
     }

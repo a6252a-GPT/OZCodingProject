@@ -47,11 +47,11 @@ GameObject:
   - component: {fileID: 7844638830320632584}
   - component: {fileID: 3789973799671708684}
   - component: {fileID: 4011737184480128840}
-  - component: {fileID: 2650628912629165114}
   - component: {fileID: 231595241310725668}
   - component: {fileID: 8805661644740347932}
   - component: {fileID: 6054852669062781172}
   - component: {fileID: 2371775508279070105}
+  - component: {fileID: 1662497318771566397}
   m_Layer: 0
   m_Name: Enemy_Elite_AreaShield
   m_TagString: Untagged
@@ -182,22 +182,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyReward
   experienceReward: 3
   goldReward: 2
---- !u!114 &2650628912629165114
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2606509775020153647}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff6a18c6442c92443b60d453f7e930af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyGrowthOrbDropper
-  growthOrbPrefab: {fileID: 0}
-  dropCount: 1
-  dropRandomRadius: 5
-  dropHeightOffset: 3
+  enableEliteDiamondDrop: 1
+  eliteDiamondDropChance: 0.5
+  eliteDiamondReward: 2
 --- !u!114 &231595241310725668
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -273,6 +260,18 @@ MonoBehaviour:
   useDirectDeathState: 1
   deathStateFullPath: Base Layer.Death
   deathCrossFadeDuration: 0.03
+--- !u!114 &1662497318771566397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2606509775020153647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
 --- !u!1 &4182503403825947938
 GameObject:
   m_ObjectHideFlags: 0

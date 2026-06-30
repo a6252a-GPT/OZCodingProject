@@ -120,7 +120,19 @@ namespace TeamProject01.Gameplay
                 return; // 조성원추가-0624 - 제거는 EnemyDeathAnimatorBridge의 Death Duration 이후 처리한다.
             }
 
-            Destroy(gameObject);  // 몬스터 제거
+            RemoveFromBattlefield(); // 조성원수정-0630 - 제거 처리를 함수로 분리해서 나중에 풀링 반환으로 바꾸기 쉽게 한다.
+        }
+
+        public void KillByConsumed() // 조성원추가-0630 - 해츨링에게 잡아먹힌 몬스터를 보상 없이 제거한다.
+        {
+            if (dead) // 조성원추가-0630 - 이미 사망 처리되었다면
+            {
+                return; // 조성원추가-0630 - 중복 먹힘 처리를 막고 종료한다.
+            }
+
+            dead = true; // 조성원추가-0630 - ActiveMonsters 탐색 대상에서 제외되도록 사망 상태로 표시한다.
+
+            RemoveFromBattlefield(); // 조성원추가-0630 - 먹힘은 일반 사망 애니메이션 없이 바로 제거한다.
         }
 
         private void KillByDamage()  // 피해 사망
@@ -137,6 +149,11 @@ namespace TeamProject01.Gameplay
 
             DamageKilled?.Invoke(this); // 런 결과 처치 수 기록
             Kill(); // 공통 제거
+        }
+
+        private void RemoveFromBattlefield() // 조성원추가-0630 - 현재는 Destroy로 제거하고, 나중에 풀링 반환으로 교체할 공통 지점
+        {
+            Destroy(gameObject); // 조성원추가-0630 - 현재 프로젝트 제거 방식 유지
         }
 
         ////// 전찬우수정-0619 - 태그 검색 대신 ActiveMonsters 기반으로 가까운 몬스터를 찾는다.

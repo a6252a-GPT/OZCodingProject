@@ -81,6 +81,7 @@ MonoBehaviour:
   AttackProfile: {fileID: 11400000, guid: f6e108f305f1d064eb04f215d6abe9a2, type: 2}
   HeadYawPivot: {fileID: 1471392905478640023}
   Muzzle: {fileID: 5462750505127139221}
+  ProjectileMuzzles: []
   MuzzleVfxSocket: {fileID: 6904973637506304910}
   LoadedProjectileRoot: {fileID: 8108560013688293972}
 --- !u!1 &8481702277736293399
@@ -171,6 +172,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2394593503045763708}
     m_Modifications:
+    - target: {fileID: 490872853067972750, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 863590808495677039, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -291,6 +296,14 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: -0.827
       objectReference: {fileID: 0}
+    - target: {fileID: 4416255118482294167, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4439950600858567668, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5729772171753902602, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.321
@@ -358,6 +371,18 @@ PrefabInstance:
     - target: {fileID: 8418930438403625328, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
       propertyPath: m_LocalPosition.z
       value: -0.827
+      objectReference: {fileID: 0}
+    - target: {fileID: 8768909037653222484, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8939385824749219383, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9006612901118881257, guid: 8abb331f4a9fd4543bdae19d381865df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

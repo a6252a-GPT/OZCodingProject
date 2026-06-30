@@ -181,7 +181,8 @@ namespace TeamProject01.Gameplay
                 moveSpeedBuffMultiplier = buffReceiver.GetMoveSpeedMultiplier(); // 현재 이동속도 버프 배율을 가져온다.
             }
 
-            Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * Time.deltaTime); // 버프 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
+            float supportDebuffMoveMultiplier = GetSupportDebuffMoveSpeedMultiplier(); // 지원형 빙결/감속 배율
+            Vector3 desiredPosition = transform.position + direction * (moveSpeed * moveSpeedBuffMultiplier * supportDebuffMoveMultiplier * Time.deltaTime); // 버프/디버프 배율까지 적용해서 이번 프레임 이동 목표 위치를 계산한다.
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
             ////// 전찬우추가-0619 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
@@ -288,6 +289,18 @@ namespace TeamProject01.Gameplay
             knockbackTimer = duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 타이머 시작
         }
 
+        public void ForceTeleport(Vector3 worldPosition) // 지원형 웜홀 강제 위치 이동
+        {
+            assignedPortalTotem = null; // 기존 적 포탈 목표 해제
+            knockbackTimer = 0f; // 밀림 중단
+            staggerTimer = 0f; // 경직 중단
+            knockbackDirection = Vector3.zero; // 방향 초기화
+            IsInStopRange = false; // 넥서스 정지 상태 해제
+
+            Vector3 groundedPosition = GroundService.ProjectToGround(worldPosition, groundHeight); // 바닥 높이 보정
+            transform.position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, groundedPosition, bodyRadius); // 겹침 보정
+        }
+
         public void Configure(Transform nexus, float moveSpeed, float groundHeight)// Spawner나 Controller가 이동 초기값을 넣어주는 함수
         {
             this.nexus = nexus; // 이동 목표 Nexus를 저장한다.
@@ -315,6 +328,16 @@ namespace TeamProject01.Gameplay
             }
 
             return supportDebuff != null && supportDebuff.IsFrozen;
+        }
+
+        private float GetSupportDebuffMoveSpeedMultiplier()
+        {
+            if (supportDebuff == null)
+            {
+                supportDebuff = GetComponent<EnemySupportDebuffState>(); // 런타임에 붙은 디버프 상태 재확인
+            }
+
+            return supportDebuff != null ? supportDebuff.MoveSpeedMultiplier : 1f;
         }
     }
 }

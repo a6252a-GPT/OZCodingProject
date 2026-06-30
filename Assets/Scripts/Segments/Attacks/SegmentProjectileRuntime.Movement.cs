@@ -58,7 +58,8 @@ namespace TeamProject01.Gameplay
             }
 
             float radius = GetCurrentExpandingFlameRadius(); // 현재 반경
-            ApplyExpandingFlameScale(radius); // 디버그 구체 크기
+            ApplyExpandingFlameScale(radius); // 숨겨진 판정 구체 크기
+            RefreshExpandingFlameDebugVisual();
             flameSphereTickTimer -= Time.deltaTime; // 틱 대기
             if (flameSphereTickTimer <= 0f)
             {
@@ -142,7 +143,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void ApplyExpandingFlameScale(float radius) // 반투명 디버그 구체 크기
+        private void ApplyExpandingFlameScale(float radius) // 숨겨진 판정 구체 크기
         {
             float diameter = Mathf.Max(0.05f, radius) * 2f; // Unity Sphere 지름 기준
             transform.localScale = new Vector3(diameter, diameter, diameter); // 시각 크기와 판정 일치
@@ -155,20 +156,23 @@ namespace TeamProject01.Gameplay
                 return; // 화염 구체 아님
             }
 
-            gameObject.name = "SG05_FlameDebugSphere_Runtime"; // Hierarchy 확인용
-            Renderer[] renderers = GetComponentsInChildren<Renderer>(); // fallback Sphere 렌더러
-            if (renderers.Length == 0)
-            {
-                return; // 표시 대상 없음
-            }
+            gameObject.name = "SG05_FlameHitSphere_Runtime";
+            RefreshExpandingFlameDebugVisual();
+            ApplyExpandingFlameScale(GetCurrentExpandingFlameRadius()); // 시작 크기 즉시 반영
+        }
 
-            Material material = GetExpandingFlameDebugMaterial(); // 공유 디버그 재질
+        private void RefreshExpandingFlameDebugVisual()
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>();
+            bool showDebugVisual = RuntimeCombatDebugVisuals.TemporaryCombatDebugVisualsEnabled;
             for (int i = 0; i < renderers.Length; i++)
             {
-                renderers[i].material = material; // 반투명 주황 구체
+                renderers[i].enabled = showDebugVisual;
+                if (showDebugVisual)
+                {
+                    renderers[i].sharedMaterial = GetExpandingFlameDebugMaterial();
+                }
             }
-
-            ApplyExpandingFlameScale(GetCurrentExpandingFlameRadius()); // 시작 크기 즉시 반영
         }
 
         private static Material GetExpandingFlameDebugMaterial() // 런타임 반투명 재질

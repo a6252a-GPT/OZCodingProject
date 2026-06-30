@@ -14,9 +14,11 @@ namespace TeamProject01.Gameplay
             public int BackSegmentCount;
             public float FinalDamageMultiplier = 1f;
             public float FinalAttackSpeedMultiplier = 1f;
+            public int ActivationOrder;
         }
 
         private static readonly List<BuffSourceState> Sources = new List<BuffSourceState>(16);
+        private static int nextActivationOrder;
 
         public static void RefreshAllyBuff(SupportSegmentAbility source, SegmentSupportAbilityProfile profile)
         {
@@ -61,34 +63,32 @@ namespace TeamProject01.Gameplay
         {
             CleanupInactiveSources();
 
-            float multiplier = 1f;
-            for (int i = 0; i < Sources.Count; i++)
-            {
-                BuffSourceState source = Sources[i];
-                if (source.Kind == SegmentSupportAbilityKind.FinalDamageBuff && AffectsSegment(source, segmentIndex))
-                {
-                    multiplier = Mathf.Max(multiplier, source.FinalDamageMultiplier);
-                }
-            }
-
-            return multiplier;
+            BuffSourceState source = GetWinningSourceForSegment(segmentIndex);
+            return source != null && source.Kind == SegmentSupportAbilityKind.FinalDamageBuff
+                ? source.FinalDamageMultiplier
+                : 1f;
         }
 
         public static float GetFinalAttackSpeedMultiplier(int segmentIndex)
         {
             CleanupInactiveSources();
 
-            float multiplier = 1f;
-            for (int i = 0; i < Sources.Count; i++)
+            BuffSourceState source = GetWinningSourceForSegment(segmentIndex);
+            return source != null && source.Kind == SegmentSupportAbilityKind.FinalAttackSpeedBuff
+                ? source.FinalAttackSpeedMultiplier
+                : 1f;
+        }
+
+        public static bool IsWinningSourceForSegment(SupportSegmentAbility source, int segmentIndex)
+        {
+            if (source == null)
             {
-                BuffSourceState source = Sources[i];
-                if (source.Kind == SegmentSupportAbilityKind.FinalAttackSpeedBuff && AffectsSegment(source, segmentIndex))
-                {
-                    multiplier = Mathf.Max(multiplier, source.FinalAttackSpeedMultiplier);
-                }
+                return false;
             }
 
-            return multiplier;
+            CleanupInactiveSources();
+            BuffSourceState winningSource = GetWinningSourceForSegment(segmentIndex);
+            return winningSource != null && winningSource.Source == source;
         }
 
         private static BuffSourceState GetOrCreateSource(SupportSegmentAbility source)
@@ -103,11 +103,32 @@ namespace TeamProject01.Gameplay
 
             BuffSourceState state = new BuffSourceState
             {
-                Source = source
+                Source = source,
+                ActivationOrder = ++nextActivationOrder
             };
 
             Sources.Add(state);
             return state;
+        }
+
+        private static BuffSourceState GetWinningSourceForSegment(int segmentIndex)
+        {
+            BuffSourceState winner = null;
+            for (int i = 0; i < Sources.Count; i++)
+            {
+                BuffSourceState source = Sources[i];
+                if (!AffectsSegment(source, segmentIndex))
+                {
+                    continue;
+                }
+
+                if (winner == null || source.ActivationOrder > winner.ActivationOrder)
+                {
+                    winner = source;
+                }
+            }
+
+            return winner;
         }
 
         private static bool AffectsSegment(BuffSourceState source, int segmentIndex)
@@ -115,7 +136,7 @@ namespace TeamProject01.Gameplay
             int offset = segmentIndex - source.SourceSegmentIndex;
             if (offset == 0)
             {
-                return false;
+                return true;
             }
 
             if (offset > 0)

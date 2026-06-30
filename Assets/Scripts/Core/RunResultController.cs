@@ -10,6 +10,7 @@ namespace TeamProject01.Gameplay
     public sealed class RunResultController : MonoBehaviour // 런 종료 판정/결과창
     {
         private const string DefaultTitleScenePath = "Assets/Scenes/TitleScene.unity";
+        private const string DefaultTitleSceneName = "TitleScene";
 
         [Header("Rules")]
         [Min(1)] [SerializeField] private int clearStageThreshold = 40; // 이 스테이지 이상에서 넥서스 사망 시 클리어
@@ -101,6 +102,7 @@ namespace TeamProject01.Gameplay
                 selectedWormId); // 메타 적용용 결과
 
             RunResultContext.SetPendingResult(result); // 타이틀 복귀 후 보상 적용
+            SaveData.NotifyRunFinished(); //안건준 추가 - 0629 (런 종료 시 중간 저장 삭제)
 
             previousTimeScale = Time.timeScale > 0f ? Time.timeScale : 1f;
             Time.timeScale = 0f; // 월드 정지, UI는 unscaled DOTween 사용
@@ -150,7 +152,7 @@ namespace TeamProject01.Gameplay
 #if UNITY_EDITOR
             EditorSceneManager.LoadSceneInPlayMode(titleScenePath, new LoadSceneParameters(LoadSceneMode.Single));
 #else
-            SceneManager.LoadScene(titleScenePath);
+            SceneManager.LoadScene(DefaultTitleSceneName);
 #endif
         }
 

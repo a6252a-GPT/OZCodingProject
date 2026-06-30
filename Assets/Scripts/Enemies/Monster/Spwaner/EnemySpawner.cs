@@ -182,6 +182,72 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        public readonly struct ExternalSpawnSpreadOptions // 외부 Wave 시스템이 선택된 방향 안에서 스폰 위치를 퍼뜨리는 옵션
+        {
+            public readonly bool Enabled; // 꺼져 있으면 기존 오와열 배치만 사용한다.
+            public readonly float Amount; // 숫자가 클수록 선택된 방향 안에서 더 넓게 퍼진다.
+
+            public ExternalSpawnSpreadOptions(bool enabled, float amount)
+            {
+                Enabled = enabled && amount > 0.0f;
+                Amount = Mathf.Max(0.0f, amount);
+            }
+
+            public static ExternalSpawnSpreadOptions Disabled
+            {
+                get
+                {
+                    return new ExternalSpawnSpreadOptions(false, 0.0f);
+                }
+            }
+        }
+
+        public enum ExternalSpawnFormationMode // 외부 Wave 시스템이 사용할 스폰 대형
+        {
+            Rows = 0, // 기존 사각 오와열
+            FilledCircleRows = 1 // 원 안을 오와열로 꽉 채운 대형
+        }
+
+        public readonly struct ExternalSpawnFormationOptions // 외부 Wave 시스템의 실제 대형 옵션
+        {
+            public readonly ExternalSpawnFormationMode Mode; // 생성할 대형 종류
+            public readonly bool DisableEntryRedistribution; // 켜면 몬스터 단위 재섞기와 방향별 재분배를 건너뛴다.
+            public readonly float CenterJitterRadius; // 대형 중심을 선택된 게이트 주변에서 랜덤 이동할 반경
+            public readonly bool RandomizeCircleRotation; // 원형 오와열 방향을 매 묶음마다 조금 다르게 돌릴지
+
+            public ExternalSpawnFormationOptions(ExternalSpawnFormationMode mode, bool disableEntryRedistribution, float centerJitterRadius, bool randomizeCircleRotation)
+            {
+                Mode = mode;
+                DisableEntryRedistribution = disableEntryRedistribution;
+                CenterJitterRadius = Mathf.Max(0.0f, centerJitterRadius);
+                RandomizeCircleRotation = randomizeCircleRotation;
+            }
+
+            public bool UsesFilledCircle
+            {
+                get
+                {
+                    return Mode == ExternalSpawnFormationMode.FilledCircleRows || (int)Mode == 2;
+                }
+            }
+
+            public bool UsesFilledArea
+            {
+                get
+                {
+                    return UsesFilledCircle;
+                }
+            }
+
+            public static ExternalSpawnFormationOptions Rows
+            {
+                get
+                {
+                    return new ExternalSpawnFormationOptions(ExternalSpawnFormationMode.Rows, false, 0.0f, false);
+                }
+            }
+        }
+
         private Transform nexus; // Nexus Transform, Inspector에는 노출하지 않고 자동 탐색한다.
 
         private Transform monsterRoot; // 생성된 몬스터를 정리할 부모 Transform
@@ -428,12 +494,22 @@ namespace TeamProject01.Gameplay
 
         public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, List<EnemyController> spawnedMonsters) // 생성 몬스터 기록까지 필요한 고정 방향 외부 스폰 입구
         {
-            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled);
+            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled, ExternalSpawnSpreadOptions.Disabled, ExternalSpawnFormationOptions.Rows);
         }
 
         public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, ExternalSpawnCongestionOptions congestionOptions, List<EnemyController> spawnedMonsters) // 생성 몬스터 기록과 혼잡도 옵션이 모두 필요한 외부 스폰 입구
         {
-            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters, congestionOptions);
+            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters, congestionOptions, ExternalSpawnSpreadOptions.Disabled, ExternalSpawnFormationOptions.Rows);
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, ExternalSpawnCongestionOptions congestionOptions, ExternalSpawnSpreadOptions spreadOptions, List<EnemyController> spawnedMonsters) // 생성 몬스터 기록, 혼잡도, 스폰 퍼짐 옵션이 모두 필요한 외부 스폰 입구
+        {
+            return TrySpawnExternalEntriesDistributed(entries, directionSet, frontRowCount, congestionOptions, spreadOptions, ExternalSpawnFormationOptions.Rows, spawnedMonsters);
+        }
+
+        public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, ExternalSpawnDirectionSet directionSet, int frontRowCount, ExternalSpawnCongestionOptions congestionOptions, ExternalSpawnSpreadOptions spreadOptions, ExternalSpawnFormationOptions formationOptions, List<EnemyController> spawnedMonsters) // 대형 옵션까지 포함해서 외부 스폰을 처리한다.
+        {
+            return TrySpawnExternalEntriesDistributed(entries, ConvertToSpawnDirections(directionSet.GetDirectionIndexes()), frontRowCount, spawnedMonsters, congestionOptions, spreadOptions, formationOptions);
         }
 
         public bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, int directionCount, int frontRowCount, List<EnemyController> spawnedMonsters) // 생성된 몬스터 목록까지 필요한 외부 요청 입구
@@ -467,10 +543,10 @@ namespace TeamProject01.Gameplay
             }
 
             SpawnDirection[] selectedDirections = PickRandomDirectionsForExternalWave(directionCount); // 이번 요청에서 사용할 방향을 고른다.
-            return TrySpawnExternalEntriesDistributed(entries, selectedDirections, frontRowCount, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled);
+            return TrySpawnExternalEntriesDistributed(entries, selectedDirections, frontRowCount, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled, ExternalSpawnSpreadOptions.Disabled, ExternalSpawnFormationOptions.Rows);
         }
 
-        private bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, SpawnDirection[] selectedDirections, int frontRowCount, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions) // 선택된 방향 목록을 기준으로 몬스터를 분산 생성한다.
+        private bool TrySpawnExternalEntriesDistributed(ExternalSpawnEntry[] entries, SpawnDirection[] selectedDirections, int frontRowCount, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions, ExternalSpawnSpreadOptions spreadOptions, ExternalSpawnFormationOptions formationOptions) // 선택된 방향 목록을 기준으로 몬스터를 분산 생성한다.
         {
             if (nexus == null) // Nexus가 아직 잡히지 않았다면
             {
@@ -503,6 +579,13 @@ namespace TeamProject01.Gameplay
             if (selectedDirections == null || selectedDirections.Length == 0) // 사용할 방향이 없다면
             {
                 return false;
+            }
+
+            int safeFrontRowCount = Mathf.Max(1, frontRowCount); // 한 줄에 배치할 몬스터 수
+
+            if (formationOptions.DisableEntryRedistribution) // 임시: WaveSystem의 몬스터 단위 재섞기와 방향별 재분배를 건너뛴다.
+            {
+                return TrySpawnExternalEntriesAsSingleFormationGroup(entries, selectedDirections, safeFrontRowCount, ref capacity, spawnedMonsters, congestionOptions, spreadOptions, formationOptions);
             }
 
             List<ExternalSpawnEntry>[] distributedEntries = new List<ExternalSpawnEntry>[selectedDirections.Length]; // 방향별로 나눠 담을 몬스터 목록
@@ -542,7 +625,6 @@ namespace TeamProject01.Gameplay
                 distributedEntries[groupIndex].Add(shuffledEntries[shuffledIndex]); // 해당 방향에 한 마리 추가한다.
             }
 
-            int safeFrontRowCount = Mathf.Max(1, frontRowCount); // 한 줄에 배치할 몬스터 수
             bool spawnedAny = false; // 실제 생성 여부
 
             for (int i = 0; i < selectedDirections.Length; i++) // 선택된 방향별로 스폰한다.
@@ -564,13 +646,30 @@ namespace TeamProject01.Gameplay
                     continue; // 다른 방향은 계속 시도한다.
                 }
 
-                if (SpawnExternalGroupAtGate(distributedEntries[i].ToArray(), safeFrontRowCount, gate, ref capacity, spawnedMonsters, congestionOptions)) // 배정된 몬스터만 이 게이트에 생성한다.
+                if (SpawnExternalGroupAtGate(distributedEntries[i].ToArray(), safeFrontRowCount, gate, ref capacity, spawnedMonsters, congestionOptions, spreadOptions, formationOptions)) // 배정된 몬스터만 이 게이트에 생성한다.
                 {
                     spawnedAny = true;
                 }
             }
 
             return spawnedAny;
+        }
+
+        private bool TrySpawnExternalEntriesAsSingleFormationGroup(ExternalSpawnEntry[] entries, SpawnDirection[] selectedDirections, int frontRowCount, ref int capacity, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions, ExternalSpawnSpreadOptions spreadOptions, ExternalSpawnFormationOptions formationOptions) // 몬스터 목록을 다시 섞지 않고 하나의 대형으로 생성한다.
+        {
+            for (int i = 0; i < selectedDirections.Length; i++)
+            {
+                Transform gate = PickRandomGate(selectedDirections[i]);
+
+                if (gate == null)
+                {
+                    continue;
+                }
+
+                return SpawnExternalGroupAtGate(entries, frontRowCount, gate, ref capacity, spawnedMonsters, congestionOptions, spreadOptions, formationOptions);
+            }
+
+            return false;
         }
 
         private static void ShuffleExternalSpawnEntries(List<ExternalSpawnEntry> entries) // 외부 웨이브 몬스터 배치 순서를 섞는다.
@@ -676,10 +775,15 @@ namespace TeamProject01.Gameplay
 
         private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity, List<EnemyController> spawnedMonsters) // 생성된 몬스터 목록까지 기록하는 외부 요청 처리
         {
-            return SpawnExternalGroupAtGate(entries, frontRowCount, gate, ref capacity, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled);
+            return SpawnExternalGroupAtGate(entries, frontRowCount, gate, ref capacity, spawnedMonsters, ExternalSpawnCongestionOptions.Disabled, ExternalSpawnSpreadOptions.Disabled, ExternalSpawnFormationOptions.Rows);
         }
 
-        private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions) // 생성된 몬스터 목록과 혼잡도 옵션까지 처리하는 외부 요청
+        private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions, ExternalSpawnSpreadOptions spreadOptions) // 생성된 몬스터 목록, 혼잡도, 스폰 퍼짐 옵션까지 처리하는 외부 요청
+        {
+            return SpawnExternalGroupAtGate(entries, frontRowCount, gate, ref capacity, spawnedMonsters, congestionOptions, spreadOptions, ExternalSpawnFormationOptions.Rows);
+        }
+
+        private bool SpawnExternalGroupAtGate(ExternalSpawnEntry[] entries, int frontRowCount, Transform gate, ref int capacity, List<EnemyController> spawnedMonsters, ExternalSpawnCongestionOptions congestionOptions, ExternalSpawnSpreadOptions spreadOptions, ExternalSpawnFormationOptions formationOptions) // 생성된 몬스터 목록, 혼잡도, 스폰 퍼짐, 대형 옵션까지 처리하는 외부 요청
         {
             if (entries == null || entries.Length == 0) // 몬스터 조합이 없다면
             {
@@ -696,8 +800,11 @@ namespace TeamProject01.Gameplay
             Vector3 outwardDirection = GetSpawnOutwardDirection(gate); // 넥서스에서 게이트로 향하는 바깥 방향
             Vector3 groupCenter = gate.position + outwardDirection * groupForwardOffset; // 바깥 방향으로 민 군단 앞줄 중심 위치
             groupCenter = ApplyCongestionPush(groupCenter, congestionOptions); // 스폰 위치가 이미 붐비면 넥서스 반대 방향으로 조금 더 밀어낸다.
+            groupCenter += GetExternalWaveFormationCenterOffset(formationOptions, outwardDirection); // 대형 중심만 랜덤 이동해서 전체 대형은 유지한다.
             groupCenter = GroundService.ProjectToGround(groupCenter, spawnGroundHeight); // 바닥 높이에 맞춘다.
 
+            Vector2[] filledCircleCoordinates = formationOptions.UsesFilledArea ? BuildFilledCircleGridCoordinates(totalMonsterCount) : null;
+            float formationRotationDegrees = formationOptions.UsesFilledCircle && formationOptions.RandomizeCircleRotation ? UnityEngine.Random.Range(0.0f, 360.0f) : 0.0f;
             int formationIndex = 0; // 오와열 배치 순서
             bool spawnedAny = false; // 실제 생성 여부
 
@@ -717,8 +824,9 @@ namespace TeamProject01.Gameplay
                         return spawnedAny; // 생성 중지
                     }
 
-                    Vector3 formationOffset = GetExternalWaveFormationOffset(formationIndex, totalMonsterCount, frontRowCount, outwardDirection); // 외부 웨이브용 오와열 위치 오프셋을 계산한다.
-                    Vector3 spawnPosition = groupCenter + formationOffset; // 최종 생성 위치를 계산한다.
+                    Vector3 formationOffset = GetExternalWaveFormationOffset(formationIndex, totalMonsterCount, frontRowCount, outwardDirection, formationOptions, filledCircleCoordinates, formationRotationDegrees); // 외부 웨이브용 오와열 위치 오프셋을 계산한다.
+                    Vector3 spreadOffset = formationOptions.UsesFilledArea ? Vector3.zero : GetExternalWaveSpreadOffset(spreadOptions, outwardDirection); // 원형 대형에서는 개별 랜덤 퍼짐을 막아 대형을 보존한다.
+                    Vector3 spawnPosition = groupCenter + formationOffset + spreadOffset; // 최종 생성 위치를 계산한다.
                     spawnPosition = GroundService.ProjectToGround(spawnPosition, spawnGroundHeight); // 바닥 높이에 맞춘다.
 
                     EnemyController spawnedMonster = SpawnMonster(entry.Prefab, spawnPosition, gate.rotation); // 몬스터 하나 생성
@@ -858,7 +966,17 @@ namespace TeamProject01.Gameplay
             return outwardDirection;
         }
 
-        private Vector3 GetExternalWaveFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Vector3 outwardDirection) // 외부 웨이브 전용 오와열 배치 오프셋 계산
+        private Vector3 GetExternalWaveFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Vector3 outwardDirection, ExternalSpawnFormationOptions formationOptions, Vector2[] filledCircleCoordinates, float formationRotationDegrees) // 외부 웨이브 전용 오와열 배치 오프셋 계산
+        {
+            if (formationOptions.UsesFilledArea)
+            {
+                return GetExternalWaveFilledCircleFormationOffset(unitIndex, filledCircleCoordinates, outwardDirection, formationRotationDegrees);
+            }
+
+            return GetExternalWaveRowFormationOffset(unitIndex, totalMonsterCount, frontRowCount, outwardDirection);
+        }
+
+        private Vector3 GetExternalWaveRowFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Vector3 outwardDirection) // 기존 외부 웨이브용 사각 오와열 배치 오프셋 계산
         {
             int rowIndex = unitIndex / frontRowCount;
             int columnIndex = unitIndex % frontRowCount;
@@ -876,7 +994,123 @@ namespace TeamProject01.Gameplay
             float sideOffset = centeredColumn * columnSpacing;
             float backOffset = rowIndex * rowSpacing;
 
-            Vector3 forward = outwardDirection;
+            ResolveExternalWaveAxes(outwardDirection, out Vector3 forward, out Vector3 right);
+            return right * sideOffset + forward * backOffset;
+        }
+
+        private Vector3 GetExternalWaveFilledCircleFormationOffset(int unitIndex, Vector2[] filledCircleCoordinates, Vector3 outwardDirection, float rotationDegrees) // 원 안을 오와열로 꽉 채운 배치 오프셋 계산
+        {
+            if (filledCircleCoordinates == null || filledCircleCoordinates.Length == 0)
+            {
+                return Vector3.zero;
+            }
+
+            int safeIndex = Mathf.Clamp(unitIndex, 0, filledCircleCoordinates.Length - 1);
+            Vector2 coordinate = filledCircleCoordinates[safeIndex];
+
+            if (Mathf.Abs(rotationDegrees) > 0.001f)
+            {
+                float radians = rotationDegrees * Mathf.Deg2Rad;
+                float cos = Mathf.Cos(radians);
+                float sin = Mathf.Sin(radians);
+                coordinate = new Vector2(
+                    coordinate.x * cos - coordinate.y * sin,
+                    coordinate.x * sin + coordinate.y * cos);
+            }
+
+            ResolveExternalWaveAxes(outwardDirection, out Vector3 forward, out Vector3 right);
+            return right * coordinate.x + forward * coordinate.y;
+        }
+
+        private Vector2[] BuildFilledCircleGridCoordinates(int totalMonsterCount) // 몬스터 수만큼 원 내부 격자 좌표를 만든다.
+        {
+            int safeCount = Mathf.Max(1, totalMonsterCount);
+
+            if (safeCount == 1)
+            {
+                return new[] { Vector2.zero };
+            }
+
+            float safeColumnSpacing = Mathf.Max(0.1f, columnSpacing);
+            float safeRowSpacing = Mathf.Max(0.1f, rowSpacing);
+            float radiusStep = Mathf.Min(safeColumnSpacing, safeRowSpacing) * 0.5f;
+            float radius = radiusStep;
+            List<Vector2> candidates = new List<Vector2>(safeCount * 2);
+
+            for (int guard = 0; guard < 256; guard++)
+            {
+                candidates.Clear();
+                int halfColumnCount = Mathf.CeilToInt(radius / safeColumnSpacing);
+                int halfRowCount = Mathf.CeilToInt(radius / safeRowSpacing);
+                float radiusSqr = radius * radius + 0.001f;
+
+                for (int row = -halfRowCount; row <= halfRowCount; row++)
+                {
+                    float y = row * safeRowSpacing;
+
+                    for (int column = -halfColumnCount; column <= halfColumnCount; column++)
+                    {
+                        float x = column * safeColumnSpacing;
+
+                        if (x * x + y * y <= radiusSqr)
+                        {
+                            candidates.Add(new Vector2(x, y));
+                        }
+                    }
+                }
+
+                if (candidates.Count >= safeCount)
+                {
+                    break;
+                }
+
+                radius += radiusStep;
+            }
+
+            candidates.Sort(CompareCircleDistanceThenRows);
+
+            if (candidates.Count > safeCount)
+            {
+                candidates.RemoveRange(safeCount, candidates.Count - safeCount);
+            }
+
+            RecenterCoordinates(candidates);
+            candidates.Sort(CompareRowsThenColumns);
+            return candidates.ToArray();
+        }
+
+        private static Vector3 GetExternalWaveSpreadOffset(ExternalSpawnSpreadOptions options, Vector3 outwardDirection) // 선택된 게이트 방향 안에서 스폰 위치를 자연스럽게 퍼뜨린다.
+        {
+            if (!options.Enabled || options.Amount <= 0.0f)
+            {
+                return Vector3.zero;
+            }
+
+            ResolveExternalWaveAxes(outwardDirection, out Vector3 forward, out Vector3 right);
+            float spreadAmount = Mathf.Max(0.0f, options.Amount);
+            Vector2 randomOffset = UnityEngine.Random.insideUnitCircle;
+            float sideOffset = randomOffset.x * spreadAmount;
+            float depthOffset = randomOffset.y * spreadAmount * 0.6f;
+
+            return right * sideOffset + forward * depthOffset;
+        }
+
+        private static Vector3 GetExternalWaveFormationCenterOffset(ExternalSpawnFormationOptions options, Vector3 outwardDirection) // 대형 전체 중심을 랜덤 이동한다.
+        {
+            if (!options.UsesFilledArea || options.CenterJitterRadius <= 0.0f)
+            {
+                return Vector3.zero;
+            }
+
+            ResolveExternalWaveAxes(outwardDirection, out Vector3 forward, out Vector3 right);
+            Vector2 randomOffset = UnityEngine.Random.insideUnitCircle * options.CenterJitterRadius;
+            randomOffset.y = Mathf.Abs(randomOffset.y); // 스폰포인트 랜덤 범위만 넥서스 반대쪽 반원으로 제한한다.
+            return right * randomOffset.x + forward * randomOffset.y;
+        }
+
+        private static void ResolveExternalWaveAxes(Vector3 outwardDirection, out Vector3 forward, out Vector3 right) // 외부 웨이브 대형 계산에 쓸 평면 축을 만든다.
+        {
+            forward = outwardDirection;
             forward.y = 0.0f;
 
             if (forward.sqrMagnitude <= 0.0001f)
@@ -885,8 +1119,7 @@ namespace TeamProject01.Gameplay
             }
 
             forward.Normalize();
-
-            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            right = Vector3.Cross(Vector3.up, forward);
 
             if (right.sqrMagnitude <= 0.0001f)
             {
@@ -894,7 +1127,52 @@ namespace TeamProject01.Gameplay
             }
 
             right.Normalize();
-            return right * sideOffset + forward * backOffset;
+        }
+
+        private static void RecenterCoordinates(List<Vector2> coordinates) // 선택된 좌표들의 평균점을 대형 중심에 맞춘다.
+        {
+            if (coordinates == null || coordinates.Count == 0)
+            {
+                return;
+            }
+
+            Vector2 center = Vector2.zero;
+
+            for (int i = 0; i < coordinates.Count; i++)
+            {
+                center += coordinates[i];
+            }
+
+            center /= coordinates.Count;
+
+            for (int i = 0; i < coordinates.Count; i++)
+            {
+                coordinates[i] -= center;
+            }
+        }
+
+        private static int CompareCircleDistanceThenRows(Vector2 a, Vector2 b) // 중심에 가까운 좌표부터 고른다.
+        {
+            int distanceCompare = a.sqrMagnitude.CompareTo(b.sqrMagnitude);
+
+            if (distanceCompare != 0)
+            {
+                return distanceCompare;
+            }
+
+            return CompareRowsThenColumns(a, b);
+        }
+
+        private static int CompareRowsThenColumns(Vector2 a, Vector2 b) // 최종 배치는 줄 단위로 정렬한다.
+        {
+            int rowCompare = a.y.CompareTo(b.y);
+
+            if (rowCompare != 0)
+            {
+                return rowCompare;
+            }
+
+            return a.x.CompareTo(b.x);
         }
 
         private Vector3 GetFormationOffset(int unitIndex, int totalMonsterCount, int frontRowCount, Transform gate) // 오와열 배치 오프셋 계산

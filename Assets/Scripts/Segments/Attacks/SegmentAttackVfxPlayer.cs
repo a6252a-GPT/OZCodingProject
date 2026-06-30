@@ -75,6 +75,7 @@ namespace TeamProject01.Gameplay
                 Renderer renderer = renderers[i]; // 렌더러
                 renderer.shadowCastingMode = ShadowCastingMode.Off; // 그림자 제거
                 renderer.receiveShadows = false; // 그림자 수신 제거
+
                 Material[] materials = renderer.materials; // 인스턴스 재질
                 for (int j = 0; j < materials.Length; j++)
                 {

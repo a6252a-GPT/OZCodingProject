@@ -81,6 +81,7 @@ MonoBehaviour:
   AttackProfile: {fileID: 11400000, guid: d03c8f5e111978947b74bf44ab13c19d, type: 2}
   HeadYawPivot: {fileID: 3077303272935554753}
   Muzzle: {fileID: 4614879282843731599}
+  ProjectileMuzzles: []
   MuzzleVfxSocket: {fileID: 343256796972476887}
   LoadedProjectileRoot: {fileID: 2930762189846893310}
 --- !u!1 &5449443013970898833
@@ -267,6 +268,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3923625750261532010, guid: e9b4922fc8312ae49b9240857d7d2902, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4006867806015723531, guid: e9b4922fc8312ae49b9240857d7d2902, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4037522639880273630, guid: e9b4922fc8312ae49b9240857d7d2902, type: 3}
