@@ -13256,17 +13256,18 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 32f808275bc2d1d4582e6b8a331fd850, type: 3}
     volume: 0.5
   - type: 3
-    clip: {fileID: 0}
-    volume: 0
+    clip: {fileID: 8300000, guid: a7562eaa159d641498049d05732a67eb, type: 3}
+    volume: 0.5
   - type: 4
-    clip: {fileID: 8300000, guid: 0ee332a789321456988bfbd32d4debe0, type: 3}
+    clip: {fileID: 8300000, guid: fd942b7243e3dd249bd6e7d9b25b6d97, type: 3}
     volume: 0.5
   - type: 5
-    clip: {fileID: 8300000, guid: a7a1d437f0b6f46f8bb6ed112a21d525, type: 3}
+    clip: {fileID: 8300000, guid: 9c62eb1609dc946b8a3445ae37ad0f46, type: 3}
     volume: 0.5
   - type: 6
     clip: {fileID: 0}
     volume: 0.5
+  bgmCrossfadeDuration: 1.2
   sfxClips:
   - type: 0
     clip: {fileID: 8300000, guid: 72ee2562b7c4aa0449b4cebbc53ddb4f, type: 3}
@@ -20458,6 +20459,7 @@ MonoBehaviour:
   hoverDuration: 0.15
   clickUpSeconds: 0.15
   clickDownSeconds: 0.1
+  fallbackClickClip: {fileID: 0}
 --- !u!1 &1369446252
 GameObject:
   m_ObjectHideFlags: 0

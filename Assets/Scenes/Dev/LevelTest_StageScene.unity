@@ -21550,7 +21550,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c935c11f13ca3c4429d17c8ca47a3dcc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.GoldCollectSpecialWave
-  minStartStage: 5
+  minStartStage: 2
   baseChancePercent: 30
   chanceIncreaseOnFailPercent: 3
   maxChancePercent: 60

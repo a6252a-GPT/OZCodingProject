@@ -65,6 +65,8 @@ namespace TeamProject01.Gameplay
 
         public int CurrentStage => currentStage;
         public event Action<int> CurrentStageChanged; //안건준 추가 - 0629 (웨이브 변경 시 SaveData에 기록용 웨이브 번호 저장 알림)
+        //안건준 추가 - 0630: 일반/보스/특수 전환 시 구독자에게 알림 (AudioManager BGM 전환)
+        public event Action<WaveRunState> RunStateChanged;
         public float StageDurationSeconds => stageDurationSeconds;
         public float RemainingStageSeconds => Mathf.Max(0.0f, stageDurationSeconds - elapsedStageSeconds);
         public bool IsSpecialWaveActive => enableSpecialWaveExtension && specialWaveActive;
@@ -81,6 +83,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        //안건준 추가 - 0630: 현재 웨이브 종류 조회 — 특수 > 보스 > 일반 우선순위
         public WaveRunState CurrentState
         {
             get
@@ -223,6 +226,7 @@ namespace TeamProject01.Gameplay
 
             if (!skipSpecialWaveCheckOnce && TryStartManaOrbCollectSpecialWave())
             {
+                NotifyRunStateChanged(); //안건준 추가 - 0630: 특수 웨이브 시작 → EventStage BGM
                 return;
             }
 
@@ -238,11 +242,13 @@ namespace TeamProject01.Gameplay
 
             if (bossSpawned && bossWaveController != null && bossWaveController.ShouldPauseNormalSpawn)
             {
+                NotifyRunStateChanged(); //안건준 추가 - 0630: 보스 웨이브 시작 → Boss BGM
                 return;
             }
 
             if (normalWaveSpawner == null)
             {
+                NotifyRunStateChanged(); //안건준 추가 - 0630: 일반 스폰 없음 — 현재 상태만 알림
                 return;
             }
 
@@ -257,6 +263,13 @@ namespace TeamProject01.Gameplay
 
             int normalSpawnCount = Mathf.Max(0, totalSpawnCount - elitePlan.TotalCount);
             normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, elitePlan, this);
+            NotifyRunStateChanged(); //안건준 추가 - 0630: 일반 웨이브 시작 → Stage BGM
+        }
+
+        //안건준 추가 - 0630: RunStateChanged 구독자에게 CurrentState 전달
+        private void NotifyRunStateChanged()
+        {
+            RunStateChanged?.Invoke(CurrentState);
         }
 
         private bool TryStartManaOrbCollectSpecialWave()

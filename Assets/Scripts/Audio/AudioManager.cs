@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using TeamProject01.Gameplay;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,6 +12,10 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     [Header("BGM List")]
     [SerializeField] private BGMClipData[] bgmClips; //인스펙터에서 등록할 BGM
+
+    [Header("BGM Crossfade")]
+    [SerializeField, Min(0f)] private float bgmCrossfadeDuration = 1.2f; // 웨이브 BGM 전환 페이드 시간(초)
+
     [Header("SFX List")]
     [SerializeField] private SFXClipData[] sfxClips; //인스펙터에서 등록할 효과음
 
@@ -23,6 +29,13 @@ public class AudioManager : AudioSingleton<AudioManager>
     private float masterVolume = 1f;
     private float bgmVolume = 1f;
     private float sfxVolume = 1f;
+
+    private const float WaveBgmBindTimeoutSeconds = 15f;
+    private WaveController waveController;
+    private Coroutine waveBgmBindCoroutine;
+
+    private AudioSource bgmSourceSecondary; // BGM 크로스페이드용 보조 소스
+    private Coroutine bgmCrossfadeCoroutine;
 
     public const string BgmVolumePrefKey = "Settings.BGMVolume";
     public const string SfxVolumePrefKey = "Settings.SFXVolume";
@@ -60,6 +73,30 @@ public class AudioManager : AudioSingleton<AudioManager>
         manager = go.AddComponent<AudioManager>();
         manager.EnsureRuntimeReady();
         return manager;
+    }
+
+    //안건준 추가 - 0630: 테스트 씬 직접 실행 시 BGM/SFX 카탈로그 로드 + 재생 + 웨이브 BGM 연동
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void BootstrapDirectPlaySceneAudio()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        if (AudioSceneName.GetBGMType(scene.name) == BGMType.None)
+        {
+            return;
+        }
+
+        AudioManager manager = EnsureExists();
+        manager.EnsureDirectPlaySceneReady();
+    }
+
+    //안건준 추가 - 0630: 타이틀/스테이지/테스트 씬 직접 Play 시 오디오 초기화
+    public void EnsureDirectPlaySceneReady()
+    {
+        EnsureRuntimeReady();
+        EnsureVolumePreferencesLoadedInternal();
+        PlayBGMForActiveScene();
+        BindSceneSfxSources(SceneManager.GetActiveScene());
+        TryBeginWaveBgmBinding(SceneManager.GetActiveScene());
     }
 
     public static void PlayClickButtonSfx() // 타이틀/UI 공통 클릭음 — 복구 후 재생 //안건준 추가 - 0629
@@ -227,20 +264,24 @@ public class AudioManager : AudioSingleton<AudioManager>
         {
             InitializDictionary(); // 흡수 후 딕셔너리 강제 재구성 //안건준 수정 - 0629
         }
+        else if (MergeMissingBgmEntries(donor.bgmClips))
+        {
+            InitializDictionary();
+        }
 
         EnsureRuntimeReady();
     }
 
     private void TryRecoverClipConfiguration() // DDOL 인스턴스에 클립이 없을 때 씬 AudioManager에서 복구 //안건준 추가 - 0629
     {
-        if (HasAssignedSfxClips() && CanPlaySfx(SFXType.ClickButton))
+        if (!NeedsWaveBgmRecovery() && CanPlaySfx(SFXType.ClickButton))
         {
-            return; // 이미 클릭음 재생 가능
+            return;
         }
 
         AudioManager[] managers = FindObjectsByType<AudioManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         AudioManager bestDonor = null;
-        int bestSfxCount = CountAssignedClips(sfxClips);
+        int bestScore = CountAssignedClips(bgmClips) + CountAssignedClips(sfxClips);
 
         for (int i = 0; i < managers.Length; i++)
         {
@@ -250,11 +291,11 @@ public class AudioManager : AudioSingleton<AudioManager>
                 continue;
             }
 
-            int candidateCount = CountAssignedClips(candidate.sfxClips);
-            if (candidateCount > bestSfxCount)
+            int candidateScore = CountAssignedClips(candidate.bgmClips) + CountAssignedClips(candidate.sfxClips);
+            if (candidateScore > bestScore)
             {
                 bestDonor = candidate;
-                bestSfxCount = candidateCount;
+                bestScore = candidateScore;
             }
         }
 
@@ -262,6 +303,44 @@ public class AudioManager : AudioSingleton<AudioManager>
         {
             AbsorbConfiguration(bestDonor);
         }
+
+        TryMergeMissingClipsFromCatalog();
+
+        if (NeedsDictionaryRebuild())
+        {
+            InitializDictionary();
+        }
+    }
+
+    private bool NeedsWaveBgmRecovery()
+    {
+        return !HasBgmClipInArray(BGMType.Stage_BGM)
+            || !HasBgmClipInArray(BGMType.Boss_BGM)
+            || !HasBgmClipInArray(BGMType.EventStage_BGM);
+    }
+
+    private bool HasBgmClipInArray(BGMType type)
+    {
+        if (bgmClips != null)
+        {
+            for (int i = 0; i < bgmClips.Length; i++)
+            {
+                BGMClipData entry = bgmClips[i];
+                if (entry != null && entry.type == type && entry.clip != null)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return bgmDictionary != null && bgmDictionary.ContainsKey(type);
+    }
+
+    private void EnsureWaveBgmClipsReady()
+    {
+        TryRecoverClipConfiguration();
+        TryMergeMissingClipsFromCatalog();
+        EnsureDictionaries();
     }
 
     private static bool MergeClipArrayIfNeeded(
@@ -401,7 +480,158 @@ public class AudioManager : AudioSingleton<AudioManager>
     private void EnsureRuntimeReady()
     {
         EnsureAudioSources();
+        TryLoadCatalogFromResourcesIfNeeded();
         EnsureDictionaries();
+    }
+
+    //안건준 추가 - 0630: 테스트 씬 직접 실행 — TitleScene AudioManager 없을 때 Resources 카탈로그 적용
+    private void TryLoadCatalogFromResourcesIfNeeded()
+    {
+        if (!HasAssignedBgmClips() && !HasAssignedSfxClips())
+        {
+            AudioManagerCatalog catalog = Resources.Load<AudioManagerCatalog>("AudioManagerCatalog");
+            if (catalog == null)
+            {
+                Debug.LogWarning("[AudioManager] Resources/AudioManagerCatalog.asset 을 찾을 수 없습니다.");
+                return;
+            }
+
+            ApplyCatalogConfiguration(catalog);
+            return;
+        }
+
+        TryMergeMissingClipsFromCatalog();
+    }
+
+    private void TryMergeMissingClipsFromCatalog()
+    {
+        AudioManagerCatalog catalog = Resources.Load<AudioManagerCatalog>("AudioManagerCatalog");
+        if (catalog == null)
+        {
+            return;
+        }
+
+        bool bgmMerged = MergeMissingBgmEntries(catalog.bgmClips);
+        bool sfxMerged = false;
+
+        if (!HasAssignedSfxClips() && catalog.sfxClips != null && catalog.sfxClips.Length > 0)
+        {
+            sfxClips = catalog.sfxClips;
+            sfxMerged = true;
+        }
+
+        if (bgmMerged || sfxMerged)
+        {
+            InitializDictionary();
+        }
+    }
+
+    private bool MergeMissingBgmEntries(BGMClipData[] sourceClips)
+    {
+        if (sourceClips == null || sourceClips.Length == 0)
+        {
+            return false;
+        }
+
+        bool changed = false;
+
+        for (int i = 0; i < sourceClips.Length; i++)
+        {
+            BGMClipData source = sourceClips[i];
+            if (source == null || source.clip == null)
+            {
+                continue;
+            }
+
+            if (TryGetAssignedBgmEntry(source.type, out BGMClipData existing) && existing.clip != null)
+            {
+                continue;
+            }
+
+            bgmClips = UpsertBgmClipEntry(bgmClips, source);
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private bool TryGetAssignedBgmEntry(BGMType type, out BGMClipData entry)
+    {
+        entry = null;
+
+        if (bgmClips == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < bgmClips.Length; i++)
+        {
+            BGMClipData candidate = bgmClips[i];
+            if (candidate != null && candidate.type == type)
+            {
+                entry = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static BGMClipData[] UpsertBgmClipEntry(BGMClipData[] clips, BGMClipData entry)
+    {
+        if (clips == null || clips.Length == 0)
+        {
+            return new[] { entry };
+        }
+
+        for (int i = 0; i < clips.Length; i++)
+        {
+            if (clips[i] != null && clips[i].type == entry.type)
+            {
+                clips[i] = entry;
+                return clips;
+            }
+        }
+
+        BGMClipData[] expanded = new BGMClipData[clips.Length + 1];
+        for (int i = 0; i < clips.Length; i++)
+        {
+            expanded[i] = clips[i];
+        }
+
+        expanded[clips.Length] = entry;
+        return expanded;
+    }
+
+    private void ApplyCatalogConfiguration(AudioManagerCatalog catalog)
+    {
+        if (catalog == null)
+        {
+            return;
+        }
+
+        bool changed = false;
+
+        if (!HasAssignedBgmClips() && catalog.bgmClips != null && catalog.bgmClips.Length > 0)
+        {
+            bgmClips = catalog.bgmClips;
+            changed = true;
+        }
+        else
+        {
+            changed |= MergeMissingBgmEntries(catalog.bgmClips);
+        }
+
+        if (!HasAssignedSfxClips() && catalog.sfxClips != null && catalog.sfxClips.Length > 0)
+        {
+            sfxClips = catalog.sfxClips;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            InitializDictionary();
+        }
     }
 
     private bool HasAssignedBgmClips()
@@ -484,6 +714,15 @@ public class AudioManager : AudioSingleton<AudioManager>
                 sfxSource = CreateChildAudioSource("SFX Source", loop: false);
             }
         }
+
+        if (!IsValidAudioSource(bgmSourceSecondary))
+        {
+            bgmSourceSecondary = FindChildAudioSource("BGM Source B");
+            if (!IsValidAudioSource(bgmSourceSecondary))
+            {
+                bgmSourceSecondary = CreateChildAudioSource("BGM Source B", loop: true);
+            }
+        }
     }
 
     private static bool IsValidAudioSource(AudioSource source)
@@ -517,6 +756,7 @@ public class AudioManager : AudioSingleton<AudioManager>
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= HandleSceneLoaded;
+        UnsubscribeWaveBgm();
     }
 
     private void Start()
@@ -525,6 +765,7 @@ public class AudioManager : AudioSingleton<AudioManager>
         EnsureVolumePreferencesLoadedInternal();
         PlayBGMForActiveScene();
         BindSceneSfxSources(SceneManager.GetActiveScene());
+        TryBeginWaveBgmBinding(SceneManager.GetActiveScene());
     }
 
     private void Update()
@@ -585,8 +826,10 @@ public class AudioManager : AudioSingleton<AudioManager>
     {
         TryRecoverClipConfiguration(); // 타이틀/스테이지 재진입 시 클립 복구 //안건준 수정 - 0629
         EnsureRuntimeReady();
+        UnsubscribeWaveBgm();
         PlayBGMForScene(scene.name);
         BindSceneSfxSources(scene);
+        TryBeginWaveBgmBinding(scene);
     }
 
     private void BindSceneSfxSources(Scene scene)
@@ -688,12 +931,12 @@ public class AudioManager : AudioSingleton<AudioManager>
             return false;
         }
 
-        if (source == bgmSource)
+        if (source == bgmSource || source == bgmSourceSecondary)
         {
             return true;
         }
 
-        return source.gameObject.name == "BGM Source";
+        return source.gameObject.name == "BGM Source" || source.gameObject.name == "BGM Source B";
     }
 
     private void ApplySfxVolumeToListeners()
@@ -715,6 +958,112 @@ public class AudioManager : AudioSingleton<AudioManager>
     private void PlayBGMForActiveScene()
     {
         PlayBGMForScene(SceneManager.GetActiveScene().name);
+    }
+
+    //안건준 추가 - 0630: 스테이지·테스트 씬에서 WaveController 구독 시작
+    private void TryBeginWaveBgmBinding(Scene scene)
+    {
+        if (!IsStageLikeScene(scene))
+        {
+            return;
+        }
+
+        if (waveController != null || waveBgmBindCoroutine != null)
+        {
+            return;
+        }
+
+        waveBgmBindCoroutine = StartCoroutine(BindWaveBgmRoutine());
+    }
+
+    private IEnumerator BindWaveBgmRoutine()
+    {
+        float elapsed = 0f;
+
+        while (elapsed < WaveBgmBindTimeoutSeconds)
+        {
+            WaveController controller = FindFirstObjectByType<WaveController>();
+            if (controller != null)
+            {
+                waveController = controller;
+                waveController.RunStateChanged += HandleWaveRunStateChanged;
+                HandleWaveRunStateChanged(waveController.CurrentState);
+                waveBgmBindCoroutine = null;
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        Debug.LogWarning("[AudioManager] WaveController를 찾지 못해 웨이브 BGM 연동에 실패했습니다.");
+        waveBgmBindCoroutine = null;
+    }
+
+    private void UnsubscribeWaveBgm()
+    {
+        if (waveBgmBindCoroutine != null)
+        {
+            StopCoroutine(waveBgmBindCoroutine);
+            waveBgmBindCoroutine = null;
+        }
+
+        if (waveController != null)
+        {
+            waveController.RunStateChanged -= HandleWaveRunStateChanged;
+            waveController = null;
+        }
+    }
+
+    private void HandleWaveRunStateChanged(WaveController.WaveRunState state)
+    {
+        switch (state)
+        {
+            case WaveController.WaveRunState.Boss:
+                PlayWaveBgm(BGMType.Boss_BGM);
+                break;
+            case WaveController.WaveRunState.Special:
+                PlayWaveBgm(BGMType.EventStage_BGM);
+                break;
+            default:
+                PlayWaveBgm(BGMType.Stage_BGM);
+                break;
+        }
+    }
+
+    //안건준 추가 - 0630: StageScene·Dev 테스트 씬 여부 — 웨이브 BGM 연동 대상 판별
+    private static bool IsStageLikeScene(Scene scene)
+    {
+        if (!scene.IsValid())
+        {
+            return false;
+        }
+
+        string sceneName = scene.name ?? string.Empty;
+        return AudioSceneName.GetBGMType(sceneName) == BGMType.Stage_BGM;
+    }
+
+    public void PlayWaveBgm(BGMType type)
+    {
+        EnsureWaveBgmClipsReady();
+
+        if (HasBgmClip(type))
+        {
+            PlayBGM(type, crossfade: true);
+            return;
+        }
+
+        if (type != BGMType.Stage_BGM && HasBgmClip(BGMType.Stage_BGM))
+        {
+            Debug.LogWarning($"[AudioManager] {type} BGM 클립이 없어 Stage_BGM으로 대체합니다.");
+            PlayBGM(BGMType.Stage_BGM, crossfade: true);
+        }
+    }
+
+    private bool HasBgmClip(BGMType type)
+    {
+        EnsureRuntimeReady();
+        return bgmDictionary != null && bgmDictionary.ContainsKey(type);
     }
 
     private void PlayBGMForScene(string sceneName)
@@ -766,52 +1115,206 @@ public class AudioManager : AudioSingleton<AudioManager>
             }
         }
     }
-    //BGM 재생
-    public void PlayBGM(BGMType type)
+    //BGM 재생 — crossfade=true면 웨이브 전환 시 페이드 아웃/인
+    public void PlayBGM(BGMType type, bool crossfade = false)
     {
         EnsureRuntimeReady();
         if (bgmSource == null || bgmDictionary == null || !bgmDictionary.ContainsKey(type))
         {
             return;
         }
-        
-        //딕셔너리에서 해당 BGM타입의 클립데이터 가져오기
+
         BGMClipData clipData = bgmDictionary[type];
-        //현재 재생중인 BGM과 요청한 BGM이 같으면 건너뛰기
-        if(bgmSource.clip == clipData.clip)
+        if (IsCurrentlyPlayingBgm(clipData))
         {
             return;
         }
-        //현재 재생중인 BGM데이터를 저장
-        currentBGMClip = clipData;
-        //BGM AudioSource에 클립 할당
-        bgmSource.clip = clipData.clip;
 
-        bgmSource.volume = clipData.volume * bgmVolume * masterVolume;
+        if (crossfade && bgmCrossfadeDuration > 0.001f && IsAnyBgmPlaying())
+        {
+            StartBgmCrossfade(clipData);
+            return;
+        }
 
-        //BGM재생
-        bgmSource.Play();
-
+        StopBgmCrossfadeCoroutine();
+        ApplyBgmImmediate(clipData);
     }
+
+    private float GetEffectiveBgmClipVolume(BGMClipData clipData)
+    {
+        if (clipData == null)
+        {
+            return bgmVolume * masterVolume;
+        }
+
+        return clipData.volume * bgmVolume * masterVolume;
+    }
+
+    private bool IsCurrentlyPlayingBgm(BGMClipData clipData)
+    {
+        return currentBGMClip != null
+            && currentBGMClip.clip == clipData.clip
+            && IsAnyBgmPlaying();
+    }
+
+    private bool IsAnyBgmPlaying()
+    {
+        return (bgmSource != null && bgmSource.isPlaying)
+            || (bgmSourceSecondary != null && bgmSourceSecondary.isPlaying);
+    }
+
+    private void ApplyBgmImmediate(BGMClipData clipData)
+    {
+        if (bgmSourceSecondary != null)
+        {
+            bgmSourceSecondary.Stop();
+            bgmSourceSecondary.clip = null;
+        }
+
+        currentBGMClip = clipData;
+        bgmSource.clip = clipData.clip;
+        bgmSource.volume = GetEffectiveBgmClipVolume(clipData);
+        bgmSource.Play();
+    }
+
+    private void StartBgmCrossfade(BGMClipData nextClip)
+    {
+        StopBgmCrossfadeCoroutine();
+        bgmCrossfadeCoroutine = StartCoroutine(BgmCrossfadeRoutine(nextClip));
+    }
+
+    private void StopBgmCrossfadeCoroutine()
+    {
+        if (bgmCrossfadeCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(bgmCrossfadeCoroutine);
+        bgmCrossfadeCoroutine = null;
+    }
+
+    private IEnumerator BgmCrossfadeRoutine(BGMClipData nextClip)
+    {
+        EnsureAudioSources();
+
+        AudioSource fadeOutSource = GetActiveBgmSource();
+        AudioSource fadeInSource = fadeOutSource == bgmSource ? bgmSourceSecondary : bgmSource;
+
+        float fadeOutStartVolume = fadeOutSource != null ? fadeOutSource.volume : 0f;
+        float fadeInTargetVolume = GetEffectiveBgmClipVolume(nextClip);
+
+        if (fadeInSource == null)
+        {
+            ApplyBgmImmediate(nextClip);
+            bgmCrossfadeCoroutine = null;
+            yield break;
+        }
+
+        fadeInSource.clip = nextClip.clip;
+        fadeInSource.volume = 0f;
+        fadeInSource.Play();
+
+        currentBGMClip = nextClip;
+
+        float elapsed = 0f;
+        float duration = bgmCrossfadeDuration;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float smoothT = t * t * (3f - 2f * t);
+
+            if (fadeOutSource != null && fadeOutSource.isPlaying)
+            {
+                fadeOutSource.volume = Mathf.Lerp(fadeOutStartVolume, 0f, smoothT);
+            }
+
+            fadeInSource.volume = Mathf.Lerp(0f, fadeInTargetVolume, smoothT);
+            yield return null;
+        }
+
+        if (fadeOutSource != null)
+        {
+            fadeOutSource.Stop();
+            fadeOutSource.clip = null;
+        }
+
+        fadeInSource.volume = fadeInTargetVolume;
+
+        if (fadeInSource != bgmSource)
+        {
+            SwapActiveBgmSources();
+        }
+
+        bgmCrossfadeCoroutine = null;
+    }
+
+    private AudioSource GetActiveBgmSource()
+    {
+        if (bgmSource != null && bgmSource.isPlaying)
+        {
+            return bgmSource;
+        }
+
+        if (bgmSourceSecondary != null && bgmSourceSecondary.isPlaying)
+        {
+            return bgmSourceSecondary;
+        }
+
+        return bgmSource;
+    }
+
+    private void SwapActiveBgmSources()
+    {
+        (bgmSource, bgmSourceSecondary) = (bgmSourceSecondary, bgmSource);
+    }
+
     //BGM 정지
     public void StopBGM()
     {
-        //현재 재생중인 BGM정지
-        bgmSource.Stop();
-        //오디오 소스에 연결된 오디오 클립을 제거
-        bgmSource.clip = null;
-        //현재 재생중인 BGM데이터 초기화
+        StopBgmCrossfadeCoroutine();
+
+        if (bgmSource != null)
+        {
+            bgmSource.Stop();
+            bgmSource.clip = null;
+        }
+
+        if (bgmSourceSecondary != null)
+        {
+            bgmSourceSecondary.Stop();
+            bgmSourceSecondary.clip = null;
+        }
+
         currentBGMClip = null;
     }
     //일시정지
     public void PauseBGM()
     {
-        bgmSource.Pause();
+        if (bgmSource != null)
+        {
+            bgmSource.Pause();
+        }
+
+        if (bgmSourceSecondary != null)
+        {
+            bgmSourceSecondary.Pause();
+        }
     }
     //일시정지된 BGM 다시 재생
     public void ResumeBGM()
     {
-        bgmSource.UnPause();
+        if (bgmSource != null)
+        {
+            bgmSource.UnPause();
+        }
+
+        if (bgmSourceSecondary != null)
+        {
+            bgmSourceSecondary.UnPause();
+        }
     }
 
     //효과음 재생
@@ -890,18 +1393,30 @@ public class AudioManager : AudioSingleton<AudioManager>
     //현재 재생중인 BGM의 볼륨을 계산
     private void UpdateBGMVolume()
     {
-        if(bgmSource == null) return;
-        //현재 재생중인 BGM데이터가 없다면
-        if(currentBGMClip == null)
+        if (bgmSource == null)
         {
-            bgmSource.volume = bgmVolume * masterVolume;
             return;
         }
 
-        bgmSource.volume = currentBGMClip.volume * bgmVolume * masterVolume;
+        if (bgmCrossfadeCoroutine != null)
+        {
+            return;
+        }
 
+        float volume = currentBGMClip != null
+            ? GetEffectiveBgmClipVolume(currentBGMClip)
+            : bgmVolume * masterVolume;
 
+        if (bgmSource.isPlaying)
+        {
+            bgmSource.volume = volume;
+        }
+
+        if (bgmSourceSecondary != null && bgmSourceSecondary.isPlaying)
+        {
+            bgmSourceSecondary.volume = volume;
+        }
     }
-    
+
 
 }
