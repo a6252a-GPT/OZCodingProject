@@ -231,7 +231,7 @@ MonoBehaviour:
   GroundCheck: {fileID: 6429652996593708281}
   Blocker: {fileID: 3059691873652025617}
   Weapon: {fileID: 1578424398539187756}
-  SegmentLevel: 1
+  SegmentLevel: 2
 --- !u!114 &1578424398539187756
 MonoBehaviour:
   m_ObjectHideFlags: 0

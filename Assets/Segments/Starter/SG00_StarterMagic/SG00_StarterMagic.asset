@@ -19,14 +19,28 @@ MonoBehaviour:
     \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
   StarterOnly: 1
   SharedUpgradeSegmentId: SG20_LightningObelisk
-  UseLevels: 0
-  MaxLevel: 1
+  UseLevels: 1
+  MaxLevel: 3
   CanAddByLevelChoice: 0
   CanUpgradeByLevelChoice: 0
   Levels:
   - Level: 1
-    SegmentPrefab: {fileID: 907956036146838665, guid: 265cc178e260534479ca57e3f4676d17, type: 3}
-    BodyPrefab: {fileID: 2148103711033173953, guid: 860225745922ead43827e6d3ce0d4cc0, type: 3}
+    SegmentPrefab: {fileID: 5093949293187541120, guid: f810c2bd94c225a409fab666af3aa52e, type: 3}
+    BodyPrefab: {fileID: 2448197398968343652, guid: 8d0cdb66d9af6d04fb98ff8638675cb5, type: 3}
     HeadPrefab: {fileID: 9096743896839812948, guid: dbbc8d5d40109774085d6cc3ef916eec, type: 3}
     AttackProfile: {fileID: 11400000, guid: 29c6d4b5c5861cb41a6c967648f7502b, type: 2}
-    Memo: SG20_LightningObelisk shared upgrade
+    Memo: SG20_LightningObelisk Lv1 starter full prefab
+  - Level: 2
+    SegmentPrefab: {fileID: 336348286090214604, guid: 5260812df1f9e0e4aad24eb531e282a3, type: 3}
+    BodyPrefab: {fileID: 2448197398968343652, guid: 8d0cdb66d9af6d04fb98ff8638675cb5, type: 3}
+    HeadPrefab: {fileID: 5781965588660484066, guid: 01af75c632bdb91469073be03ca2a790, type: 3}
+    AttackProfile: {fileID: 11400000, guid: 3696379563a0bfc41a9b34e0c89a73bb, type: 2}
+    Memo: SG20_LightningObelisk Lv2 starter full prefab
+  - Level: 3
+    SegmentPrefab: {fileID: 6824411412070273652, guid: 1851e31a198c7b5479f9ee02b35a7df0, type: 3}
+    BodyPrefab: {fileID: 2448197398968343652, guid: 8d0cdb66d9af6d04fb98ff8638675cb5, type: 3}
+    HeadPrefab: {fileID: 5644814152176499879, guid: 8479603edaa19a54f99b0e7e41798114, type: 3}
+    AttackProfile: {fileID: 11400000, guid: 861dd6c169dc12e4180be0db03fba1d3, type: 2}
+    Memo: SG20_LightningObelisk Lv3 starter full prefab
+  CardIconSpritesPerLevel: []
+  CardIconSizeOffset: 0

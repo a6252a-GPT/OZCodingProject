@@ -154,6 +154,18 @@ namespace TeamProject01.Gameplay
             return Resources.Load<GameObject>(StarterSegmentResourceRoot + resourceName); // Resources 로드
         }
 
+        private bool TryResolveActiveStarterLevelPrefab(string sharedSegmentId, int level, out GameObject prefab)
+        {
+            prefab = null;
+            if (StarterCatalog == null || string.IsNullOrWhiteSpace(activeStarterWormId))
+            {
+                return false;
+            }
+
+            return StarterCatalog.TryGetStarterLevelPrefab(activeStarterWormId, sharedSegmentId, level, out prefab)
+                && prefab != null;
+        }
+
         private void ApplyStarterBodyVisual(Transform segment, string wormId) // 전용 바디 교체
         {
             GameObject bodyPrefab = ResolveStarterBodyResource(wormId); // 지렁이별 바디

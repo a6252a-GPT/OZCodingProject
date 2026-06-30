@@ -258,7 +258,8 @@ namespace TeamProject01.Gameplay
 
                 if (segments[i] == starterSegment)
                 {
-                    if (ReplaceStarterSegmentWeapon(i, levelData, nextLevel))
+                    if (TryResolveActiveStarterLevelPrefab(targetId, nextLevel, out GameObject starterLevelPrefab)
+                        && ReplaceAttachedSegment(i, starterLevelPrefab, nextLevel))
                     {
                         changed++; // 스타터 헤드/무기만 교체
                     }

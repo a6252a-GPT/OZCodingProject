@@ -47,7 +47,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.7
+  m_Volume: 0.9
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -144,7 +144,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 4318696745668924624}
-  baseVolume: 0.7
+  baseVolume: 0.9
 --- !u!114 &1841724472168694931
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -160,8 +160,8 @@ MonoBehaviour:
   cue: 1
   source: {fileID: 4318696745668924624}
   clips:
-  - {fileID: 8300000, guid: 588cfdbccda7f66419de73fa605b0c67, type: 3}
-  volume: 0.7
+  - {fileID: 8300000, guid: f55976b8d1d01fc4da8d582e220bec1e, type: 3}
+  volume: 0.9
   minPitch: 1
   maxPitch: 1
   cooldown: 0.03
@@ -279,7 +279,7 @@ MonoBehaviour:
   GroundCheck: {fileID: 3451399013520685173}
   Blocker: {fileID: 8965182404274387392}
   Weapon: {fileID: 191268061335559234}
-  SegmentLevel: 1
+  SegmentLevel: 2
 --- !u!114 &191268061335559234
 MonoBehaviour:
   m_ObjectHideFlags: 0

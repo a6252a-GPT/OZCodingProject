@@ -227,7 +227,7 @@ namespace TeamProject01.EditorTools
 
         private static PrefabSpec[] CreateDefaultPrefabSpecs()
         {
-            SlotSpec cannonFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 0.7f, 0.03f, false, true, "gun_shotgun_shot_01.wav");
+            SlotSpec cannonFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 0.9f, 0.03f, false, true, "weapon_cannon_shot_01.wav");
             SlotSpec missileFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 0.91f, 0.08f, false, true, "weapon_missile_003.wav");
             SlotSpec missileExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 1f, 0.05f, true, true, "explosion_med_long_tail_02.wav");
             SlotSpec flamethrowerStart = Slot("SFX_FireStart", GameplaySfxCue.FireStart, 1f, 1f, false, true, "gas_large_flame_ignite_01.wav");
@@ -264,12 +264,18 @@ namespace TeamProject01.EditorTools
                 Prefab("Assets/Segments/SG01_Cannon/Prefabs/SG01_Cannon_Lv1.prefab", Names("Muzzle"), cannonFire),
                 Prefab("Assets/Segments/SG01_Cannon/Prefabs/SG01_Cannon_Lv2.prefab", Names("Muzzle"), cannonFire),
                 Prefab("Assets/Segments/SG01_Cannon/Prefabs/SG01_Cannon_Lv3.prefab", Names("Muzzle_01", "Muzzle_02", "Muzzle_03", "Muzzle_04", "Muzzle_05", "Muzzle_06"), cannonFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterCannon/Prefabs/SG00_StarterCannon_Lv1.prefab", Names("Muzzle"), cannonFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterCannon/Prefabs/SG00_StarterCannon_Lv2.prefab", Names("Muzzle"), cannonFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterCannon/Prefabs/SG00_StarterCannon_Lv3.prefab", Names("Muzzle_01", "Muzzle_02", "Muzzle_03", "Muzzle_04", "Muzzle_05", "Muzzle_06"), cannonFire),
                 Prefab("Assets/Segments/Starter/SG00_StarterCannon/Prefabs/SG00_StarterCannon.prefab", Names("Muzzle"), cannonFire),
                 Prefab("Assets/Resources/StarterSegments/SG00_StarterCannon.prefab", Names("Muzzle"), cannonFire),
 
                 Prefab("Assets/Segments/SG02_Missile/Prefabs/SG02_Missile_Lv1.prefab", Names("Muzzle"), missileFire),
                 Prefab("Assets/Segments/SG02_Missile/Prefabs/SG02_Missile_Lv2.prefab", Names("Muzzle"), missileFire),
                 Prefab("Assets/Segments/SG02_Missile/Prefabs/SG02_Missile_Lv3.prefab", Names("Muzzle"), missileFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterAttack/Prefabs/SG00_StarterAttack_Lv1.prefab", Names("Muzzle"), missileFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterAttack/Prefabs/SG00_StarterAttack_Lv2.prefab", Names("Muzzle"), missileFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterAttack/Prefabs/SG00_StarterAttack_Lv3.prefab", Names("Muzzle"), missileFire),
                 Prefab("Assets/Segments/Starter/SG00_StarterAttack/Prefabs/SG00_StarterAttack.prefab", Names("Muzzle"), missileFire),
                 Prefab("Assets/Resources/StarterSegments/SG00_StarterAttack.prefab", Names("Muzzle"), missileFire),
                 Prefab("Assets/Resources/StarterSegments/SG02_Missile_Lv1.prefab", Names("Muzzle"), missileFire),
@@ -283,6 +289,9 @@ namespace TeamProject01.EditorTools
                 Prefab("Assets/Segments/SG04_SawLauncher/Prefabs/SG04_SawLauncher_Lv1.prefab", Names("Muzzle"), sawFire),
                 Prefab("Assets/Segments/SG04_SawLauncher/Prefabs/SG04_SawLauncher_Lv2.prefab", Names("Muzzle"), sawFire),
                 Prefab("Assets/Segments/SG04_SawLauncher/Prefabs/SG04_SawLauncher_Lv3.prefab", Names("Muzzle"), sawFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterMobility/Prefabs/SG00_StarterMobility_Lv1.prefab", Names("Muzzle"), sawFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterMobility/Prefabs/SG00_StarterMobility_Lv2.prefab", Names("Muzzle"), sawFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterMobility/Prefabs/SG00_StarterMobility_Lv3.prefab", Names("Muzzle"), sawFire),
                 Prefab("Assets/Segments/Starter/SG00_StarterMobility/Prefabs/SG00_StarterMobility.prefab", Names("Muzzle"), sawFire),
                 Prefab("Assets/Resources/StarterSegments/SG00_StarterMobility.prefab", Names("Muzzle"), sawFire),
                 Prefab("Assets/Resources/StarterSegments/SG04_SawLauncher_Lv1.prefab", Names("Muzzle"), sawFire),
@@ -300,6 +309,9 @@ namespace TeamProject01.EditorTools
                 Prefab("Assets/Segments/SG20_LightningObelisk/Prefabs/SG20_LightningObelisk_Lv1.prefab", Names("Muzzle"), lightningFire),
                 Prefab("Assets/Segments/SG20_LightningObelisk/Prefabs/SG20_LightningObelisk_Lv2.prefab", Names("Muzzle"), lightningFire),
                 Prefab("Assets/Segments/SG20_LightningObelisk/Prefabs/SG20_LightningObelisk_Lv3.prefab", Names("Muzzle"), lightningFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterMagic/Prefabs/SG00_StarterMagic_Lv1.prefab", Names("Muzzle"), lightningFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterMagic/Prefabs/SG00_StarterMagic_Lv2.prefab", Names("Muzzle"), lightningFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterMagic/Prefabs/SG00_StarterMagic_Lv3.prefab", Names("Muzzle"), lightningFire),
                 Prefab("Assets/Segments/Starter/SG00_StarterMagic/Prefabs/SG00_StarterMagic.prefab", Names("Muzzle"), lightningFire),
                 Prefab("Assets/Resources/StarterSegments/SG00_StarterMagic.prefab", Names("Muzzle"), lightningFire),
                 Prefab("Assets/Resources/StarterSegments/SG20_LightningObelisk_Lv1.prefab", Names("Muzzle"), lightningFire),
@@ -307,6 +319,9 @@ namespace TeamProject01.EditorTools
                 Prefab("Assets/Segments/SG21_FireballTower/Prefabs/SG21_FireballTower_Lv1.prefab", Names("Muzzle"), fireballFire),
                 Prefab("Assets/Segments/SG21_FireballTower/Prefabs/SG21_FireballTower_Lv2.prefab", Names("Muzzle"), fireballFire),
                 Prefab("Assets/Segments/SG21_FireballTower/Prefabs/SG21_FireballTower_Lv3.prefab", Names("Muzzle"), fireballFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterSupport/Prefabs/SG00_StarterSupport_Lv1.prefab", Names("Muzzle"), fireballFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterSupport/Prefabs/SG00_StarterSupport_Lv2.prefab", Names("Muzzle"), fireballFire),
+                Prefab("Assets/Segments/Starter/SG00_StarterSupport/Prefabs/SG00_StarterSupport_Lv3.prefab", Names("Muzzle"), fireballFire),
                 Prefab("Assets/Segments/Starter/SG00_StarterSupport/Prefabs/SG00_StarterSupport.prefab", Names("Muzzle"), fireballFire),
                 Prefab("Assets/Resources/StarterSegments/SG00_StarterSupport.prefab", Names("Muzzle"), fireballFire),
                 Prefab("Assets/Resources/StarterSegments/SG21_FireballTower_Lv1.prefab", Names("Muzzle"), fireballFire),
