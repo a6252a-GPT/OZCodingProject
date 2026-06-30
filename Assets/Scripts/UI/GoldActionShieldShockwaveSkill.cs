@@ -57,6 +57,7 @@ namespace TeamProject01.Gameplay
             float knockbackDistance = GetKnockbackDistance(level); // 실제 넉백
             float pulseXzMultiplier = GetPulseXzMultiplier(level); // 보호막 확장
 
+            GameplaySfxEmitter.TryPlayCatalogAt(GameplaySfxCue.HudSkill2, center);
             NexusVfx?.PlayShieldShockwavePulse(
                 pulseXzMultiplier,
                 PulseYMultiplier,

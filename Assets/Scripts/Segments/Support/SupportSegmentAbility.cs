@@ -214,6 +214,7 @@ namespace TeamProject01.Gameplay
             activeHeadSpinAngle = 0f;
             CacheActiveHeadRotationRoot();
             SetVfxRootsActive(!IsHolyWaterProfile() && !IsFreezeAreaProfile() && !IsWormholeProfile());
+            GameplaySfxEmitter.TryPlay(MuzzleVfxRoot != null ? MuzzleVfxRoot : transform, GameplaySfxCue.Activation);
             TickActiveSupportEffect(0f);
         }
 

@@ -166,6 +166,7 @@ namespace TeamProject01.Gameplay
 
             opened = true;
             rewardReadyTime = Time.time + Mathf.Max(0.0f, rewardDropDelay);
+            PlayOpenSfx();
 
             if (animator == null)
             {
@@ -200,6 +201,16 @@ namespace TeamProject01.Gameplay
             }
 
             return false;
+        }
+
+        private void PlayOpenSfx()
+        {
+            if (GameplaySfxEmitter.TryPlay(transform, GameplaySfxCue.Open))
+            {
+                return;
+            }
+
+            GameplaySfxEmitter.TryPlayCatalogAt(GameplaySfxCue.Open, transform.position);
         }
 
         private void RemoveOtherChoiceChests()

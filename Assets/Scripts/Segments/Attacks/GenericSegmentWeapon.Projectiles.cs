@@ -14,6 +14,7 @@ namespace TeamProject01.Gameplay
                 DamageData damage = CreateDamageData(spawnPosition); // 피해값
                 Vector3 fireDirection = GetFireDirection(target, spawnPosition); // 실제 발사 방향
                 PlayMuzzleVfx(muzzle); // 발사 VFX
+                PlayFireSfx(muzzle);
                 PlayFireRecoil(fireDirection, muzzle); // 포구 로컬축 대신 실제 발사 방향 기준 반동
                 FireLaser(target, damage); // 레이저
                 return true;
@@ -27,6 +28,7 @@ namespace TeamProject01.Gameplay
                 Vector3 fireDirection = GetFireDirection(target, spawnPosition); // 첫 타겟 방향
                 HideLoadedProjectileVisual(0); // 장전 전기 VFX 숨김
                 PlayMuzzleVfx(muzzle); // 시전 VFX
+                PlayFireSfx(muzzle);
                 PlayFireRecoil(fireDirection, muzzle); // 약한 시전 반동
                 FireChainLightning(target, muzzle, spawnPosition, damage); // 즉시 체인 번개
                 return true;
@@ -48,6 +50,7 @@ namespace TeamProject01.Gameplay
             DamageData projectileDamage = CreateDamageData(projectileSpawnPosition); // 피해값
             Vector3 projectileFireDirection = GetProjectileFireDirection(target, projectileSpawnPosition); // 실제 투사체 발사 방향
             PlayMuzzleVfx(projectileMuzzle); // 발사 VFX
+            PlayFireSfx(projectileMuzzle);
             PlayFireRecoil(projectileFireDirection, projectileMuzzle); // 포구 로컬축 대신 실제 투사체 방향 기준 반동
             FireProjectiles(target, projectileSpawnPosition, projectileDamage, projectileMuzzle); // 투사체
             return true;
@@ -85,7 +88,10 @@ namespace TeamProject01.Gameplay
             bool useSustainedMuzzleVfx = ShouldUseSustainedMuzzleVfx();
             if (useSustainedMuzzleVfx)
             {
-                StartSustainedMuzzleVfx(ResolveMuzzle());
+                Transform sustainedMuzzle = ResolveMuzzle();
+                StartSustainedMuzzleVfx(sustainedMuzzle);
+                PlayFireSfx(sustainedMuzzle);
+                PlayFireLoopSfx(sustainedMuzzle);
             }
 
             for (int volleyIndex = 0; volleyIndex < volleyCount; volleyIndex++)
@@ -128,6 +134,7 @@ namespace TeamProject01.Gameplay
                     if (!useSustainedMuzzleVfx)
                     {
                         PlayMuzzleVfx(projectileMuzzle); // 탄별 포구 VFX
+                        PlayFireSfx(projectileMuzzle);
                     }
                     FireSingleProjectile(target, spawnPosition, damage, localIndex, currentVolleySize, spread, projectileMuzzle, true, projectileDirection, useFallbackImpactPoint, fallbackImpactPoint); // 묶음 내 산탄
                     HideLoadedProjectileVisual(projectileIndex); // 사용한 장전탄 숨김
@@ -140,6 +147,7 @@ namespace TeamProject01.Gameplay
             }
 
             StopSustainedMuzzleVfx(false);
+            StopFireLoopSfx();
             ClearSawTargetLock(); // 연사 종료 후 다음 후보 준비
             ResetCooldown(); // 전탄 발사 후 쿨타임
             projectileSequenceRoutine = null; // 코루틴 해제

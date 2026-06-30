@@ -144,7 +144,9 @@ namespace TeamProject01.Gameplay
             }
 
             collected = true;
-            RewardPickupCollectVfxPlayer.Play(ResolveCollectVfxPosition()); // 획득 VFX
+            Vector3 collectPosition = ResolveCollectVfxPosition();
+            RewardPickupCollectVfxPlayer.Play(collectPosition); // 획득 VFX
+            PlayCollectSfx(collectPosition);
 
             if (owner != null)
             {
@@ -152,6 +154,16 @@ namespace TeamProject01.Gameplay
             }
 
             Destroy(gameObject);
+        }
+
+        private void PlayCollectSfx(Vector3 position)
+        {
+            if (GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.ManaOrbPickup, position, true))
+            {
+                return;
+            }
+
+            GameplaySfxEmitter.TryPlayCatalogAt(GameplaySfxCue.ManaOrbPickup, position);
         }
 
         private void InitializeVisual()

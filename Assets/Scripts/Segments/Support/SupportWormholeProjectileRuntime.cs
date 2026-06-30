@@ -146,6 +146,7 @@ namespace TeamProject01.Gameplay
             Vector3 center = GroundService.ProjectToGround(position, 0f);
             float radius = Mathf.Max(0.1f, profile.WormholeExplosionRadius);
             PlayBlackHoleVfx(center, radius, true);
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.Explosion, center, true);
 
             EnemyController.CollectActiveInRange(center, radius, enemyBuffer, IsTeleportCandidate);
             int maxTargets = Mathf.Max(1, profile.WormholeMaxTeleportTargets);

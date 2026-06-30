@@ -114,6 +114,7 @@ namespace TeamProject01.Gameplay
             ApplyImpact(telegraphPosition, impactRadius, damage, knockbackDistance, knockbackDuration, staggerDuration);
             SetExplosionSocketScale(ExplosionVfxSocket, impactRadius);
             SpawnExplosionVfx();
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.Explosion, telegraphPosition, true);
             SetSocketActive(ExplosionVfxSocket, true);
             shakeCamera?.AddShake(impactShakeDuration, impactShakeAmplitude, impactShakeFrequency);
             Destroy(gameObject, ExplosionVfxLifetime);
