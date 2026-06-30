@@ -8,6 +8,11 @@ namespace TeamProject01.Gameplay
     public sealed class GameplaySfxEmitter : MonoBehaviour
     {
         private const float MaxLocalVolume = 2f;
+        private const int MaxPooledOneShotSources = 128;
+        private const string OneShotPoolRootName = "SFX_OneShotPool";
+
+        private static readonly Queue<PooledOneShotSfx> oneShotPool = new Queue<PooledOneShotSfx>(MaxPooledOneShotSources);
+        private static Transform oneShotPoolRoot;
 
         public sealed class LoopHandle
         {
@@ -383,10 +388,17 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            GameObject oneShot = new GameObject("SFX_OneShot_" + clip.name);
+            PooledOneShotSfx pooledOneShot = Application.isPlaying ? GetPooledOneShot() : null;
+            GameObject oneShot = pooledOneShot != null ? pooledOneShot.gameObject : new GameObject();
+            oneShot.name = "SFX_OneShot_" + clip.name;
             oneShot.transform.position = position;
+            if (pooledOneShot != null)
+            {
+                oneShot.transform.SetParent(GetOneShotPoolRoot(), true);
+            }
 
-            AudioSource playbackSource = oneShot.AddComponent<AudioSource>();
+            AudioSource playbackSource = pooledOneShot != null ? pooledOneShot.Source : oneShot.AddComponent<AudioSource>();
+            ResetSourceSettings(playbackSource);
             CopySourceSettings(template, playbackSource);
             playbackSource.playOnAwake = false;
             playbackSource.loop = false;
@@ -400,11 +412,101 @@ namespace TeamProject01.Gameplay
                 : UnityEngine.Random.Range(Mathf.Min(minPitch, maxPitch), Mathf.Max(minPitch, maxPitch));
             playbackSource.volume = ResolveEffectiveSourceVolume(localVolume);
 
-            SfxVolumeListener listener = oneShot.AddComponent<SfxVolumeListener>();
+            SfxVolumeListener listener = pooledOneShot != null ? pooledOneShot.Listener : oneShot.AddComponent<SfxVolumeListener>();
             listener.SetBaseVolume(localVolume);
 
+            if (pooledOneShot != null && !oneShot.activeSelf)
+            {
+                oneShot.SetActive(true);
+            }
+
             playbackSource.PlayOneShot(clip, ResolveOneShotVolumeScale(localVolume));
-            Destroy(oneShot, Mathf.Max(0.1f, clip.length / Mathf.Max(0.1f, playbackSource.pitch)) + Mathf.Max(0f, lifetimePadding));
+            float lifetime = Mathf.Max(0.1f, clip.length / Mathf.Max(0.1f, playbackSource.pitch)) + Mathf.Max(0f, lifetimePadding);
+            if (pooledOneShot != null)
+            {
+                pooledOneShot.ScheduleReturn(lifetime);
+                return;
+            }
+
+            Destroy(oneShot, lifetime);
+        }
+
+        private static PooledOneShotSfx GetPooledOneShot()
+        {
+            while (oneShotPool.Count > 0)
+            {
+                PooledOneShotSfx pooled = oneShotPool.Dequeue();
+                if (pooled != null)
+                {
+                    return pooled;
+                }
+            }
+
+            GameObject oneShot = new GameObject("SFX_OneShot_Pooled");
+            oneShot.transform.SetParent(GetOneShotPoolRoot(), false);
+            oneShot.SetActive(false);
+            return oneShot.AddComponent<PooledOneShotSfx>();
+        }
+
+        private static void ReturnPooledOneShot(PooledOneShotSfx pooled)
+        {
+            if (pooled == null)
+            {
+                return;
+            }
+
+            pooled.ResetForPool();
+            if (oneShotPool.Count >= MaxPooledOneShotSources)
+            {
+                Destroy(pooled.gameObject);
+                return;
+            }
+
+            pooled.gameObject.name = "SFX_OneShot_Pooled";
+            pooled.transform.SetParent(GetOneShotPoolRoot(), false);
+            pooled.gameObject.SetActive(false);
+            oneShotPool.Enqueue(pooled);
+        }
+
+        private static Transform GetOneShotPoolRoot()
+        {
+            if (oneShotPoolRoot != null)
+            {
+                return oneShotPoolRoot;
+            }
+
+            GameObject root = new GameObject(OneShotPoolRootName);
+            oneShotPoolRoot = root.transform;
+            return oneShotPoolRoot;
+        }
+
+        private static void ResetSourceSettings(AudioSource source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            source.Stop();
+            source.clip = null;
+            source.outputAudioMixerGroup = null;
+            source.mute = false;
+            source.bypassEffects = false;
+            source.bypassListenerEffects = false;
+            source.bypassReverbZones = false;
+            source.playOnAwake = false;
+            source.loop = false;
+            source.priority = 128;
+            source.volume = 1f;
+            source.pitch = 1f;
+            source.panStereo = 0f;
+            source.spatialBlend = 0f;
+            source.reverbZoneMix = 1f;
+            source.rolloffMode = AudioRolloffMode.Logarithmic;
+            source.dopplerLevel = 0f;
+            source.spread = 0f;
+            source.minDistance = 1f;
+            source.maxDistance = 500f;
         }
 
         private static void CopySourceSettings(AudioSource from, AudioSource to)
@@ -443,6 +545,86 @@ namespace TeamProject01.Gameplay
         private static float GetTime()
         {
             return Application.isPlaying ? Time.unscaledTime : Time.realtimeSinceStartup;
+        }
+
+        private sealed class PooledOneShotSfx : MonoBehaviour
+        {
+            private AudioSource source;
+            private SfxVolumeListener listener;
+            private float returnTime;
+            private bool returnScheduled;
+
+            public AudioSource Source
+            {
+                get
+                {
+                    if (source == null)
+                    {
+                        source = GetComponent<AudioSource>();
+                    }
+
+                    if (source == null)
+                    {
+                        source = gameObject.AddComponent<AudioSource>();
+                    }
+
+                    return source;
+                }
+            }
+
+            public SfxVolumeListener Listener
+            {
+                get
+                {
+                    if (listener == null)
+                    {
+                        listener = GetComponent<SfxVolumeListener>();
+                    }
+
+                    if (listener == null)
+                    {
+                        listener = gameObject.AddComponent<SfxVolumeListener>();
+                    }
+
+                    return listener;
+                }
+            }
+
+            public void ScheduleReturn(float lifetime)
+            {
+                returnTime = GetTime() + Mathf.Max(0.1f, lifetime);
+                returnScheduled = true;
+            }
+
+            public void ResetForPool()
+            {
+                returnScheduled = false;
+
+                if (source == null)
+                {
+                    source = GetComponent<AudioSource>();
+                }
+
+                if (source != null)
+                {
+                    ResetSourceSettings(source);
+                }
+            }
+
+            private void Update()
+            {
+                if (!returnScheduled || GetTime() < returnTime)
+                {
+                    return;
+                }
+
+                ReturnPooledOneShot(this);
+            }
+
+            private void OnDisable()
+            {
+                returnScheduled = false;
+            }
         }
 
 #if UNITY_EDITOR
