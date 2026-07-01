@@ -283,6 +283,7 @@ namespace TeamProject01.Gameplay
             SetVfxRootActive(IdleVfxRoot, false);
             SetSpecialDropIdleVfxActive(false); // 수집 후 idle VFX 숨김
             SetVfxRootActive(CollectVfxRoot, true);
+            PlayCollectSfx();
             RewardPickupCollectVfxPlayer.Play(ResolveCollectVfxPosition()); // 획득 VFX
             if (poolOwner != null && poolOwner.ReleasePickup(this, poolSourcePrefab))
             {
@@ -499,6 +500,53 @@ namespace TeamProject01.Gameplay
         private Vector3 ResolveCollectVfxPosition()
         {
             return CollectVfxRoot != null ? CollectVfxRoot.position : transform.position + Vector3.up * HoverHeight;
+        }
+
+        private void PlayCollectSfx()
+        {
+            GameplaySfxCue cue = ShouldUseGoodPickupSfx() ? GameplaySfxCue.GoodPickup : GameplaySfxCue.Pickup;
+            Transform root = ResolvePlayerSfxRoot();
+            if (root != null)
+            {
+                if (GameplaySfxEmitter.TryPlay(root, cue))
+                {
+                    return;
+                }
+
+                if (cue == GameplaySfxCue.GoodPickup && GameplaySfxEmitter.TryPlay(root, GameplaySfxCue.Pickup))
+                {
+                    return;
+                }
+
+                if (GameplaySfxEmitter.TryPlayCatalogAt(cue, root.position))
+                {
+                    return;
+                }
+            }
+
+            GameplaySfxEmitter.TryPlayCatalogAt(cue, transform.position);
+        }
+
+        private bool ShouldUseGoodPickupSfx()
+        {
+            return Kind == RewardPickupKind.Diamond || Kind == RewardPickupKind.SegmentChoiceTicket;
+        }
+
+        private static Transform ResolvePlayerSfxRoot()
+        {
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
+            {
+                ConvoyController convoy = convoyTarget.GetComponent<ConvoyController>();
+                if (convoy != null && convoy.HeadVisual != null && convoy.HeadVisual.gameObject.activeInHierarchy)
+                {
+                    return convoy.HeadVisual;
+                }
+
+                return convoyTarget;
+            }
+
+            PlayerPickupInteractor interactor = FindFirstObjectByType<PlayerPickupInteractor>();
+            return interactor != null ? interactor.transform : null;
         }
 
         private static void SetVfxRootActive(Transform root, bool active)

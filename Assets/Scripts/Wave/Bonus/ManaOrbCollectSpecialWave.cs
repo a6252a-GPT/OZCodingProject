@@ -10,14 +10,49 @@ namespace TeamProject01.Gameplay
     {
         private enum ManaOrbSpawnShape
         {
+            [InspectorName("별")]
             Star = 0,
-            Square = 1,
-            Triangle = 2,
-            Circle = 3,
-            Diamond = 4,
+            [InspectorName("나선")]
+            Spiral = 1,
+            [InspectorName("S자")]
+            SShape = 2,
+            [InspectorName("십자가")]
+            Cross = 3,
+            [InspectorName("안 전 조 차")]
+            SafetyText = 4,
         }
 
-        private const int ManaOrbSpawnShapeCount = 5;
+        private const int ManaOrbSpawnShapeCount = 4;
+        private const float SafetyTextLetterWidth = 1.0f;
+        private const float SafetyTextLetterHeight = 1.35f;
+        private const float SafetyTextLetterSpacing = 0.26f;
+        private const float SafetyTextTotalWidth = SafetyTextLetterWidth * 4.0f + SafetyTextLetterSpacing * 3.0f;
+        private const float SafetyTextWidthScale = 1.9f;
+
+        private static readonly Vector2[][] SafetyTextStrokes =
+        {
+            new[] { TextPoint(0, 0.30f, 0.60f), TextPoint(0, 0.18f, 0.67f), TextPoint(0, 0.12f, 0.82f), TextPoint(0, 0.18f, 0.97f), TextPoint(0, 0.30f, 1.04f), TextPoint(0, 0.42f, 0.97f), TextPoint(0, 0.48f, 0.82f), TextPoint(0, 0.42f, 0.67f), TextPoint(0, 0.30f, 0.60f) },
+            new[] { TextPoint(0, 0.68f, 0.55f), TextPoint(0, 0.68f, 1.15f) },
+            new[] { TextPoint(0, 0.68f, 0.84f), TextPoint(0, 0.91f, 0.84f) },
+            new[] { TextPoint(0, 0.18f, 0.22f), TextPoint(0, 0.18f, 0.39f), TextPoint(0, 0.82f, 0.39f) },
+            new[] { TextPoint(1, 0.17f, 1.12f), TextPoint(1, 0.58f, 1.12f) },
+            new[] { TextPoint(1, 0.38f, 1.12f), TextPoint(1, 0.18f, 0.76f) },
+            new[] { TextPoint(1, 0.38f, 1.12f), TextPoint(1, 0.60f, 0.76f) },
+            new[] { TextPoint(1, 0.74f, 0.58f), TextPoint(1, 0.74f, 1.14f) },
+            new[] { TextPoint(1, 0.50f, 0.86f), TextPoint(1, 0.74f, 0.86f) },
+            new[] { TextPoint(1, 0.20f, 0.22f), TextPoint(1, 0.20f, 0.39f), TextPoint(1, 0.84f, 0.39f) },
+            new[] { TextPoint(2, 0.18f, 1.12f), TextPoint(2, 0.62f, 1.12f) },
+            new[] { TextPoint(2, 0.40f, 1.12f), TextPoint(2, 0.18f, 0.78f) },
+            new[] { TextPoint(2, 0.40f, 1.12f), TextPoint(2, 0.62f, 0.78f) },
+            new[] { TextPoint(2, 0.40f, 0.46f), TextPoint(2, 0.40f, 0.68f) },
+            new[] { TextPoint(2, 0.15f, 0.46f), TextPoint(2, 0.66f, 0.46f) },
+            new[] { TextPoint(3, 0.22f, 1.22f), TextPoint(3, 0.58f, 1.22f) },
+            new[] { TextPoint(3, 0.18f, 1.02f), TextPoint(3, 0.62f, 1.02f) },
+            new[] { TextPoint(3, 0.40f, 1.02f), TextPoint(3, 0.18f, 0.72f) },
+            new[] { TextPoint(3, 0.40f, 1.02f), TextPoint(3, 0.62f, 0.72f) },
+            new[] { TextPoint(3, 0.76f, 0.52f), TextPoint(3, 0.76f, 1.13f) },
+            new[] { TextPoint(3, 0.76f, 0.83f), TextPoint(3, 0.96f, 0.83f) },
+        };
 
         [Header("Special Wave Chance")]
         [Min(1)]
@@ -50,6 +85,8 @@ namespace TeamProject01.Gameplay
         [FormerlySerializedAs("useStarSpawnPattern")]
         [SerializeField] private bool randomizeSpawnShape = true; // 특수웨이브마다 배치 도형을 랜덤 선택합니다.
         [SerializeField] private ManaOrbSpawnShape fixedSpawnShape = ManaOrbSpawnShape.Star; // 랜덤을 끌 때 사용할 고정 도형입니다.
+        [Range(0, 100)]
+        [SerializeField] private int safetyTextShapeChancePercent = 3; // 랜덤 도형 선택 전에 낮은 확률로 "안 전 조 차" 글자 배치를 선택합니다.
         [Range(-180.0f, 180.0f)]
         [FormerlySerializedAs("starSpawnRotationDegrees")]
         [SerializeField] private float shapeSpawnRotationDegrees = 90.0f; // 도형 첫 꼭짓점이 향하는 각도입니다.
@@ -358,6 +395,11 @@ namespace TeamProject01.Gameplay
                 return fixedSpawnShape;
             }
 
+            if (safetyTextShapeChancePercent > 0 && UnityEngine.Random.Range(0, 100) < safetyTextShapeChancePercent)
+            {
+                return ManaOrbSpawnShape.SafetyText;
+            }
+
             return (ManaOrbSpawnShape)UnityEngine.Random.Range(0, ManaOrbSpawnShapeCount);
         }
 
@@ -387,14 +429,14 @@ namespace TeamProject01.Gameplay
         {
             switch (shape)
             {
-                case ManaOrbSpawnShape.Square:
-                    return GetRegularPolygonPerimeterOffset(index, count, 4, outerRadius, 45.0f);
-                case ManaOrbSpawnShape.Triangle:
-                    return GetRegularPolygonPerimeterOffset(index, count, 3, outerRadius, 0.0f);
-                case ManaOrbSpawnShape.Circle:
-                    return GetCirclePerimeterOffset(index, count, outerRadius);
-                case ManaOrbSpawnShape.Diamond:
-                    return GetRegularPolygonPerimeterOffset(index, count, 4, outerRadius, 0.0f);
+                case ManaOrbSpawnShape.Spiral:
+                    return GetSpiralOffset(index, count, innerRadius, outerRadius);
+                case ManaOrbSpawnShape.SShape:
+                    return GetSShapeOffset(index, count, outerRadius);
+                case ManaOrbSpawnShape.Cross:
+                    return GetCrossPerimeterOffset(index, count, innerRadius, outerRadius);
+                case ManaOrbSpawnShape.SafetyText:
+                    return GetSafetyTextOffset(index, count, outerRadius);
                 default:
                     return GetStarPerimeterOffset(index, count, innerRadius, outerRadius);
             }
@@ -425,31 +467,178 @@ namespace TeamProject01.Gameplay
             return new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
         }
 
-        private Vector3 GetRegularPolygonPerimeterOffset(int index, int count, int vertexCount, float radius, float rotationOffsetDegrees)
+        private Vector3 GetSpiralOffset(int index, int count, float innerRadius, float outerRadius)
         {
-            float normalizedIndex = count <= 1 ? 0.0f : Mathf.Repeat(index / (float)count, 1.0f);
-            float segmentPosition = normalizedIndex * vertexCount;
-            int segmentIndex = Mathf.FloorToInt(segmentPosition) % vertexCount;
-            int nextSegmentIndex = (segmentIndex + 1) % vertexCount;
-            float segmentT = segmentPosition - Mathf.Floor(segmentPosition);
+            const float spiralTurnCount = 2.35f;
 
-            Vector3 start = GetRegularPolygonVertexOffset(segmentIndex, vertexCount, radius, rotationOffsetDegrees);
-            Vector3 end = GetRegularPolygonVertexOffset(nextSegmentIndex, vertexCount, radius, rotationOffsetDegrees);
-            return Vector3.Lerp(start, end, segmentT);
-        }
-
-        private Vector3 GetRegularPolygonVertexOffset(int vertexIndex, int vertexCount, float radius, float rotationOffsetDegrees)
-        {
-            float angleStep = Mathf.PI * 2.0f / vertexCount;
-            float angle = (shapeSpawnRotationDegrees + rotationOffsetDegrees) * Mathf.Deg2Rad + vertexIndex * angleStep;
+            float t = GetOpenShapeT(index, count);
+            float radius = Mathf.Lerp(innerRadius * 0.3f, outerRadius, t);
+            float angle = shapeSpawnRotationDegrees * Mathf.Deg2Rad + t * Mathf.PI * 2.0f * spiralTurnCount;
             return new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
         }
 
-        private Vector3 GetCirclePerimeterOffset(int index, int count, float radius)
+        private Vector3 GetSShapeOffset(int index, int count, float outerRadius)
         {
+            float t = GetOpenShapeT(index, count);
+            float x = Mathf.Sin((t - 0.5f) * Mathf.PI * 2.0f) * outerRadius * 0.58f;
+            float z = (t - 0.5f) * outerRadius * 2.0f;
+            return RotateShapeOffset(new Vector3(x, 0.0f, z));
+        }
+
+        private Vector3 GetCrossPerimeterOffset(int index, int count, float innerRadius, float outerRadius)
+        {
+            float armHalfWidth = Mathf.Clamp(innerRadius, outerRadius * 0.22f, outerRadius * 0.42f);
+            Vector3[] vertices =
+            {
+                new Vector3(-armHalfWidth, 0.0f, outerRadius),
+                new Vector3(armHalfWidth, 0.0f, outerRadius),
+                new Vector3(armHalfWidth, 0.0f, armHalfWidth),
+                new Vector3(outerRadius, 0.0f, armHalfWidth),
+                new Vector3(outerRadius, 0.0f, -armHalfWidth),
+                new Vector3(armHalfWidth, 0.0f, -armHalfWidth),
+                new Vector3(armHalfWidth, 0.0f, -outerRadius),
+                new Vector3(-armHalfWidth, 0.0f, -outerRadius),
+                new Vector3(-armHalfWidth, 0.0f, -armHalfWidth),
+                new Vector3(-outerRadius, 0.0f, -armHalfWidth),
+                new Vector3(-outerRadius, 0.0f, armHalfWidth),
+                new Vector3(-armHalfWidth, 0.0f, armHalfWidth),
+            };
+
+            return RotateShapeOffset(GetPolylineOffset(vertices, index, count, true));
+        }
+
+        private Vector3 GetSafetyTextOffset(int index, int count, float outerRadius)
+        {
+            Vector2 point = GetWeightedStrokePoint(SafetyTextStrokes, GetOpenShapeT(index, count));
+            return GetSafetyTextOffset(point, outerRadius);
+        }
+
+        private Vector3 GetSafetyTextOffset(Vector2 point, float outerRadius)
+        {
+            float scale = outerRadius * SafetyTextWidthScale / SafetyTextTotalWidth;
+            float x = (point.x - SafetyTextTotalWidth * 0.5f) * scale;
+            float z = (point.y - SafetyTextLetterHeight * 0.5f) * scale;
+            return RotateShapeOffset(new Vector3(x, 0.0f, z));
+        }
+
+        private Vector3 GetPolylineOffset(IReadOnlyList<Vector3> vertices, int index, int count, bool closed)
+        {
+            if (vertices == null || vertices.Count <= 0)
+            {
+                return Vector3.zero;
+            }
+
+            if (vertices.Count == 1)
+            {
+                return vertices[0];
+            }
+
+            int segmentCount = closed ? vertices.Count : vertices.Count - 1;
             float normalizedIndex = count <= 1 ? 0.0f : Mathf.Repeat(index / (float)count, 1.0f);
-            float angle = shapeSpawnRotationDegrees * Mathf.Deg2Rad + normalizedIndex * Mathf.PI * 2.0f;
-            return new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
+            float segmentPosition = normalizedIndex * segmentCount;
+            int segmentIndex = Mathf.FloorToInt(segmentPosition);
+            float segmentT = segmentPosition - segmentIndex;
+
+            if (closed)
+            {
+                segmentIndex %= vertices.Count;
+                int nextSegmentIndex = (segmentIndex + 1) % vertices.Count;
+                return Vector3.Lerp(vertices[segmentIndex], vertices[nextSegmentIndex], segmentT);
+            }
+
+            segmentIndex = Mathf.Clamp(segmentIndex, 0, segmentCount - 1);
+            return Vector3.Lerp(vertices[segmentIndex], vertices[segmentIndex + 1], segmentT);
+        }
+
+        private Vector3 RotateShapeOffset(Vector3 offset)
+        {
+            float angle = shapeSpawnRotationDegrees * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+            float x = offset.x * cos - offset.z * sin;
+            float z = offset.x * sin + offset.z * cos;
+            return new Vector3(x, offset.y, z);
+        }
+
+        private static float GetOpenShapeT(int index, int count)
+        {
+            return count <= 1 ? 0.0f : Mathf.Clamp01(index / (float)(count - 1));
+        }
+
+        private static Vector2 TextPoint(int letterIndex, float x, float y)
+        {
+            return new Vector2(letterIndex * (SafetyTextLetterWidth + SafetyTextLetterSpacing) + x, y);
+        }
+
+        private static Vector2 GetWeightedStrokePoint(IReadOnlyList<Vector2[]> strokes, float normalizedPosition)
+        {
+            if (strokes == null || strokes.Count <= 0)
+            {
+                return Vector2.zero;
+            }
+
+            float totalLength = 0.0f;
+            for (int i = 0; i < strokes.Count; i++)
+            {
+                totalLength += GetStrokeLength(strokes[i]);
+            }
+
+            if (totalLength <= 0.0001f)
+            {
+                return strokes[0] != null && strokes[0].Length > 0 ? strokes[0][0] : Vector2.zero;
+            }
+
+            float targetLength = Mathf.Clamp01(normalizedPosition) * totalLength;
+            float accumulatedLength = 0.0f;
+
+            for (int strokeIndex = 0; strokeIndex < strokes.Count; strokeIndex++)
+            {
+                Vector2[] stroke = strokes[strokeIndex];
+
+                if (stroke == null || stroke.Length <= 0)
+                {
+                    continue;
+                }
+
+                for (int pointIndex = 1; pointIndex < stroke.Length; pointIndex++)
+                {
+                    Vector2 start = stroke[pointIndex - 1];
+                    Vector2 end = stroke[pointIndex];
+                    float segmentLength = Vector2.Distance(start, end);
+
+                    if (segmentLength <= 0.0001f)
+                    {
+                        continue;
+                    }
+
+                    if (accumulatedLength + segmentLength >= targetLength)
+                    {
+                        float segmentT = (targetLength - accumulatedLength) / segmentLength;
+                        return Vector2.Lerp(start, end, segmentT);
+                    }
+
+                    accumulatedLength += segmentLength;
+                }
+            }
+
+            Vector2[] lastStroke = strokes[strokes.Count - 1];
+            return lastStroke != null && lastStroke.Length > 0 ? lastStroke[lastStroke.Length - 1] : Vector2.zero;
+        }
+
+        private static float GetStrokeLength(IReadOnlyList<Vector2> stroke)
+        {
+            if (stroke == null || stroke.Count <= 1)
+            {
+                return 0.0f;
+            }
+
+            float length = 0.0f;
+            for (int i = 1; i < stroke.Count; i++)
+            {
+                length += Vector2.Distance(stroke[i - 1], stroke[i]);
+            }
+
+            return length;
         }
 
         private void CleanupManaOrbList()
@@ -620,9 +809,16 @@ namespace TeamProject01.Gameplay
 
             Gizmos.color = new Color(1.0f, 0.95f, 0.15f, 0.95f);
 
-            int lineCount = shape == ManaOrbSpawnShape.Circle ? 64 : GetShapeGizmoLineCount(shape);
+            if (shape == ManaOrbSpawnShape.SafetyText)
+            {
+                DrawSafetyTextSpawnGizmo(center, outerRadius);
+                return;
+            }
+
+            int lineCount = GetShapeGizmoLineCount(shape);
             Vector3 previous = center + GetShapePerimeterOffset(shape, 0, lineCount, innerRadius, outerRadius);
-            for (int i = 1; i <= lineCount; i++)
+            int endIndex = IsClosedShape(shape) ? lineCount : lineCount - 1;
+            for (int i = 1; i <= endIndex; i++)
             {
                 Vector3 next = center + GetShapePerimeterOffset(shape, i % lineCount, lineCount, innerRadius, outerRadius);
                 Gizmos.DrawLine(previous, next);
@@ -634,13 +830,41 @@ namespace TeamProject01.Gameplay
         {
             switch (shape)
             {
-                case ManaOrbSpawnShape.Square:
-                case ManaOrbSpawnShape.Diamond:
-                    return 4;
-                case ManaOrbSpawnShape.Triangle:
-                    return 3;
+                case ManaOrbSpawnShape.Spiral:
+                case ManaOrbSpawnShape.SShape:
+                    return 96;
+                case ManaOrbSpawnShape.Cross:
+                    return 12;
+                case ManaOrbSpawnShape.SafetyText:
+                    return 160;
                 default:
                     return 10;
+            }
+        }
+
+        private static bool IsClosedShape(ManaOrbSpawnShape shape)
+        {
+            return shape == ManaOrbSpawnShape.Star || shape == ManaOrbSpawnShape.Cross;
+        }
+
+        private void DrawSafetyTextSpawnGizmo(Vector3 center, float outerRadius)
+        {
+            for (int strokeIndex = 0; strokeIndex < SafetyTextStrokes.Length; strokeIndex++)
+            {
+                Vector2[] stroke = SafetyTextStrokes[strokeIndex];
+
+                if (stroke == null || stroke.Length <= 1)
+                {
+                    continue;
+                }
+
+                Vector3 previous = center + GetSafetyTextOffset(stroke[0], outerRadius);
+                for (int pointIndex = 1; pointIndex < stroke.Length; pointIndex++)
+                {
+                    Vector3 next = center + GetSafetyTextOffset(stroke[pointIndex], outerRadius);
+                    Gizmos.DrawLine(previous, next);
+                    previous = next;
+                }
             }
         }
     }

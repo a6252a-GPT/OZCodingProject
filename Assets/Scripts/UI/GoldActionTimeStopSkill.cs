@@ -20,7 +20,7 @@ namespace TeamProject01.Gameplay
 
         [Header("Time Stop")]
         [Min(0.1f)] public float BaseDuration = 4f; // Lv1 지속 시간
-        [Min(0f)] public float DurationPerUpgrade = 0.75f; // 강화당 추가 시간
+        [Min(0f)] public float DurationPerUpgrade = 1f; // 강화당 추가 시간
         [Min(0.01f)] public float RefreshInterval = 0.1f; // 신규 스폰 포함 갱신 간격
         [Min(0.01f)] public float FreezeTickDuration = 0.25f; // 한 번 적용하는 동결 시간
         public bool AffectBosses = true; // 보스도 정지
@@ -54,6 +54,8 @@ namespace TeamProject01.Gameplay
         private LineRenderer minuteHand; // 분침
         private LineRenderer secondHand; // 초침
         private Material clockLineMaterial; // 절차형 선 재질
+        private GameplaySfxEmitter.LoopHandle timeStopLoopA;
+        private GameplaySfxEmitter.LoopHandle timeStopLoopB;
 
         public bool Play(int upgradeLevel) // 액션 HUD 3번 발동
         {
@@ -67,10 +69,12 @@ namespace TeamProject01.Gameplay
             if (activeRoutine != null)
             {
                 StopCoroutine(activeRoutine); // 기존 정지 갱신 중단
+                StopTimeStopSfx();
             }
 
             ShakeCamera?.AddShake(ShakeDuration, ShakeAmplitude, ShakeFrequency); // 발동 흔들림
             StartClockVfx(center, duration); // 넥서스 상단 시계 연출
+            StartTimeStopSfx(center);
             activeRoutine = StartCoroutine(TimeStopRoutine(center, radius, duration)); // 정지 루프 시작
             Debug.Log($"[GoldActionTimeStop] Time stop cast: Lv{level}, duration {duration:0.0}s, radius {radius:0.0}", this);
             return true; // 몬스터가 없어도 발동 성공
@@ -90,6 +94,7 @@ namespace TeamProject01.Gameplay
 
             activeRoutine = null; // 완료
             StopClockVfx(); // 시계 연출 종료
+            StopTimeStopSfx();
             Debug.Log($"[GoldActionTimeStop] Time stop ended: affected ticks {affected}", this);
         }
 
@@ -286,6 +291,28 @@ namespace TeamProject01.Gameplay
             secondHand = null; // 참조 제거
         }
 
+        private void StartTimeStopSfx(Vector3 center)
+        {
+            StopTimeStopSfx();
+            timeStopLoopA = GameplaySfxEmitter.StartCatalogLoop(GameplaySfxCue.HudSkill3LoopA, center, transform);
+            timeStopLoopB = GameplaySfxEmitter.StartCatalogLoop(GameplaySfxCue.HudSkill3LoopB, center, transform);
+        }
+
+        private void StopTimeStopSfx()
+        {
+            if (timeStopLoopA != null)
+            {
+                timeStopLoopA.Stop();
+                timeStopLoopA = null;
+            }
+
+            if (timeStopLoopB != null)
+            {
+                timeStopLoopB.Stop();
+                timeStopLoopB = null;
+            }
+        }
+
         private void CreateMinuteTicks(Transform parent, float radius, float width) // 60분 눈금
         {
             for (int i = 0; i < 60; i++)
@@ -411,11 +438,13 @@ namespace TeamProject01.Gameplay
             }
 
             StopClockVfx(); // 시계 제거
+            StopTimeStopSfx();
         }
 
         private void OnDestroy() // 런타임 재질 정리
         {
             StopClockVfx(); // 남은 시계 제거
+            StopTimeStopSfx();
             if (clockLineMaterial != null)
             {
                 Destroy(clockLineMaterial); // 런타임 재질 제거

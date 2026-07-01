@@ -3,43 +3,41 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemySegmentCutCaster : MonoBehaviour // ÄÁº¸ÀÌ ¹«±â ¼¼±×¸ÕÆ® Àı´Ü ¸¶¹ı ¸ó½ºÅÍ
+    public sealed class EnemySegmentCutCaster : MonoBehaviour // ì»¨ë³´ì´ ê¼¬ë¦¬ ì„¸ê·¸ë¨¼íŠ¸ë¥¼ ì¶”ì í•´ ì ˆë‹¨ ë§ˆë²•ì„ ì“°ëŠ” ëª¬ìŠ¤í„°
     {
-        private Transform target; // »ç°Å¸® ÆÇÁ¤¿¡ »ç¿ëÇÒ ÄÁº¸ÀÌ ´ëÇ¥ Transform
-
-        private Transform nexus; // Àı´Ü ¸¶¹ı Á¾·á ÈÄ ´Ù½Ã ¹Ù¶óº¼ Nexus Transform
+        private Transform target; // ì „ì°¬ìš°ìˆ˜ì •-0630 - ë„¥ì„œìŠ¤ê°€ ì•„ë‹ˆë¼ í˜„ì¬ ì»¨ë³´ì´ ê¼¬ë¦¬ ì„¸ê·¸ë¨¼íŠ¸ë¥¼ ì‚¬ê±°ë¦¬ íŒì • ëŒ€ìƒìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
 
         [Header("Cast Reference")]
-        [SerializeField] private Transform castPoint; // ¸¶¹ı Åõ»çÃ¼°¡ »ı¼ºµÇ´Â À§Ä¡
+        [SerializeField] private Transform castPoint; // ë§ˆë²• íˆ¬ì‚¬ì²´ê°€ ìƒì„±ë˜ëŠ” ìœ„ì¹˜
 
-        [SerializeField] private SegmentCutMagicEffect magicEffectPrefab; // ¼±ÅÃµÈ ¹«±â ¼¼±×¸ÕÆ®¿¡ Ç¥½ÃÇÒ °æ°í È¿°ú Prefab
+        [SerializeField] private SegmentCutMagicEffect magicEffectPrefab; // ì„ íƒëœ ë¬´ê¸° ì„¸ê·¸ë¨¼íŠ¸ì— í‘œì‹œí•  ê²½ê³  íš¨ê³¼ Prefab
 
-        [SerializeField] private SegmentCutProjectile projectilePrefab; // ¼±ÅÃµÈ ¹«±â ¼¼±×¸ÕÆ®¸¦ ÃßÀûÇÒ ¸¶¹ı ±¸Ã¼ Prefab
+        [SerializeField] private SegmentCutProjectile projectilePrefab; // ì„ íƒëœ ë¬´ê¸° ì„¸ê·¸ë¨¼íŠ¸ë¥¼ ì¶”ì í•  ë§ˆë²• êµ¬ì²´ Prefab
 
         [Header("Cast Setting")]
         [Min(0.0f)]
-        [SerializeField] private float firstCastDelay = 3.0f; // ¸ó½ºÅÍ »ı¼º ÈÄ Ã¹ ¹øÂ° ¸¶¹ı±îÁöÀÇ ´ë±â½Ã°£
+        [SerializeField] private float firstCastDelay = 5.0f; // ì „ì°¬ìš°ìˆ˜ì •-0630 - ì²« ì‹œì „ ë”œë ˆì´
 
         [Min(1.0f)]
-        [SerializeField] private float castRange = 10.0f; // »õ·Î¿î ¸¶¹ı ½ÃÀüÀ» ½ÃÀÛÇÒ ¼ö ÀÖ´Â °Å¸®
+        [SerializeField] private float castRange = 10.0f; // ìƒˆë¡œìš´ ë§ˆë²• ì‹œì „ì„ ì‹œì‘í•  ìˆ˜ ìˆëŠ” ê±°ë¦¬
 
         [Min(1.0f)]
-        [SerializeField] private float castInterval = 8.0f; // ¸¶¹ı ¹ß»ç ÈÄ ´ÙÀ½ ½ÃÀü±îÁöÀÇ ´ë±â½Ã°£
+        [SerializeField] private float castInterval = 15.0f; // ì „ì°¬ìš°ìˆ˜ì •-0630 - ë§ˆë²• ë°œì‚¬ í›„ ë‹¤ìŒ ì‹œì „ê¹Œì§€ì˜ ëŒ€ê¸°ì‹œê°„
 
         [Min(0.1f)]
-        [SerializeField] private float castDelay = 2.0f; // ¼±ÅÃµÈ ¼¼±×¸ÕÆ®¸¦ Ç¥½ÃÇÑ µÚ ¹ß»çÇÏ±â±îÁöÀÇ ÁØºñ½Ã°£
+        [SerializeField] private float castDelay = 2.0f; // ì„ íƒëœ ì„¸ê·¸ë¨¼íŠ¸ë¥¼ í‘œì‹œí•œ ë’¤ ë°œì‚¬í•˜ê¸°ê¹Œì§€ì˜ ì¤€ë¹„ì‹œê°„
 
-        private EnemyController ownerController; // ÀÌ Script Component°¡ ºÙÀº ¸ó½ºÅÍÀÇ EnemyController
+        private EnemyController ownerController; // ì´ Script Componentê°€ ë¶™ì€ ëª¬ìŠ¤í„°ì˜ EnemyController
 
-        private Transform selectedTargetSegment; // ÀÌ¹ø ¸¶¹ı¿¡¼­ ¼±ÅÃµÈ ¹«±â ¼¼±×¸ÕÆ®
+        private Transform selectedTargetSegment; // ì´ë²ˆ ë§ˆë²•ì—ì„œ ì„ íƒëœ ë¬´ê¸° ì„¸ê·¸ë¨¼íŠ¸
 
-        private float castTimer; // ´ÙÀ½ ¸¶¹ı ½Ãµµ±îÁö ³²Àº ½Ã°£
+        private float castTimer; // ë‹¤ìŒ ë§ˆë²• ì‹œë„ê¹Œì§€ ë‚¨ì€ ì‹œê°„
 
-        private Coroutine castCoroutine; // ÇöÀç ÁøÇà ÁßÀÎ ¸¶¹ı ½ÃÀü Coroutine
+        private Coroutine castCoroutine; // í˜„ì¬ ì§„í–‰ ì¤‘ì¸ ë§ˆë²• ì‹œì „ Coroutine
 
-        private SegmentCutMagicEffect currentMagicEffect; // ÇöÀç ¼±ÅÃµÈ ¼¼±×¸ÕÆ®¿¡ Ç¥½ÃµÈ °æ°í È¿°ú
+        private SegmentCutMagicEffect currentMagicEffect; // í˜„ì¬ ì„ íƒëœ ì„¸ê·¸ë¨¼íŠ¸ì— í‘œì‹œëœ ê²½ê³  íš¨ê³¼
 
-        private bool hasStartedFirstCast; // Ã¹ Àı´Ü ¸¶¹ıÀ» ½ÃÀÛÇß´ÂÁö ÀúÀåÇÑ´Ù.
+        private bool hasStartedFirstCast; // ì²« ì ˆë‹¨ ë§ˆë²•ì„ ì‹œì‘í–ˆëŠ”ì§€ ì €ì¥í•œë‹¤.
 
         public event System.Action CastStarted;
 
@@ -61,363 +59,334 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        public bool ShouldPrioritizeCast // ÀÌµ¿°ú ±âº» ¿ø°Å¸® °ø°İº¸´Ù Àı´Ü ¸¶¹ıÀ» ¿ì¼±ÇÒÁö ¹İÈ¯ÇÑ´Ù.
+        public bool ShouldPrioritizeCast // ì´ë™ê³¼ ê¸°ë³¸ ì›ê±°ë¦¬ ê³µê²©ë³´ë‹¤ ì ˆë‹¨ ë§ˆë²•ì„ ìš°ì„ í• ì§€ ë°˜í™˜í•œë‹¤.
         {
             get
             {
-                if (!isActiveAndEnabled) // Àı´Ü ¸¶¹ı Script Component°¡ ºñÈ°¼ºÈ­µÇ¾î ÀÖ´Ù¸é
+                if (!isActiveAndEnabled)
                 {
-                    return false; // Àı´Ü ¸¶¹ıÀ» ¿ì¼±ÇÏÁö ¾Ê´Â´Ù.
+                    return false;
                 }
 
-                if (target == null) // ÄÁº¸ÀÌ ´ëÇ¥ ´ë»óÀÌ ¾ø´Ù¸é
+                RefreshTailTarget();
+
+                if (target == null || projectilePrefab == null || magicEffectPrefab == null)
                 {
-                    TryFindTarget(); // MonsterInteractionApi¿¡¼­ ´Ù½Ã Ã£´Â´Ù.
+                    return false;
                 }
 
-                if (target == null || projectilePrefab == null || magicEffectPrefab == null) // Àı´Ü ¸¶¹ı ½ÇÇà¿¡ ÇÊ¿äÇÑ ´ë»ó ¶Ç´Â PrefabÀÌ ¾ø´Ù¸é
+                if (!IsTargetInCastRange())
                 {
-                    return false; // ÀÌµ¿°ú ±âº» °ø°İÀ» ¸·Áö ¾Ê´Â´Ù.
+                    return false;
                 }
 
-                if (!IsTargetInCastRange()) // ÄÁº¸ÀÌ°¡ Àı´Ü ¸¶¹ı »ç°Å¸® ¹ÛÀÌ¶ó¸é
+                if (IsCasting)
                 {
-                    return false; // Nexus ¹æÇâ ÀÌµ¿À» °è¼ÓÇÑ´Ù.
+                    return true;
                 }
 
-                if (IsCasting) // ÇöÀç °æ°í¿Í Àı´Ü ¸¶¹ı ½ÃÀüÀÌ ÁøÇà ÁßÀÌ¶ó¸é
+                if (!MonsterInteractionApi.HasAvailableSegmentCutTarget())
                 {
-                    return true; // ÀÌµ¿°ú ±âº» ¿ø°Å¸® °ø°İÀ» ¸ØÃá´Ù.
+                    return false;
                 }
 
-                if (!MonsterInteractionApi.HasAvailableSegmentCutTarget()) // ÇöÀç ¼±ÅÃÇÒ ¼ö ÀÖ´Â Àı´Ü ´ë»ó ¼¼±×¸ÕÆ®°¡ ¾ø´Ù¸é
+                if (!hasStartedFirstCast)
                 {
-                    return false; // ÀÌµ¿°ú ±âº» ¿ø°Å¸® °ø°İÀ» ¸·Áö ¾Ê´Â´Ù.
+                    return true;
                 }
 
-                if (!hasStartedFirstCast) // ¾ÆÁ÷ Ã¹ Àı´Ü ¸¶¹ıÀ» ½ÃÀÛÇÏÁö ¾Ê¾Ò´Ù¸é
-                {
-                    return true; // Ã¹ ½ÃÀü ´ë±â½Ã°£ÀÌ ³¡³¯ ¶§±îÁö ¿ì¼±±ÇÀ» À¯ÁöÇÑ´Ù.
-                }
-
-                return castTimer <= Time.deltaTime; // Àç»ç¿ë ´ë±â½Ã°£ÀÌ ÀÌ¹ø ÇÁ·¹ÀÓ¿¡ ³¡³ª¸é Àı´Ü ¸¶¹ıÀ» ¿ì¼±ÇÑ´Ù.
+                return castTimer <= Time.deltaTime;
             }
         }
 
         private void Awake()
         {
-            ownerController = GetComponent<EnemyController>(); // °°Àº GameObjectÀÇ EnemyController Script Component¸¦ Ã£´Â´Ù.
+            ownerController = GetComponent<EnemyController>();
 
-            FindNexus(); // ¾À¿¡¼­ Nexus_Core¸¦ Ã£¾Æ ÀúÀåÇÑ´Ù.
-
-            TryFindTarget(); // MonsterInteractionApi¿¡¼­ ÄÁº¸ÀÌ ´ëÇ¥ ´ë»óÀ» Ã£´Â´Ù.
+            RefreshTailTarget();
         }
 
         private void OnEnable()
         {
-            castTimer = firstCastDelay; // ¸ó½ºÅÍ°¡ »ı¼ºµÈ ÈÄ Ã¹ ½ÃÀü±îÁö ¼³Á¤µÈ ½Ã°£¸¸Å­ ±â´Ù¸°´Ù.
+            castTimer = firstCastDelay;
 
-            hasStartedFirstCast = false; // »õ·Î »ı¼ºµÇ°Å³ª ´Ù½Ã È°¼ºÈ­µÇ¸é Ã¹ Àı´Ü ¸¶¹ı ¿ì¼± »óÅÂ·Î ÃÊ±âÈ­ÇÑ´Ù.
+            hasStartedFirstCast = false;
         }
 
         private void OnDisable()
         {
-            CancelCast(); // ¸ó½ºÅÍ°¡ Á×°Å³ª ºñÈ°¼ºÈ­µÇ¸é ¾ÆÁ÷ ¹ß»çµÇÁö ¾ÊÀº ½ÃÀü°ú °æ°í È¿°ú¸¦ Ãë¼ÒÇÑ´Ù.
+            CancelCast();
         }
 
         private void Update()
         {
-            if (target == null)
-            {
-                TryFindTarget(); // ÄÁº¸ÀÌ ´ëÇ¥ ´ë»óÀÌ ¾ø´Ù¸é ´Ù½Ã Ã£´Â´Ù.
-            }
+            RefreshTailTarget();
 
             if (target == null)
             {
-                return; // ÄÁº¸ÀÌ°¡ µî·ÏµÇ¾î ÀÖÁö ¾Ê´Ù¸é ½ÃÀüÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
             if (projectilePrefab == null)
             {
-                return; // ¹ß»çÇÒ Àı´Ü ¸¶¹ı ±¸Ã¼ PrefabÀÌ ¾ø´Ù¸é ½ÃÀüÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
             if (magicEffectPrefab == null)
             {
-                return; // ¼±ÅÃµÈ ¼¼±×¸ÕÆ®¸¦ ¾Ë·ÁÁÙ °æ°í È¿°ú°¡ ¾ø´Ù¸é ½ÃÀüÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
             if (EnemySupportDebuffState.IsEnemyFrozen(ownerController))
             {
-                return; // µ¿°á Áß¿¡´Â Ã¹ ½ÃÀü°ú Àç»ç¿ë ´ë±â½Ã°£À» ÁøÇàÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
             if (castCoroutine != null)
             {
-                return; // ÀÌ¹Ì ¸¶¹ıÀ» ÁØºñ ÁßÀÌ¶ó¸é »õ·Î¿î ½ÃÀüÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
-            castTimer -= Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ ´ÙÀ½ ½ÃÀü ´ë±â½Ã°£À» °¨¼Ò½ÃÅ²´Ù.
+            castTimer -= Time.deltaTime;
 
             if (castTimer > 0.0f)
             {
-                return; // ¾ÆÁ÷ ½ÃÀü ´ë±â½Ã°£ÀÌ ³²¾Ò´Ù¸é ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
             if (!IsTargetInCastRange())
             {
-                return; // ½ÃÀüÀ» ½ÃÀÛÇÏ´Â ¼ø°£ ÄÁº¸ÀÌ°¡ »ç°Å¸® ¹ÛÀÌ¶ó¸é ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
             if (!MonsterInteractionApi.TryGetRandomAttachedWeaponSegment(out Transform weaponSegment))
             {
-                return; // ÇöÀç ÄÁº¸ÀÌ¿¡ Àı´ÜÇÒ ¼ö ÀÖ´Â ºÎÂø ¹«±â ¼¼±×¸ÕÆ®°¡ ¾ø´Ù¸é ½ÃÀüÇÏÁö ¾Ê´Â´Ù.
-            }
-
-            selectedTargetSegment = weaponSegment; // ¹«ÀÛÀ§·Î ¼±ÅÃµÈ ºÎÂø ¹«±â ¼¼±×¸ÕÆ®¸¦ ÀÌ¹ø ¸¶¹ıÀÇ ´ë»óÀ¸·Î ÀúÀåÇÑ´Ù.
-
-            FaceSelectedTarget(); // Àı´Ü ¸¶¹ı ½ÃÀüÀ» ½ÃÀÛÇÒ ¶§ ¼±ÅÃÇÑ ¼¼±×¸ÕÆ®¸¦ ¹Ù¶óº»´Ù.
-
-            hasStartedFirstCast = true; // Ã¹ Àı´Ü ¸¶¹ı ½Ãµµ¸¦ ½ÃÀÛÇßÀ½À» ÀúÀåÇÑ´Ù.
-
-            castCoroutine = StartCoroutine(CastRoutine()); // °æ°í Ç¥½Ã¿Í Åõ»çÃ¼ ¹ß»ç °úÁ¤À» ½ÃÀÛÇÑ´Ù.
-
-            CastStarted?.Invoke(); // Àı´Ü ¸¶¹ı ½ÃÀü ¾Ö´Ï¸ŞÀÌ¼Ç ½ÃÀÛÀ» ¾Ë¸°´Ù.
-        }
-
-        private void FindNexus()
-        {
-            if (nexus != null) // Nexus¸¦ ÀÌ¹Ì Ã£¾Ò´Ù¸é
-            {
-                return; // ´Ù½Ã °Ë»öÇÏÁö ¾Ê´Â´Ù.
-            }
-
-            GameObject nexusObject = GameObject.Find("Nexus_Core"); // ¾À¿¡¼­ ÀÌ¸§ÀÌ Nexus_CoreÀÎ GameObject¸¦ Ã£´Â´Ù.
-
-            nexus = nexusObject != null ? nexusObject.transform : null; // Ã£¾Ò´Ù¸é TransformÀ» ÀúÀåÇÑ´Ù.
-        }
-
-        private void TryFindTarget()
-        {
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget))
-            {
-                target = convoyTarget; // µî·ÏµÈ ÄÁº¸ÀÌ ´ëÇ¥ TransformÀ» »ç°Å¸® ÆÇÁ¤ ´ë»óÀ¸·Î ÀúÀåÇÑ´Ù.
-
                 return;
             }
 
-            target = null; // µî·ÏµÈ ÄÁº¸ÀÌ°¡ ¾ø´Ù¸é ´ë»óÀ» ºñ¿î´Ù.
+            selectedTargetSegment = weaponSegment;
+
+            FaceSelectedTarget();
+
+            hasStartedFirstCast = true;
+
+            castCoroutine = StartCoroutine(CastRoutine());
+
+            CastStarted?.Invoke();
+        }
+
+        public bool TryGetTailFollowTarget(out Transform tailTarget)
+        {
+            return MonsterInteractionApi.TryGetSegmentCutTailFollowTarget(out tailTarget);
         }
 
         public bool IsTargetInCastRange()
         {
-            if (target == null)
-            {
-                TryFindTarget(); // ´ë»óÀÌ ¾ø´Ù¸é MonsterInteractionApi¿¡¼­ ´Ù½Ã Ã£¾Æº»´Ù.
-            }
+            RefreshTailTarget();
 
             if (target == null)
             {
-                return false; // ÄÁº¸ÀÌ°¡ ¾ø´Ù¸é »ç°Å¸® ¾È¿¡ ÀÖÁö ¾Ê´Ù°í ¹İÈ¯ÇÑ´Ù.
+                return false;
             }
 
-            Vector3 offset = target.position - transform.position; // ¸ó½ºÅÍ¿¡¼­ ÄÁº¸ÀÌ ´ëÇ¥ À§Ä¡±îÁöÀÇ °Å¸® º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
+            Vector3 offset = target.position - transform.position;
 
-            offset.y = 0.0f; // Áö¸é ±âÁØ °Å¸®¸¸ »ç¿ëÇÏ±â À§ÇØ ³ôÀÌ¸¦ Á¦°ÅÇÑ´Ù.
+            offset.y = 0.0f;
 
-            return offset.sqrMagnitude <= castRange * castRange; // Á¦°ö °Å¸®¸¦ »ç¿ëÇÏ¿© ½ÃÀü »ç°Å¸® ¾ÈÀÎÁö ¹İÈ¯ÇÑ´Ù.
+            return offset.sqrMagnitude <= castRange * castRange;
+        }
+
+        private void RefreshTailTarget()
+        {
+            if (MonsterInteractionApi.TryGetSegmentCutTailFollowTarget(out Transform tailTarget))
+            {
+                target = tailTarget;
+                return;
+            }
+
+            target = null;
         }
 
         private IEnumerator CastRoutine()
         {
-            CreateMagicEffect(); // ¼±ÅÃµÈ ¹«±â ¼¼±×¸ÕÆ®¿¡ °æ°í È¿°ú¸¦ Ç¥½ÃÇÑ´Ù.
+            CreateMagicEffect();
 
-            FaceSelectedTarget(); // ½ÃÀü ÁØºñ¸¦ ½ÃÀÛÇÒ ¶§ ¼±ÅÃµÈ ¹«±â ¼¼±×¸ÕÆ®¸¦ ¹Ù¶óº»´Ù.
+            FaceSelectedTarget();
 
-            float timer = 0.0f; // ÇöÀç±îÁö ÁøÇàµÈ ½ÃÀü ÁØºñ½Ã°£
+            float timer = 0.0f;
 
             while (timer < castDelay)
             {
+                RefreshTailTarget();
+
                 if (target == null || selectedTargetSegment == null || !MonsterInteractionApi.IsAttachedSegmentCutTarget(selectedTargetSegment))
                 {
-                    ReleaseSelectedTargetReservation(); // ´õ ÀÌ»ó »ç¿ëÇÒ ¼ö ¾ø´Â ´ë»ó ¿¹¾àÀ» ÇØÁ¦ÇÑ´Ù.
+                    ReleaseSelectedTargetReservation();
 
-                    CancelCurrentMagicEffect(); // ÄÁº¸ÀÌ ¶Ç´Â ¼±ÅÃµÈ ¼¼±×¸ÕÆ®°¡ »ç¶óÁ³´Ù¸é °æ°í È¿°ú¸¦ Á¦°ÅÇÑ´Ù.
+                    CancelCurrentMagicEffect();
 
-                    FinishCast(); // ÇöÀç ½ÃÀüÀ» Á¾·áÇÏ°í ´ÙÀ½ Àç»ç¿ë ´ë±â½Ã°£À» ¼³Á¤ÇÑ´Ù.
+                    FinishCast();
 
                     yield break;
                 }
 
                 if (EnemySupportDebuffState.IsEnemyFrozen(ownerController))
                 {
-                    yield return null; // µ¿°á Áß¿¡´Â ½ÃÀü ÁØºñ½Ã°£À» Áõ°¡½ÃÅ°Áö ¾Ê°í ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ±â´Ù¸°´Ù.
+                    yield return null;
 
                     continue;
                 }
 
-                FaceSelectedTarget(); // ÄÁº¸ÀÌ°¡ ÀÌµ¿ÇÏ´õ¶óµµ ½ÃÀü Áß ¼±ÅÃµÈ ¼¼±×¸ÕÆ®¸¦ °è¼Ó ¹Ù¶óº»´Ù.
+                FaceSelectedTarget();
 
-                timer += Time.deltaTime; // µ¿°áÀÌ ¾Æ´Ò ¶§¸¸ ½ÃÀü ÁØºñ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
+                timer += Time.deltaTime;
 
-                yield return null; // ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ±â´Ù¸°´Ù.
+                yield return null;
             }
 
-            FaceSelectedTarget(); // Åõ»çÃ¼¸¦ »ı¼ºÇÏ±â Á÷Àü¿¡ ¼±ÅÃµÈ ¼¼±×¸ÕÆ®¸¦ Á¤È®È÷ ¹Ù¶óº»´Ù.
+            FaceSelectedTarget();
 
-            LaunchProjectile(); // Àı´Ü Åõ»çÃ¼¸¦ ¹ß»çÇÏ°í ´ë»ó Ç¥½Ã È¿°úÀÇ °ü¸® ±ÇÇÑÀ» Åõ»çÃ¼¿¡ Àü´ŞÇÑ´Ù.
+            LaunchProjectile();
 
-            FinishCast(); // Åõ»çÃ¼ ¹ß»ç ÈÄ ÇöÀç ½ÃÀüÀ» ³¡³»°í Àç»ç¿ë ´ë±â½Ã°£À» ½ÃÀÛÇÑ´Ù.
+            FinishCast();
         }
 
-        private void FaceSelectedTarget() // ¼±ÅÃÇÑ ¹«±â ¼¼±×¸ÕÆ® ¹æÇâÀ¸·Î ¸ó½ºÅÍ¸¦ È¸Àü½ÃÅ²´Ù.
+        private void FaceSelectedTarget()
         {
-            if (selectedTargetSegment == null) // ¼±ÅÃµÈ ¼¼±×¸ÕÆ®°¡ ¾ø´Ù¸é
-            {
-                return; // È¸Àü ¹æÇâÀ» °è»êÇÏÁö ¾Ê´Â´Ù.
-            }
-
-            Vector3 direction = selectedTargetSegment.position - transform.position; // ¸ó½ºÅÍ¿¡¼­ ¼±ÅÃµÈ ¼¼±×¸ÕÆ®±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
-
-            direction.y = 0.0f; // ¸ó½ºÅÍ°¡ À§¾Æ·¡·Î ±â¿ïÁö ¾Êµµ·Ï ³ôÀÌ Â÷ÀÌ¸¦ Á¦°ÅÇÑ´Ù.
-
-            if (direction.sqrMagnitude <= 0.0001f) // È¸ÀüÇÒ ¼ö ÀÖ´Â À¯È¿ÇÑ ¹æÇâÀÌ ¾ø´Ù¸é
-            {
-                return; // ÇöÀç ¹æÇâÀ» À¯ÁöÇÑ´Ù.
-            }
-
-            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // ¼±ÅÃÇÑ ¹«±â ¼¼±×¸ÕÆ®¸¦ ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            FaceTransform(selectedTargetSegment);
         }
 
-        private void FaceNexus() // Àı´Ü ¸¶¹ıÀÌ ³¡³­ µÚ Nexus ¹æÇâÀ¸·Î ¸ó½ºÅÍ¸¦ È¸Àü½ÃÅ²´Ù.
+        private void FaceTailTarget()
         {
-            if (nexus == null) // Nexus°¡ ¾ÆÁ÷ ÀúÀåµÇÁö ¾Ê¾Ò´Ù¸é
+            RefreshTailTarget();
+
+            FaceTransform(target);
+        }
+
+        private void FaceTransform(Transform lookTarget)
+        {
+            if (lookTarget == null)
             {
-                FindNexus(); // ¾À¿¡¼­ Nexus_Core¸¦ ´Ù½Ã Ã£´Â´Ù.
+                return;
             }
 
-            if (nexus == null) // Nexus_Core¸¦ Ã£Áö ¸øÇß´Ù¸é
+            Vector3 direction = lookTarget.position - transform.position;
+
+            direction.y = 0.0f;
+
+            if (direction.sqrMagnitude <= 0.0001f)
             {
-                return; // ÇöÀç ¹æÇâÀ» À¯ÁöÇÑ´Ù.
+                return;
             }
 
-            Vector3 direction = nexus.position - transform.position; // ¸ó½ºÅÍ¿¡¼­ Nexus±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
-
-            direction.y = 0.0f; // ¸ó½ºÅÍ°¡ À§¾Æ·¡·Î ±â¿ïÁö ¾Êµµ·Ï ³ôÀÌ Â÷ÀÌ¸¦ Á¦°ÅÇÑ´Ù.
-
-            if (direction.sqrMagnitude <= 0.0001f) // È¸ÀüÇÒ ¼ö ÀÖ´Â À¯È¿ÇÑ ¹æÇâÀÌ ¾ø´Ù¸é
-            {
-                return; // ÇöÀç ¹æÇâÀ» À¯ÁöÇÑ´Ù.
-            }
-
-            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // Nexus ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
         }
 
         private void CreateMagicEffect()
         {
-            CancelCurrentMagicEffect(); // ÀÌÀü ½ÃÀü Áß ³²¾Æ ÀÖ´Â °æ°í È¿°ú°¡ ÀÖ´Ù¸é ¸ÕÀú Á¦°ÅÇÑ´Ù.
+            CancelCurrentMagicEffect();
 
             if (magicEffectPrefab == null)
             {
-                return; // °æ°í È¿°ú PrefabÀÌ ¾ø´Ù¸é »ı¼ºÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
             if (selectedTargetSegment == null)
             {
-                return; // ¼±ÅÃµÈ ¹«±â ¼¼±×¸ÕÆ®°¡ ¾ø´Ù¸é »ı¼ºÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
-            Vector3 effectPosition = selectedTargetSegment.position + Vector3.up * 0.05f; // ¼±ÅÃµÈ ¼¼±×¸ÕÆ®º¸´Ù ¾à°£ À§¿¡ Ç¥½ÃÇÒ À§Ä¡¸¦ °è»êÇÑ´Ù.
+            Vector3 effectPosition = selectedTargetSegment.position + Vector3.up * 0.05f;
 
-            currentMagicEffect = Instantiate(magicEffectPrefab, effectPosition, Quaternion.identity, selectedTargetSegment); // ¼±ÅÃµÈ ¼¼±×¸ÕÆ®ÀÇ ÀÚ½ÄÀ¸·Î °æ°í È¿°ú¸¦ »ı¼ºÇÏ¿© ÇÔ²² ¿òÁ÷ÀÌ°Ô ÇÑ´Ù.
+            currentMagicEffect = Instantiate(magicEffectPrefab, effectPosition, Quaternion.identity, selectedTargetSegment);
 
-            currentMagicEffect.ShowWarning(); // °æ°í Ç¥½Ã¸¦ È°¼ºÈ­ÇÑ´Ù.
+            currentMagicEffect.ShowWarning();
         }
 
         private void LaunchProjectile()
         {
             if (projectilePrefab == null)
             {
-                ReleaseSelectedTargetReservation(); // ¹ß»çÇÒ ¼ö ¾øÀ¸¹Ç·Î ´ë»ó ¿¹¾àÀ» ÇØÁ¦ÇÑ´Ù.
+                ReleaseSelectedTargetReservation();
 
-                CancelCurrentMagicEffect(); // ¹ß»çÇÒ PrefabÀÌ ¾ø´Ù¸é ³²¾Æ ÀÖ´Â °æ°í È¿°ú¸¦ Á¦°ÅÇÑ´Ù.
+                CancelCurrentMagicEffect();
 
                 return;
             }
 
             if (selectedTargetSegment == null || !MonsterInteractionApi.IsAttachedSegmentCutTarget(selectedTargetSegment))
             {
-                ReleaseSelectedTargetReservation(); // À¯È¿ÇÏÁö ¾ÊÀº ´ë»ó ¿¹¾àÀ» ÇØÁ¦ÇÑ´Ù.
+                ReleaseSelectedTargetReservation();
 
-                CancelCurrentMagicEffect(); // ¼±ÅÃµÈ ¼¼±×¸ÕÆ®°¡ »ç¶óÁ³´Ù¸é ³²¾Æ ÀÖ´Â °æ°í È¿°ú¸¦ Á¦°ÅÇÑ´Ù.
+                CancelCurrentMagicEffect();
 
                 return;
             }
 
-            Vector3 spawnPosition = castPoint != null ? castPoint.position : transform.position; // CastPoint°¡ ÀÖÀ¸¸é »ç¿ëÇÏ°í, ¾ø´Ù¸é ¸ó½ºÅÍ À§Ä¡¸¦ »ç¿ëÇÑ´Ù.
+            Vector3 spawnPosition = castPoint != null ? castPoint.position : transform.position;
 
-            Vector3 direction = selectedTargetSegment.position - spawnPosition; // ¹ß»ç À§Ä¡¿¡¼­ ¼±ÅÃµÈ ¼¼±×¸ÕÆ®±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
+            Vector3 direction = selectedTargetSegment.position - spawnPosition;
 
-            Quaternion spawnRotation = direction.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(direction.normalized, Vector3.up) : transform.rotation; // À¯È¿ÇÑ ¹æÇâÀÌ ÀÖ´Ù¸é ´ë»óÀ» ¹Ù¶óº¸°í, ¾ø´Ù¸é ¸ó½ºÅÍÀÇ ÇöÀç È¸ÀüÀ» »ç¿ëÇÑ´Ù.
+            Quaternion spawnRotation = direction.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(direction.normalized, Vector3.up) : transform.rotation;
 
-            SegmentCutProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation); // CastPoint À§Ä¡¿¡ Àı´Ü ¸¶¹ı ±¸Ã¼¸¦ »ı¼ºÇÑ´Ù.
+            SegmentCutProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation);
 
-            SegmentCutMagicEffect projectileMagicEffect = currentMagicEffect; // ÇöÀç ´ë»ó Ç¥½Ã È¿°ú¸¦ Åõ»çÃ¼¿¡ Àü´ŞÇÏ±â À§ÇØ ÀÓ½Ã º¯¼ö¿¡ ÀúÀåÇÑ´Ù.
+            SegmentCutMagicEffect projectileMagicEffect = currentMagicEffect;
 
-            currentMagicEffect = null; // ¹ß»ç ÀÌÈÄ¿¡´Â Åõ»çÃ¼°¡ Ç¥½Ã È¿°úÀÇ Á¦°Å ½ÃÁ¡À» °ü¸®ÇÏ¹Ç·Î ½ÃÀüÀÚ ÂüÁ¶¸¦ ºñ¿î´Ù.
+            currentMagicEffect = null;
 
-            projectile.Initialize(selectedTargetSegment, projectileMagicEffect); // ÃßÀû ´ë»ó°ú ´ë»ó Ç¥½Ã È¿°ú¸¦ Åõ»çÃ¼¿¡ ÇÔ²² Àü´ŞÇÑ´Ù.
+            projectile.Initialize(selectedTargetSegment, projectileMagicEffect);
 
-            ProjectileLaunched?.Invoke(); // Àı´Ü Åõ»çÃ¼ ¹ß»ç ¾Ö´Ï¸ŞÀÌ¼Ç°ú ÀÏ¹İ Çàµ¿ Àç°³¸¦ ¾Ë¸°´Ù.
+            ProjectileLaunched?.Invoke();
         }
 
         private void FinishCast()
         {
-            castCoroutine = null; // ÇöÀç ½ÇÇà ÁßÀÎ Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+            castCoroutine = null;
 
-            selectedTargetSegment = null; // ÀÌ¹ø ½ÃÀü¿¡ »ç¿ëÇß´ø ¹«±â ¼¼±×¸ÕÆ® ÂüÁ¶¸¦ ºñ¿î´Ù.
+            selectedTargetSegment = null;
 
-            castTimer = castInterval; // ´ÙÀ½ ¸¶¹ı±îÁö Àç»ç¿ë ´ë±â½Ã°£À» ¼³Á¤ÇÑ´Ù.
+            castTimer = castInterval;
 
-            FaceNexus(); // Àı´Ü ¸¶¹ıÀÌ ³¡³µÀ¸¹Ç·Î ´Ù½Ã Nexus ¹æÇâÀ» ¹Ù¶óº»´Ù.
+            FaceTailTarget();
         }
 
         private void CancelCast()
         {
             if (castCoroutine != null)
             {
-                StopCoroutine(castCoroutine); // ÇöÀç ÁøÇà ÁßÀÎ ½ÃÀü CoroutineÀ» ÁßÁöÇÑ´Ù.
+                StopCoroutine(castCoroutine);
 
-                castCoroutine = null; // ÁßÁöÇÑ Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+                castCoroutine = null;
             }
 
-            ReleaseSelectedTargetReservation(); // ¾ÆÁ÷ ¹ß»çµÇÁö ¾ÊÀº Àı´Ü ´ë»ó ¿¹¾àÀ» ÇØÁ¦ÇÑ´Ù.
+            ReleaseSelectedTargetReservation();
 
-            selectedTargetSegment = null; // ¼±ÅÃÇß´ø ¹«±â ¼¼±×¸ÕÆ® ÂüÁ¶¸¦ ºñ¿î´Ù.
+            selectedTargetSegment = null;
 
-            CancelCurrentMagicEffect(); // ¾ÆÁ÷ Åõ»çÃ¼¿¡ Àü´ŞµÇÁö ¾ÊÀº °æ°í È¿°ú¸¦ Á¦°ÅÇÑ´Ù.
+            CancelCurrentMagicEffect();
         }
 
         private void ReleaseSelectedTargetReservation()
         {
             if (selectedTargetSegment == null)
             {
-                return; // ÇØÁ¦ÇÒ ´ë»óÀÌ ¾ø´Ù¸é Á¾·áÇÑ´Ù.
+                return;
             }
 
-            MonsterInteractionApi.ReleaseSegmentCutTarget(selectedTargetSegment); // ´Ù¸¥ Àı´Ü ¸ó½ºÅÍ°¡ ÇØ´ç ¼¼±×¸ÕÆ®¸¦ ¼±ÅÃÇÒ ¼ö ÀÖµµ·Ï ¿¹¾àÀ» ÇØÁ¦ÇÑ´Ù.
+            MonsterInteractionApi.ReleaseSegmentCutTarget(selectedTargetSegment);
         }
 
         private void CancelCurrentMagicEffect()
         {
             if (currentMagicEffect == null)
             {
-                return; // Á¦°ÅÇÒ °æ°í È¿°ú°¡ ¾ø´Ù¸é ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return;
             }
 
-            currentMagicEffect.Cancel(); // ÇöÀç »ı¼ºµÈ °æ°í È¿°ú ÀÎ½ºÅÏ½º¸¦ Á¦°ÅÇÑ´Ù.
+            currentMagicEffect.Cancel();
 
-            currentMagicEffect = null; // Á¦°ÅÇÑ È¿°ú ÀÎ½ºÅÏ½º ÂüÁ¶¸¦ ºñ¿î´Ù.
+            currentMagicEffect = null;
         }
     }
 }

@@ -89,6 +89,7 @@ namespace TeamProject01.Gameplay
                 hitEnemyIds.Add(enemyId); // 같은 구간 중복 방지
                 SegmentHitResolver.ApplyDamageAndFeedback(enemy, pierceDamage, profile, hitPosition, position, SegmentMonsterFeedbackKind.Pierce); // 관통 피해 + 피드백
                 PlayHitVfx(hitPosition); // 명중 VFX
+                PlayProjectileHitSfx(hitPosition);
             }
         }
 
@@ -101,6 +102,7 @@ namespace TeamProject01.Gameplay
 
             SegmentHitResolver.ApplyDamageAndFeedback(enemy, damage, profile, position, position - direction, SegmentMonsterFeedbackKind.Direct); // 목표 100% 피해 + 피드백
             PlayHitVfx(position); // 명중 VFX
+            PlayProjectileHitSfx(position);
         }
 
 

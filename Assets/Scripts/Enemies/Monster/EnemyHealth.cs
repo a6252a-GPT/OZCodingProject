@@ -26,6 +26,26 @@ namespace TeamProject01.Gameplay
             CurrentHp = maxHp; // 시작 현재 체력을 최대 체력으로 설정한다.
         }
 
+        public void SetMaxHp(float newMaxHp, bool refillCurrentHp) // 런타임 밸런스 프로필이 최대 체력을 직접 지정한다.
+        {
+            float safeMaxHp = Mathf.Max(1f, newMaxHp); // 0 이하 체력 방지
+
+            if (refillCurrentHp || maxHp <= 0f)
+            {
+                maxHp = safeMaxHp; // 최대 체력 교체
+                CurrentHp = safeMaxHp; // 새 보스/몬스터는 최대 체력으로 시작
+                IsDead = false; // 런타임 재설정 시 사망 상태를 풀어 둔다.
+            }
+            else
+            {
+                float hpRatio = Mathf.Clamp01(CurrentHp / maxHp); // 기존 체력 비율 보존
+                maxHp = safeMaxHp; // 최대 체력 교체
+                CurrentHp = Mathf.Clamp(maxHp * hpRatio, 0f, maxHp); // 비율에 맞춰 현재 체력 보정
+            }
+
+            HealthChanged?.Invoke(this); // UI와 보조 시스템에 체력 변경을 알린다.
+        }
+
         public void TakeDamage(float damage) // 외부에서 들어온 피해량을 받아 체력을 감소시키는 함수
         {
             if (IsDead) // 이미 죽은 몬스터라면

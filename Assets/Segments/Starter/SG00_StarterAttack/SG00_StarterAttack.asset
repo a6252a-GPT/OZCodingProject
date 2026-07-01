@@ -13,18 +13,33 @@ MonoBehaviour:
   m_Name: SG00_StarterAttack
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG00_StarterAttack
-  DisplayName: 공격형 시작 미사일
-  Description: 공격형 지렁이가 시작할 때 장착하는 미사일 스타터 세그먼트입니다.
+  DisplayName: "\uACF5\uACA9\uD615 \uC2DC\uC791 \uBBF8\uC0AC\uC77C"
+  Description: "\uACF5\uACA9\uD615 \uC9C0\uB801\uC774\uAC00 \uC2DC\uC791\uD560 \uB54C
+    \uC7A5\uCC29\uD558\uB294 \uBBF8\uC0AC\uC77C \uC2A4\uD0C0\uD130 \uC138\uADF8\uBA3C\uD2B8\uC785\uB2C8\uB2E4."
   StarterOnly: 1
   SharedUpgradeSegmentId: SG02_Missile
-  UseLevels: 0
-  MaxLevel: 1
+  UseLevels: 1
+  MaxLevel: 3
   CanAddByLevelChoice: 0
   CanUpgradeByLevelChoice: 0
   Levels:
   - Level: 1
-    SegmentPrefab: {fileID: 3915507005513347476, guid: 744075fb0c74520489ffe8f0864c3981, type: 3}
-    BodyPrefab: {fileID: 1636974616139781959, guid: b7df2a04c4376914fa377ace35a5ea54, type: 3}
+    SegmentPrefab: {fileID: 4984396268330084309, guid: 4582df6694cd725449f9edeaadb40a12, type: 3}
+    BodyPrefab: {fileID: 1636974616139781959, guid: 8343e4e0e065630428ef43071eb56573, type: 3}
     HeadPrefab: {fileID: 8506179201687367566, guid: 551f28be486c9924cbee06ba843bf739, type: 3}
     AttackProfile: {fileID: 11400000, guid: 823accc85c304d94a989c4bfbd13da97, type: 2}
-    Memo: SG02_Missile shared upgrade
+    Memo: SG02_Missile Lv1 starter full prefab
+  - Level: 2
+    SegmentPrefab: {fileID: 3464155950360219199, guid: 26a8b7f3addc87c428ac354f70aa4c7f, type: 3}
+    BodyPrefab: {fileID: 1636974616139781959, guid: 8343e4e0e065630428ef43071eb56573, type: 3}
+    HeadPrefab: {fileID: 8506179201687367566, guid: 12fe9d4571d02014bac47ed692c77823, type: 3}
+    AttackProfile: {fileID: 11400000, guid: 02bfdf5d02ca4dd418567a6be769f10c, type: 2}
+    Memo: SG02_Missile Lv2 starter full prefab
+  - Level: 3
+    SegmentPrefab: {fileID: 635733460967224805, guid: 3c758a5f1071bac4b836f6c58866dbaf, type: 3}
+    BodyPrefab: {fileID: 1636974616139781959, guid: 8343e4e0e065630428ef43071eb56573, type: 3}
+    HeadPrefab: {fileID: 8506179201687367566, guid: fef5f335c90925145a9ae2052bd16c01, type: 3}
+    AttackProfile: {fileID: 11400000, guid: 0cec92cd306748b43a3d595dc8ed900a, type: 2}
+    Memo: SG02_Missile Lv3 starter full prefab
+  CardIconSpritesPerLevel: []
+  CardIconSizeOffset: 0

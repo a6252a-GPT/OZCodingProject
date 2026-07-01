@@ -263,6 +263,11 @@ public partial class CardUI : MonoBehaviour
             return;
         }
 
+        if (panelOpen)
+        {
+            HandleCardChoiceKeyboardShortcuts(); // 카드 선택 단축키
+        }
+
         if (!panelOpen && spawnedForCurrentOpen)
         {
             CardPanelMode closingMode = activePanelMode; // 수동 닫힘 처리용

@@ -61,6 +61,18 @@ namespace TeamProject01.Gameplay
             return convoyController.TryGetRandomAttachedWeaponSegment(out targetSegment);
         }
 
+        public static bool TryGetSegmentCutTailFollowTarget(out Transform tailSegment) // 전찬우수정-0630 - 절단 몬스터가 따라갈 컨보이 꼬리 세그먼트 요청
+        {
+            tailSegment = null;
+
+            if (!TryGetConvoyController(out ConvoyController convoyController))
+            {
+                return false;
+            }
+
+            return convoyController.TryGetSegmentCutTailFollowTarget(out tailSegment);
+        }
+
         public static bool TeleportMonster(EnemyController enemy, Vector3 destination) // 지원형 웜홀 몬스터 이동
         {
             if (enemy == null || enemy.IsDead)
@@ -251,6 +263,11 @@ namespace TeamProject01.Gameplay
         public static Vector3 ResolveMonsterPosition(Vector3 currentPosition, Vector3 desiredPosition, float monsterRadius)
         {
             return SegmentBlocker.ResolveMonsterPosition(currentPosition, desiredPosition, monsterRadius);
+        }
+
+        public static Vector3 ResolveMonsterCrowdPosition(EnemyCrowdBlocker crowdBlocker, Vector3 currentPosition, Vector3 desiredPosition, float fallbackRadius)
+        {
+            return EnemyCrowdBlocker.ResolvePosition(crowdBlocker, currentPosition, desiredPosition, fallbackRadius);
         }
     }
 }

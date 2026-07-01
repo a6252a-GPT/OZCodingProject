@@ -19,7 +19,7 @@ namespace TeamProject01.Gameplay
         private EnemyMeleeAttack enemyMeleeAttack;
         private EnemyHealth enemyHealth;
         private EnemySupportDebuffState supportDebuffState;
-        private EnemyObstacleSummoner obstacleSummoner; 
+        private EnemyObstacleSummoner obstacleSummoner;
 
         private float previousHp;
 
@@ -33,7 +33,7 @@ namespace TeamProject01.Gameplay
             enemyMeleeAttack = GetComponent<EnemyMeleeAttack>();
             enemyHealth = GetComponent<EnemyHealth>();
             supportDebuffState = GetComponent<EnemySupportDebuffState>();
-            obstacleSummoner = GetComponent<EnemyObstacleSummoner>(); 
+            obstacleSummoner = GetComponent<EnemyObstacleSummoner>();
 
             if (animator == null)
             {
@@ -180,7 +180,7 @@ namespace TeamProject01.Gameplay
             }
 
             bool isFrozen = supportDebuffState != null && supportDebuffState.IsFrozen;
-            bool isSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; 
+            bool isSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning;
             bool isMoving = enemyMovement.enabled && !enemyMovement.IsInStopRange && !isFrozen && !isSummoning;
 
             animator.SetBool(IsMovingParameter, isMoving);
@@ -194,9 +194,9 @@ namespace TeamProject01.Gameplay
             }
 
             float currentHp = enemyHealth.CurrentHp;
-            bool isSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; 
+            bool isSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning;
 
-            if (currentHp < previousHp && !enemyHealth.IsDead && !isAttacking && !isSummoning) 
+            if (currentHp < previousHp && !enemyHealth.IsDead && !isAttacking && !isSummoning)
             {
                 PlayHit();
             }

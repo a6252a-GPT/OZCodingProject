@@ -6,105 +6,136 @@ using UnityEngine.AI;
 namespace TeamProject01.Gameplay
 {
     [RequireComponent(typeof(EnemyMovement))]
-    public sealed class EnemyJump : MonoBehaviour // ¼¼±×¸ÕÆ®¸¦ °¨ÁöÇÏ¸é ¾ÕÀ¸·Î Á¡ÇÁÇÑ´Ù.
+    public sealed class EnemyJump : MonoBehaviour // ?ë©¸ë ‡ç™’ì‡³ë“ƒç‘œ?åª›ë¨¯??ì„ãˆƒ ?ìšì‘æ¿¡??ë¨°ë´½?ì’•ë–.
     {
         [Header("Jump Setting")]
         [Min(0.0f)]
-        [SerializeField] private float jumpHeight = 2.0f; // Á¡ÇÁ ³ôÀÌ
+        [SerializeField] private float jumpHeight = 2.0f; // ?ë¨°ë´½ ?ë¯ªì” 
 
         [Min(0.05f)]
-        [SerializeField] private float jumpDuration = 0.5f; // Á¡ÇÁ ½Ã°£
+        [SerializeField] private float jumpDuration = 0.5f; // ?ë¨°ë´½ ?ì’“ì»™
 
-        // Á¶¼º¿øÃß°¡-0626 - ÂøÁö ÈÄ ¿õÅ©¸° ÀÚ¼¼¸¦ À¯ÁöÇÏ¸ç ÀÌµ¿°ú °ø°İÀ» Àá½Ã ¸ØÃâ ½Ã°£
+        // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0626 - ï§¡â‘¹? ???ë‚‡ê²•ç”±??ë¨¯ê½­ç‘œ??ì¢??ì„Å‰ ?ëŒ€ë£æ€¨?æ€¨ë“¦êº½???ì¢ë–† ï§ë‰í…§ ?ì’“ì»™
         [Min(0.0f)]
         [SerializeField] private float landingRecoveryDuration = 0.25f;
 
         [Header("Segment Detection")]
         [Min(0.1f)]
-        [SerializeField] private float segmentDetectDistance = 2.0f; // ¾ÕÂÊ ¼¼±×¸ÕÆ® °¨Áö °Å¸®
+        [SerializeField] private float segmentDetectDistance = 2.0f; // ?ìšã ?ë©¸ë ‡ç™’ì‡³ë“ƒ åª›ë¨¯? å«„ê³•â”
 
         [Min(0.1f)]
-        [SerializeField] private float jumpLandingDistance = 5.0f; // ¼¼±×¸ÕÆ®¸¦ ³ÑÀº µÚ Ãß°¡ ÂøÁö °Å¸®
+        [SerializeField] private float jumpLandingDistance = 5.0f; // ?ë©¸ë ‡ç™’ì‡³ë“ƒç‘œ??ì„? ??ç•°ë¶½? ï§¡â‘¹? å«„ê³•â”
 
         [Min(0.0f)]
-        [SerializeField] private float jumpCooldown = 1.5f; // ÂøÁö ÈÄ ÀçÁ¡ÇÁ ´ë±â½Ã°£
+        [SerializeField] private float jumpCooldown = 1.5f; // ï§¡â‘¹? ???ÑŠì ???Â€æ¹²ê³—ë–†åª›?
+
+        [Header("Off Mesh Link Jump")]
+        [SerializeField] private bool useOffMeshLinkJump = false; // NavMesh Off-Mesh Linkì— ì˜í•œ ì§€í˜• ì í”„ë¥¼ ì‚¬ìš©í• ì§€
 
         [Header("Landing Shockwave")]
         [Min(0.1f)]
-        [SerializeField] private float shockwaveRadius = 7.0f; // ÂøÁö Ãæ°İÆÄ ¹üÀ§
+        [SerializeField] private float shockwaveRadius = 7.0f; // ï§¡â‘¹? ç•°â‘·êº½??è¸°ë¶¿ì
 
         [Min(0.0f)]
-        [SerializeField] private float shockwavePushDistance = 3.0f; // ¼¼±×¸ÕÆ® ¹Ğ¸² °Å¸®
+        [SerializeField] private float shockwavePushDistance = 3.0f; // ?ë©¸ë ‡ç™’ì‡³ë“ƒ è«›Â€ç”±?å«„ê³•â”
 
         [Min(0.01f)]
-        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // ¿ø·¡ °æ·Î·Î º¹±¸µÇ´Â ½Ã°£
+        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // ?ë¨®ì˜’ å¯ƒìˆì¤ˆæ¿¡?è¹‚ë“¦ë„?ì„ë’— ?ì’“ì»™
 
-        // Á¶¼º¿øÃß°¡-0630 - ¼¼±×¸ÕÆ® Á¡ÇÁ ÂøÁö ¼ø°£ ¶¥°¥¶óÁü VFX¸¦ »ı¼ºÇÏ±â À§ÇÑ ¼³Á¤
+        // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - ?ë©¸ë ‡ç™’ì‡³ë“ƒ ?ë¨°ë´½ ï§¡â‘¹? ?ì’“ì»™ ?ë‚ƒì»?ì‡±ì­š VFXç‘œ??ì•¹ê½¦?ì„ë¦° ?ê¾ªë¸³ ?ã…¼ì ™
         [Header("Landing Crack VFX")]
-        [SerializeField] private GameObject landingCrackVfxPrefab; // Á¶¼º¿øÃß°¡-0630 - ÂøÁö ¼ø°£ »ı¼ºÇÒ ¶¥°¥¶óÁü VFX Prefab
+        [SerializeField] private GameObject landingCrackVfxPrefab; // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - ï§¡â‘¹? ?ì’“ì»™ ?ì•¹ê½¦???ë‚ƒì»?ì‡±ì­š VFX Prefab
 
         [Min(0.0f)]
-        [SerializeField] private float landingCrackGroundHeight = 0.03f; // Á¶¼º¿øÃß°¡-0630 - VFX°¡ ¹Ù´Ú¿¡ ¹¯È÷Áö ¾Êµµ·Ï ¿Ã¸± ³ôÀÌ
+        [SerializeField] private float landingCrackGroundHeight = 0.03f; // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - VFXåª›Â€ è«›ë¶¾ë–??è‡¾ì‚µì—³ï§Â€ ?ë”…ë£„æ¿¡??Ñ‰â”« ?ë¯ªì” 
 
         [Min(0.1f)]
-        [SerializeField] private float landingCrackScale = 0.65f; // Á¶¼º¿øÃß°¡-0630 - ¿¤¸®Æ® ¸ó½ºÅÍ¿ë ¶¥°¥¶óÁü VFX Å©±â ¹èÀ²
+        [SerializeField] private float landingCrackScale = 0.65f; // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - ?ì„â”??ï§ÑŠë’ª?ê³—ìŠœ ?ë‚ƒì»?ì‡±ì­š VFX ?Ñˆë¦° è«›ê³—ì‘‰
 
         [Min(0.01f)]
-        [SerializeField] private float landingCrackLifeTime = 2.0f; // Á¶¼º¿øÃß°¡-0630 - »ı¼ºµÈ ¶¥°¥¶óÁü VFX Á¦°Å ½Ã°£
+        [SerializeField] private float landingCrackLifeTime = 2.0f; // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - ?ì•¹ê½¦???ë‚ƒì»?ì‡±ì­š VFX ?ì’“êµ… ?ì’“ì»™
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - EnemyJumpTestÀÇ ÀÌµ¿ Script Component ÂüÁ¶ ±¸Á¶¸¦ °¡Á®¿Â´Ù.
+        ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - EnemyJumpTest???ëŒ€ë£ Script Component ï§¡ëª„â€œ æ´ÑŠâ€œç‘œ?åª›Â€?ëª„ì‚©??
         private EnemyMovement enemyMovement;
         private NavMeshAgent navAgent;
+        private EnemyHealth enemyHealth;
+        private EnemySupportDebuffState supportDebuffState;
         private Coroutine jumpRoutine;
         private float cooldownTimer;
+        private bool movementDisabledByStatusCancel;
 
-        // Á¶¼º¿øÃß°¡-0626 - Á¡ÇÁ ¾Ö´Ï¸ŞÀÌ¼Ç Bridge°¡ ÇöÀç Á¡ÇÁ »óÅÂ¸¦ ÀĞÀ» ¼ö ÀÖµµ·Ï °ø°³ÇÑ´Ù.
+        // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0626 - ?ë¨°ë´½ ?ì¢Šë•²ï§ë¶¿ì” ??Bridgeåª›Â€ ?ê¾©ì˜± ?ë¨°ë´½ ?ê³¹ê¹­ç‘œ??ìŒì“£ ???ëˆë£„æ¿¡?æ€¨ë“¦ì»»?ì’•ë–.
         public bool IsJumping { get; private set; }
+        public event System.Action<Vector3> Landed;
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - SegmentBlockerÀÇ È°¼º ¸ñ·ÏÀ» ÀĞ±â À§ÇÑ ÂüÁ¶¸¦ °¡Á®¿Â´Ù.
+        ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - SegmentBlocker???ì’–ê½¦ ï§â‘¸ì¤‰???ì„ë¦° ?ê¾ªë¸³ ï§¡ëª„â€œç‘œ?åª›Â€?ëª„ì‚©??
         private static FieldInfo activeBlockersField;
 
         private void Awake()
         {
-            ////// ¾È°ÇÁØÃß°¡-0622 - °°Àº GameObjectÀÇ ÀÌµ¿°ú AI Navigation Component¸¦ Ã£´Â´Ù.
+            ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - åª›ìˆˆ? GameObject???ëŒ€ë£æ€¨?AI Navigation Componentç‘œ?ï§¡ì–œë’—??
             enemyMovement = GetComponent<EnemyMovement>();
             navAgent = GetComponent<NavMeshAgent>();
+            enemyHealth = GetComponent<EnemyHealth>();
+            supportDebuffState = GetComponent<EnemySupportDebuffState>();
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - SegmentBlockerÀÇ È°¼º ¼¼±×¸ÕÆ® ¸ñ·ÏÀ» Ã£´Â´Ù.
+            ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - SegmentBlocker???ì’–ê½¦ ?ë©¸ë ‡ç™’ì‡³ë“ƒ ï§â‘¸ì¤‰??ï§¡ì–œë’—??
             if (activeBlockersField == null)
             {
                 activeBlockersField = typeof(SegmentBlocker).GetField("ActiveBlockers", BindingFlags.NonPublic | BindingFlags.Static);
             }
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - Off-Mesh Link ÀÌµ¿Àº EnemyJump°¡ Á÷Á¢ Ã³¸®ÇÑ´Ù.
+            ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - Off-Mesh Link ?ëŒ€ë£?Â€ EnemyJumpåª›Â€ ï§ê³¸ì ’ ï§£ì„â”?ì’•ë–.
             if (navAgent != null)
             {
                 navAgent.autoTraverseOffMeshLink = false;
             }
         }
 
+        private void OnEnable()
+        {
+            IsJumping = false;
+            jumpRoutine = null;
+            cooldownTimer = 0.0f;
+            movementDisabledByStatusCancel = false;
+        }
+
         private void Update()
         {
-            if (jumpRoutine != null) // ÀÌ¹Ì Á¡ÇÁ ÁßÀÌ¶ó¸é
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                return;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                return;
+            }
+
+            RestoreMovementAfterStatusCancelIfNeeded();
+
+            if (jumpRoutine != null) // ì´ë¯¸ ì í”„ ì¤‘ì´ë¼ë©´
             {
                 return;
             }
 
             cooldownTimer -= Time.deltaTime;
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - NavMeshAgent°¡ Off-Mesh Link¿¡ µµÂøÇÏ¸é ÁöÇü Á¡ÇÁ¸¦ ½ÃÀÛÇÑ´Ù.
-            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh && navAgent.isOnOffMeshLink)
+            ////// ì•ˆê±´ì¤€ì¶”ê°€-0622 - NavMeshAgentê°€ Off-Mesh Linkì— ë„ì°©í•˜ë©´ ì§€í˜• ì í”„ë¥¼ ì‹œì‘í•œë‹¤.
+            if (useOffMeshLinkJump && navAgent != null && navAgent.enabled && navAgent.isOnNavMesh && navAgent.isOnOffMeshLink)
             {
                 jumpRoutine = StartCoroutine(JumpOffMeshLink());
                 return;
             }
 
-            if (cooldownTimer > 0.0f) // ÀçÁ¡ÇÁ ´ë±â½Ã°£ÀÌ ³²¾Ò´Ù¸é
+            if (cooldownTimer > 0.0f) // ?ÑŠì ???Â€æ¹²ê³—ë–†åª›ê¾©ì”  ?â‘¥ë¸¯?ã…»ãˆƒ
             {
                 return;
             }
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - ¾ÕÂÊ ¼¼±×¸ÕÆ®¸¦ °¨ÁöÇÏ¸é ¼¼±×¸ÕÆ® ³Ê¸Ó·Î Á¡ÇÁÇÑ´Ù.
+            ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - ?ìšã ?ë©¸ë ‡ç™’ì‡³ë“ƒç‘œ?åª›ë¨¯??ì„ãˆƒ ?ë©¸ë ‡ç™’ì‡³ë“ƒ ?ëˆã‰§æ¿¡??ë¨°ë´½?ì’•ë–.
             if (IsSegmentAhead(out Vector3 landingPoint))
             {
                 jumpRoutine = StartCoroutine(JumpOverSegment(landingPoint));
@@ -113,15 +144,16 @@ namespace TeamProject01.Gameplay
 
         private void OnDisable()
         {
-            // Á¡ÇÁ µµÁß ºñÈ°¼ºÈ­µÇ¾îµµ ÀÌµ¿ »óÅÂ°¡ ³²Áö ¾Êµµ·Ï º¹±¸ÇÑ´Ù.
+            // ?ë¨°ë´½ ?ê¾©ì¨· é®ê¾ªì†¢?ê¹Šì†•?ì„ë¼±???ëŒ€ë£ ?ê³¹ê¹­åª›Â€ ?â‘¥? ?ë”…ë£„æ¿¡?è¹‚ë“¦ë„?ì’•ë–.
             if (jumpRoutine != null)
             {
                 StopCoroutine(jumpRoutine);
                 jumpRoutine = null;
             }
 
-            // Á¶¼º¿øÃß°¡-0626 - ºñÈ°¼ºÈ­µÉ ¶§ Á¡ÇÁ ¾Ö´Ï¸ŞÀÌ¼Ç »óÅÂ°¡ ³²Áö ¾Êµµ·Ï ÇØÁ¦ÇÑ´Ù.
+            // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0626 - é®ê¾ªì†¢?ê¹Šì†•?????ë¨°ë´½ ?ì¢Šë•²ï§ë¶¿ì” ???ê³¹ê¹­åª›Â€ ?â‘¥? ?ë”…ë£„æ¿¡??ëŒì £?ì’•ë–.
             IsJumping = false;
+            movementDisabledByStatusCancel = false;
 
             SetEnemyMovementEnabled(true);
 
@@ -133,11 +165,24 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - Off-Mesh LinkÀÇ ½ÃÀÛÁ¡¿¡¼­ ³¡Á¡±îÁö Æ÷¹°¼±À¸·Î ÀÌµ¿ÇÑ´Ù.
+        ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - Off-Mesh Link???ì’–ì˜‰?ë¨¯ë¿‰???ì•¹ì æºëš¯? ?Ñ‰Ğª?ì¢ì‘æ¿¡??ëŒ€ë£?ì’•ë–.
         private IEnumerator JumpOffMeshLink()
         {
-            // Á¶¼º¿øÃß°¡-0626 - ÁöÇü Á¡ÇÁ°¡ ½ÃÀÛµÆ´Ù°í ÀúÀåÇÑ´Ù.
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
+            // ì¡°ì„±ì›ì¶”ê°€-0626 - ì§€í˜• ì í”„ê°€ ì‹œì‘ëë‹¤ê³  ì €ì¥í•œë‹¤.
             IsJumping = true;
+            movementDisabledByStatusCancel = false;
 
             SetEnemyMovementEnabled(false);
 
@@ -151,7 +196,20 @@ namespace TeamProject01.Gameplay
 
             yield return ArcMove(from, to, jumpHeight, jumpDuration);
 
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
             transform.position = to;
+            Landed?.Invoke(transform.position);
 
             if (navAgent.enabled && navAgent.isOnNavMesh)
             {
@@ -159,24 +217,33 @@ namespace TeamProject01.Gameplay
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
 
-                // Á¶¼º¿ø¼öÁ¤-0626 - ÂøÁö È¸º¹ÀÌ ³¡³¯ ¶§±îÁö NavMeshAgent´Â Á¤Áö »óÅÂ¸¦ À¯ÁöÇÑ´Ù.
+                // è­°ê³—ê½¦?ë¨¯ë‹”??0626 - ï§¡â‘¹? ?ëš®ë‚¬???ì•¸ê¶‡ ?ëš­í‰´ï§Â€ NavMeshAgent???ëº¤? ?ê³¹ê¹­ç‘œ??ì¢??ì’•ë–.
                 navAgent.isStopped = true;
             }
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö ÈÄ ³²Àº ¿õÅ©¸° ¾Ö´Ï¸ŞÀÌ¼Ç µ¿¾È ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
-            if (landingRecoveryDuration > 0.0f)
+            // ì¡°ì„±ì›ì¶”ê°€-0626 - ì°©ì§€ í›„ ë‚¨ì€ ì›…í¬ë¦° ì• ë‹ˆë©”ì´ì…˜ ë™ì•ˆ ì´ë™í•˜ì§€ ì•ŠëŠ”ë‹¤.
+            yield return WaitLandingRecovery();
+
+            if (IsDead())
             {
-                yield return new WaitForSeconds(landingRecoveryDuration);
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
             }
 
             cooldownTimer = jumpCooldown;
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹±îÁö ³¡³­ µÚ Á¡ÇÁ »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
+            // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0626 - ï§¡â‘¹? ?ëš®ë‚¬æºëš¯? ?ì•¸ê¶ƒ ???ë¨°ë´½ ?ê³¹ê¹­ç‘œ??ëŒì £?ì’•ë–.
             IsJumping = false;
 
             SetEnemyMovementEnabled(true);
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹ÀÌ ³¡³­ µÚ NavMeshAgent ÀÌµ¿À» ´Ù½Ã Çã¿ëÇÑ´Ù.
+            // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0626 - ï§¡â‘¹? ?ëš®ë‚¬???ì•¸ê¶ƒ ??NavMeshAgent ?ëŒ€ë£???ã…¼ë–† ?ë‰ìŠœ?ì’•ë–.
             if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
             {
                 navAgent.isStopped = false;
@@ -185,10 +252,15 @@ namespace TeamProject01.Gameplay
             jumpRoutine = null;
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - ¸ó½ºÅÍ ¾ÕÂÊ¿¡ Á¡ÇÁÇÒ ¼¼±×¸ÕÆ®°¡ ÀÖ´ÂÁö È®ÀÎÇÑ´Ù.
+        ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - ï§ÑŠë’ª???ìšã???ë¨°ë´½???ë©¸ë ‡ç™’ì‡³ë“ƒåª›Â€ ?ëˆë’—ï§Â€ ?ëº¤ì”¤?ì’•ë–.
         private bool IsSegmentAhead(out Vector3 landingPoint)
         {
             landingPoint = Vector3.zero;
+
+            if (IsDead() || IsJumpBlockedByStatus())
+            {
+                return false;
+            }
 
             var blockers = activeBlockersField?.GetValue(null) as System.Collections.Generic.List<SegmentBlocker>;
 
@@ -200,7 +272,7 @@ namespace TeamProject01.Gameplay
             Vector3 myPosition = transform.position;
             Vector3 forward;
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - NavMeshAgent ¼Óµµ°¡ ÀÖÀ¸¸é ÀÌµ¿ ¹æÇâÀ¸·Î »ç¿ëÇÑ´Ù.
+            ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - NavMeshAgent ?ë¾ë£„åª›Â€ ?ë‰ì‘ï§??ëŒ€ë£ è«›â‘ºë¼¢?ì‡°ì¤ˆ ?ÑŠìŠœ?ì’•ë–.
             if (navAgent != null && navAgent.velocity.sqrMagnitude > 0.01f)
             {
                 forward = navAgent.velocity;
@@ -224,6 +296,11 @@ namespace TeamProject01.Gameplay
                 SegmentBlocker blocker = blockers[i];
 
                 if (blocker == null)
+                {
+                    continue;
+                }
+
+                if (!blocker.isActiveAndEnabled || !blocker.gameObject.activeInHierarchy)
                 {
                     continue;
                 }
@@ -260,11 +337,24 @@ namespace TeamProject01.Gameplay
             return false;
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - EnemyMovement¸¦ ¸ØÃß°í ¼¼±×¸ÕÆ® ³Ê¸Ó·Î Á¡ÇÁÇÑ´Ù.
+        ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - EnemyMovementç‘œ?ï§ë‰í…›æ€¨??ë©¸ë ‡ç™’ì‡³ë“ƒ ?ëˆã‰§æ¿¡??ë¨°ë´½?ì’•ë–.
         private IEnumerator JumpOverSegment(Vector3 landingPoint)
         {
-            // Á¶¼º¿øÃß°¡-0626 - ¼¼±×¸ÕÆ® Á¡ÇÁ°¡ ½ÃÀÛµÆ´Ù°í ÀúÀåÇÑ´Ù.
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
+            // ì¡°ì„±ì›ì¶”ê°€-0626 - ì„¸ê·¸ë¨¼íŠ¸ ì í”„ê°€ ì‹œì‘ëë‹¤ê³  ì €ì¥í•œë‹¤.
             IsJumping = true;
+            movementDisabledByStatusCancel = false;
 
             SetEnemyMovementEnabled(false);
 
@@ -281,9 +371,21 @@ namespace TeamProject01.Gameplay
 
             yield return ArcMove(from, landingPoint, jumpHeight, jumpDuration);
 
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
             transform.position = landingPoint;
 
-            ////// ¾È°ÇÁØÃß°¡-0622 - ÂøÁö À§Ä¡ ±ÙÃ³ÀÇ NavMesh À§Ä¡·Î Agent¸¦ ¸ÂÃá´Ù.
+            ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - ï§¡â‘¹? ?ê¾©íŠ‚ æ´¹ì‡±ì¿‚??NavMesh ?ê¾©íŠ‚æ¿¡?Agentç‘œ?ï§ìší…£??
             if (canControlAgent)
             {
                 if (NavMesh.SamplePosition(landingPoint, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
@@ -295,28 +397,38 @@ namespace TeamProject01.Gameplay
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
 
-                // Á¶¼º¿ø¼öÁ¤-0626 - ÂøÁö È¸º¹ÀÌ ³¡³¯ ¶§±îÁö NavMeshAgent´Â Á¤Áö »óÅÂ¸¦ À¯ÁöÇÑ´Ù.
+                // è­°ê³—ê½¦?ë¨¯ë‹”??0626 - ï§¡â‘¹? ?ëš®ë‚¬???ì•¸ê¶‡ ?ëš­í‰´ï§Â€ NavMeshAgent???ëº¤? ?ê³¹ê¹­ç‘œ??ì¢??ì’•ë–.
                 navAgent.isStopped = true;
             }
 
-            SpawnLandingCrackVfx(transform.position); // Á¶¼º¿øÃß°¡-0630 - ÂøÁö À§Ä¡°¡ È®Á¤µÈ µÚ ¶¥°¥¶óÁü VFX¸¦ »ı¼ºÇÑ´Ù.
+            SpawnLandingCrackVfx(transform.position); // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - ï§¡â‘¹? ?ê¾©íŠ‚åª›Â€ ?ëº¤ì ™?????ë‚ƒì»?ì‡±ì­š VFXç‘œ??ì•¹ê½¦?ì’•ë–.
+            Landed?.Invoke(transform.position);
 
-            ApplyLandingShockwave(); // ¼¼±×¸ÕÆ® Á¡ÇÁ ÂøÁö ÁöÁ¡¿¡ Ãæ°İÆÄ ¹ß»ı
+            ApplyLandingShockwave(); // ?ë©¸ë ‡ç™’ì‡³ë“ƒ ?ë¨°ë´½ ï§¡â‘¹? ï§Â€?ë¨¯ë¿‰ ç•°â‘·êº½??è«›ì’–ê¹®
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö ÈÄ ³²Àº ¿õÅ©¸° ¾Ö´Ï¸ŞÀÌ¼Ç µ¿¾È ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
-            if (landingRecoveryDuration > 0.0f)
+            // ì¡°ì„±ì›ì¶”ê°€-0626 - ì°©ì§€ í›„ ë‚¨ì€ ì›…í¬ë¦° ì• ë‹ˆë©”ì´ì…˜ ë™ì•ˆ ì´ë™í•˜ì§€ ì•ŠëŠ”ë‹¤.
+            yield return WaitLandingRecovery();
+
+            if (IsDead())
             {
-                yield return new WaitForSeconds(landingRecoveryDuration);
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
             }
 
             cooldownTimer = jumpCooldown;
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹±îÁö ³¡³­ µÚ Á¡ÇÁ »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
+            // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0626 - ï§¡â‘¹? ?ëš®ë‚¬æºëš¯? ?ì•¸ê¶ƒ ???ë¨°ë´½ ?ê³¹ê¹­ç‘œ??ëŒì £?ì’•ë–.
             IsJumping = false;
 
             SetEnemyMovementEnabled(true);
 
-            // Á¶¼º¿øÃß°¡-0626 - ÂøÁö È¸º¹ÀÌ ³¡³­ µÚ NavMeshAgent ÀÌµ¿À» ´Ù½Ã Çã¿ëÇÑ´Ù.
+            // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0626 - ï§¡â‘¹? ?ëš®ë‚¬???ì•¸ê¶ƒ ??NavMeshAgent ?ëŒ€ë£???ã…¼ë–† ?ë‰ìŠœ?ì’•ë–.
             if (canControlAgent && navAgent.enabled && navAgent.isOnNavMesh)
             {
                 navAgent.isStopped = false;
@@ -325,13 +437,13 @@ namespace TeamProject01.Gameplay
             jumpRoutine = null;
         }
 
-        // Á¶¼º¿øÃß°¡-0630 - ¼¼±×¸ÕÆ® Á¡ÇÁ ÂøÁö À§Ä¡¿¡ ¶¥°¥¶óÁü VFX¸¦ »ı¼ºÇÑ´Ù.
+        // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - ?ë©¸ë ‡ç™’ì‡³ë“ƒ ?ë¨°ë´½ ï§¡â‘¹? ?ê¾©íŠ‚???ë‚ƒì»?ì‡±ì­š VFXç‘œ??ì•¹ê½¦?ì’•ë–.
         private void SpawnLandingCrackVfx(Vector3 position)
         {
             SpawnOneShotVfx(landingCrackVfxPrefab, position, landingCrackGroundHeight, landingCrackScale, landingCrackLifeTime);
         }
 
-        // Á¶¼º¿øÃß°¡-0630 - ´Ü¹ß¼º VFX¸¦ »ı¼ºÇÏ°í ÁöÁ¤ ½Ã°£ µÚ Á¦°ÅÇÑ´Ù.
+        // è­°ê³—ê½¦?ë¨¯í…›åª›Â€-0630 - ?â‘¤ì»»??VFXç‘œ??ì•¹ê½¦?ì„í€¬ ï§Â€???ì’“ì»™ ???ì’“êµ…?ì’•ë–.
         private void SpawnOneShotVfx(GameObject prefab, Vector3 position, float groundHeight, float scaleMultiplier, float lifeTime)
         {
             if (prefab == null)
@@ -347,18 +459,30 @@ namespace TeamProject01.Gameplay
             Destroy(vfx, lifeTime);
         }
 
-        private void ApplyLandingShockwave() // ÂøÁö ÁÖº¯ÀÇ ¿¬°á ¼¼±×¸ÕÆ®¸¦ ¹Ù±ùÂÊÀ¸·Î ¹Î´Ù.
+        private void ApplyLandingShockwave() // ï§¡â‘¹? äºŒì‡°????ê³Œê» ?ë©¸ë ‡ç™’ì‡³ë“ƒç‘œ?è«›ë¶½ë¬‘ï§ŸìŒì‘æ¿¡?èª˜ì‡°ë–.
         {
             MonsterInteractionApi.RequestSegmentShockwave(transform.position, shockwaveRadius, shockwavePushDistance, shockwaveRecoveryDuration);
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - ½ÃÀÛÁ¡°ú ÂøÁöÁ¡ »çÀÌ¸¦ Æ÷¹°¼±À¸·Î ÀÌµ¿ÇÑ´Ù.
+        ////// ?ë‡êµ”ä»¥Â€ç•°ë¶½?-0622 - ?ì’–ì˜‰?ë¨­ë‚µ ï§¡â‘¹????ÑŠì” ç‘œ??Ñ‰Ğª?ì¢ì‘æ¿¡??ëŒ€ë£?ì’•ë–.
         private IEnumerator ArcMove(Vector3 from, Vector3 to, float height, float duration)
         {
             float elapsed = 0.0f;
 
             while (elapsed < duration)
             {
+                if (IsDead())
+                {
+                    CancelJumpBecauseDead();
+                    yield break;
+                }
+
+                if (IsJumpBlockedByStatus())
+                {
+                    CancelJumpBecauseStatus();
+                    yield break;
+                }
+
                 elapsed += Time.deltaTime;
 
                 float progress = Mathf.Clamp01(elapsed / duration);
@@ -383,12 +507,128 @@ namespace TeamProject01.Gameplay
             transform.position = to;
         }
 
-        ////// ¾È°ÇÁØÃß°¡-0622 - Á¡ÇÁ Áß¿¡´Â EnemyMovement¸¦ ²ô°í ÂøÁö ÈÄ ´Ù½Ã ÄÒ´Ù.
+        private IEnumerator WaitLandingRecovery()
+        {
+            if (landingRecoveryDuration <= 0.0f)
+            {
+                yield break;
+            }
+
+            float elapsed = 0.0f;
+
+            while (elapsed < landingRecoveryDuration)
+            {
+                if (IsDead())
+                {
+                    CancelJumpBecauseDead();
+                    yield break;
+                }
+
+                if (IsJumpBlockedByStatus())
+                {
+                    CancelJumpBecauseStatus();
+                    yield break;
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        ////// ì•ˆê±´ì¤€ì¶”ê°€-0622 - ì í”„ ì¤‘ì—ëŠ” EnemyMovementë¥¼ ë„ê³  ì°©ì§€ í›„ ë‹¤ì‹œ ì¼ ë‹¤.
         private void SetEnemyMovementEnabled(bool enabled)
         {
             if (enemyMovement != null)
             {
                 enemyMovement.enabled = enabled;
+            }
+        }
+
+        private bool IsDead()
+        {
+            return enemyHealth != null && enemyHealth.IsDead;
+        }
+
+        private bool IsJumpBlockedByStatus()
+        {
+            if (supportDebuffState == null)
+            {
+                TryGetComponent(out supportDebuffState);
+            }
+
+            return supportDebuffState != null && supportDebuffState.IsFrozen;
+        }
+
+        private void CancelJumpBecauseDead()
+        {
+            if (jumpRoutine != null)
+            {
+                StopCoroutine(jumpRoutine);
+                jumpRoutine = null;
+            }
+
+            IsJumping = false;
+            movementDisabledByStatusCancel = false;
+            SetEnemyMovementEnabled(false);
+
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.updatePosition = true;
+                navAgent.updateRotation = true;
+                navAgent.isStopped = true;
+            }
+        }
+
+        private void CancelJumpBecauseStatus()
+        {
+            bool hadActiveJump = jumpRoutine != null || IsJumping;
+
+            if (jumpRoutine != null)
+            {
+                StopCoroutine(jumpRoutine);
+                jumpRoutine = null;
+            }
+
+            IsJumping = false;
+
+            if (!hadActiveJump)
+            {
+                return;
+            }
+
+            cooldownTimer = Mathf.Max(cooldownTimer, jumpCooldown);
+            movementDisabledByStatusCancel = true;
+            SetEnemyMovementEnabled(false);
+
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.updatePosition = true;
+                navAgent.updateRotation = true;
+                navAgent.isStopped = true;
+
+                if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
+                {
+                    transform.position = hit.position;
+                    navAgent.Warp(hit.position);
+                }
+            }
+        }
+
+        private void RestoreMovementAfterStatusCancelIfNeeded()
+        {
+            if (!movementDisabledByStatusCancel)
+            {
+                return;
+            }
+
+            movementDisabledByStatusCancel = false;
+            SetEnemyMovementEnabled(true);
+
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.updatePosition = true;
+                navAgent.updateRotation = true;
+                navAgent.isStopped = false;
             }
         }
     }

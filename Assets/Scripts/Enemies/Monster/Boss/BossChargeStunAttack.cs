@@ -5,6 +5,9 @@ namespace TeamProject01.Gameplay
 {
     public sealed class BossChargeStunAttack : MonoBehaviour // Rage Phase에서 컨보이 앞쪽 경로를 예고한 뒤 고정 직선 돌진하는 보스 패턴
     {
+        private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorProperty = Shader.PropertyToID("_Color");
+
         [Header("Telegraph")]
         [SerializeField] private GameObject chargeTelegraphPrefab; // 보스 돌진 경로를 표시할 예고 Prefab
 
@@ -13,6 +16,13 @@ namespace TeamProject01.Gameplay
 
         [Min(0.0f)]
         [SerializeField] private float telegraphGroundHeight = 0.03f; // 예고선이 지면에 묻히지 않도록 적용할 높이
+
+        [Header("Telegraph Charge Visual")]
+        [Range(0.0f, 1.0f)]
+        [SerializeField] private float telegraphStartAlpha = 0.15f; // 돌진 예고 시작 시 범위 표시 투명도
+
+        [Range(0.0f, 1.0f)]
+        [SerializeField] private float telegraphEndAlpha = 0.85f; // 돌진 직전 범위 표시 투명도
 
         [Header("Charge")]
         [Min(0.1f)]
@@ -69,6 +79,12 @@ namespace TeamProject01.Gameplay
 
         private Coroutine attackCoroutine; // 현재 실행 중인 돌진 공격 Coroutine
         private GameObject activeTelegraph; // 현재 생성된 돌진 예고선
+
+        private MaterialPropertyBlock telegraphPropertyBlock; // 예고선 Material을 직접 복제하지 않고 색상만 덮어쓰기 위한 PropertyBlock
+        private Renderer[] telegraphRenderers; // 현재 예고선 안의 Renderer 목록
+        private Color[] telegraphBaseColors; // 각 Renderer의 원래 색상
+        private bool[] telegraphUsesBaseColor; // URP 계열 _BaseColor 사용 여부
+        private bool[] telegraphUsesColor; // Built-in 계열 _Color 사용 여부
 
         private Vector3 lockedChargeDirection; // 돌진 시작 직전에 고정된 돌진 방향
         private float nextAttackTime; // 다음 돌진 공격이 가능한 시간
@@ -174,6 +190,7 @@ namespace TeamProject01.Gameplay
                 }
 
                 telegraphTimer += Time.deltaTime; // 예고 시간을 증가시킨다.
+                float chargeRate = Mathf.Clamp01(telegraphTimer / telegraphDuration); // 예고 진행률을 계산한다.
 
                 if (!pathLocked && telegraphTimer >= lockStartTime) // 경로 고정 시간이 됐다면
                 {
@@ -189,6 +206,8 @@ namespace TeamProject01.Gameplay
                 {
                     ApplyChargeTelegraph(CalculateChargeDirection()); // 아직 조준 중이면 컨보이 앞쪽을 따라 예고선을 갱신한다.
                 }
+
+                ApplyChargeTelegraphChargeRate(chargeRate); // 기를 모을수록 예고선이 진해지게 한다.
 
                 yield return null; // 다음 프레임까지 기다린다.
             }
@@ -351,6 +370,106 @@ namespace TeamProject01.Gameplay
             activeTelegraph.transform.localScale = telegraphScale; // 계산된 크기를 적용한다.
         }
 
+        private void CacheTelegraphRenderers()
+        {
+            if (activeTelegraph == null) // 예고선이 없다면
+            {
+                ClearTelegraphRendererCache(); // Renderer 캐시를 비운다.
+                return; // 더 처리하지 않는다.
+            }
+
+            telegraphRenderers = activeTelegraph.GetComponentsInChildren<Renderer>(true); // 예고선 자식 Renderer를 모두 찾는다.
+            telegraphBaseColors = new Color[telegraphRenderers.Length]; // Renderer별 원래 색상을 저장할 배열을 만든다.
+            telegraphUsesBaseColor = new bool[telegraphRenderers.Length]; // _BaseColor 사용 여부 배열을 만든다.
+            telegraphUsesColor = new bool[telegraphRenderers.Length]; // _Color 사용 여부 배열을 만든다.
+
+            for (int i = 0; i < telegraphRenderers.Length; i++) // 모든 Renderer를 확인한다.
+            {
+                Renderer targetRenderer = telegraphRenderers[i]; // 현재 Renderer를 가져온다.
+
+                if (targetRenderer == null || targetRenderer.sharedMaterial == null) // Renderer나 Material이 없다면
+                {
+                    telegraphBaseColors[i] = Color.white; // 기본 색상을 저장한다.
+                    continue; // 다음 Renderer를 확인한다.
+                }
+
+                Material material = targetRenderer.sharedMaterial; // 원본 Material을 가져온다.
+
+                if (material.HasProperty(BaseColorProperty)) // URP Lit/Unlit 계열 색상 속성이 있다면
+                {
+                    telegraphBaseColors[i] = material.GetColor(BaseColorProperty); // 현재 색상을 저장한다.
+                    telegraphUsesBaseColor[i] = true; // _BaseColor를 사용한다고 표시한다.
+                }
+                else if (material.HasProperty(ColorProperty)) // Built-in 계열 색상 속성이 있다면
+                {
+                    telegraphBaseColors[i] = material.GetColor(ColorProperty); // 현재 색상을 저장한다.
+                    telegraphUsesColor[i] = true; // _Color를 사용한다고 표시한다.
+                }
+                else
+                {
+                    telegraphBaseColors[i] = Color.white; // 색상 속성이 없다면 기본 색상을 사용한다.
+                }
+            }
+        }
+
+        private void ApplyChargeTelegraphChargeRate(float chargeRate)
+        {
+            if (telegraphRenderers == null || telegraphRenderers.Length == 0) // Renderer 캐시가 없다면
+            {
+                return; // 투명도를 변경할 대상이 없으므로 종료한다.
+            }
+
+            if (telegraphPropertyBlock == null) // PropertyBlock이 아직 없다면
+            {
+                telegraphPropertyBlock = new MaterialPropertyBlock(); // 새 PropertyBlock을 만든다.
+            }
+
+            float startAlpha = Mathf.Clamp01(telegraphStartAlpha); // 시작 투명도를 0~1로 제한한다.
+            float endAlpha = Mathf.Clamp01(telegraphEndAlpha); // 종료 투명도를 0~1로 제한한다.
+            float alpha = Mathf.Lerp(startAlpha, endAlpha, Mathf.Clamp01(chargeRate)); // 차지 진행률에 따라 현재 투명도를 계산한다.
+
+            for (int i = 0; i < telegraphRenderers.Length; i++) // 모든 Renderer에 적용한다.
+            {
+                Renderer targetRenderer = telegraphRenderers[i]; // 현재 Renderer를 가져온다.
+
+                if (targetRenderer == null) // Renderer가 없다면
+                {
+                    continue; // 다음 Renderer를 확인한다.
+                }
+
+                Color color = telegraphBaseColors != null && i < telegraphBaseColors.Length ? telegraphBaseColors[i] : Color.white; // 저장된 원래 색상을 가져온다.
+                color.a = alpha; // 현재 차지 진행률 알파값을 적용한다.
+
+                targetRenderer.GetPropertyBlock(telegraphPropertyBlock); // 기존 PropertyBlock 값을 가져온다.
+
+                if (telegraphUsesBaseColor != null && i < telegraphUsesBaseColor.Length && telegraphUsesBaseColor[i]) // _BaseColor를 쓰는 Material이라면
+                {
+                    telegraphPropertyBlock.SetColor(BaseColorProperty, color); // _BaseColor에 색상을 적용한다.
+                }
+
+                if (telegraphUsesColor != null && i < telegraphUsesColor.Length && telegraphUsesColor[i]) // _Color를 쓰는 Material이라면
+                {
+                    telegraphPropertyBlock.SetColor(ColorProperty, color); // _Color에 색상을 적용한다.
+                }
+
+                if ((telegraphUsesBaseColor == null || i >= telegraphUsesBaseColor.Length || !telegraphUsesBaseColor[i]) && (telegraphUsesColor == null || i >= telegraphUsesColor.Length || !telegraphUsesColor[i])) // 어떤 색상 속성인지 확인할 수 없다면
+                {
+                    telegraphPropertyBlock.SetColor(BaseColorProperty, color); // 가능성 있는 색상 속성에 적용한다.
+                    telegraphPropertyBlock.SetColor(ColorProperty, color); // 가능성 있는 색상 속성에 적용한다.
+                }
+
+                targetRenderer.SetPropertyBlock(telegraphPropertyBlock); // 계산된 색상 값을 Renderer에 적용한다.
+            }
+        }
+
+        private void ClearTelegraphRendererCache()
+        {
+            telegraphRenderers = null; // Renderer 캐시를 비운다.
+            telegraphBaseColors = null; // 색상 캐시를 비운다.
+            telegraphUsesBaseColor = null; // _BaseColor 사용 여부를 비운다.
+            telegraphUsesColor = null; // _Color 사용 여부를 비운다.
+        }
+
         private bool TryDetectConvoyHeadHit(Vector3 currentPosition, Vector3 chargeDirection, float frameDistance, out float hitDistance)
         {
             hitDistance = 0.0f; // 기본 충돌 거리를 초기화한다.
@@ -472,7 +591,9 @@ namespace TeamProject01.Gameplay
             Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Runtime Root를 가져온다.
             activeTelegraph = Instantiate(chargeTelegraphPrefab, transform.position, Quaternion.identity, runtimeRoot); // 예고선을 생성한다.
 
+            CacheTelegraphRenderers(); // 예고선 Renderer와 원래 색상을 저장한다.
             ApplyChargeTelegraph(CalculateChargeDirection()); // 생성 직후 현재 방향으로 배치한다.
+            ApplyChargeTelegraphChargeRate(0.0f); // 처음에는 흐리게 표시한다.
         }
 
         private void CleanupTelegraph()
@@ -482,6 +603,8 @@ namespace TeamProject01.Gameplay
                 Destroy(activeTelegraph); // 예고선을 제거한다.
                 activeTelegraph = null; // 참조를 비운다.
             }
+
+            ClearTelegraphRendererCache(); // 예고선 Renderer 캐시를 정리한다.
         }
 
         private float GetMaximumChargeDistance()

@@ -8,6 +8,7 @@ namespace TeamProject01.Gameplay
         private static readonly List<EnemyController> ActiveMonsters = new List<EnemyController>(128); // 타겟 목록
         private static int nextEnemyId; // 몬스터 ID 발급용 번호
         public static event System.Action<EnemyController> DamageKilled; // 플레이어 피해 처치 알림
+        public event System.Action<EnemyController> DeathStarted; // 사망 연출 시작 알림
 
         [SerializeField] private EnemyGrade grade = EnemyGrade.Monster; // 몬스터 등급
 
@@ -114,6 +115,7 @@ namespace TeamProject01.Gameplay
             }
 
             dead = true; // 사망 표시
+            DeathStarted?.Invoke(this); // 사망 사운드/연출 보조 시스템에 알린다.
 
             if (deathAnimatorBridge != null && deathAnimatorBridge.TryBeginDeath()) // 조성원추가-0624 - 사망 애니메이션을 시작할 수 있다면 즉시 제거하지 않는다.
             {
