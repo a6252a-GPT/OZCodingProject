@@ -13382,6 +13382,19 @@ MonoBehaviour:
     clip: {fileID: 0}
     volume: 0.5
   bgmCrossfadeDuration: 1.2
+  stageBgmRotationClips:
+  - {fileID: 8300000, guid: 32f808275bc2d1d4582e6b8a331fd850, type: 3}
+  - {fileID: 8300000, guid: 422a91f1e9b8d9f41bfd006c08cce48e, type: 3}
+  - {fileID: 8300000, guid: fd7841e04d96b9041897e7c94f59bebd, type: 3}
+  - {fileID: 8300000, guid: adf0e496a8bba684db64695a61231eb4, type: 3}
+  - {fileID: 8300000, guid: 55013508df9f0104fab868d387007e84, type: 3}
+  - {fileID: 8300000, guid: 7881bfafba2518d4082efbc522a9f647, type: 3}
+  - {fileID: 8300000, guid: 1f368934c32a08048898cdc28e432313, type: 3}
+  - {fileID: 8300000, guid: 0d041da28819a4e4badaf414719d672d, type: 3}
+  - {fileID: 8300000, guid: 992270185d6596c4192010a59c601f49, type: 3}
+  - {fileID: 8300000, guid: 4afb23657a36c33479cab14e7f741cff, type: 3}
+  - {fileID: 8300000, guid: 0327651d6ba6a4b458626bda7ea41723, type: 3}
+  stageBgmWavesPerTrack: 10
   sfxClips:
   - type: 0
     clip: {fileID: 8300000, guid: 72ee2562b7c4aa0449b4cebbc53ddb4f, type: 3}

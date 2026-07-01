@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TeamProject01.Gameplay;
@@ -10,11 +11,16 @@ public class AudioManager : AudioSingleton<AudioManager>
     [SerializeField] private AudioSource bgmSource;
     [SerializeField] private AudioSource sfxSource; //여긴 효과음 추가할꺼 넣으면 됩니다.
 
-    [Header("BGM List")]
+    [Header("BGM 리스트")]
     [SerializeField] private BGMClipData[] bgmClips; //인스펙터에서 등록할 BGM
 
-    [Header("BGM Crossfade")]
+    [Header("BGM변경 페이드 시간")]
     [SerializeField, Min(0f)] private float bgmCrossfadeDuration = 1.2f; // 웨이브 BGM 전환 페이드 시간(초)
+
+    [Header("BGM변경 목록")]    
+    [SerializeField] private AudioClip[] stageBgmRotationClips;
+    [Header("BGM변경 라운드 단위")]
+    [SerializeField, Min(1)] private int stageBgmWavesPerTrack = 10;
 
     [Header("SFX List")]
     [SerializeField] private SFXClipData[] sfxClips; //인스펙터에서 등록할 효과음
@@ -37,6 +43,9 @@ public class AudioManager : AudioSingleton<AudioManager>
     private AudioSource bgmSourceSecondary; // BGM 크로스페이드용 보조 소스
     private Coroutine bgmCrossfadeCoroutine;
 
+    private int currentStageBgmRotationIndex = -1;
+    private readonly BGMClipData stageRotationPlaybackCache = new BGMClipData { type = BGMType.Stage_BGM }; //안건준 추가 - 0630
+
     public const string BgmVolumePrefKey = "Settings.BGMVolume";
     public const string SfxVolumePrefKey = "Settings.SFXVolume";
     public const string MasterVolumePrefKey = "Settings.MasterVolume"; //안건준 추가 - 0628
@@ -45,6 +54,10 @@ public class AudioManager : AudioSingleton<AudioManager>
     public float BgmVolume => bgmVolume;
     public float SfxVolume => sfxVolume;
     public float MasterVolume => masterVolume;
+
+    public event Action<AudioClip> CurrentBgmChanged; //안건준 추가 - 0630: 현재 BGM 변경 알림 (UI 표시용)
+    public AudioClip CurrentBgmClip => currentBGMClip != null ? currentBGMClip.clip : null;
+    public string CurrentBgmDisplayName => CurrentBgmClip != null ? CurrentBgmClip.name : string.Empty;
 
     public static float GlobalSfxVolume { get; private set; } = 1f;
     public static float GlobalBgmVolume { get; private set; } = 1f;
@@ -260,7 +273,13 @@ public class AudioManager : AudioSingleton<AudioManager>
             HasAssignedSfxClips(),
             donor.HasAssignedSfxClips());
 
-        if (bgmMerged || sfxMerged || NeedsDictionaryRebuild())
+        bool stageRotationMerged = MergeAudioClipArrayIfNeeded(
+            ref stageBgmRotationClips,
+            donor.stageBgmRotationClips,
+            HasAssignedStageBgmRotationClips(),
+            donor.HasAssignedStageBgmRotationClips());
+
+        if (bgmMerged || sfxMerged || stageRotationMerged || NeedsDictionaryRebuild())
         {
             InitializDictionary(); // 흡수 후 딕셔너리 강제 재구성 //안건준 수정 - 0629
         }
@@ -274,7 +293,7 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     private void TryRecoverClipConfiguration() // DDOL 인스턴스에 클립이 없을 때 씬 AudioManager에서 복구 //안건준 추가 - 0629
     {
-        if (!NeedsWaveBgmRecovery() && CanPlaySfx(SFXType.ClickButton))
+        if (!NeedsWaveBgmRecovery() && !NeedsStageBgmRotationRecovery() && CanPlaySfx(SFXType.ClickButton))
         {
             return;
         }
@@ -291,7 +310,9 @@ public class AudioManager : AudioSingleton<AudioManager>
                 continue;
             }
 
-            int candidateScore = CountAssignedClips(candidate.bgmClips) + CountAssignedClips(candidate.sfxClips);
+            int candidateScore = CountAssignedClips(candidate.bgmClips)
+                + CountAssignedClips(candidate.sfxClips)
+                + CountAssignedAudioClips(candidate.stageBgmRotationClips);
             if (candidateScore > bestScore)
             {
                 bestDonor = candidate;
@@ -305,11 +326,17 @@ public class AudioManager : AudioSingleton<AudioManager>
         }
 
         TryMergeMissingClipsFromCatalog();
+        TryMergeMissingStageRotationFromCatalog();
 
         if (NeedsDictionaryRebuild())
         {
             InitializDictionary();
         }
+    }
+
+    private bool NeedsStageBgmRotationRecovery()
+    {
+        return !HasStageBgmRotation();
     }
 
     private bool NeedsWaveBgmRecovery()
@@ -340,6 +367,7 @@ public class AudioManager : AudioSingleton<AudioManager>
     {
         TryRecoverClipConfiguration();
         TryMergeMissingClipsFromCatalog();
+        TryMergeMissingStageRotationFromCatalog();
         EnsureDictionaries();
     }
 
@@ -501,6 +529,45 @@ public class AudioManager : AudioSingleton<AudioManager>
         }
 
         TryMergeMissingClipsFromCatalog();
+        TryMergeMissingStageRotationFromCatalog();
+    }
+
+    private void TryMergeMissingStageRotationFromCatalog()
+    {
+        if (HasStageBgmRotation())
+        {
+            return;
+        }
+
+        AudioManagerCatalog catalog = Resources.Load<AudioManagerCatalog>("AudioManagerCatalog");
+        if (catalog == null || !HasAssignedStageBgmRotationClips(catalog.stageBgmRotationClips))
+        {
+            return;
+        }
+
+        stageBgmRotationClips = catalog.stageBgmRotationClips;
+        if (catalog.stageBgmWavesPerTrack > 0)
+        {
+            stageBgmWavesPerTrack = catalog.stageBgmWavesPerTrack;
+        }
+    }
+
+    private static bool HasAssignedStageBgmRotationClips(AudioClip[] clips)
+    {
+        if (clips == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < clips.Length; i++)
+        {
+            if (clips[i] != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void TryMergeMissingClipsFromCatalog()
@@ -625,6 +692,17 @@ public class AudioManager : AudioSingleton<AudioManager>
         if (!HasAssignedSfxClips() && catalog.sfxClips != null && catalog.sfxClips.Length > 0)
         {
             sfxClips = catalog.sfxClips;
+            changed = true;
+        }
+
+        if (!HasStageBgmRotation() && HasAssignedStageBgmRotationClips(catalog.stageBgmRotationClips))
+        {
+            stageBgmRotationClips = catalog.stageBgmRotationClips;
+            if (catalog.stageBgmWavesPerTrack > 0)
+            {
+                stageBgmWavesPerTrack = catalog.stageBgmWavesPerTrack;
+            }
+
             changed = true;
         }
 
@@ -987,6 +1065,7 @@ public class AudioManager : AudioSingleton<AudioManager>
             {
                 waveController = controller;
                 waveController.RunStateChanged += HandleWaveRunStateChanged;
+                waveController.CurrentStageChanged += HandleCurrentStageChanged; //안건준 추가 - 0630
                 HandleWaveRunStateChanged(waveController.CurrentState);
                 waveBgmBindCoroutine = null;
                 yield break;
@@ -1011,8 +1090,11 @@ public class AudioManager : AudioSingleton<AudioManager>
         if (waveController != null)
         {
             waveController.RunStateChanged -= HandleWaveRunStateChanged;
+            waveController.CurrentStageChanged -= HandleCurrentStageChanged;
             waveController = null;
         }
+
+        currentStageBgmRotationIndex = -1;
     }
 
     private void HandleWaveRunStateChanged(WaveController.WaveRunState state)
@@ -1026,9 +1108,181 @@ public class AudioManager : AudioSingleton<AudioManager>
                 PlayWaveBgm(BGMType.EventStage_BGM);
                 break;
             default:
-                PlayWaveBgm(BGMType.Stage_BGM);
+                PlayStageRotationBgmForCurrentStage(forceTransition: false);
                 break;
         }
+    }
+
+    //안건준 추가 - 0630: 웨이브 번호 변경 시 Normal이면 로테이션 갱신 (보스/특수 웨이브는 RunStateChanged에서 처리)
+    private void HandleCurrentStageChanged(int stage)
+    {
+        if (waveController == null || waveController.CurrentState != WaveController.WaveRunState.Normal)
+        {
+            return;
+        }
+
+        PlayStageRotationBgmForCurrentStage(forceTransition: false);
+    }
+
+    //안건준 추가 - 0630: 스테이지 BGM 로테이션 — Normal 웨이브 진입 시에만 재생 (보스/특수 중에는 전환 안 함)
+    private void PlayStageRotationBgmForCurrentStage(bool forceTransition)
+    {
+        EnsureWaveBgmClipsReady();
+
+        if (!HasStageBgmRotation())
+        {
+            PlayWaveBgm(BGMType.Stage_BGM);
+            return;
+        }
+
+        if (waveController == null)
+        {
+            PlayWaveBgm(BGMType.Stage_BGM);
+            return;
+        }
+
+        int targetIndex = GetStageBgmRotationIndexForStage(waveController.CurrentStage);
+        AudioClip clip = GetStageBgmRotationClip(targetIndex);
+        if (clip == null)
+        {
+            PlayWaveBgm(BGMType.Stage_BGM);
+            return;
+        }
+
+        bool indexChanged = targetIndex != currentStageBgmRotationIndex;
+        currentStageBgmRotationIndex = targetIndex;
+        PrepareStageRotationPlayback(clip);
+
+        if (!forceTransition && !indexChanged && IsCurrentlyPlayingBgm(stageRotationPlaybackCache))
+        {
+            return;
+        }
+
+        if (!forceTransition && !indexChanged && IsAnyBgmPlaying() && IsPlayingClip(clip))
+        {
+            return;
+        }
+
+        if (bgmCrossfadeDuration > 0.001f && IsAnyBgmPlaying())
+        {
+            StartBgmCrossfade(stageRotationPlaybackCache);
+            return;
+        }
+
+        StopBgmCrossfadeCoroutine();
+        ApplyBgmImmediate(stageRotationPlaybackCache);
+    }
+
+    private bool IsPlayingClip(AudioClip clip)
+    {
+        if (clip == null || currentBGMClip == null)
+        {
+            return false;
+        }
+
+        return currentBGMClip.clip == clip && IsAnyBgmPlaying();
+    }
+
+    private bool HasStageBgmRotation()
+    {
+        if (stageBgmRotationClips == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < stageBgmRotationClips.Length; i++)
+        {
+            if (stageBgmRotationClips[i] != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool HasAssignedStageBgmRotationClips()
+    {
+        return HasStageBgmRotation();
+    }
+
+    private int GetStageBgmRotationIndexForStage(int stage)
+    {
+        int count = stageBgmRotationClips != null ? stageBgmRotationClips.Length : 0;
+        if (count <= 0)
+        {
+            return -1;
+        }
+
+        int interval = Mathf.Max(1, stageBgmWavesPerTrack);
+        return (Mathf.Max(1, stage) / interval) % count;
+    }
+
+    private AudioClip GetStageBgmRotationClip(int index)
+    {
+        if (stageBgmRotationClips == null || index < 0 || index >= stageBgmRotationClips.Length)
+        {
+            return null;
+        }
+
+        return stageBgmRotationClips[index];
+    }
+
+    private void PrepareStageRotationPlayback(AudioClip clip)
+    {
+        stageRotationPlaybackCache.clip = clip;
+        stageRotationPlaybackCache.type = BGMType.Stage_BGM;
+        stageRotationPlaybackCache.volume = GetStageBgmRotationLocalVolume();
+    }
+
+    private float GetStageBgmRotationLocalVolume()
+    {
+        EnsureDictionaries();
+        if (bgmDictionary != null && bgmDictionary.TryGetValue(BGMType.Stage_BGM, out BGMClipData stageData))
+        {
+            return stageData.volume;
+        }
+
+        return 1f;
+    }
+
+    private static bool MergeAudioClipArrayIfNeeded(
+        ref AudioClip[] survivorClips,
+        AudioClip[] donorClips,
+        bool survivorHasClips,
+        bool donorHasClips)
+    {
+        if (!donorHasClips)
+        {
+            return false;
+        }
+
+        if (!survivorHasClips || CountAssignedAudioClips(survivorClips) < CountAssignedAudioClips(donorClips))
+        {
+            survivorClips = donorClips;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static int CountAssignedAudioClips(AudioClip[] clips)
+    {
+        if (clips == null)
+        {
+            return 0;
+        }
+
+        int count = 0;
+        for (int i = 0; i < clips.Length; i++)
+        {
+            if (clips[i] != null)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     //안건준 추가 - 0630: StageScene·Dev 테스트 씬 여부 — 웨이브 BGM 연동 대상 판별
@@ -1175,6 +1429,12 @@ public class AudioManager : AudioSingleton<AudioManager>
         bgmSource.clip = clipData.clip;
         bgmSource.volume = GetEffectiveBgmClipVolume(clipData);
         bgmSource.Play();
+        NotifyCurrentBgmChanged();
+    }
+
+    private void NotifyCurrentBgmChanged()
+    {
+        CurrentBgmChanged?.Invoke(CurrentBgmClip);
     }
 
     private void StartBgmCrossfade(BGMClipData nextClip)
@@ -1216,6 +1476,7 @@ public class AudioManager : AudioSingleton<AudioManager>
         fadeInSource.Play();
 
         currentBGMClip = nextClip;
+        NotifyCurrentBgmChanged();
 
         float elapsed = 0f;
         float duration = bgmCrossfadeDuration;
@@ -1289,6 +1550,7 @@ public class AudioManager : AudioSingleton<AudioManager>
         }
 
         currentBGMClip = null;
+        NotifyCurrentBgmChanged();
     }
     //일시정지
     public void PauseBGM()

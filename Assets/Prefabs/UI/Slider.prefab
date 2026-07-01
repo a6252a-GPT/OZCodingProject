@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6739906639305488217}
+  - component: {fileID: 6676284045257504074}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
@@ -43,6 +44,18 @@ RectTransform:
   m_AnchoredPosition: {x: 5800, y: -655}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6676284045257504074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1661338742266459118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18fbe8e3fd409494f8a0f0cb44beee0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TestTest
 --- !u!1001 &1643797691902453678
 PrefabInstance:
   m_ObjectHideFlags: 0
