@@ -6,86 +6,116 @@ using UnityEngine.AI;
 namespace TeamProject01.Gameplay
 {
     [RequireComponent(typeof(EnemyMovement))]
-    public sealed class EnemyJump : MonoBehaviour // 세그먼트를 감지하면 앞으로 점프한다.
+    public sealed class EnemyJump : MonoBehaviour // ?멸렇癒쇳듃瑜?媛먯??섎㈃ ?욎쑝濡??먰봽?쒕떎.
     {
         [Header("Jump Setting")]
         [Min(0.0f)]
-        [SerializeField] private float jumpHeight = 2.0f; // 점프 높이
+        [SerializeField] private float jumpHeight = 2.0f; // ?먰봽 ?믪씠
 
         [Min(0.05f)]
-        [SerializeField] private float jumpDuration = 0.5f; // 점프 시간
+        [SerializeField] private float jumpDuration = 0.5f; // ?먰봽 ?쒓컙
 
-        // 조성원추가-0626 - 착지 후 웅크린 자세를 유지하며 이동과 공격을 잠시 멈출 시간
+        // 議곗꽦?먯텛媛-0626 - 李⑹? ???낇겕由??먯꽭瑜??좎??섎ŉ ?대룞怨?怨듦꺽???좎떆 硫덉텧 ?쒓컙
         [Min(0.0f)]
         [SerializeField] private float landingRecoveryDuration = 0.25f;
 
         [Header("Segment Detection")]
         [Min(0.1f)]
-        [SerializeField] private float segmentDetectDistance = 2.0f; // 앞쪽 세그먼트 감지 거리
+        [SerializeField] private float segmentDetectDistance = 2.0f; // ?욎そ ?멸렇癒쇳듃 媛먯? 嫄곕━
 
         [Min(0.1f)]
-        [SerializeField] private float jumpLandingDistance = 5.0f; // 세그먼트를 넘은 뒤 추가 착지 거리
+        [SerializeField] private float jumpLandingDistance = 5.0f; // ?멸렇癒쇳듃瑜??섏? ??異붽? 李⑹? 嫄곕━
 
         [Min(0.0f)]
-        [SerializeField] private float jumpCooldown = 1.5f; // 착지 후 재점프 대기시간
+        [SerializeField] private float jumpCooldown = 1.5f; // 李⑹? ???ъ젏???湲곗떆媛?
+
+        [Header("Off Mesh Link Jump")]
+        [SerializeField] private bool useOffMeshLinkJump = false; // NavMesh Off-Mesh Link에 의한 지형 점프를 사용할지
 
         [Header("Landing Shockwave")]
         [Min(0.1f)]
-        [SerializeField] private float shockwaveRadius = 7.0f; // 착지 충격파 범위
+        [SerializeField] private float shockwaveRadius = 7.0f; // 李⑹? 異⑷꺽??踰붿쐞
 
         [Min(0.0f)]
-        [SerializeField] private float shockwavePushDistance = 3.0f; // 세그먼트 밀림 거리
+        [SerializeField] private float shockwavePushDistance = 3.0f; // ?멸렇癒쇳듃 諛由?嫄곕━
 
         [Min(0.01f)]
-        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // 원래 경로로 복구되는 시간
+        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // ?먮옒 寃쎈줈濡?蹂듦뎄?섎뒗 ?쒓컙
 
-        // 조성원추가-0630 - 세그먼트 점프 착지 순간 땅갈라짐 VFX를 생성하기 위한 설정
+        // 議곗꽦?먯텛媛-0630 - ?멸렇癒쇳듃 ?먰봽 李⑹? ?쒓컙 ?낃컝?쇱쭚 VFX瑜??앹꽦?섍린 ?꾪븳 ?ㅼ젙
         [Header("Landing Crack VFX")]
-        [SerializeField] private GameObject landingCrackVfxPrefab; // 조성원추가-0630 - 착지 순간 생성할 땅갈라짐 VFX Prefab
+        [SerializeField] private GameObject landingCrackVfxPrefab; // 議곗꽦?먯텛媛-0630 - 李⑹? ?쒓컙 ?앹꽦???낃컝?쇱쭚 VFX Prefab
 
         [Min(0.0f)]
-        [SerializeField] private float landingCrackGroundHeight = 0.03f; // 조성원추가-0630 - VFX가 바닥에 묻히지 않도록 올릴 높이
+        [SerializeField] private float landingCrackGroundHeight = 0.03f; // 議곗꽦?먯텛媛-0630 - VFX媛 諛붾떏??臾삵엳吏 ?딅룄濡??щ┫ ?믪씠
 
         [Min(0.1f)]
-        [SerializeField] private float landingCrackScale = 0.65f; // 조성원추가-0630 - 엘리트 몬스터용 땅갈라짐 VFX 크기 배율
+        [SerializeField] private float landingCrackScale = 0.65f; // 議곗꽦?먯텛媛-0630 - ?섎━??紐ъ뒪?곗슜 ?낃컝?쇱쭚 VFX ?ш린 諛곗쑉
 
         [Min(0.01f)]
-        [SerializeField] private float landingCrackLifeTime = 2.0f; // 조성원추가-0630 - 생성된 땅갈라짐 VFX 제거 시간
+        [SerializeField] private float landingCrackLifeTime = 2.0f; // 議곗꽦?먯텛媛-0630 - ?앹꽦???낃컝?쇱쭚 VFX ?쒓굅 ?쒓컙
 
-        ////// 안건준추가-0622 - EnemyJumpTest의 이동 Script Component 참조 구조를 가져온다.
+        ////// ?덇굔以異붽?-0622 - EnemyJumpTest???대룞 Script Component 李몄“ 援ъ“瑜?媛?몄삩??
         private EnemyMovement enemyMovement;
         private NavMeshAgent navAgent;
+        private EnemyHealth enemyHealth;
+        private EnemySupportDebuffState supportDebuffState;
         private Coroutine jumpRoutine;
         private float cooldownTimer;
+        private bool movementDisabledByStatusCancel;
 
-        // 조성원추가-0626 - 점프 애니메이션 Bridge가 현재 점프 상태를 읽을 수 있도록 공개한다.
+        // 議곗꽦?먯텛媛-0626 - ?먰봽 ?좊땲硫붿씠??Bridge媛 ?꾩옱 ?먰봽 ?곹깭瑜??쎌쓣 ???덈룄濡?怨듦컻?쒕떎.
         public bool IsJumping { get; private set; }
         public event System.Action<Vector3> Landed;
 
-        ////// 안건준추가-0622 - SegmentBlocker의 활성 목록을 읽기 위한 참조를 가져온다.
+        ////// ?덇굔以異붽?-0622 - SegmentBlocker???쒖꽦 紐⑸줉???쎄린 ?꾪븳 李몄“瑜?媛?몄삩??
         private static FieldInfo activeBlockersField;
 
         private void Awake()
         {
-            ////// 안건준추가-0622 - 같은 GameObject의 이동과 AI Navigation Component를 찾는다.
+            ////// ?덇굔以異붽?-0622 - 媛숈? GameObject???대룞怨?AI Navigation Component瑜?李얜뒗??
             enemyMovement = GetComponent<EnemyMovement>();
             navAgent = GetComponent<NavMeshAgent>();
+            enemyHealth = GetComponent<EnemyHealth>();
+            supportDebuffState = GetComponent<EnemySupportDebuffState>();
 
-            ////// 안건준추가-0622 - SegmentBlocker의 활성 세그먼트 목록을 찾는다.
+            ////// ?덇굔以異붽?-0622 - SegmentBlocker???쒖꽦 ?멸렇癒쇳듃 紐⑸줉??李얜뒗??
             if (activeBlockersField == null)
             {
                 activeBlockersField = typeof(SegmentBlocker).GetField("ActiveBlockers", BindingFlags.NonPublic | BindingFlags.Static);
             }
 
-            ////// 안건준추가-0622 - Off-Mesh Link 이동은 EnemyJump가 직접 처리한다.
+            ////// ?덇굔以異붽?-0622 - Off-Mesh Link ?대룞? EnemyJump媛 吏곸젒 泥섎━?쒕떎.
             if (navAgent != null)
             {
                 navAgent.autoTraverseOffMeshLink = false;
             }
         }
 
+        private void OnEnable()
+        {
+            IsJumping = false;
+            jumpRoutine = null;
+            cooldownTimer = 0.0f;
+            movementDisabledByStatusCancel = false;
+        }
+
         private void Update()
         {
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                return;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                return;
+            }
+
+            RestoreMovementAfterStatusCancelIfNeeded();
+
             if (jumpRoutine != null) // 이미 점프 중이라면
             {
                 return;
@@ -94,18 +124,18 @@ namespace TeamProject01.Gameplay
             cooldownTimer -= Time.deltaTime;
 
             ////// 안건준추가-0622 - NavMeshAgent가 Off-Mesh Link에 도착하면 지형 점프를 시작한다.
-            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh && navAgent.isOnOffMeshLink)
+            if (useOffMeshLinkJump && navAgent != null && navAgent.enabled && navAgent.isOnNavMesh && navAgent.isOnOffMeshLink)
             {
                 jumpRoutine = StartCoroutine(JumpOffMeshLink());
                 return;
             }
 
-            if (cooldownTimer > 0.0f) // 재점프 대기시간이 남았다면
+            if (cooldownTimer > 0.0f) // ?ъ젏???湲곗떆媛꾩씠 ?⑥븯?ㅻ㈃
             {
                 return;
             }
 
-            ////// 안건준추가-0622 - 앞쪽 세그먼트를 감지하면 세그먼트 너머로 점프한다.
+            ////// ?덇굔以異붽?-0622 - ?욎そ ?멸렇癒쇳듃瑜?媛먯??섎㈃ ?멸렇癒쇳듃 ?덈㉧濡??먰봽?쒕떎.
             if (IsSegmentAhead(out Vector3 landingPoint))
             {
                 jumpRoutine = StartCoroutine(JumpOverSegment(landingPoint));
@@ -114,15 +144,16 @@ namespace TeamProject01.Gameplay
 
         private void OnDisable()
         {
-            // 점프 도중 비활성화되어도 이동 상태가 남지 않도록 복구한다.
+            // ?먰봽 ?꾩쨷 鍮꾪솢?깊솕?섏뼱???대룞 ?곹깭媛 ?⑥? ?딅룄濡?蹂듦뎄?쒕떎.
             if (jumpRoutine != null)
             {
                 StopCoroutine(jumpRoutine);
                 jumpRoutine = null;
             }
 
-            // 조성원추가-0626 - 비활성화될 때 점프 애니메이션 상태가 남지 않도록 해제한다.
+            // 議곗꽦?먯텛媛-0626 - 鍮꾪솢?깊솕?????먰봽 ?좊땲硫붿씠???곹깭媛 ?⑥? ?딅룄濡??댁젣?쒕떎.
             IsJumping = false;
+            movementDisabledByStatusCancel = false;
 
             SetEnemyMovementEnabled(true);
 
@@ -134,11 +165,24 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        ////// 안건준추가-0622 - Off-Mesh Link의 시작점에서 끝점까지 포물선으로 이동한다.
+        ////// ?덇굔以異붽?-0622 - Off-Mesh Link???쒖옉?먯뿉???앹젏源뚯? ?щЪ?좎쑝濡??대룞?쒕떎.
         private IEnumerator JumpOffMeshLink()
         {
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
             // 조성원추가-0626 - 지형 점프가 시작됐다고 저장한다.
             IsJumping = true;
+            movementDisabledByStatusCancel = false;
 
             SetEnemyMovementEnabled(false);
 
@@ -152,6 +196,18 @@ namespace TeamProject01.Gameplay
 
             yield return ArcMove(from, to, jumpHeight, jumpDuration);
 
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
             transform.position = to;
             Landed?.Invoke(transform.position);
 
@@ -161,24 +217,33 @@ namespace TeamProject01.Gameplay
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
 
-                // 조성원수정-0626 - 착지 회복이 끝날 때까지 NavMeshAgent는 정지 상태를 유지한다.
+                // 議곗꽦?먯닔??0626 - 李⑹? ?뚮났???앸궇 ?뚭퉴吏 NavMeshAgent???뺤? ?곹깭瑜??좎??쒕떎.
                 navAgent.isStopped = true;
             }
 
             // 조성원추가-0626 - 착지 후 남은 웅크린 애니메이션 동안 이동하지 않는다.
-            if (landingRecoveryDuration > 0.0f)
+            yield return WaitLandingRecovery();
+
+            if (IsDead())
             {
-                yield return new WaitForSeconds(landingRecoveryDuration);
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
             }
 
             cooldownTimer = jumpCooldown;
 
-            // 조성원추가-0626 - 착지 회복까지 끝난 뒤 점프 상태를 해제한다.
+            // 議곗꽦?먯텛媛-0626 - 李⑹? ?뚮났源뚯? ?앸궃 ???먰봽 ?곹깭瑜??댁젣?쒕떎.
             IsJumping = false;
 
             SetEnemyMovementEnabled(true);
 
-            // 조성원추가-0626 - 착지 회복이 끝난 뒤 NavMeshAgent 이동을 다시 허용한다.
+            // 議곗꽦?먯텛媛-0626 - 李⑹? ?뚮났???앸궃 ??NavMeshAgent ?대룞???ㅼ떆 ?덉슜?쒕떎.
             if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
             {
                 navAgent.isStopped = false;
@@ -187,10 +252,15 @@ namespace TeamProject01.Gameplay
             jumpRoutine = null;
         }
 
-        ////// 안건준추가-0622 - 몬스터 앞쪽에 점프할 세그먼트가 있는지 확인한다.
+        ////// ?덇굔以異붽?-0622 - 紐ъ뒪???욎そ???먰봽???멸렇癒쇳듃媛 ?덈뒗吏 ?뺤씤?쒕떎.
         private bool IsSegmentAhead(out Vector3 landingPoint)
         {
             landingPoint = Vector3.zero;
+
+            if (IsDead() || IsJumpBlockedByStatus())
+            {
+                return false;
+            }
 
             var blockers = activeBlockersField?.GetValue(null) as System.Collections.Generic.List<SegmentBlocker>;
 
@@ -202,7 +272,7 @@ namespace TeamProject01.Gameplay
             Vector3 myPosition = transform.position;
             Vector3 forward;
 
-            ////// 안건준추가-0622 - NavMeshAgent 속도가 있으면 이동 방향으로 사용한다.
+            ////// ?덇굔以異붽?-0622 - NavMeshAgent ?띾룄媛 ?덉쑝硫??대룞 諛⑺뼢?쇰줈 ?ъ슜?쒕떎.
             if (navAgent != null && navAgent.velocity.sqrMagnitude > 0.01f)
             {
                 forward = navAgent.velocity;
@@ -226,6 +296,11 @@ namespace TeamProject01.Gameplay
                 SegmentBlocker blocker = blockers[i];
 
                 if (blocker == null)
+                {
+                    continue;
+                }
+
+                if (!blocker.isActiveAndEnabled || !blocker.gameObject.activeInHierarchy)
                 {
                     continue;
                 }
@@ -262,11 +337,24 @@ namespace TeamProject01.Gameplay
             return false;
         }
 
-        ////// 안건준추가-0622 - EnemyMovement를 멈추고 세그먼트 너머로 점프한다.
+        ////// ?덇굔以異붽?-0622 - EnemyMovement瑜?硫덉텛怨??멸렇癒쇳듃 ?덈㉧濡??먰봽?쒕떎.
         private IEnumerator JumpOverSegment(Vector3 landingPoint)
         {
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
             // 조성원추가-0626 - 세그먼트 점프가 시작됐다고 저장한다.
             IsJumping = true;
+            movementDisabledByStatusCancel = false;
 
             SetEnemyMovementEnabled(false);
 
@@ -283,9 +371,21 @@ namespace TeamProject01.Gameplay
 
             yield return ArcMove(from, landingPoint, jumpHeight, jumpDuration);
 
+            if (IsDead())
+            {
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
+            }
+
             transform.position = landingPoint;
 
-            ////// 안건준추가-0622 - 착지 위치 근처의 NavMesh 위치로 Agent를 맞춘다.
+            ////// ?덇굔以異붽?-0622 - 李⑹? ?꾩튂 洹쇱쿂??NavMesh ?꾩튂濡?Agent瑜?留욎텣??
             if (canControlAgent)
             {
                 if (NavMesh.SamplePosition(landingPoint, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
@@ -297,29 +397,38 @@ namespace TeamProject01.Gameplay
                 navAgent.updatePosition = true;
                 navAgent.updateRotation = true;
 
-                // 조성원수정-0626 - 착지 회복이 끝날 때까지 NavMeshAgent는 정지 상태를 유지한다.
+                // 議곗꽦?먯닔??0626 - 李⑹? ?뚮났???앸궇 ?뚭퉴吏 NavMeshAgent???뺤? ?곹깭瑜??좎??쒕떎.
                 navAgent.isStopped = true;
             }
 
-            SpawnLandingCrackVfx(transform.position); // 조성원추가-0630 - 착지 위치가 확정된 뒤 땅갈라짐 VFX를 생성한다.
+            SpawnLandingCrackVfx(transform.position); // 議곗꽦?먯텛媛-0630 - 李⑹? ?꾩튂媛 ?뺤젙?????낃컝?쇱쭚 VFX瑜??앹꽦?쒕떎.
             Landed?.Invoke(transform.position);
 
-            ApplyLandingShockwave(); // 세그먼트 점프 착지 지점에 충격파 발생
+            ApplyLandingShockwave(); // ?멸렇癒쇳듃 ?먰봽 李⑹? 吏?먯뿉 異⑷꺽??諛쒖깮
 
             // 조성원추가-0626 - 착지 후 남은 웅크린 애니메이션 동안 이동하지 않는다.
-            if (landingRecoveryDuration > 0.0f)
+            yield return WaitLandingRecovery();
+
+            if (IsDead())
             {
-                yield return new WaitForSeconds(landingRecoveryDuration);
+                CancelJumpBecauseDead();
+                yield break;
+            }
+
+            if (IsJumpBlockedByStatus())
+            {
+                CancelJumpBecauseStatus();
+                yield break;
             }
 
             cooldownTimer = jumpCooldown;
 
-            // 조성원추가-0626 - 착지 회복까지 끝난 뒤 점프 상태를 해제한다.
+            // 議곗꽦?먯텛媛-0626 - 李⑹? ?뚮났源뚯? ?앸궃 ???먰봽 ?곹깭瑜??댁젣?쒕떎.
             IsJumping = false;
 
             SetEnemyMovementEnabled(true);
 
-            // 조성원추가-0626 - 착지 회복이 끝난 뒤 NavMeshAgent 이동을 다시 허용한다.
+            // 議곗꽦?먯텛媛-0626 - 李⑹? ?뚮났???앸궃 ??NavMeshAgent ?대룞???ㅼ떆 ?덉슜?쒕떎.
             if (canControlAgent && navAgent.enabled && navAgent.isOnNavMesh)
             {
                 navAgent.isStopped = false;
@@ -328,13 +437,13 @@ namespace TeamProject01.Gameplay
             jumpRoutine = null;
         }
 
-        // 조성원추가-0630 - 세그먼트 점프 착지 위치에 땅갈라짐 VFX를 생성한다.
+        // 議곗꽦?먯텛媛-0630 - ?멸렇癒쇳듃 ?먰봽 李⑹? ?꾩튂???낃컝?쇱쭚 VFX瑜??앹꽦?쒕떎.
         private void SpawnLandingCrackVfx(Vector3 position)
         {
             SpawnOneShotVfx(landingCrackVfxPrefab, position, landingCrackGroundHeight, landingCrackScale, landingCrackLifeTime);
         }
 
-        // 조성원추가-0630 - 단발성 VFX를 생성하고 지정 시간 뒤 제거한다.
+        // 議곗꽦?먯텛媛-0630 - ?⑤컻??VFX瑜??앹꽦?섍퀬 吏???쒓컙 ???쒓굅?쒕떎.
         private void SpawnOneShotVfx(GameObject prefab, Vector3 position, float groundHeight, float scaleMultiplier, float lifeTime)
         {
             if (prefab == null)
@@ -350,18 +459,30 @@ namespace TeamProject01.Gameplay
             Destroy(vfx, lifeTime);
         }
 
-        private void ApplyLandingShockwave() // 착지 주변의 연결 세그먼트를 바깥쪽으로 민다.
+        private void ApplyLandingShockwave() // 李⑹? 二쇰????곌껐 ?멸렇癒쇳듃瑜?諛붽묑履쎌쑝濡?誘쇰떎.
         {
             MonsterInteractionApi.RequestSegmentShockwave(transform.position, shockwaveRadius, shockwavePushDistance, shockwaveRecoveryDuration);
         }
 
-        ////// 안건준추가-0622 - 시작점과 착지점 사이를 포물선으로 이동한다.
+        ////// ?덇굔以異붽?-0622 - ?쒖옉?먭낵 李⑹????ъ씠瑜??щЪ?좎쑝濡??대룞?쒕떎.
         private IEnumerator ArcMove(Vector3 from, Vector3 to, float height, float duration)
         {
             float elapsed = 0.0f;
 
             while (elapsed < duration)
             {
+                if (IsDead())
+                {
+                    CancelJumpBecauseDead();
+                    yield break;
+                }
+
+                if (IsJumpBlockedByStatus())
+                {
+                    CancelJumpBecauseStatus();
+                    yield break;
+                }
+
                 elapsed += Time.deltaTime;
 
                 float progress = Mathf.Clamp01(elapsed / duration);
@@ -386,12 +507,128 @@ namespace TeamProject01.Gameplay
             transform.position = to;
         }
 
+        private IEnumerator WaitLandingRecovery()
+        {
+            if (landingRecoveryDuration <= 0.0f)
+            {
+                yield break;
+            }
+
+            float elapsed = 0.0f;
+
+            while (elapsed < landingRecoveryDuration)
+            {
+                if (IsDead())
+                {
+                    CancelJumpBecauseDead();
+                    yield break;
+                }
+
+                if (IsJumpBlockedByStatus())
+                {
+                    CancelJumpBecauseStatus();
+                    yield break;
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
         ////// 안건준추가-0622 - 점프 중에는 EnemyMovement를 끄고 착지 후 다시 켠다.
         private void SetEnemyMovementEnabled(bool enabled)
         {
             if (enemyMovement != null)
             {
                 enemyMovement.enabled = enabled;
+            }
+        }
+
+        private bool IsDead()
+        {
+            return enemyHealth != null && enemyHealth.IsDead;
+        }
+
+        private bool IsJumpBlockedByStatus()
+        {
+            if (supportDebuffState == null)
+            {
+                TryGetComponent(out supportDebuffState);
+            }
+
+            return supportDebuffState != null && supportDebuffState.IsFrozen;
+        }
+
+        private void CancelJumpBecauseDead()
+        {
+            if (jumpRoutine != null)
+            {
+                StopCoroutine(jumpRoutine);
+                jumpRoutine = null;
+            }
+
+            IsJumping = false;
+            movementDisabledByStatusCancel = false;
+            SetEnemyMovementEnabled(false);
+
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.updatePosition = true;
+                navAgent.updateRotation = true;
+                navAgent.isStopped = true;
+            }
+        }
+
+        private void CancelJumpBecauseStatus()
+        {
+            bool hadActiveJump = jumpRoutine != null || IsJumping;
+
+            if (jumpRoutine != null)
+            {
+                StopCoroutine(jumpRoutine);
+                jumpRoutine = null;
+            }
+
+            IsJumping = false;
+
+            if (!hadActiveJump)
+            {
+                return;
+            }
+
+            cooldownTimer = Mathf.Max(cooldownTimer, jumpCooldown);
+            movementDisabledByStatusCancel = true;
+            SetEnemyMovementEnabled(false);
+
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.updatePosition = true;
+                navAgent.updateRotation = true;
+                navAgent.isStopped = true;
+
+                if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
+                {
+                    transform.position = hit.position;
+                    navAgent.Warp(hit.position);
+                }
+            }
+        }
+
+        private void RestoreMovementAfterStatusCancelIfNeeded()
+        {
+            if (!movementDisabledByStatusCancel)
+            {
+                return;
+            }
+
+            movementDisabledByStatusCancel = false;
+            SetEnemyMovementEnabled(true);
+
+            if (navAgent != null && navAgent.enabled && navAgent.isOnNavMesh)
+            {
+                navAgent.updatePosition = true;
+                navAgent.updateRotation = true;
+                navAgent.isStopped = false;
             }
         }
     }

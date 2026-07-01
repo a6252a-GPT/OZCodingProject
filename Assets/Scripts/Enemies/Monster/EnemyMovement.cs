@@ -356,8 +356,6 @@ namespace TeamProject01.Gameplay
             moveSpeed = Mathf.Max(0.01f, moveSpeed * multiplier); // 기본 이동속도 배율
         }
 
-
-
         private bool IsFrozenBySupport() // 전찬우추가-0621 - 지원형 동결 여부
         {
             if (supportDebuff == null)
