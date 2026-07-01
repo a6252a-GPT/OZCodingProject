@@ -57486,6 +57486,7 @@ GameObject:
   - component: {fileID: 1760707951}
   - component: {fileID: 1760707950}
   - component: {fileID: 1760707952}
+  - component: {fileID: 1760707953}
   m_Layer: 0
   m_Name: GoldActionHudRoot
   m_TagString: Untagged
@@ -57673,6 +57674,23 @@ MonoBehaviour:
   ImpactShakeDuration: 0.4
   ImpactShakeAmplitude: 0.7
   ImpactShakeFrequency: 18
+--- !u!114 &1760707953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1760707948}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8f32f28151035b4a80617590989c554, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.ActionHudFeature
+  hudController: {fileID: 1760707951}
+  skillPurchaseClip: {fileID: 8300000, guid: 72f379c37ce99c94b88f7ec81cf63a1c, type: 3}
+  skillPurchaseVolume: 0.5
+  skillUpgradeClip: {fileID: 8300000, guid: 31aeeb90bed81d140866f8674081cb27, type: 3}
+  skillUpgradeVolume: 0.5
 --- !u!1 &1761127527
 GameObject:
   m_ObjectHideFlags: 0
