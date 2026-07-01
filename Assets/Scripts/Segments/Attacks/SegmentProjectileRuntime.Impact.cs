@@ -53,6 +53,7 @@ namespace TeamProject01.Gameplay
                 SegmentMonsterFeedbackKind feedbackKind = isPiercingHit ? SegmentMonsterFeedbackKind.Pierce : SegmentMonsterFeedbackKind.Direct; // 피드백 종류
                 SegmentHitResolver.ApplyDamageAndFeedback(enemy, hitDamage, profile, position, transform.position, feedbackKind); // 직접/관통 피해 + 피드백
                 PlayHitVfx(position); // 명중 VFX
+                PlayProjectileHitSfx(position);
                 hitEnemyIds.Add(enemy.EnemyId); // 관통 중복 방지
             }
 
@@ -126,6 +127,7 @@ namespace TeamProject01.Gameplay
             if (playVfx)
             {
                 PlayExplosionVfx(position, damageRadius); // 폭발 VFX
+                PlayProjectileExplosionSfx(position);
             }
 
             DamageData explosionDamage = DamageData.Create(damage.Amount, DamageType.Explosion, damage.SourceSegmentIndex, position, damage.SourceObject); // 폭발 피해
@@ -208,6 +210,7 @@ namespace TeamProject01.Gameplay
                 Vector3 hitPosition = GetEnemyHitPosition(enemy); // 명중 위치
                 SegmentHitResolver.ApplyDamageAndFeedback(enemy, rollDamage, profile, hitPosition, position, SegmentMonsterFeedbackKind.Direct); // 구르기 충돌 피해 + 피드백
                 PlayHitVfx(hitPosition); // 명중 VFX
+                PlayProjectileRollHitSfx(hitPosition);
             }
         }
     }

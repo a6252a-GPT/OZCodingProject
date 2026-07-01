@@ -86,16 +86,12 @@ namespace TeamProject01.Gameplay
         {
             public readonly EnemyController Prefab;
             public readonly int Count;
-            public readonly string EliteCombinationType;
 
-            public CountEntry(EnemyController prefab, int count, string eliteCombinationType = null)
+            public CountEntry(EnemyController prefab, int count)
             {
                 Prefab = prefab;
                 Count = count;
-                EliteCombinationType = string.IsNullOrWhiteSpace(eliteCombinationType) ? string.Empty : eliteCombinationType.Trim();
             }
-
-            public bool IsElite => !string.IsNullOrEmpty(EliteCombinationType);
         }
 
         [Header("참조")]
@@ -110,6 +106,40 @@ namespace TeamProject01.Gameplay
             new SpawnScaleStep { startStage = 1, spawnScalePercent = 100 },
             new SpawnScaleStep { startStage = 6, spawnScalePercent = 110 },
             new SpawnScaleStep { startStage = 12, spawnScalePercent = 130 }
+        };
+
+        [Serializable]
+        public sealed class NormalSpawnCountOverride
+        {
+            [Min(1)]
+            public int stage = 1; // 정확히 이 Stage에서만 적용할 일반 몬스터 수입니다.
+
+            [Min(0)]
+            public int normalSpawnCount = 30; // 엘리트를 제외한 일반 몬스터 수입니다.
+        }
+
+        [Header("초중반 일반 수량 보정")]
+        [SerializeField] private NormalSpawnCountOverride[] normalSpawnCountOverrides =
+        {
+            new NormalSpawnCountOverride { stage = 1, normalSpawnCount = 35 },
+            new NormalSpawnCountOverride { stage = 2, normalSpawnCount = 35 },
+            new NormalSpawnCountOverride { stage = 3, normalSpawnCount = 40 },
+            new NormalSpawnCountOverride { stage = 4, normalSpawnCount = 40 },
+            new NormalSpawnCountOverride { stage = 5, normalSpawnCount = 55 },
+            new NormalSpawnCountOverride { stage = 6, normalSpawnCount = 60 },
+            new NormalSpawnCountOverride { stage = 7, normalSpawnCount = 65 },
+            new NormalSpawnCountOverride { stage = 8, normalSpawnCount = 75 },
+            new NormalSpawnCountOverride { stage = 9, normalSpawnCount = 80 },
+            new NormalSpawnCountOverride { stage = 10, normalSpawnCount = 85 },
+            new NormalSpawnCountOverride { stage = 11, normalSpawnCount = 90 },
+            new NormalSpawnCountOverride { stage = 12, normalSpawnCount = 100 },
+            new NormalSpawnCountOverride { stage = 13, normalSpawnCount = 105 },
+            new NormalSpawnCountOverride { stage = 14, normalSpawnCount = 110 },
+            new NormalSpawnCountOverride { stage = 15, normalSpawnCount = 115 },
+            new NormalSpawnCountOverride { stage = 16, normalSpawnCount = 130 },
+            new NormalSpawnCountOverride { stage = 17, normalSpawnCount = 135 },
+            new NormalSpawnCountOverride { stage = 18, normalSpawnCount = 140 },
+            new NormalSpawnCountOverride { stage = 19, normalSpawnCount = 145 }
         };
 
         [Header("난이도 배율")]
@@ -132,7 +162,8 @@ namespace TeamProject01.Gameplay
         {
             CreateComposition("N01", "기본 근접", 1, 100, 100),
             CreateComposition("N02", "근접 섞기", 3, 80, 75, 25),
-            CreateComposition("N03", "근접 + 원거리", 5, 70, 65, 20, 15)
+            CreateComposition("N03", "근접 + 원거리", 5, 70, 65, 20, 15),
+            CreateComposition("N04", "원거리 + 석궁", 10, 50, 50, 25, 15, 10)
         };
 
         [Header("고급 설정")]
@@ -140,7 +171,22 @@ namespace TeamProject01.Gameplay
         [SerializeField] private int spawnWindowPercent = 40; // Stage 시간 중 앞쪽 몇 % 안에 집중 스폰할지입니다.
 
         [Min(1)]
-        [SerializeField] private int spawnBatchCount = 4; // 전체 수량을 몇 묶음으로 나누어 스폰할지입니다.
+        [SerializeField] private int spawnBatchCount = 4; // 일반 몬스터가 없을 때 쓰는 기존 묶음 수 fallback입니다.
+
+        [Header("일반 스폰 분할")]
+        [Min(0.1f)]
+        [SerializeField] private float normalSpawnWindowSeconds = 20.0f; // 일반 몬스터를 이 시간 안에 나누어 스폰합니다.
+
+        [Min(1)]
+        [SerializeField] private int normalSpawnSplitDivisor = 5; // 일반 총량을 몇 등분 기준으로 1회 최대 수량을 잡을지입니다.
+
+        [Min(1)]
+        [SerializeField] private int minMonstersPerSpawnTick = 15; // 초반이 너무 잘게 쪼개지지 않게 하는 1회 최소 기준입니다.
+
+        [Min(1)]
+        [SerializeField] private int maxMonstersPerSpawnTick = 50; // 후반 한 번 스폰 덩어리의 최대 크기입니다.
+
+        [SerializeField] private bool avoidPreviousSpawnDirections = true; // 바로 직전에 쓴 게이트 방향은 다음 틱 후보에서 제외합니다.
 
         [Range(1, 8)]
         [SerializeField] private int batchGateCount = 1; // 한 묶음이 실제로 사용할 게이트 방향 수입니다.
@@ -195,6 +241,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float congestionMaxPushDistance = 20.0f; // 한 번 스폰에서 최대한 뒤로 밀 수 있는 거리입니다.
 
         private Coroutine spawnRoutine; // 현재 Stage의 일반 몬스터 스폰 루틴입니다.
+        private EnemySpawner.ExternalSpawnDirectionSet lastNormalSpawnDirectionSet; // 가장 마지막 일반 몬스터 스폰 방향입니다.
+        private bool hasLastNormalSpawnDirectionSet; // 마지막 일반 스폰 방향이 유효한지 표시합니다.
 
         public int CalculateTotalSpawnCount(int stage)
         {
@@ -202,10 +250,31 @@ namespace TeamProject01.Gameplay
             return Mathf.Max(0, Mathf.RoundToInt(baseSpawnCount * scale));
         }
 
-        public void BeginStage(int stage, float stageDurationSeconds, int spawnCount, EliteMixController.EliteStagePlan elitePlan = default, WaveController waveTracker = null)
+        public int ResolveNormalSpawnCount(int stage, int fallbackSpawnCount)
+        {
+            if (normalSpawnCountOverrides == null)
+            {
+                return Mathf.Max(0, fallbackSpawnCount);
+            }
+
+            for (int i = 0; i < normalSpawnCountOverrides.Length; i++)
+            {
+                NormalSpawnCountOverride spawnCountOverride = normalSpawnCountOverrides[i];
+
+                if (spawnCountOverride != null && spawnCountOverride.stage == stage)
+                {
+                    return Mathf.Max(0, spawnCountOverride.normalSpawnCount);
+                }
+            }
+
+            return Mathf.Max(0, fallbackSpawnCount);
+        }
+
+        public void BeginStage(int stage, float stageDurationSeconds, int spawnCount, WaveController waveTracker = null)
         {
             ResolveEnemySpawner();
             StopCurrentRoutine();
+            hasLastNormalSpawnDirectionSet = false;
 
             if (enemySpawner == null)
             {
@@ -220,11 +289,10 @@ namespace TeamProject01.Gameplay
 
                 if (composition != null)
                 {
-                    totalEntries.AddRange(BuildCountEntries(composition.monsters, spawnCount));
+                    totalEntries.AddRange(BuildCountEntries(composition.monsters, spawnCount, stage));
                 }
             }
 
-            AddEliteEntries(totalEntries, elitePlan);
             waveTracker?.BeginCurrentStageEnemyTracking(stage, GetTotalCount(totalEntries));
 
             if (totalEntries.Count == 0)
@@ -239,13 +307,19 @@ namespace TeamProject01.Gameplay
 
         private IEnumerator SpawnStageRoutine(int stage, float stageDurationSeconds, List<CountEntry> totalEntries, EnemySpawner.ExternalSpawnDirectionSet directionSet, WaveController waveTracker)
         {
-            int safeBatchCount = Mathf.Max(1, spawnBatchCount);
-            float spawnWindowSeconds = Mathf.Max(0.1f, stageDurationSeconds * (spawnWindowPercent / 100.0f));
+            int normalSpawnCount = GetTotalCount(totalEntries);
+            int normalMonstersPerTick = ResolveMonstersPerSpawnTick(normalSpawnCount);
+            int safeBatchCount = ResolveSpawnTickCount(normalSpawnCount, normalMonstersPerTick);
+            float spawnWindowSeconds = ResolveSpawnWindowSeconds(stageDurationSeconds);
             WaveStageDifficulty difficulty = ResolveDifficultyForStage(stage);
             EnemySpawner.ExternalSpawnCongestionOptions congestionOptions = BuildCongestionOptions();
             EnemySpawner.ExternalSpawnSpreadOptions spreadOptions = BuildSpreadOptions();
             EnemySpawner.ExternalSpawnFormationOptions formationOptions = BuildFormationOptions();
             List<EnemyController> spawnedBatchMonsters = new List<EnemyController>();
+            List<EnemyController> normalSpawnQueue = BuildSpawnQueue(totalEntries);
+            int[] previousBatchDirectionIndexes = Array.Empty<int>();
+
+            ShuffleEnemyPrefabs(normalSpawnQueue);
 
             for (int batchIndex = 0; batchIndex < safeBatchCount; batchIndex++)
             {
@@ -254,8 +328,8 @@ namespace TeamProject01.Gameplay
                     yield return new WaitForSeconds(spawnWindowSeconds / safeBatchCount);
                 }
 
-                EnemySpawner.ExternalSpawnDirectionSet batchDirectionSet = BuildBatchDirectionSet(directionSet, batchIndex);
-                EnemySpawner.ExternalSpawnEntry[] normalBatchEntries = BuildBatchEntries(totalEntries, batchIndex, safeBatchCount, false);
+                EnemySpawner.ExternalSpawnDirectionSet batchDirectionSet = BuildBatchDirectionSet(directionSet, previousBatchDirectionIndexes, out previousBatchDirectionIndexes);
+                EnemySpawner.ExternalSpawnEntry[] normalBatchEntries = BuildBatchEntriesFromQueue(normalSpawnQueue, batchIndex, normalMonstersPerTick);
 
                 if (normalBatchEntries.Length > 0)
                 {
@@ -263,21 +337,9 @@ namespace TeamProject01.Gameplay
 
                     if (enemySpawner.TrySpawnExternalEntriesDistributed(normalBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, formationOptions, spawnedBatchMonsters))
                     {
+                        lastNormalSpawnDirectionSet = batchDirectionSet;
+                        hasLastNormalSpawnDirectionSet = true;
                         ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
-                        waveTracker?.RegisterCurrentStageEnemies(stage, spawnedBatchMonsters);
-                    }
-                }
-
-                EnemySpawner.ExternalSpawnEntry[] eliteBatchEntries = BuildBatchEntries(totalEntries, batchIndex, safeBatchCount, true);
-
-                if (eliteBatchEntries.Length > 0)
-                {
-                    spawnedBatchMonsters.Clear();
-
-                    if (enemySpawner.TrySpawnExternalEntriesDistributed(eliteBatchEntries, batchDirectionSet, frontRowCount, congestionOptions, spreadOptions, formationOptions, spawnedBatchMonsters))
-                    {
-                        ApplyStageDifficulty(spawnedBatchMonsters, difficulty);
-                        MarkSpawnedElites(spawnedBatchMonsters, GetEliteCombinationType(totalEntries));
                         waveTracker?.RegisterCurrentStageEnemies(stage, spawnedBatchMonsters);
                     }
                 }
@@ -285,6 +347,42 @@ namespace TeamProject01.Gameplay
 
             waveTracker?.CompleteCurrentStageEnemySpawning(stage);
             spawnRoutine = null;
+        }
+
+        public bool TryGetLastNormalSpawnDirectionSet(out EnemySpawner.ExternalSpawnDirectionSet directionSet)
+        {
+            directionSet = lastNormalSpawnDirectionSet;
+            return hasLastNormalSpawnDirectionSet && directionSet.IsValid;
+        }
+
+        private int ResolveMonstersPerSpawnTick(int normalSpawnCount)
+        {
+            if (normalSpawnCount <= 0)
+            {
+                return 0;
+            }
+
+            int divisor = Mathf.Max(1, normalSpawnSplitDivisor);
+            int minPerTick = Mathf.Max(1, minMonstersPerSpawnTick);
+            int maxPerTick = Mathf.Max(minPerTick, maxMonstersPerSpawnTick);
+            return Mathf.Clamp(Mathf.RoundToInt(normalSpawnCount / (float)divisor), minPerTick, maxPerTick);
+        }
+
+        private int ResolveSpawnTickCount(int normalSpawnCount, int normalMonstersPerTick)
+        {
+            if (normalSpawnCount <= 0 || normalMonstersPerTick <= 0)
+            {
+                return Mathf.Max(1, spawnBatchCount);
+            }
+
+            return Mathf.Max(1, Mathf.CeilToInt(normalSpawnCount / (float)normalMonstersPerTick));
+        }
+
+        private float ResolveSpawnWindowSeconds(float stageDurationSeconds)
+        {
+            float fallbackWindowSeconds = stageDurationSeconds * (spawnWindowPercent / 100.0f);
+            float configuredWindowSeconds = normalSpawnWindowSeconds > 0.0f ? normalSpawnWindowSeconds : fallbackWindowSeconds;
+            return Mathf.Max(0.1f, Mathf.Min(stageDurationSeconds, configuredWindowSeconds));
         }
 
         private EnemySpawner.ExternalSpawnCongestionOptions BuildCongestionOptions()
@@ -354,7 +452,7 @@ namespace TeamProject01.Gameplay
             return Mathf.Max(0, result);
         }
 
-        private WaveStageDifficulty ResolveDifficultyForStage(int stage)
+        public WaveStageDifficulty ResolveDifficultyForStage(int stage)
         {
             DifficultyScaleStep step = GetDifficultyStepForStage(stage);
             int healthPercent = step != null ? step.healthScalePercent : 100;
@@ -408,13 +506,30 @@ namespace TeamProject01.Gameplay
                 return null;
             }
 
-            int totalWeight = 0;
+            int latestMinStage = int.MinValue;
 
             for (int i = 0; i < normalCompositions.Length; i++)
             {
                 NormalComposition composition = normalCompositions[i];
 
                 if (composition != null && composition.IsAvailable(stage))
+                {
+                    latestMinStage = Mathf.Max(latestMinStage, composition.minStage);
+                }
+            }
+
+            if (latestMinStage == int.MinValue)
+            {
+                return null;
+            }
+
+            int totalWeight = 0;
+
+            for (int i = 0; i < normalCompositions.Length; i++)
+            {
+                NormalComposition composition = normalCompositions[i];
+
+                if (composition != null && composition.minStage == latestMinStage && composition.IsAvailable(stage))
                 {
                     totalWeight += composition.weight;
                 }
@@ -431,7 +546,7 @@ namespace TeamProject01.Gameplay
             {
                 NormalComposition composition = normalCompositions[i];
 
-                if (composition == null || !composition.IsAvailable(stage))
+                if (composition == null || composition.minStage != latestMinStage || !composition.IsAvailable(stage))
                 {
                     continue;
                 }
@@ -447,7 +562,7 @@ namespace TeamProject01.Gameplay
             return null;
         }
 
-        private static List<CountEntry> BuildCountEntries(MonsterRatioEntry[] ratios, int totalCount)
+        private static List<CountEntry> BuildCountEntries(MonsterRatioEntry[] ratios, int totalCount, int stage)
         {
             List<CountEntry> results = new List<CountEntry>();
 
@@ -462,7 +577,7 @@ namespace TeamProject01.Gameplay
             {
                 MonsterRatioEntry ratio = ratios[i];
 
-                if (ratio != null && ratio.prefab != null && ratio.ratioPercent > 0)
+                if (ratio != null && ratio.prefab != null && ratio.ratioPercent > 0 && IsNormalMonsterUnlockedForStage(ratio.prefab, stage))
                 {
                     totalRatio += ratio.ratioPercent;
                 }
@@ -480,7 +595,7 @@ namespace TeamProject01.Gameplay
             {
                 MonsterRatioEntry ratio = ratios[i];
 
-                if (ratio == null || ratio.prefab == null || ratio.ratioPercent <= 0)
+                if (ratio == null || ratio.prefab == null || ratio.ratioPercent <= 0 || !IsNormalMonsterUnlockedForStage(ratio.prefab, stage))
                 {
                     continue;
                 }
@@ -503,24 +618,6 @@ namespace TeamProject01.Gameplay
             return results;
         }
 
-        private static void AddEliteEntries(List<CountEntry> results, EliteMixController.EliteStagePlan elitePlan)
-        {
-            if (results == null || !elitePlan.HasEntries)
-            {
-                return;
-            }
-
-            for (int i = 0; i < elitePlan.Entries.Length; i++)
-            {
-                EnemySpawner.ExternalSpawnEntry entry = elitePlan.Entries[i];
-
-                if (entry.IsValid)
-                {
-                    results.Add(new CountEntry(entry.Prefab, entry.Count, elitePlan.CombinationType));
-                }
-            }
-        }
-
         private static int GetTotalCount(List<CountEntry> entries)
         {
             int totalCount = 0;
@@ -538,86 +635,229 @@ namespace TeamProject01.Gameplay
             return totalCount;
         }
 
-        private static EnemySpawner.ExternalSpawnEntry[] BuildBatchEntries(List<CountEntry> totalEntries, int batchIndex, int batchCount, bool eliteOnly)
+        private static List<EnemyController> BuildSpawnQueue(List<CountEntry> totalEntries)
         {
-            List<EnemySpawner.ExternalSpawnEntry> batchEntries = new List<EnemySpawner.ExternalSpawnEntry>();
+            List<EnemyController> results = new List<EnemyController>();
+
+            if (totalEntries == null)
+            {
+                return results;
+            }
 
             for (int i = 0; i < totalEntries.Count; i++)
             {
                 CountEntry entry = totalEntries[i];
 
-                if (entry.IsElite != eliteOnly)
+                if (entry.Prefab == null || entry.Count <= 0)
                 {
                     continue;
                 }
 
-                int baseCount = entry.Count / batchCount;
-                int remainder = entry.Count % batchCount;
-                int count = baseCount + (batchIndex < remainder ? 1 : 0);
-
-                if (entry.Prefab != null && count > 0)
+                for (int countIndex = 0; countIndex < entry.Count; countIndex++)
                 {
-                    batchEntries.Add(new EnemySpawner.ExternalSpawnEntry(entry.Prefab, count));
+                    results.Add(entry.Prefab);
                 }
             }
 
-            return batchEntries.ToArray();
+            return results;
         }
 
-        private EnemySpawner.ExternalSpawnDirectionSet BuildBatchDirectionSet(EnemySpawner.ExternalSpawnDirectionSet stageDirectionSet, int batchIndex)
+        private static bool IsNormalMonsterUnlockedForStage(EnemyController prefab, int stage)
+        {
+            return stage >= GetNormalMonsterUnlockStage(prefab);
+        }
+
+        private static int GetNormalMonsterUnlockStage(EnemyController prefab)
+        {
+            if (prefab == null)
+            {
+                return 1;
+            }
+
+            string prefabName = prefab.name;
+
+            if (prefabName.IndexOf("Ranged_SkeletonCrossbow", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return 10; // 석궁은 초반 시야 압박이 커서 10웨이브부터 해금
+            }
+
+            if (prefabName.IndexOf("Ranged_Normal", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return 5; // 일반 원거리는 5웨이브부터 해금
+            }
+
+            if (prefabName.IndexOf("Melee_SkeletonDagger", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return 3; // 빠른 단검은 3웨이브부터 해금
+            }
+
+            return 1;
+        }
+
+        private static void ShuffleEnemyPrefabs(List<EnemyController> prefabs)
+        {
+            if (prefabs == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < prefabs.Count; i++)
+            {
+                int pickIndex = UnityEngine.Random.Range(i, prefabs.Count);
+                EnemyController picked = prefabs[pickIndex];
+                prefabs[pickIndex] = prefabs[i];
+                prefabs[i] = picked;
+            }
+        }
+
+        private static EnemySpawner.ExternalSpawnEntry[] BuildBatchEntriesFromQueue(List<EnemyController> spawnQueue, int batchIndex, int maxCount)
+        {
+            if (spawnQueue == null || spawnQueue.Count == 0 || maxCount <= 0)
+            {
+                return Array.Empty<EnemySpawner.ExternalSpawnEntry>();
+            }
+
+            int startIndex = batchIndex * maxCount;
+
+            if (startIndex >= spawnQueue.Count)
+            {
+                return Array.Empty<EnemySpawner.ExternalSpawnEntry>();
+            }
+
+            int endIndex = Mathf.Min(startIndex + maxCount, spawnQueue.Count);
+            List<EnemySpawner.ExternalSpawnEntry> results = new List<EnemySpawner.ExternalSpawnEntry>();
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                EnemyController prefab = spawnQueue[i];
+
+                if (prefab == null)
+                {
+                    continue;
+                }
+
+                int existingIndex = FindEntryIndex(results, prefab);
+
+                if (existingIndex >= 0)
+                {
+                    EnemySpawner.ExternalSpawnEntry existing = results[existingIndex];
+                    results[existingIndex] = new EnemySpawner.ExternalSpawnEntry(existing.Prefab, existing.Count + 1);
+                }
+                else
+                {
+                    results.Add(new EnemySpawner.ExternalSpawnEntry(prefab, 1));
+                }
+            }
+
+            return results.ToArray();
+        }
+
+        private static int FindEntryIndex(List<EnemySpawner.ExternalSpawnEntry> entries, EnemyController prefab)
+        {
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].Prefab == prefab)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private EnemySpawner.ExternalSpawnDirectionSet BuildBatchDirectionSet(EnemySpawner.ExternalSpawnDirectionSet stageDirectionSet, int[] previousDirectionIndexes, out int[] selectedDirectionIndexes)
         {
             int[] stageDirectionIndexes = stageDirectionSet.GetDirectionIndexes();
 
             if (stageDirectionIndexes == null || stageDirectionIndexes.Length == 0)
             {
+                selectedDirectionIndexes = Array.Empty<int>();
                 return stageDirectionSet;
             }
 
-            int safeBatchGateCount = Mathf.Clamp(batchGateCount, 1, stageDirectionIndexes.Length);
+            int safeBatchGateCount = disableWaveSpawnRedistribution ? 1 : Mathf.Clamp(batchGateCount, 1, stageDirectionIndexes.Length);
 
             if (safeBatchGateCount >= stageDirectionIndexes.Length)
             {
+                selectedDirectionIndexes = stageDirectionIndexes;
                 return stageDirectionSet;
             }
 
-            // Stage 시작 때 뽑힌 후보 방향 안에서만 돌려 쓰기 때문에 초반 방향 제한은 유지됩니다.
-            int[] batchDirectionIndexes = new int[safeBatchGateCount];
-            int startIndex = Mathf.Abs(batchIndex * safeBatchGateCount) % stageDirectionIndexes.Length;
-
-            for (int i = 0; i < batchDirectionIndexes.Length; i++)
-            {
-                int directionIndex = (startIndex + i) % stageDirectionIndexes.Length;
-                batchDirectionIndexes[i] = stageDirectionIndexes[directionIndex];
-            }
-
+            List<int> candidates = BuildDirectionCandidates(stageDirectionIndexes, previousDirectionIndexes, safeBatchGateCount);
+            int[] batchDirectionIndexes = PickRandomDirectionIndexes(candidates, safeBatchGateCount);
+            selectedDirectionIndexes = batchDirectionIndexes;
             return new EnemySpawner.ExternalSpawnDirectionSet(batchDirectionIndexes);
         }
 
-        private static void MarkSpawnedElites(List<EnemyController> spawnedElites, string eliteCombinationType)
+        private List<int> BuildDirectionCandidates(int[] stageDirectionIndexes, int[] previousDirectionIndexes, int safeBatchGateCount)
         {
-            if (spawnedElites == null || string.IsNullOrWhiteSpace(eliteCombinationType))
-            {
-                return;
-            }
+            List<int> candidates = new List<int>(stageDirectionIndexes.Length);
 
-            for (int i = 0; i < spawnedElites.Count; i++)
+            for (int i = 0; i < stageDirectionIndexes.Length; i++)
             {
-                EnemyController enemy = spawnedElites[i];
+                int directionIndex = stageDirectionIndexes[i];
 
-                if (enemy == null)
+                if (avoidPreviousSpawnDirections && stageDirectionIndexes.Length > safeBatchGateCount && ContainsDirectionIndex(previousDirectionIndexes, directionIndex))
                 {
                     continue;
                 }
 
-                WaveSpawnedEliteMarker marker = enemy.GetComponent<WaveSpawnedEliteMarker>();
-
-                if (marker == null)
-                {
-                    marker = enemy.gameObject.AddComponent<WaveSpawnedEliteMarker>();
-                }
-
-                marker.Initialize(eliteCombinationType);
+                candidates.Add(directionIndex);
             }
+
+            if (candidates.Count >= safeBatchGateCount)
+            {
+                return candidates;
+            }
+
+            candidates.Clear();
+
+            for (int i = 0; i < stageDirectionIndexes.Length; i++)
+            {
+                candidates.Add(stageDirectionIndexes[i]);
+            }
+
+            return candidates;
+        }
+
+        private static int[] PickRandomDirectionIndexes(List<int> candidates, int count)
+        {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return Array.Empty<int>();
+            }
+
+            int safeCount = Mathf.Clamp(count, 1, candidates.Count);
+            int[] selected = new int[safeCount];
+
+            for (int i = 0; i < safeCount; i++)
+            {
+                int pickIndex = UnityEngine.Random.Range(i, candidates.Count);
+                int picked = candidates[pickIndex];
+                candidates[pickIndex] = candidates[i];
+                candidates[i] = picked;
+                selected[i] = picked;
+            }
+
+            return selected;
+        }
+
+        private static bool ContainsDirectionIndex(int[] directionIndexes, int target)
+        {
+            if (directionIndexes == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < directionIndexes.Length; i++)
+            {
+                if (directionIndexes[i] == target)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void ApplyStageDifficulty(List<EnemyController> spawnedMonsters, WaveStageDifficulty difficulty)
@@ -631,26 +871,6 @@ namespace TeamProject01.Gameplay
             {
                 EnemyStageDifficultyApplier.Apply(spawnedMonsters[i], difficulty);
             }
-        }
-
-        private static string GetEliteCombinationType(List<CountEntry> totalEntries)
-        {
-            if (totalEntries == null)
-            {
-                return string.Empty;
-            }
-
-            for (int i = 0; i < totalEntries.Count; i++)
-            {
-                CountEntry entry = totalEntries[i];
-
-                if (entry.IsElite)
-                {
-                    return entry.EliteCombinationType;
-                }
-            }
-
-            return string.Empty;
         }
 
         private void ResolveEnemySpawner()

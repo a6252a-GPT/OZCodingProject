@@ -4,433 +4,439 @@ namespace TeamProject01.Gameplay
 {
     public enum BossDiamondProjectileMode
     {
-        Straight = 0, // Normal »óÅÂ¿¡¼­ Nexus Áß½ÉÀ¸·Î Á÷¼± ÀÌµ¿ÇÏ´Â ¸ğµå
-        FormationHoming = 1 // Berserk »óÅÂ¿¡¼­ ´ëÇü, ¿øÈ£, µ¹Áø ¼ø¼­·Î ÀÌµ¿ÇÏ´Â ¸ğµå
+        Straight = 0, // Normal ?ê³¹ê¹­?ë¨¯ê½Œ Nexus ä»¥ë¬’ë––?ì‡°ì¤ˆ ï§ê³¸ê½‘ ?ëŒ€ë£?ì„ë’— ï§â‘¤ë±¶
+        FormationHoming = 1 // Berserk ?ê³¹ê¹­?ë¨¯ê½Œ ?Â€?? ?ë¨°ìƒ‡, ?ëš¯ì­Š ?ì’–ê½Œæ¿¡??ëŒ€ë£?ì„ë’— ï§â‘¤ë±¶
     }
 
     public sealed class BossDiamondProjectile : MonoBehaviour
     {
         private enum FormationHomingState
         {
-            MovingToFormation = 0, // »ı¼º À§Ä¡¿¡¼­ µî µÚ ´ëÇü À§Ä¡·Î ÀÌµ¿ÇÏ´Â »óÅÂ
-            Standby = 1, // ´ëÇüÀ» À¯ÁöÇÏ¸ç ÀÚ½ÅÀÇ Ãâ°İ ¼ø¼­¸¦ ±â´Ù¸®´Â »óÅÂ
-            ArcFlight = 2, // Nexus¸¦ Áß½ÉÀ¸·Î ¿øÈ£¸¦ ±×¸®¸ç ÀÌµ¿ÇÏ´Â »óÅÂ
-            DiveAttack = 3 // ¿øÈ£ ÀÌµ¿À» ³¡³»°í Nexus·Î °í¼Ó µ¹ÁøÇÏ´Â »óÅÂ
+            MovingToFormation = 0, // ?ì•¹ê½¦ ?ê¾©íŠ‚?ë¨¯ê½Œ ?????Â€???ê¾©íŠ‚æ¿¡??ëŒ€ë£?ì„ë’— ?ê³¹ê¹­
+            Standby = 1, // ?Â€?ëº¤ì“£ ?ì¢??ì„Å‰ ?ë¨¯ë–Š??ç•°ì’“êº½ ?ì’–ê½Œç‘œ?æ¹²ê³•ë–ç”±Ñ‰ë’— ?ê³¹ê¹­
+            ArcFlight = 2, // Nexusç‘œ?ä»¥ë¬’ë––?ì‡°ì¤ˆ ?ë¨°ìƒ‡ç‘œ?æ´¹ëªƒâ”ï§??ëŒ€ë£?ì„ë’— ?ê³¹ê¹­
+            DiveAttack = 3 // ?ë¨°ìƒ‡ ?ëŒ€ë£???ì•¸ê¶¡æ€¨?Nexusæ¿¡?æ€¨ì¢ëƒ½ ?ëš¯ì­Š?ì„ë’— ?ê³¹ê¹­
         }
 
         [Header("Projectile")]
         [Min(0)]
-        [SerializeField] private int nexusDamage = 1; // Nexus¿¡ µµÂøÇßÀ» ¶§ Àû¿ëÇÒ ÇÇÇØ·®
+        [SerializeField] private int nexusDamage = 1; // Nexus???ê¾©ê°‘?ë‰ì“£ ???ê³¸ìŠœ???ì‡³ë¹??
 
         [Min(0.1f)]
-        [SerializeField] private float moveSpeed = 6.0f; // Normal Åõ»çÃ¼ÀÇ Á÷¼± ÀÌµ¿ ¼Óµµ
+        [SerializeField] private float moveSpeed = 6.0f; // Normal ?ÑŠê¶—ï§£ëŒì“½ ï§ê³¸ê½‘ ?ëŒ€ë£ ?ë¾ë£„
 
         [Min(0.1f)]
-        [SerializeField] private float hitDistance = 0.7f; // Normal Åõ»çÃ¼ÀÇ Nexus µµÂø ÆÇÁ¤ °Å¸®
+        [SerializeField] private float hitDistance = 0.7f; // Normal ?ÑŠê¶—ï§£ëŒì“½ Nexus ?ê¾©ê°‘ ?ë¨¯ì ™ å«„ê³•â”
 
         [Min(0.1f)]
-        [SerializeField] private float lifeTime = 20.0f; // Åõ»çÃ¼°¡ Á¸ÀçÇÒ ¼ö ÀÖ´Â ÃÖ´ë ½Ã°£
+        [SerializeField] private float lifeTime = 20.0f; // ?ÑŠê¶—ï§£ë‹¿? è­°ëŒì˜±?????ëˆë’— ï§¤ì’•? ?ì’“ì»™
 
         [Header("Formation")]
         [Min(0.0f)]
-        [SerializeField] private float formationDuration = 0.6f; // »ı¼º À§Ä¡¿¡¼­ ´ëÇü À§Ä¡±îÁö ÀÌµ¿ÇÏ´Â ½Ã°£
+        [SerializeField] private float formationDuration = 0.6f; // ?ì•¹ê½¦ ?ê¾©íŠ‚?ë¨¯ê½Œ ?Â€???ê¾©íŠ‚æºëš¯? ?ëŒ€ë£?ì„ë’— ?ì’“ì»™
 
         [Header("Berserk Arc Flight")]
         [Min(1.0f)]
-        [SerializeField] private float arcAngularSpeed = 140.0f; // Nexus ÁÖº¯À» È¸ÀüÇÏ´Â ÃÊ´ç °¢µµ
+        [SerializeField] private float arcAngularSpeed = 140.0f; // Nexus äºŒì‡°????ëš¯ìŸ¾?ì„ë’— ç¥ëˆë–¦ åª›ê³·ë£„
 
         [Min(0.0f)]
-        [SerializeField] private float minimumArcDuration = 0.6f; // µ¹Áø Àü ÃÖ¼Ò ¿øÈ£ ÀÌµ¿ ½Ã°£
+        [SerializeField] private float minimumArcDuration = 0.6f; // ?ëš¯ì­Š ??ï§¤ì’–ëƒ¼ ?ë¨°ìƒ‡ ?ëŒ€ë£ ?ì’“ì»™
 
         [Min(0.0f)]
-        [SerializeField] private float maximumArcDuration = 1.4f; // µ¹Áø Àü ÃÖ´ë ¿øÈ£ ÀÌµ¿ ½Ã°£
+        [SerializeField] private float maximumArcDuration = 1.4f; // ?ëš¯ì­Š ??ï§¤ì’•? ?ë¨°ìƒ‡ ?ëŒ€ë£ ?ì’“ì»™
 
         [Header("Berserk Dive Attack")]
         [Min(0.1f)]
-        [SerializeField] private float diveSpeed = 18.0f; // ¿øÈ£ ÀÌµ¿ ÈÄ Nexus·Î µ¹ÁøÇÏ´Â ¼Óµµ
+        [SerializeField] private float diveSpeed = 18.0f; // ?ë¨°ìƒ‡ ?ëŒ€ë£ ??Nexusæ¿¡??ëš¯ì­Š?ì„ë’— ?ë¾ë£„
 
         [Min(0.0f)]
-        [SerializeField] private float diveImpactRadius = 0.8f; // Nexus Áß½É¿¡¼­ Á¶±İ ¶³¾îÁø Ãæµ¹ ÁöÁ¡ÀÇ ¹İÁö¸§
+        [SerializeField] private float diveImpactRadius = 0.8f; // Nexus ä»¥ë¬’ë––?ë¨¯ê½Œ è­°ê³Œíˆ‘ ?â‘¥ë¼±ï§?ç•°â‘¸ë£ ï§Â€?ë¨¯ì“½ è«›ì„?ç”±?
 
         [Min(0.1f)]
-        [SerializeField] private float diveHitDistance = 0.5f; // µ¹Áø ¸ñÇ¥Á¡ µµÂø ÆÇÁ¤ °Å¸®
+        [SerializeField] private float diveHitDistance = 0.5f; // ?ëš¯ì­Š ï§â‘ºëª´???ê¾©ê°‘ ?ë¨¯ì ™ å«„ê³•â”
 
-        private Transform target; // ½ÇÁ¦ ÇÇÇØ¸¦ ¹ŞÀ» Nexus Transform
+        private Transform target; // ?ã…¼ì £ ?ì‡³ë¹ç‘œ?è«›ì†ì“£ Nexus Transform
 
-        private BossDiamondProjectileMode projectileMode; // ÇöÀç Åõ»çÃ¼ÀÇ ÀÌµ¿ ¹æ½Ä
+        private BossDiamondProjectileMode projectileMode; // ?ê¾©ì˜± ?ÑŠê¶—ï§£ëŒì“½ ?ëŒ€ë£ è«›â‘¹ë–‡
 
-        private FormationHomingState formationHomingState; // Berserk Åõ»çÃ¼ÀÇ ÇöÀç ÀÌµ¿ ´Ü°è
+        private FormationHomingState formationHomingState; // Berserk ?ÑŠê¶—ï§£ëŒì“½ ?ê¾©ì˜± ?ëŒ€ë£ ?â‘£í€
 
-        private Vector3 formationStartPosition; // ´ëÇü ÀÌµ¿À» ½ÃÀÛÇÑ ¿ùµå À§Ä¡
+        private Vector3 formationStartPosition; // ?Â€???ëŒ€ë£???ì’–ì˜‰???ë¶¾ë±¶ ?ê¾©íŠ‚
 
-        private Vector3 formationTargetPosition; // ´ëÇü¿¡¼­ ´ë±âÇÒ ¿ùµå À§Ä¡
+        private Vector3 formationTargetPosition; // ?Â€?ëº¤ë¿‰???Â€æ¹²ê³ ë¸· ?ë¶¾ë±¶ ?ê¾©íŠ‚
 
-        private Vector3 homingTargetOffset; // Nexus Áß½ÉÀ» ±âÁØÀ¸·Î Àü´Ş¹ŞÀº Æò¸é ¹æÇâ°ª
+        private Vector3 homingTargetOffset; // Nexus ä»¥ë¬’ë––??æ¹²ê³—??ì‡°ì¤ˆ ?ê¾¨ë––è«›ì†? ?ë°ãˆƒ è«›â‘ºë¼¢åª›?
 
-        private Vector3 movementDirection; // ÇöÀç Åõ»çÃ¼°¡ ÀÌµ¿ÇÏ´Â ¹æÇâ
+        private Vector3 movementDirection; // ?ê¾©ì˜± ?ÑŠê¶—ï§£ë‹¿? ?ëŒ€ë£?ì„ë’— è«›â‘ºë¼¢
 
-        private Vector3 diveTargetPosition; // ¿øÈ£ ÀÌµ¿ ÈÄ ÃÖÁ¾ÀûÀ¸·Î µ¹ÁøÇÒ Nexus ÁÖº¯ À§Ä¡
+        private Vector3 diveTargetPosition; // ?ë¨°ìƒ‡ ?ëŒ€ë£ ??ï§¤ì’–ì¥Œ?ê³¸ì‘æ¿¡??ëš¯ì­Š??Nexus äºŒì‡°? ?ê¾©íŠ‚
 
-        private float standbyDuration; // ´ëÇü¿¡¼­ ÀÚ½ÅÀÇ Ãâ°İ ¼ø¼­¸¦ ±â´Ù¸± ½Ã°£
+        private float standbyDuration; // ?Â€?ëº¤ë¿‰???ë¨¯ë–Š??ç•°ì’“êº½ ?ì’–ê½Œç‘œ?æ¹²ê³•ë–ç”±??ì’“ì»™
 
-        private float lifeTimer; // Åõ»çÃ¼°¡ »ı¼ºµÈ ÈÄ Áö³­ ½Ã°£
+        private float lifeTimer; // ?ÑŠê¶—ï§£ë‹¿? ?ì•¹ê½¦????ï§Â€???ì’“ì»™
 
-        private float modeTimer; // ÇöÀç ÀÌµ¿ »óÅÂ¿¡¼­ Áö³­ ½Ã°£
+        private float modeTimer; // ?ê¾©ì˜± ?ëŒ€ë£ ?ê³¹ê¹­?ë¨¯ê½Œ ï§Â€???ì’“ì»™
 
-        private float arcCurrentAngle; // Nexus¸¦ ±âÁØÀ¸·Î ÇÑ ÇöÀç ¿øÈ£ °¢µµ
+        private float arcCurrentAngle; // Nexusç‘œ?æ¹²ê³—??ì‡°ì¤ˆ ???ê¾©ì˜± ?ë¨°ìƒ‡ åª›ê³·ë£„
 
-        private float arcRadius; // Nexus¸¦ ±âÁØÀ¸·Î ÇÑ ÇöÀç ¿øÈ£ ¹İÁö¸§
+        private float arcRadius; // Nexusç‘œ?æ¹²ê³—??ì‡°ì¤ˆ ???ê¾©ì˜± ?ë¨°ìƒ‡ è«›ì„?ç”±?
 
-        private float arcFlightDuration; // ÀÌ¹ø Åõ»çÃ¼°¡ ¿øÈ£ ÀÌµ¿À» À¯ÁöÇÒ ½Ã°£
+        private float arcFlightDuration; // ?ëŒ€ì¾² ?ÑŠê¶—ï§£ë‹¿? ?ë¨°ìƒ‡ ?ëŒ€ë£???ì¢????ì’“ì»™
 
-        private float arcFlightHeight; // ¿øÈ£ ÀÌµ¿ Áß À¯ÁöÇÒ YÃà ³ôÀÌ
+        private float arcFlightHeight; // ?ë¨°ìƒ‡ ?ëŒ€ë£ ä»¥??ì¢???Yç•°??ë¯ªì” 
 
-        private float arcDirectionSign; // ½Ã°è ¶Ç´Â ¹İ½Ã°è ¹æÇâÀ» ³ªÅ¸³»´Â °ª
+        private float arcDirectionSign; // ?ì’“í€ ?ë¨®ë’— è«›ì„ë–†æ€¨?è«›â‘ºë¼¢???ì„‘??ëŒ€ë’— åª›?
 
-        private bool isConfigured; // ¸ñÇ¥¿Í ÀÌµ¿ ¹æ½ÄÀÌ ¼³Á¤µÆ´ÂÁö ³ªÅ¸³»´Â °ª
+        private bool isConfigured; // ï§â‘ºëª´?Â€ ?ëŒ€ë£ è«›â‘¹ë–‡???ã…¼ì ™?ë¨®ë’—ï§Â€ ?ì„‘??ëŒ€ë’— åª›?
 
-        private bool isDestroyed; // Á¦°Å Ã³¸®°¡ ½ÃÀÛµÆ´ÂÁö ³ªÅ¸³»´Â °ª
+        private bool isDestroyed; // ?ì’“êµ… ï§£ì„â”åª›Â€ ?ì’–ì˜‰?ë¨®ë’—ï§Â€ ?ì„‘??ëŒ€ë’— åª›?
 
         public bool IsDestroyed
         {
             get
             {
-                return isDestroyed; // ¿ÜºÎ¿¡¼­ Åõ»çÃ¼ÀÇ Á¦°Å »óÅÂ¸¦ È®ÀÎÇÒ ¼ö ÀÖ°Ô ¹İÈ¯ÇÑ´Ù.
+                return isDestroyed; // ?ëªƒ??ë¨¯ê½Œ ?ÑŠê¶—ï§£ëŒì“½ ?ì’“êµ… ?ê³¹ê¹­ç‘œ??ëº¤ì”¤?????ë‡ì¾¶ è«›ì„‘ì†š?ì’•ë–.
             }
+        }
+
+        public void SetNexusDamage(int damage)
+        {
+            nexusDamage = Mathf.Max(0, damage);
         }
 
         private void Update()
         {
-            if (isDestroyed) // ÀÌ¹Ì Á¦°Å Ã³¸®°¡ ½ÃÀÛµÆ´Ù¸é
+            if (isDestroyed)
             {
-                return; // ÀÌµ¿°ú ÇÇÇØ Ã³¸®¸¦ ¹İº¹ÇÏÁö ¾Ê´Â´Ù.
-            }
-
-            lifeTimer += Time.deltaTime; // Åõ»çÃ¼°¡ Á¸ÀçÇÑ ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
-
-            if (lifeTimer >= lifeTime) // ÃÖ´ë À¯Áö ½Ã°£À» ³Ñ¾ú´Ù¸é
-            {
-                DestroyProjectile(); // ¸ñÇ¥¿¡ µµÂøÇÏÁö ¸øÇß´õ¶óµµ Á¦°ÅÇÑ´Ù.
                 return;
             }
 
-            if (!isConfigured) // ¾ÆÁ÷ Nexus ¸ñÇ¥°¡ ¼³Á¤µÇÁö ¾Ê¾Ò´Ù¸é
-            {
-                return; // ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
-            }
+            lifeTimer += Time.deltaTime; // ?ÑŠê¶—ï§£ë‹¿? è­°ëŒì˜±???ì’“ì»™??ï§ì•·??ì’—ê¶“??
 
-            if (target == null) // Nexus°¡ Á¦°ÅµÆ°Å³ª ÂüÁ¶¸¦ ÀÒ¾ú´Ù¸é
+            if (lifeTimer >= lifeTime) // ï§¤ì’•? ?ì¢? ?ì’“ì»™???ì„ë¿€?ã…»ãˆƒ
             {
-                DestroyProjectile(); // ÀÌµ¿ÇÒ ¸ñÇ¥°¡ ¾øÀ¸¹Ç·Î Á¦°ÅÇÑ´Ù.
+                DestroyProjectile(); // ï§â‘ºëª´???ê¾©ê°‘?ì„? ï§ì‚µë»½?ë¶¾ì”ª???ì’“êµ…?ì’•ë–.
                 return;
             }
 
-            if (projectileMode == BossDiamondProjectileMode.FormationHoming) // Berserk Åõ»çÃ¼¶ó¸é
+            if (!isConfigured) // ?ê¾©ì­… Nexus ï§â‘ºëª´åª›Â€ ?ã…¼ì ™?ì„? ?ë”†ë¸¯?ã…»ãˆƒ
             {
-                MoveFormationHoming(); // ´ëÇü, ¿øÈ£, µ¹Áø ÀÌµ¿À» Ã³¸®ÇÑ´Ù.
+                return; // ?ëŒ€ë£?ì„? ?ë”…ë’—??
+            }
+
+            if (target == null) // Nexusåª›Â€ ?ì’“êµ…?ë¨­êµ…??ï§¡ëª„â€œç‘œ??ê»‹ë¿€?ã…»ãˆƒ
+            {
+                DestroyProjectile(); // ?ëŒ€ë£??ï§â‘ºëª´åª›Â€ ?ë†ì‘èª˜Â€æ¿¡??ì’“êµ…?ì’•ë–.
                 return;
             }
 
-            if (TryHitNormalTarget()) // Normal Åõ»çÃ¼°¡ ÀÌ¹Ì Nexus µµÂø ¹üÀ§ ¾ÈÀÌ¶ó¸é
+            if (projectileMode == BossDiamondProjectileMode.FormationHoming) // Berserk ?ÑŠê¶—ï§£ëŒ€ì”ªï§?
             {
-                return; // ÇÇÇØ Ã³¸®°¡ ³¡³µÀ¸¹Ç·Î ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
-            }
-
-            MoveStraight(); // Normal Åõ»çÃ¼¸¦ Nexus Áß½ÉÀ¸·Î ÀÌµ¿½ÃÅ²´Ù.
-
-            TryHitNormalTarget(); // ÀÌµ¿ ÈÄ Nexus µµÂø ¿©ºÎ¸¦ ´Ù½Ã È®ÀÎÇÑ´Ù.
-        }
-
-        public void Configure(Transform target) // Normal Á÷¼± Åõ»çÃ¼¸¦ ¼³Á¤ÇÏ´Â ÇÔ¼ö
-        {
-            InitializeProjectile(target); // °øÅë Åõ»çÃ¼ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-
-            projectileMode = BossDiamondProjectileMode.Straight; // Á÷¼± ÀÌµ¿ ¸ğµå·Î ¼³Á¤ÇÑ´Ù.
-
-            if (target == null) // À¯È¿ÇÑ Nexus°¡ ¾ø´Ù¸é
-            {
-                return; // ÀÌµ¿ ¹æÇâÀ» °è»êÇÏÁö ¾Ê´Â´Ù.
-            }
-
-            movementDirection = target.position - transform.position; // ÇöÀç À§Ä¡¿¡¼­ Nexus±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
-
-            if (movementDirection.sqrMagnitude <= 0.0001f) // ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
-            {
-                return; // ÇöÀç È¸ÀüÀ» À¯ÁöÇÑ´Ù.
-            }
-
-            movementDirection.Normalize(); // ÀÌµ¿ ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
-            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // Nexus ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
-        }
-
-        public void ConfigureFormationHoming(Transform target, Vector3 formationPosition, float standbyDuration) // ±âÁ¸ 3°³ ¸Å°³º¯¼ö ¿¬°á¿ë ÇÔ¼ö
-        {
-            ConfigureFormationHoming(target, formationPosition, standbyDuration, Vector3.zero); // º°µµ ¹æÇâÀÌ ¾øÀ¸¸é ÀÚµ¿À¸·Î ¹æÇâÀ» °è»êÇÑ´Ù.
-        }
-
-        public void ConfigureFormationHoming(Transform target, Vector3 formationPosition, float standbyDuration, Vector3 homingTargetOffset) // Berserk Åõ»çÃ¼¸¦ ¼³Á¤ÇÏ´Â ÇÔ¼ö
-        {
-            InitializeProjectile(target); // °øÅë Åõ»çÃ¼ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-
-            projectileMode = BossDiamondProjectileMode.FormationHoming; // Berserk ÀÌµ¿ ¸ğµå·Î ¼³Á¤ÇÑ´Ù.
-            formationHomingState = FormationHomingState.MovingToFormation; // ´ëÇü ÀÌµ¿ »óÅÂºÎÅÍ ½ÃÀÛÇÑ´Ù.
-
-            formationStartPosition = transform.position; // ÇöÀç »ı¼º À§Ä¡¸¦ ´ëÇü ÀÌµ¿ ½ÃÀÛÁ¡À¸·Î ÀúÀåÇÑ´Ù.
-            formationTargetPosition = formationPosition; // °ø°İ Script°¡ °è»êÇÑ ´ëÇü À§Ä¡¸¦ ÀúÀåÇÑ´Ù.
-            this.standbyDuration = Mathf.Max(0.0f, standbyDuration); // ´ë±â½Ã°£À» 0 ÀÌ»óÀ¸·Î ÀúÀåÇÑ´Ù.
-
-            this.homingTargetOffset = homingTargetOffset; // Nexus ÁÖº¯¿¡¼­ »ç¿ëÇÒ Ãæµ¹ ¹æÇâÀ» ÀúÀåÇÑ´Ù.
-            this.homingTargetOffset.y = 0.0f; // Ãæµ¹ ¹æÇâÀÇ »óÇÏ ºĞ»êÀ» Á¦°ÅÇÑ´Ù.
-
-            movementDirection = formationTargetPosition - formationStartPosition; // »ı¼ºÁ¡¿¡¼­ ´ëÇü À§Ä¡±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
-
-            if (movementDirection.sqrMagnitude <= 0.0001f) // ´ëÇü ÀÌµ¿ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
-            {
-                movementDirection = transform.forward; // ÇöÀç ¹Ù¶óº¸´Â ¹æÇâÀ» ´ë½Å »ç¿ëÇÑ´Ù.
-            }
-
-            movementDirection.Normalize(); // ÀÌµ¿ ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
-            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // ´ëÇü À§Ä¡ ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
-        }
-
-        private void InitializeProjectile(Transform target) // ¸ğµç ¹ß»ç ¹æ½Ä¿¡¼­ »ç¿ëÇÏ´Â °øÅë ÃÊ±âÈ­ ÇÔ¼ö
-        {
-            this.target = target; // Àü´Ş¹ŞÀº Nexus TransformÀ» ÀúÀåÇÑ´Ù.
-
-            lifeTimer = 0.0f; // À¯Áö½Ã°£À» ÃÊ±âÈ­ÇÑ´Ù.
-            modeTimer = 0.0f; // »óÅÂ Å¸ÀÌ¸Ó¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-            standbyDuration = 0.0f; // ÀÌÀü ´ë±â½Ã°£À» ÃÊ±âÈ­ÇÑ´Ù.
-            homingTargetOffset = Vector3.zero; // ÀÌÀü ¸ñÇ¥ ¹æÇâÀ» ÃÊ±âÈ­ÇÑ´Ù.
-            diveTargetPosition = Vector3.zero; // ÀÌÀü µ¹Áø ¸ñÇ¥Á¡À» ÃÊ±âÈ­ÇÑ´Ù.
-            isDestroyed = false; // Á¦°ÅµÇÁö ¾ÊÀº »óÅÂ·Î ÃÊ±âÈ­ÇÑ´Ù.
-            isConfigured = target != null; // À¯È¿ÇÑ Nexus°¡ ÀÖ´Ù¸é ¼³Á¤ ¿Ï·á »óÅÂ·Î ÀúÀåÇÑ´Ù.
-        }
-
-        private void MoveStraight() // Normal Åõ»çÃ¼¸¦ Nexus Áß½ÉÀ¸·Î Á÷¼± ÀÌµ¿½ÃÅ°´Â ÇÔ¼ö
-        {
-            Vector3 offset = target.position - transform.position; // ÇöÀç À§Ä¡¿¡¼­ Nexus±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
-
-            if (offset.sqrMagnitude <= 0.0001f) // ÀÌµ¿ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
-            {
-                return; // ÇöÀç À§Ä¡¸¦ À¯ÁöÇÑ´Ù.
-            }
-
-            movementDirection = offset.normalized; // Nexus ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
-
-            transform.position = Vector3.MoveTowards(transform.position, target.position, moveSpeed * Time.deltaTime); // Nexus Áß½ÉÀ¸·Î Á÷¼± ÀÌµ¿ÇÑ´Ù.
-            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // ÀÌµ¿ ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
-        }
-
-        private void MoveFormationHoming() // Berserk Åõ»çÃ¼ÀÇ ÀüÃ¼ ÀÌµ¿ ´Ü°è¸¦ Ã³¸®ÇÏ´Â ÇÔ¼ö
-        {
-            if (formationHomingState == FormationHomingState.MovingToFormation) // ´ëÇü À§Ä¡·Î ÀÌµ¿ ÁßÀÌ¶ó¸é
-            {
-                MoveToFormation(); // ÁöÁ¤µÈ ´ëÇü À§Ä¡·Î ÀÌµ¿ÇÑ´Ù.
+                MoveFormationHoming(); // ?Â€?? ?ë¨°ìƒ‡, ?ëš¯ì­Š ?ëŒ€ë£??ï§£ì„â”?ì’•ë–.
                 return;
             }
 
-            if (formationHomingState == FormationHomingState.Standby) // ´ëÇü¿¡¼­ ´ë±â ÁßÀÌ¶ó¸é
+            if (TryHitNormalTarget()) // Normal ?ÑŠê¶—ï§£ë‹¿? ?ëŒ€? Nexus ?ê¾©ê°‘ è¸°ë¶¿ì ?ë‰ì” ?ì‡°ãˆƒ
             {
-                WaitInFormation(); // ´ëÇü À§Ä¡¸¦ À¯ÁöÇÑ´Ù.
+                return; // ?ì‡³ë¹ ï§£ì„â”åª›Â€ ?ì•¸ê¶—?ì‡°?æ¿¡??ëŒ€ë£?ì„? ?ë”…ë’—??
+            }
+
+            MoveStraight(); // Normal ?ÑŠê¶—ï§£ëŒ€? Nexus ä»¥ë¬’ë––?ì‡°ì¤ˆ ?ëŒ€ë£?ì’—ê¶“??
+
+            TryHitNormalTarget(); // ?ëŒ€ë£ ??Nexus ?ê¾©ê°‘ ?Ñ‰?ç‘œ??ã…¼ë–† ?ëº¤ì”¤?ì’•ë–.
+        }
+
+        public void Configure(Transform target) // Normal ï§ê³¸ê½‘ ?ÑŠê¶—ï§£ëŒ€? ?ã…¼ì ™?ì„ë’— ?â‘¥ë‹”
+        {
+            InitializeProjectile(target); // æ€¨ë“¯ë„» ?ÑŠê¶—ï§£??ê³¹ê¹­ç‘œ?ç¥ë‡ë¦°?ë·€ë¸³??
+
+            projectileMode = BossDiamondProjectileMode.Straight; // ï§ê³¸ê½‘ ?ëŒ€ë£ ï§â‘¤ë±¶æ¿¡??ã…¼ì ™?ì’•ë–.
+
+            if (target == null) // ?ì¢ìŠš??Nexusåª›Â€ ?ë…¿ë–ï§?
+            {
+                return; // ?ëŒ€ë£ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì„? ?ë”…ë’—??
+            }
+
+            movementDirection = target.position - transform.position; // ?ê¾©ì˜± ?ê¾©íŠ‚?ë¨¯ê½Œ Nexusæºëš¯???è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
+
+            if (movementDirection.sqrMagnitude <= 0.0001f) // è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?????ë…¿ë–ï§?
+            {
+                return; // ?ê¾©ì˜± ?ëš¯ìŸ¾???ì¢??ì’•ë–.
+            }
+
+            movementDirection.Normalize(); // ?ëŒ€ë£ è«›â‘ºë¼¢??æ¹²ëª„ì” ç‘œ?1æ¿¡?ï§ëš®ë±º??
+            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // Nexus è«›â‘ºë¼¢??è«›ë¶¾ì”ªè¹‚ë‹¿ì¾¶ ?ì’•ë–.
+        }
+
+        public void ConfigureFormationHoming(Transform target, Vector3 formationPosition, float standbyDuration) // æ¹²ê³—ã€ˆ 3åª›?ï§ã…ºì»»è¹‚Â€???ê³Œê»???â‘¥ë‹”
+        {
+            ConfigureFormationHoming(target, formationPosition, standbyDuration, Vector3.zero); // è¹‚ê¾¨ë£„ è«›â‘ºë¼¢???ë†ì‘ï§??ë¨®ë£?ì‡°ì¤ˆ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
+        }
+
+        public void ConfigureFormationHoming(Transform target, Vector3 formationPosition, float standbyDuration, Vector3 homingTargetOffset) // Berserk ?ÑŠê¶—ï§£ëŒ€? ?ã…¼ì ™?ì„ë’— ?â‘¥ë‹”
+        {
+            InitializeProjectile(target); // æ€¨ë“¯ë„» ?ÑŠê¶—ï§£??ê³¹ê¹­ç‘œ?ç¥ë‡ë¦°?ë·€ë¸³??
+
+            projectileMode = BossDiamondProjectileMode.FormationHoming; // Berserk ?ëŒ€ë£ ï§â‘¤ë±¶æ¿¡??ã…¼ì ™?ì’•ë–.
+            formationHomingState = FormationHomingState.MovingToFormation; // ?Â€???ëŒ€ë£ ?ê³¹ê¹­éºÂ€???ì’–ì˜‰?ì’•ë–.
+
+            formationStartPosition = transform.position; // ?ê¾©ì˜± ?ì•¹ê½¦ ?ê¾©íŠ‚ç‘œ??Â€???ëŒ€ë£ ?ì’–ì˜‰?ë¨¯ì‘æ¿¡??Â€?Î½ë¸³??
+            formationTargetPosition = formationPosition; // æ€¨ë“¦êº½ Scriptåª›Â€ æ€¨ê¾©ê¶›???Â€???ê¾©íŠ‚ç‘œ??Â€?Î½ë¸³??
+            this.standbyDuration = Mathf.Max(0.0f, standbyDuration); // ?Â€æ¹²ê³—ë–†åª›ê¾©ì“£ 0 ?ëŒê¸½?ì‡°ì¤ˆ ?Â€?Î½ë¸³??
+
+            this.homingTargetOffset = homingTargetOffset; // Nexus äºŒì‡°??ë¨¯ê½Œ ?ÑŠìŠœ??ç•°â‘¸ë£ è«›â‘ºë¼¢???Â€?Î½ë¸³??
+            this.homingTargetOffset.y = 0.0f; // ç•°â‘¸ë£ è«›â‘ºë¼¢???ê³¹ë¸¯ éºê¾©ê¶›???ì’“êµ…?ì’•ë–.
+
+            movementDirection = formationTargetPosition - formationStartPosition; // ?ì•¹ê½¦?ë¨¯ë¿‰???Â€???ê¾©íŠ‚æºëš¯???è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
+
+            if (movementDirection.sqrMagnitude <= 0.0001f) // ?Â€???ëŒ€ë£ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?????ë…¿ë–ï§?
+            {
+                movementDirection = transform.forward; // ?ê¾©ì˜± è«›ë¶¾ì”ªè¹‚ëŒ€ë’— è«›â‘ºë¼¢???Â€???ÑŠìŠœ?ì’•ë–.
+            }
+
+            movementDirection.Normalize(); // ?ëŒ€ë£ è«›â‘ºë¼¢??æ¹²ëª„ì” ç‘œ?1æ¿¡?ï§ëš®ë±º??
+            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // ?Â€???ê¾©íŠ‚ è«›â‘ºë¼¢??è«›ë¶¾ì”ªè¹‚ë‹¿ì¾¶ ?ì’•ë–.
+        }
+
+        private void InitializeProjectile(Transform target) // ï§â‘¤ë±º è«›ì’–ê¶— è«›â‘¹ë–‡?ë¨¯ê½Œ ?ÑŠìŠœ?ì„ë’— æ€¨ë“¯ë„» ç¥ë‡ë¦°???â‘¥ë‹”
+        {
+            this.target = target; // ?ê¾¨ë––è«›ì†? Nexus Transform???Â€?Î½ë¸³??
+
+            lifeTimer = 0.0f; // ?ì¢??ì’“ì»™??ç¥ë‡ë¦°?ë·€ë¸³??
+            modeTimer = 0.0f; // ?ê³¹ê¹­ ?Â€?ëŒ€ã‰§ç‘œ?ç¥ë‡ë¦°?ë·€ë¸³??
+            standbyDuration = 0.0f; // ?ëŒìŸ¾ ?Â€æ¹²ê³—ë–†åª›ê¾©ì“£ ç¥ë‡ë¦°?ë·€ë¸³??
+            homingTargetOffset = Vector3.zero; // ?ëŒìŸ¾ ï§â‘ºëª´ è«›â‘ºë¼¢??ç¥ë‡ë¦°?ë·€ë¸³??
+            diveTargetPosition = Vector3.zero; // ?ëŒìŸ¾ ?ëš¯ì­Š ï§â‘ºëª´?ë¨¯ì“£ ç¥ë‡ë¦°?ë·€ë¸³??
+            isDestroyed = false; // ?ì’“êµ…?ì„? ?ë”†? ?ê³¹ê¹­æ¿¡?ç¥ë‡ë¦°?ë·€ë¸³??
+            isConfigured = target != null; // ?ì¢ìŠš??Nexusåª›Â€ ?ëˆë–ï§??ã…¼ì ™ ?ê¾¨ì¦º ?ê³¹ê¹­æ¿¡??Â€?Î½ë¸³??
+        }
+
+        private void MoveStraight() // Normal ?ÑŠê¶—ï§£ëŒ€? Nexus ä»¥ë¬’ë––?ì‡°ì¤ˆ ï§ê³¸ê½‘ ?ëŒ€ë£?ì’—ê¶???â‘¥ë‹”
+        {
+            Vector3 offset = target.position - transform.position; // ?ê¾©ì˜± ?ê¾©íŠ‚?ë¨¯ê½Œ Nexusæºëš¯???è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
+
+            if (offset.sqrMagnitude <= 0.0001f) // ?ëŒ€ë£ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?????ë…¿ë–ï§?
+            {
+                return; // ?ê¾©ì˜± ?ê¾©íŠ‚ç‘œ??ì¢??ì’•ë–.
+            }
+
+            movementDirection = offset.normalized; // Nexus è«›â‘ºë¼¢??æ¹²ëª„ì” ç‘œ?1æ¿¡?ï§ëš®ë±º??
+
+            transform.position = Vector3.MoveTowards(transform.position, target.position, moveSpeed * Time.deltaTime); // Nexus ä»¥ë¬’ë––?ì‡°ì¤ˆ ï§ê³¸ê½‘ ?ëŒ€ë£?ì’•ë–.
+            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // ?ëŒ€ë£ è«›â‘ºë¼¢??è«›ë¶¾ì”ªè¹‚ë‹¿ì¾¶ ?ì’•ë–.
+        }
+
+        private void MoveFormationHoming() // Berserk ?ÑŠê¶—ï§£ëŒì“½ ?ê¾©ê»œ ?ëŒ€ë£ ?â‘£í€ç‘œ?ï§£ì„â”?ì„ë’— ?â‘¥ë‹”
+        {
+            if (formationHomingState == FormationHomingState.MovingToFormation) // ?Â€???ê¾©íŠ‚æ¿¡??ëŒ€ë£ ä»¥ë¬’ì” ?ì‡°ãˆƒ
+            {
+                MoveToFormation(); // ï§Â€?ëº£ë§‚ ?Â€???ê¾©íŠ‚æ¿¡??ëŒ€ë£?ì’•ë–.
                 return;
             }
 
-            if (formationHomingState == FormationHomingState.ArcFlight) // Nexus ÁÖº¯À» È¸Àü ÁßÀÌ¶ó¸é
+            if (formationHomingState == FormationHomingState.Standby) // ?Â€?ëº¤ë¿‰???Â€æ¹²?ä»¥ë¬’ì” ?ì‡°ãˆƒ
             {
-                MoveArcFlight(); // ¿øÈ£ ÀÌµ¿À» Ã³¸®ÇÑ´Ù.
+                WaitInFormation(); // ?Â€???ê¾©íŠ‚ç‘œ??ì¢??ì’•ë–.
                 return;
             }
 
-            MoveDiveAttack(); // ¿øÈ£ ÀÌµ¿ ÈÄ Nexus µ¹ÁøÀ» Ã³¸®ÇÑ´Ù.
-        }
-
-        private void MoveToFormation() // »ı¼º À§Ä¡¿¡¼­ ´ëÇü À§Ä¡·Î ÆîÃÄÁö´Â ÇÔ¼ö
-        {
-            modeTimer += Time.deltaTime; // ´ëÇü ÀÌµ¿ ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
-
-            float progress = formationDuration <= 0.0f ? 1.0f : Mathf.Clamp01(modeTimer / formationDuration); // ÀÌµ¿ ÁøÇà·üÀ» °è»êÇÑ´Ù.
-            float easedProgress = Mathf.SmoothStep(0.0f, 1.0f, progress); // ½ÃÀÛ°ú ³¡À» ºÎµå·´°Ô ¸¸µç´Ù.
-
-            Vector3 nextPosition = Vector3.Lerp(formationStartPosition, formationTargetPosition, easedProgress); // ÀÌ¹ø ÇÁ·¹ÀÓ À§Ä¡¸¦ °è»êÇÑ´Ù.
-            Vector3 nextDirection = nextPosition - transform.position; // ½ÇÁ¦ ÀÌµ¿ ¹æÇâÀ» °è»êÇÑ´Ù.
-
-            transform.position = nextPosition; // °è»êµÈ À§Ä¡·Î ÀÌµ¿ÇÑ´Ù.
-
-            if (nextDirection.sqrMagnitude > 0.0001f) // À¯È¿ÇÑ ÀÌµ¿ ¹æÇâÀÌ ÀÖ´Ù¸é
+            if (formationHomingState == FormationHomingState.ArcFlight) // Nexus äºŒì‡°????ëš¯ìŸ¾ ä»¥ë¬’ì” ?ì‡°ãˆƒ
             {
-                transform.rotation = Quaternion.LookRotation(nextDirection.normalized, Vector3.up); // ÀÌµ¿ ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+                MoveArcFlight(); // ?ë¨°ìƒ‡ ?ëŒ€ë£??ï§£ì„â”?ì’•ë–.
+                return;
             }
 
-            if (progress < 1.0f) // ¾ÆÁ÷ ´ëÇü À§Ä¡¿¡ µµÂøÇÏÁö ¾Ê¾Ò´Ù¸é
-            {
-                return; // ´ë±â »óÅÂ·Î ³Ñ¾î°¡Áö ¾Ê´Â´Ù.
-            }
-
-            transform.position = formationTargetPosition; // ÃÖÁ¾ ´ëÇü À§Ä¡¸¦ Á¤È®È÷ ¸ÂÃá´Ù.
-            formationHomingState = FormationHomingState.Standby; // ´ëÇü ´ë±â »óÅÂ·Î º¯°æÇÑ´Ù.
-            modeTimer = 0.0f; // ´ë±â½Ã°£ °è»êÀ» À§ÇØ Å¸ÀÌ¸Ó¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+            MoveDiveAttack(); // ?ë¨°ìƒ‡ ?ëŒ€ë£ ??Nexus ?ëš¯ì­Š??ï§£ì„â”?ì’•ë–.
         }
 
-        private void WaitInFormation() // ´ëÇüÀ» À¯ÁöÇÏ¸ç ÀÚ½ÅÀÇ Ãâ°İ ½Ã°£À» ±â´Ù¸®´Â ÇÔ¼ö
+        private void MoveToFormation() // ?ì•¹ê½¦ ?ê¾©íŠ‚?ë¨¯ê½Œ ?Â€???ê¾©íŠ‚æ¿¡??ì‡±í€œï§Â€???â‘¥ë‹”
         {
-            transform.position = formationTargetPosition; // ´ë±â Áß¿¡´Â ÁöÁ¤µÈ ´ëÇü À§Ä¡¸¦ À¯ÁöÇÑ´Ù.
+            modeTimer += Time.deltaTime; // ?Â€???ëŒ€ë£ ?ì’“ì»™??ï§ì•·??ì’—ê¶“??
 
-            modeTimer += Time.deltaTime; // ´ë±â½Ã°£À» Áõ°¡½ÃÅ²´Ù.
+            float progress = formationDuration <= 0.0f ? 1.0f : Mathf.Clamp01(modeTimer / formationDuration); // ?ëŒ€ë£ ï§ê¾ªë»¾ç‘œì¢ì“£ æ€¨ê¾©ê¶›?ì’•ë–.
+            float easedProgress = Mathf.SmoothStep(0.0f, 1.0f, progress); // ?ì’–ì˜‰æ€¨??ì•¹ì“£ éºÂ€?ì’•ì‡å¯ƒ?ï§ëš®ë±º??
 
-            if (modeTimer < standbyDuration) // ¾ÆÁ÷ ÀÚ½ÅÀÇ Ãâ°İ ½Ã°£ÀÌ µÇÁö ¾Ê¾Ò´Ù¸é
+            Vector3 nextPosition = Vector3.Lerp(formationStartPosition, formationTargetPosition, easedProgress); // ?ëŒ€ì¾² ?ê¾¨ì …???ê¾©íŠ‚ç‘œ?æ€¨ê¾©ê¶›?ì’•ë–.
+            Vector3 nextDirection = nextPosition - transform.position; // ?ã…¼ì £ ?ëŒ€ë£ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
+
+            transform.position = nextPosition; // æ€¨ê¾©ê¶›???ê¾©íŠ‚æ¿¡??ëŒ€ë£?ì’•ë–.
+
+            if (nextDirection.sqrMagnitude > 0.0001f) // ?ì¢ìŠš???ëŒ€ë£ è«›â‘ºë¼¢???ëˆë–ï§?
             {
-                return; // ´ëÇüÀ» °è¼Ó À¯ÁöÇÑ´Ù.
+                transform.rotation = Quaternion.LookRotation(nextDirection.normalized, Vector3.up); // ?ëŒ€ë£ è«›â‘ºë¼¢??è«›ë¶¾ì”ªè¹‚ë‹¿ì¾¶ ?ì’•ë–.
             }
 
-            BeginArcFlight(); // Nexus ÁÖº¯ ¿øÈ£ ÀÌµ¿À» ½ÃÀÛÇÑ´Ù.
-        }
-
-        private void BeginArcFlight() // ¿øÈ£ ÀÌµ¿À» ½ÃÀÛÇÏ±â À§ÇÑ °ªÀ» °è»êÇÏ´Â ÇÔ¼ö
-        {
-            formationHomingState = FormationHomingState.ArcFlight; // ¿øÈ£ ÀÌµ¿ »óÅÂ·Î º¯°æÇÑ´Ù.
-            modeTimer = 0.0f; // ¿øÈ£ ÀÌµ¿ ½Ã°£À» ÃÊ±âÈ­ÇÑ´Ù.
-
-            Vector3 startOffset = transform.position - target.position; // Nexus Áß½É¿¡¼­ Åõ»çÃ¼±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
-            startOffset.y = 0.0f; // ¿øÈ£ ÀÌµ¿À» XZ Æò¸éÀ¸·Î Á¦ÇÑÇÑ´Ù.
-
-            if (startOffset.sqrMagnitude <= 0.0001f) // ¿øÈ£ ½ÃÀÛ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
+            if (progress < 1.0f) // ?ê¾©ì­… ?Â€???ê¾©íŠ‚???ê¾©ê°‘?ì„? ?ë”†ë¸¯?ã…»ãˆƒ
             {
-                startOffset = -transform.forward; // ÇöÀç ¾Õ ¹æÇâÀÇ ¹İ´ë¸¦ »ç¿ëÇÑ´Ù.
-                startOffset.y = 0.0f; // YÃàÀ» Á¦°ÅÇÑ´Ù.
+                return; // ?Â€æ¹²??ê³¹ê¹­æ¿¡??ì„ë¼±åª›Â€ï§Â€ ?ë”…ë’—??
             }
 
-            arcRadius = Mathf.Max(0.1f, startOffset.magnitude); // ÇöÀç Nexus¿ÍÀÇ °Å¸®¸¦ ¿øÈ£ ¹İÁö¸§À¸·Î ÀúÀåÇÑ´Ù.
-            arcCurrentAngle = Mathf.Atan2(startOffset.z, startOffset.x) * Mathf.Rad2Deg; // ÇöÀç Nexus ±âÁØ °¢µµ¸¦ ÀúÀåÇÑ´Ù.
-            arcDirectionSign = Random.value < 0.5f ? -1.0f : 1.0f; // ½Ã°è ¶Ç´Â ¹İ½Ã°è ¹æÇâÀ» ¹«ÀÛÀ§·Î ¼±ÅÃÇÑ´Ù.
-
-            float minimumDuration = Mathf.Min(minimumArcDuration, maximumArcDuration); // µÎ ½Ã°£ Áß ÀÛÀº °ªÀ» ÃÖ¼Ò ½Ã°£À¸·Î »ç¿ëÇÑ´Ù.
-            float maximumDuration = Mathf.Max(minimumArcDuration, maximumArcDuration); // µÎ ½Ã°£ Áß Å« °ªÀ» ÃÖ´ë ½Ã°£À¸·Î »ç¿ëÇÑ´Ù.
-
-            arcFlightDuration = Random.Range(minimumDuration, maximumDuration); // °¢ Åõ»çÃ¼¸¶´Ù ¼­·Î ´Ù¸¥ ¿øÈ£ À¯Áö ½Ã°£À» ¼±ÅÃÇÑ´Ù.
-            arcFlightHeight = transform.position.y; // ´ëÇü¿¡¼­ Ãâ°İÇÑ ³ôÀÌ¸¦ ¿øÈ£ ÀÌµ¿ Áß À¯ÁöÇÑ´Ù.
+            transform.position = formationTargetPosition; // ï§¤ì’–ì¥Œ ?Â€???ê¾©íŠ‚ç‘œ??ëº¥ì†—??ï§ìší…£??
+            formationHomingState = FormationHomingState.Standby; // ?Â€???Â€æ¹²??ê³¹ê¹­æ¿¡?è¹‚Â€å¯ƒì€ë¸³??
+            modeTimer = 0.0f; // ?Â€æ¹²ê³—ë–†åª›?æ€¨ê¾©ê¶›???ê¾ªë¹ ?Â€?ëŒ€ã‰§ç‘œ?ç¥ë‡ë¦°?ë·€ë¸³??
         }
 
-        private void MoveArcFlight() // Nexus¸¦ Áß½ÉÀ¸·Î ¿øÈ£¸¦ ±×¸®¸ç ÀÌµ¿ÇÏ´Â ÇÔ¼ö
+        private void WaitInFormation() // ?Â€?ëº¤ì“£ ?ì¢??ì„Å‰ ?ë¨¯ë–Š??ç•°ì’“êº½ ?ì’“ì»™??æ¹²ê³•ë–ç”±Ñ‰ë’— ?â‘¥ë‹”
         {
-            modeTimer += Time.deltaTime; // ¿øÈ£ ÀÌµ¿ ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
-            arcCurrentAngle += arcDirectionSign * arcAngularSpeed * Time.deltaTime; // ½Ã°è ¶Ç´Â ¹İ½Ã°è ¹æÇâÀ¸·Î °¢µµ¸¦ Áõ°¡½ÃÅ²´Ù.
+            transform.position = formationTargetPosition; // ?Â€æ¹²?ä»¥ë¬’ë¿‰??ï§Â€?ëº£ë§‚ ?Â€???ê¾©íŠ‚ç‘œ??ì¢??ì’•ë–.
 
-            float angleRadians = arcCurrentAngle * Mathf.Deg2Rad; // ¿øÈ£ À§Ä¡ °è»êÀ» À§ÇØ °¢µµ¸¦ ¶óµğ¾ÈÀ¸·Î º¯È¯ÇÑ´Ù.
+            modeTimer += Time.deltaTime; // ?Â€æ¹²ê³—ë–†åª›ê¾©ì“£ ï§ì•·??ì’—ê¶“??
 
-            Vector3 planarOffset = new Vector3(Mathf.Cos(angleRadians), 0.0f, Mathf.Sin(angleRadians)) * arcRadius; // Nexus ±âÁØ ¿øÇü À§Ä¡¸¦ °è»êÇÑ´Ù.
-            Vector3 nextPosition = target.position + planarOffset; // Nexus À§Ä¡¿¡ ¿øÇü ¿ÀÇÁ¼ÂÀ» ´õÇØ ¿ùµå À§Ä¡¸¦ °è»êÇÑ´Ù.
-
-            nextPosition.y = arcFlightHeight; // ¿øÈ£ ÀÌµ¿ Áß¿¡´Â YÃà ³ôÀÌ¸¦ À¯ÁöÇÑ´Ù.
-
-            Vector3 nextDirection = nextPosition - transform.position; // ¿øÈ£ÀÇ ½ÇÁ¦ Á¢¼± ÀÌµ¿ ¹æÇâÀ» °è»êÇÑ´Ù.
-
-            transform.position = nextPosition; // °è»êµÈ ¿øÈ£ À§Ä¡·Î ÀÌµ¿ÇÑ´Ù.
-
-            if (nextDirection.sqrMagnitude > 0.0001f) // ½ÇÁ¦ ÀÌµ¿ ¹æÇâÀÌ ÀÖ´Ù¸é
+            if (modeTimer < standbyDuration) // ?ê¾©ì­… ?ë¨¯ë–Š??ç•°ì’“êº½ ?ì’“ì»™???ì„? ?ë”†ë¸¯?ã…»ãˆƒ
             {
-                nextDirection.y = 0.0f; // À§¾Æ·¡·Î ±â¿ï¾îÁöÁö ¾Êµµ·Ï YÃàÀ» Á¦°ÅÇÑ´Ù.
+                return; // ?Â€?ëº¤ì“£ æ€¨ê¾©ëƒ½ ?ì¢??ì’•ë–.
+            }
 
-                if (nextDirection.sqrMagnitude > 0.0001f) // Æò¸é ÀÌµ¿ ¹æÇâÀÌ À¯È¿ÇÏ´Ù¸é
+            BeginArcFlight(); // Nexus äºŒì‡°? ?ë¨°ìƒ‡ ?ëŒ€ë£???ì’–ì˜‰?ì’•ë–.
+        }
+
+        private void BeginArcFlight() // ?ë¨°ìƒ‡ ?ëŒ€ë£???ì’–ì˜‰?ì„ë¦° ?ê¾ªë¸³ åª›ë¯ªì“£ æ€¨ê¾©ê¶›?ì„ë’— ?â‘¥ë‹”
+        {
+            formationHomingState = FormationHomingState.ArcFlight; // ?ë¨°ìƒ‡ ?ëŒ€ë£ ?ê³¹ê¹­æ¿¡?è¹‚Â€å¯ƒì€ë¸³??
+            modeTimer = 0.0f; // ?ë¨°ìƒ‡ ?ëŒ€ë£ ?ì’“ì»™??ç¥ë‡ë¦°?ë·€ë¸³??
+
+            Vector3 startOffset = transform.position - target.position; // Nexus ä»¥ë¬’ë––?ë¨¯ê½Œ ?ÑŠê¶—ï§£ë‹¿í‰´ï§Â€??è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
+            startOffset.y = 0.0f; // ?ë¨°ìƒ‡ ?ëŒ€ë£??XZ ?ë°ãˆƒ?ì‡°ì¤ˆ ?ì’—ë¸³?ì’•ë–.
+
+            if (startOffset.sqrMagnitude <= 0.0001f) // ?ë¨°ìƒ‡ ?ì’–ì˜‰ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?????ë…¿ë–ï§?
+            {
+                startOffset = -transform.forward; // ?ê¾©ì˜± ??è«›â‘ºë¼¢??è«›ì„?ç‘œ??ÑŠìŠœ?ì’•ë–.
+                startOffset.y = 0.0f; // Yç•°ëº¤ì“£ ?ì’“êµ…?ì’•ë–.
+            }
+
+            arcRadius = Mathf.Max(0.1f, startOffset.magnitude); // ?ê¾©ì˜± Nexus?Â€??å«„ê³•â”ç‘œ??ë¨°ìƒ‡ è«›ì„?ç”±ê¾©ì‘æ¿¡??Â€?Î½ë¸³??
+            arcCurrentAngle = Mathf.Atan2(startOffset.z, startOffset.x) * Mathf.Rad2Deg; // ?ê¾©ì˜± Nexus æ¹²ê³—? åª›ê³·ë£„ç‘œ??Â€?Î½ë¸³??
+            arcDirectionSign = Random.value < 0.5f ? -1.0f : 1.0f; // ?ì’“í€ ?ë¨®ë’— è«›ì„ë–†æ€¨?è«›â‘ºë¼¢??è‡¾ëŒì˜‰?ê¾¨ì¤ˆ ?ì¢ê¹®?ì’•ë–.
+
+            float minimumDuration = Mathf.Min(minimumArcDuration, maximumArcDuration); // ???ì’“ì»™ ä»¥??ë¬’? åª›ë¯ªì“£ ï§¤ì’–ëƒ¼ ?ì’“ì»™?ì‡°ì¤ˆ ?ÑŠìŠœ?ì’•ë–.
+            float maximumDuration = Mathf.Max(minimumArcDuration, maximumArcDuration); // ???ì’“ì»™ ä»¥???åª›ë¯ªì“£ ï§¤ì’•? ?ì’“ì»™?ì‡°ì¤ˆ ?ÑŠìŠœ?ì’•ë–.
+
+            arcFlightDuration = Random.Range(minimumDuration, maximumDuration); // åª›??ÑŠê¶—ï§£ëŒ€ì­???ì’•ì¤ˆ ?ã…»â…¨ ?ë¨°ìƒ‡ ?ì¢? ?ì’“ì»™???ì¢ê¹®?ì’•ë–.
+            arcFlightHeight = transform.position.y; // ?Â€?ëº¤ë¿‰??ç•°ì’“êº½???ë¯ªì” ç‘œ??ë¨°ìƒ‡ ?ëŒ€ë£ ä»¥??ì¢??ì’•ë–.
+        }
+
+        private void MoveArcFlight() // Nexusç‘œ?ä»¥ë¬’ë––?ì‡°ì¤ˆ ?ë¨°ìƒ‡ç‘œ?æ´¹ëªƒâ”ï§??ëŒ€ë£?ì„ë’— ?â‘¥ë‹”
+        {
+            modeTimer += Time.deltaTime; // ?ë¨°ìƒ‡ ?ëŒ€ë£ ?ì’“ì»™??ï§ì•·??ì’—ê¶“??
+            arcCurrentAngle += arcDirectionSign * arcAngularSpeed * Time.deltaTime; // ?ì’“í€ ?ë¨®ë’— è«›ì„ë–†æ€¨?è«›â‘ºë¼¢?ì‡°ì¤ˆ åª›ê³·ë£„ç‘œ?ï§ì•·??ì’—ê¶“??
+
+            float angleRadians = arcCurrentAngle * Mathf.Deg2Rad; // ?ë¨°ìƒ‡ ?ê¾©íŠ‚ æ€¨ê¾©ê¶›???ê¾ªë¹ åª›ê³·ë£„ç‘œ??ì‡°ëµ’?ë‰ì‘æ¿¡?è¹‚Â€?ì„‘ë¸³??
+
+            Vector3 planarOffset = new Vector3(Mathf.Cos(angleRadians), 0.0f, Mathf.Sin(angleRadians)) * arcRadius; // Nexus æ¹²ê³—? ?ë¨°ì‚ ?ê¾©íŠ‚ç‘œ?æ€¨ê¾©ê¶›?ì’•ë–.
+            Vector3 nextPosition = target.position + planarOffset; // Nexus ?ê¾©íŠ‚???ë¨°ì‚ ?ã…½ë´½?ë—­ì“£ ?ë·€ë¹ ?ë¶¾ë±¶ ?ê¾©íŠ‚ç‘œ?æ€¨ê¾©ê¶›?ì’•ë–.
+
+            nextPosition.y = arcFlightHeight; // ?ë¨°ìƒ‡ ?ëŒ€ë£ ä»¥ë¬’ë¿‰??Yç•°??ë¯ªì” ç‘œ??ì¢??ì’•ë–.
+
+            Vector3 nextDirection = nextPosition - transform.position; // ?ë¨°ìƒ‡???ã…¼ì £ ?ë¬’ê½‘ ?ëŒ€ë£ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
+
+            transform.position = nextPosition; // æ€¨ê¾©ê¶›???ë¨°ìƒ‡ ?ê¾©íŠ‚æ¿¡??ëŒ€ë£?ì’•ë–.
+
+            if (nextDirection.sqrMagnitude > 0.0001f) // ?ã…¼ì £ ?ëŒ€ë£ è«›â‘ºë¼¢???ëˆë–ï§?
+            {
+                nextDirection.y = 0.0f; // ?ê¾©ë¸˜?ì„ì¤ˆ æ¹²ê³—ìŠ±?ëŒ?ï§Â€ ?ë”…ë£„æ¿¡?Yç•°ëº¤ì“£ ?ì’“êµ…?ì’•ë–.
+
+                if (nextDirection.sqrMagnitude > 0.0001f) // ?ë°ãˆƒ ?ëŒ€ë£ è«›â‘ºë¼¢???ì¢ìŠš?ì„ë–ï§?
                 {
-                    transform.rotation = Quaternion.LookRotation(nextDirection.normalized, Vector3.up); // ¿øÈ£ÀÇ Á¢¼± ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+                    transform.rotation = Quaternion.LookRotation(nextDirection.normalized, Vector3.up); // ?ë¨°ìƒ‡???ë¬’ê½‘ è«›â‘ºë¼¢??è«›ë¶¾ì”ªè¹‚ë‹¿ì¾¶ ?ì’•ë–.
                 }
             }
 
-            if (modeTimer < arcFlightDuration) // ¾ÆÁ÷ ¼±ÅÃµÈ ¿øÈ£ ÀÌµ¿ ½Ã°£ÀÌ Áö³ªÁö ¾Ê¾Ò´Ù¸é
+            if (modeTimer < arcFlightDuration) // ?ê¾©ì­… ?ì¢ê¹®???ë¨°ìƒ‡ ?ëŒ€ë£ ?ì’“ì»™??ï§Â€?ì„? ?ë”†ë¸¯?ã…»ãˆƒ
             {
-                return; // °è¼Ó Nexus ÁÖº¯À» È¸ÀüÇÑ´Ù.
+                return; // æ€¨ê¾©ëƒ½ Nexus äºŒì‡°????ëš¯ìŸ¾?ì’•ë–.
             }
 
-            BeginDiveAttack(); // ¿øÈ£ ÀÌµ¿À» ³¡³»°í Nexus µ¹ÁøÀ» ½ÃÀÛÇÑ´Ù.
+            BeginDiveAttack(); // ?ë¨°ìƒ‡ ?ëŒ€ë£???ì•¸ê¶¡æ€¨?Nexus ?ëš¯ì­Š???ì’–ì˜‰?ì’•ë–.
         }
 
-        private void BeginDiveAttack() // Nexus ÁÖº¯ÀÇ ¼­·Î ´Ù¸¥ ÁöÁ¡À¸·Î µ¹ÁøÀ» ½ÃÀÛÇÏ´Â ÇÔ¼ö
+        private void BeginDiveAttack() // Nexus äºŒì‡°????ì’•ì¤ˆ ?ã…»â…¨ ï§Â€?ë¨¯ì‘æ¿¡??ëš¯ì­Š???ì’–ì˜‰?ì„ë’— ?â‘¥ë‹”
         {
-            formationHomingState = FormationHomingState.DiveAttack; // µ¹Áø »óÅÂ·Î º¯°æÇÑ´Ù.
-            modeTimer = 0.0f; // µ¹Áø »óÅÂ Å¸ÀÌ¸Ó¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+            formationHomingState = FormationHomingState.DiveAttack; // ?ëš¯ì­Š ?ê³¹ê¹­æ¿¡?è¹‚Â€å¯ƒì€ë¸³??
+            modeTimer = 0.0f; // ?ëš¯ì­Š ?ê³¹ê¹­ ?Â€?ëŒ€ã‰§ç‘œ?ç¥ë‡ë¦°?ë·€ë¸³??
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossDiamondBurstSmall, transform.position, true);
 
-            Vector3 impactDirection = homingTargetOffset; // °ø°İ Script°¡ Àü´ŞÇÑ ÁÂ¡¤¿ì¡¤¾Õ¡¤µÚ¡¤´ë°¢¼± ¹æÇâÀ» °¡Á®¿Â´Ù.
-            impactDirection.y = 0.0f; // Ãæµ¹ ¹æÇâ¿¡¼­ YÃàÀ» Á¦°ÅÇÑ´Ù.
+            Vector3 impactDirection = homingTargetOffset; // æ€¨ë“¦êº½ Scriptåª›Â€ ?ê¾¨ë––??é†«ë™¿ë£¹ìŠ¦ì¨Œ?ì™–ë£¸ë®˜ì¨Œ?Â€åª›ê³¸ê½‘ è«›â‘ºë¼¢??åª›Â€?ëª„ì‚©??
+            impactDirection.y = 0.0f; // ç•°â‘¸ë£ è«›â‘ºë¼¢?ë¨¯ê½Œ Yç•°ëº¤ì“£ ?ì’“êµ…?ì’•ë–.
 
-            if (impactDirection.sqrMagnitude <= 0.0001f) // Àü´Ş¹ŞÀº ¹æÇâÀÌ ¾ø´Ù¸é
+            if (impactDirection.sqrMagnitude <= 0.0001f) // ?ê¾¨ë––è«›ì†? è«›â‘ºë¼¢???ë…¿ë–ï§?
             {
-                impactDirection = transform.position - target.position; // ÇöÀç ¿øÈ£ À§Ä¡ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
-                impactDirection.y = 0.0f; // YÃàÀ» Á¦°ÅÇÑ´Ù.
+                impactDirection = transform.position - target.position; // ?ê¾©ì˜± ?ë¨°ìƒ‡ ?ê¾©íŠ‚ è«›â‘ºë¼¢???ÑŠìŠœ?ì’•ë–.
+                impactDirection.y = 0.0f; // Yç•°ëº¤ì“£ ?ì’“êµ…?ì’•ë–.
             }
 
-            if (impactDirection.sqrMagnitude <= 0.0001f) // ÇöÀç À§Ä¡ ¹æÇâµµ °è»êÇÒ ¼ö ¾ø´Ù¸é
+            if (impactDirection.sqrMagnitude <= 0.0001f) // ?ê¾©ì˜± ?ê¾©íŠ‚ è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?????ë…¿ë–ï§?
             {
-                impactDirection = Vector3.forward; // ±âº» ¾Õ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
+                impactDirection = Vector3.forward; // æ¹²ê³•ë‚¯ ??è«›â‘ºë¼¢???ÑŠìŠœ?ì’•ë–.
             }
 
-            impactDirection.Normalize(); // Ãæµ¹ ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
+            impactDirection.Normalize(); // ç•°â‘¸ë£ è«›â‘ºë¼¢??æ¹²ëª„ì” ç‘œ?1æ¿¡?ï§ëš®ë±º??
 
-            diveTargetPosition = target.position + impactDirection * diveImpactRadius; // Nexus Áß½É ÁÖº¯ÀÇ ¼­·Î ´Ù¸¥ Ãæµ¹ ÁöÁ¡À» °è»êÇÑ´Ù.
+            diveTargetPosition = target.position + impactDirection * diveImpactRadius; // Nexus ä»¥ë¬’ë–– äºŒì‡°????ì’•ì¤ˆ ?ã…»â…¨ ç•°â‘¸ë£ ï§Â€?ë¨¯ì“£ æ€¨ê¾©ê¶›?ì’•ë–.
 
-            movementDirection = diveTargetPosition - transform.position; // ÇöÀç ¿øÈ£ À§Ä¡¿¡¼­ µ¹Áø ¸ñÇ¥Á¡±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
+            movementDirection = diveTargetPosition - transform.position; // ?ê¾©ì˜± ?ë¨°ìƒ‡ ?ê¾©íŠ‚?ë¨¯ê½Œ ?ëš¯ì­Š ï§â‘ºëª´?ë¨­í‰´ï§Â€??è«›â‘ºë¼¢??æ€¨ê¾©ê¶›?ì’•ë–.
 
-            if (movementDirection.sqrMagnitude > 0.0001f) // µ¹Áø ¹æÇâÀÌ À¯È¿ÇÏ´Ù¸é
+            if (movementDirection.sqrMagnitude > 0.0001f) // ?ëš¯ì­Š è«›â‘ºë¼¢???ì¢ìŠš?ì„ë–ï§?
             {
-                movementDirection.Normalize(); // µ¹Áø ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
-                transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // Áï½Ã µ¹Áø ¹æÇâÀ¸·Î ±Ş¼±È¸ÇÑ´Ù.
+                movementDirection.Normalize(); // ?ëš¯ì­Š è«›â‘ºë¼¢??æ¹²ëª„ì” ç‘œ?1æ¿¡?ï§ëš®ë±º??
+                transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // ï§ë±ë–† ?ëš¯ì­Š è«›â‘ºë¼¢?ì‡°ì¤ˆ æ¹²ë±ê½‘?ëš°ë¸³??
             }
         }
 
-        private void MoveDiveAttack() // ¿øÈ£ ÀÌµ¿ ÈÄ Nexus·Î °í¼Ó µ¹ÁøÇÏ´Â ÇÔ¼ö
+        private void MoveDiveAttack() // ?ë¨°ìƒ‡ ?ëŒ€ë£ ??Nexusæ¿¡?æ€¨ì¢ëƒ½ ?ëš¯ì­Š?ì„ë’— ?â‘¥ë‹”
         {
-            Vector3 offset = diveTargetPosition - transform.position; // ÇöÀç À§Ä¡¿¡¼­ µ¹Áø ¸ñÇ¥Á¡±îÁöÀÇ ¹æÇâ°ú °Å¸®¸¦ °è»êÇÑ´Ù.
+            Vector3 offset = diveTargetPosition - transform.position; // ?ê¾©ì˜± ?ê¾©íŠ‚?ë¨¯ê½Œ ?ëš¯ì­Š ï§â‘ºëª´?ë¨­í‰´ï§Â€??è«›â‘ºë¼¢æ€¨?å«„ê³•â”ç‘œ?æ€¨ê¾©ê¶›?ì’•ë–.
 
-            if (offset.sqrMagnitude <= diveHitDistance * diveHitDistance) // µ¹Áø ¸ñÇ¥Á¡ÀÇ µµÂø ¹üÀ§ ¾ÈÀÌ¶ó¸é
+            if (offset.sqrMagnitude <= diveHitDistance * diveHitDistance) // ?ëš¯ì­Š ï§â‘ºëª´?ë¨¯ì“½ ?ê¾©ê°‘ è¸°ë¶¿ì ?ë‰ì” ?ì‡°ãˆƒ
             {
-                HitNexus(); // Nexus¿¡ ÇÇÇØ¸¦ Àû¿ëÇÏ°í Åõ»çÃ¼¸¦ Á¦°ÅÇÑ´Ù.
+                HitNexus(); // Nexus???ì‡³ë¹ç‘œ??ê³¸ìŠœ?ì„í€¬ ?ÑŠê¶—ï§£ëŒ€? ?ì’“êµ…?ì’•ë–.
                 return;
             }
 
-            movementDirection = offset.normalized; // µ¹Áø ¸ñÇ¥Á¡ ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
+            movementDirection = offset.normalized; // ?ëš¯ì­Š ï§â‘ºëª´??è«›â‘ºë¼¢??æ¹²ëª„ì” ç‘œ?1æ¿¡?ï§ëš®ë±º??
 
-            transform.position = Vector3.MoveTowards(transform.position, diveTargetPosition, diveSpeed * Time.deltaTime); // Nexus ÁÖº¯ Ãæµ¹ ÁöÁ¡À¸·Î ºü¸£°Ô µ¹ÁøÇÑ´Ù.
-            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // µ¹Áø ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            transform.position = Vector3.MoveTowards(transform.position, diveTargetPosition, diveSpeed * Time.deltaTime); // Nexus äºŒì‡°? ç•°â‘¸ë£ ï§Â€?ë¨¯ì‘æ¿¡?é®ì¢Šâ…¤å¯ƒ??ëš¯ì­Š?ì’•ë–.
+            transform.rotation = Quaternion.LookRotation(movementDirection, Vector3.up); // ?ëš¯ì­Š è«›â‘ºë¼¢??è«›ë¶¾ì”ªè¹‚ë‹¿ì¾¶ ?ì’•ë–.
 
-            Vector3 remainingOffset = diveTargetPosition - transform.position; // ÀÌµ¿ ÈÄ ³²Àº °Å¸®¸¦ ´Ù½Ã °è»êÇÑ´Ù.
+            Vector3 remainingOffset = diveTargetPosition - transform.position; // ?ëŒ€ë£ ???â‘¥? å«„ê³•â”ç‘œ??ã…¼ë–† æ€¨ê¾©ê¶›?ì’•ë–.
 
-            if (remainingOffset.sqrMagnitude <= diveHitDistance * diveHitDistance) // ÀÌµ¿ ÈÄ µµÂø ¹üÀ§ ¾È¿¡ µé¾î¿Ô´Ù¸é
+            if (remainingOffset.sqrMagnitude <= diveHitDistance * diveHitDistance) // ?ëŒ€ë£ ???ê¾©ê°‘ è¸°ë¶¿ì ?ë‰ë¿‰ ?ã…¼ë¼±?ë¶¾ë–ï§?
             {
-                HitNexus(); // Nexus¿¡ ÇÇÇØ¸¦ Àû¿ëÇÏ°í Åõ»çÃ¼¸¦ Á¦°ÅÇÑ´Ù.
+                HitNexus(); // Nexus???ì‡³ë¹ç‘œ??ê³¸ìŠœ?ì„í€¬ ?ÑŠê¶—ï§£ëŒ€? ?ì’“êµ…?ì’•ë–.
             }
         }
 
-        private bool TryHitNormalTarget() // Normal Åõ»çÃ¼ÀÇ Nexus µµÂø ¿©ºÎ¸¦ È®ÀÎÇÏ´Â ÇÔ¼ö
+        private bool TryHitNormalTarget() // Normal ?ÑŠê¶—ï§£ëŒì“½ Nexus ?ê¾©ê°‘ ?Ñ‰?ç‘œ??ëº¤ì”¤?ì„ë’— ?â‘¥ë‹”
         {
-            Vector3 offset = target.position - transform.position; // Åõ»çÃ¼¿Í Nexus Áß½É »çÀÌÀÇ °Å¸®¸¦ °è»êÇÑ´Ù.
+            Vector3 offset = target.position - transform.position; // ?ÑŠê¶—ï§£ëŒ? Nexus ä»¥ë¬’ë–– ?ÑŠì” ??å«„ê³•â”ç‘œ?æ€¨ê¾©ê¶›?ì’•ë–.
 
-            if (offset.sqrMagnitude > hitDistance * hitDistance) // ¾ÆÁ÷ Nexus µµÂø ¹üÀ§º¸´Ù ¸Ö´Ù¸é
+            if (offset.sqrMagnitude > hitDistance * hitDistance) // ?ê¾©ì­… Nexus ?ê¾©ê°‘ è¸°ë¶¿ìè¹‚ëŒ€ë– ï§Â€?ã…»ãˆƒ
             {
-                return false; // µµÂøÇÏÁö ¾Ê¾Ò´Ù°í ¹İÈ¯ÇÑ´Ù.
+                return false; // ?ê¾©ê°‘?ì„? ?ë”†ë¸¯?ã…ºí€¬ è«›ì„‘ì†š?ì’•ë–.
             }
 
-            HitNexus(); // Nexus ÇÇÇØ¿Í Åõ»çÃ¼ Á¦°Å¸¦ Ã³¸®ÇÑ´Ù.
-            return true; // Nexus¿¡ µµÂøÇß´Ù°í ¹İÈ¯ÇÑ´Ù.
+            HitNexus(); // Nexus ?ì‡³ë¹?Â€ ?ÑŠê¶—ï§£??ì’“êµ…ç‘œ?ï§£ì„â”?ì’•ë–.
+            return true; // Nexus???ê¾©ê°‘?ëˆë–æ€¨?è«›ì„‘ì†š?ì’•ë–.
         }
 
-        private void HitNexus() // Nexus ÇÇÇØ¸¦ Ã³¸®ÇÏ´Â ÇÔ¼ö
+        private void HitNexus() // Nexus ?ì‡³ë¹ç‘œ?ï§£ì„â”?ì„ë’— ?â‘¥ë‹”
         {
-            if (target != null) // Nexus°¡ ¾ÆÁ÷ Á¸ÀçÇÑ´Ù¸é
+            if (target != null) // Nexusåª›Â€ ?ê¾©ì­… è­°ëŒì˜±?ì’•ë–ï§?
             {
-                NexusController.TryApplyDamage(target, nexusDamage); // Nexus °øÅë ÇÇÇØ API·Î ÇÇÇØ¸¦ Àû¿ëÇÑ´Ù.
+                NexusController.TryApplyDamage(target, nexusDamage); // Nexus æ€¨ë“¯ë„» ?ì‡³ë¹ APIæ¿¡??ì‡³ë¹ç‘œ??ê³¸ìŠœ?ì’•ë–.
             }
 
-            DestroyProjectile(); // ÇÇÇØ Ã³¸® ÈÄ Åõ»çÃ¼¸¦ Á¦°ÅÇÑ´Ù.
+            DestroyProjectile(); // ?ì‡³ë¹ ï§£ì„â” ???ÑŠê¶—ï§£ëŒ€? ?ì’“êµ…?ì’•ë–.
         }
 
-        private void DestroyProjectile() // Åõ»çÃ¼ Á¦°Å¸¦ ÇÑ °÷¿¡¼­ Ã³¸®ÇÏ´Â ÇÔ¼ö
+        private void DestroyProjectile() // ?ÑŠê¶—ï§£??ì’“êµ…ç‘œ???æ€¨ë…¹ë¿‰??ï§£ì„â”?ì„ë’— ?â‘¥ë‹”
         {
-            if (isDestroyed) // ÀÌ¹Ì Á¦°Å Ã³¸®°¡ ½ÃÀÛµÆ´Ù¸é
+            if (isDestroyed) // ?ëŒ€? ?ì’“êµ… ï§£ì„â”åª›Â€ ?ì’–ì˜‰?ë¨®ë–ï§?
             {
-                return; // Destroy¸¦ Áßº¹ ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return; // Destroyç‘œ?ä»¥ë¬ë‚¬ ?ã…½ë»¾?ì„? ?ë”…ë’—??
             }
 
-            isDestroyed = true; // Á¦°Å »óÅÂ·Î ÀúÀåÇÑ´Ù.
-            Destroy(gameObject); // Åõ»çÃ¼ GameObject¸¦ Á¦°ÅÇÑ´Ù.
+            isDestroyed = true; // ?ì’“êµ… ?ê³¹ê¹­æ¿¡??Â€?Î½ë¸³??
+            Destroy(gameObject); // ?ÑŠê¶—ï§£?GameObjectç‘œ??ì’“êµ…?ì’•ë–.
         }
     }
 }

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyMeleeAttack : MonoBehaviour //근거리 몬스터
+    public sealed class EnemyMeleeAttack : MonoBehaviour // 근거리 몬스터
     {
         private Transform nexus; // 공격 타겟이 되는 Nexus Transform
 
@@ -15,13 +15,13 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)]
         [SerializeField] private float attackDelay = 1.0f; // 공격 사이의 대기 시간, 공격속도 역할
 
-        public event System.Action AttackPerformed;
+        public event System.Action AttackPerformed; // 공격 애니메이션 Bridge에 공격 시작을 알려주는 이벤트
 
         public float AttackRange // EnemyMovement가 근거리 공격 사거리를 읽기 위한 property
         {
             get
             {
-                return attackRange; // 근거리 공격 가능 거리를 반환한다.
+                return attackRange * GetHatchlingAttackRangeMultiplier(); // 성장형 몬스터라면 성장 사거리 배율까지 반영한다.
             }
         }
 
@@ -59,7 +59,9 @@ namespace TeamProject01.Gameplay
             Vector3 offset = nexus.position - transform.position; // 현재 몬스터 위치에서 Nexus까지의 방향과 거리 벡터를 구한다.
             offset.y = 0f; // 3D 평면 거리만 사용할 것이므로 높이 차이는 제거한다.
 
-            if (offset.sqrMagnitude > attackRange * attackRange) // Nexus가 공격 사거리 밖이라면
+            float finalAttackRange = AttackRange; // 성장형 몬스터라면 성장 사거리 배율까지 반영한 최종 공격 사거리를 가져온다.
+
+            if (offset.sqrMagnitude > finalAttackRange * finalAttackRange) // Nexus가 최종 공격 사거리 밖이라면
             {
                 return; // 공격하지 않고 종료한다.
             }
@@ -82,35 +84,45 @@ namespace TeamProject01.Gameplay
                 hatchlingAttackSpeedMultiplier = hatchlingGrowth.AttackSpeedMultiplier; // 현재 몬스터 성장 공격속도 배율을 가져온다.
             }
 
-            int finalAttackDamage = Mathf.Max(0, Mathf.RoundToInt(attackDamage * attackPowerMultiplier * hatchlingAttackPowerMultiplier)); // 버프 배율을 적용한 최종 피해량을 계산한다.
-            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier / hatchlingAttackSpeedMultiplier); // 공격속도 배율을 적용한 최종 공격 대기 시간을 계산한다.
+            int finalAttackDamage = Mathf.Max(0, Mathf.RoundToInt(attackDamage * attackPowerMultiplier * hatchlingAttackPowerMultiplier)); // 버프와 성장 배율을 적용한 최종 피해량을 계산한다.
+            float finalAttackDelay = Mathf.Max(0.01f, attackDelay / attackSpeedMultiplier / hatchlingAttackSpeedMultiplier); // 버프와 성장 배율을 적용한 최종 공격 대기 시간을 계산한다.
 
-            FaceNexus(); // �������߰�-0626 - ���� �ִϸ��̼��� ���۵Ǳ� ���� Nexus ������ �ٶ󺸰� �Ѵ�.
+            FaceNexus(); // 공격 애니메이션이 시작되기 전에 Nexus 방향을 바라보게 한다.
 
-            AttackPerformed?.Invoke();
-            NexusController.TryApplyDamage(nexus, finalAttackDamage); // 최종 피해량을 요청한다.
+            AttackPerformed?.Invoke(); // 공격 애니메이션 Bridge에 공격 시작을 알린다.
+            NexusController.TryApplyDamage(nexus, finalAttackDamage); // 최종 피해량을 Nexus에 요청한다.
             attackTimer = finalAttackDelay; // 공격 후 다음 공격까지 대기 시간을 다시 설정한다.
         }
 
-        private void FaceNexus() // �������߰�-0626 - ���� ��ġ���� Nexus�� �ٶ󺸵��� ȸ����Ű�� �Լ�
+        private void FaceNexus() // 현재 위치에서 Nexus를 바라보도록 회전시키는 함수
         {
-            if (nexus == null) // �������߰�-0626 - �ٶ� Nexus�� ���ٸ�
+            if (nexus == null) // 바라볼 Nexus가 없다면
             {
-                return; // �������߰�-0626 - ȸ������ �ʰ� �����Ѵ�.
+                return; // 회전하지 않고 종료한다.
             }
 
-            Vector3 direction = nexus.position - transform.position; // �������߰�-0626 - ���Ϳ��� Nexus������ ������ ����Ѵ�.
-            direction.y = 0.0f; // �������߰�-0626 - ���� �������θ� ȸ���ϵ��� ���� ���̸� �����Ѵ�.
+            Vector3 direction = nexus.position - transform.position; // 몬스터에서 Nexus까지의 방향을 계산한다.
+            direction.y = 0.0f; // 수평 방향으로만 회전하도록 높이 차이를 제거한다.
 
-            if (direction.sqrMagnitude <= 0.0001f) // �������߰�-0626 - ȸ�� ������ ����� �� ���� ������ ������
+            if (direction.sqrMagnitude <= 0.0001f) // 회전 방향을 계산할 수 없을 정도로 거리가 짧다면
             {
-                return; // �������߰�-0626 - �߸��� ȸ������ �������� �ʰ� �����Ѵ�.
+                return; // 잘못된 회전을 적용하지 않고 종료한다.
             }
 
-            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // �������߰�-0626 - ���� ���� ���� ������ Nexus �������� �����.
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // 몬스터가 Nexus 방향을 바라보게 한다.
         }
 
-        public void Configure(Transform nexus, int attackDamage, float attackRange, float attackDelay) // Spawner�� Controller�� ���� �ʱⰪ�� �־��ִ� �Լ�
+        private float GetHatchlingAttackRangeMultiplier() // 성장형 몬스터의 공격 사거리 배율을 가져온다.
+        {
+            if (hatchlingGrowth == null) // 해츨링 성장 Script가 없다면
+            {
+                return 1.0f; // 일반 몬스터는 기본 사거리 배율을 사용한다.
+            }
+
+            return hatchlingGrowth.AttackRangeMultiplier; // 해츨링 성장 Script의 공격 사거리 배율을 반환한다.
+        }
+
+        public void Configure(Transform nexus, int attackDamage, float attackRange, float attackDelay) // Spawner나 Controller가 공격 초기값을 넣어주는 함수
         {
             this.nexus = nexus; // 매개변수 nexus를 내부 nexus field에 저장한다.
             this.attackDamage = attackDamage; // 매개변수 attackDamage를 내부 attackDamage field에 저장한다.
@@ -120,12 +132,12 @@ namespace TeamProject01.Gameplay
 
         public void ApplyAttackDamageMultiplier(float multiplier) // 웨이브 난이도 넥서스 피해 배율 적용
         {
-            if (attackDamage <= 0 || multiplier <= 0f || Mathf.Approximately(multiplier, 1f))
+            if (attackDamage <= 0 || multiplier <= 0f || Mathf.Approximately(multiplier, 1f)) // 적용할 필요가 없는 값이라면
             {
-                return; // 적용 없음
+                return; // 적용하지 않는다.
             }
 
-            attackDamage = Mathf.Max(1, Mathf.RoundToInt(attackDamage * multiplier)); // 기본 피해량 배율
+            attackDamage = Mathf.Max(1, Mathf.RoundToInt(attackDamage * multiplier)); // 기본 피해량에 배율을 적용한다.
         }
     }
 }

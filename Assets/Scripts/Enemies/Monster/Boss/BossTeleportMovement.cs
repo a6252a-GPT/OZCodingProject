@@ -7,227 +7,229 @@ namespace TeamProject01.Gameplay
     {
         [Header("Teleport Interval")]
         [Min(0.1f)]
-        [SerializeField] private float normalInterval = 8.0f; // Normal »óÅÂÀÇ ¼ø°£ÀÌµ¿ °£°İ
+        [SerializeField] private float normalInterval = 8.0f; // Normal ìƒíƒœì˜ ìˆœê°„ì´ë™ ê°„ê²©
 
         [Min(0.1f)]
-        [SerializeField] private float aggressiveInterval = 7.0f; // Aggressive »óÅÂÀÇ ¼ø°£ÀÌµ¿ °£°İ
+        [SerializeField] private float aggressiveInterval = 7.0f; // Aggressive ìƒíƒœì˜ ìˆœê°„ì´ë™ ê°„ê²©
 
         [Min(0.1f)]
-        [SerializeField] private float rageInterval = 6.0f; // Rage »óÅÂÀÇ ¼ø°£ÀÌµ¿ °£°İ
+        [SerializeField] private float rageInterval = 6.0f; // Rage ìƒíƒœì˜ ìˆœê°„ì´ë™ ê°„ê²©
 
         [Min(0.1f)]
-        [SerializeField] private float berserkInterval = 5.0f; // Berserk »óÅÂÀÇ ¼ø°£ÀÌµ¿ °£°İ
+        [SerializeField] private float berserkInterval = 5.0f; // Berserk ìƒíƒœì˜ ìˆœê°„ì´ë™ ê°„ê²©
 
         [Header("Teleport Timing")]
         [Min(0.0f)]
-        [SerializeField] private float telegraphDuration = 1.0f; // µµÂø À§Ä¡¸¦ ¹Ì¸® º¸¿©ÁÖ´Â ½Ã°£
+        [SerializeField] private float telegraphDuration = 1.0f; // ë„ì°© ìœ„ì¹˜ë¥¼ ë¯¸ë¦¬ ë³´ì—¬ì£¼ëŠ” ì‹œê°„
 
         [Min(0.0f)]
-        [SerializeField] private float disappearDuration = 0.15f; // º¸½º°¡ »ç¶óÁ® ÀÖ´Â ½Ã°£
+        [SerializeField] private float disappearDuration = 0.15f; // ë³´ìŠ¤ê°€ ì‚¬ë¼ì ¸ ìˆëŠ” ì‹œê°„
 
         [Min(0.0f)]
-        [SerializeField] private float recoveryDuration = 0.5f; // ¼ø°£ÀÌµ¿ ÈÄ ´ÙÀ½ Çàµ¿±îÁöÀÇ ´ë±â½Ã°£
+        [SerializeField] private float recoveryDuration = 0.5f; // ìˆœê°„ì´ë™ í›„ ë‹¤ìŒ í–‰ë™ê¹Œì§€ì˜ ëŒ€ê¸°ì‹œê°„
 
         [Header("Teleport Position")]
         [Min(0.1f)]
-        [SerializeField] private float minimumTeleportRadius = 12.0f; // Nexus·ÎºÎÅÍ ¼ø°£ÀÌµ¿ÇÒ ¼ö ÀÖ´Â ÃÖ¼Ò °Å¸®
+        [SerializeField] private float minimumTeleportRadius = 12.0f; // Nexusë¡œë¶€í„° ìˆœê°„ì´ë™í•  ìˆ˜ ìˆëŠ” ìµœì†Œ ê±°ë¦¬
 
         [Min(0.1f)]
-        [SerializeField] private float maximumTeleportRadius = 22.0f; // Nexus·ÎºÎÅÍ ¼ø°£ÀÌµ¿ÇÒ ¼ö ÀÖ´Â ÃÖ´ë °Å¸®
+        [SerializeField] private float maximumTeleportRadius = 22.0f; // Nexusë¡œë¶€í„° ìˆœê°„ì´ë™í•  ìˆ˜ ìˆëŠ” ìµœëŒ€ ê±°ë¦¬
 
         [Min(0.1f)]
-        [SerializeField] private float minimumMoveDistance = 8.0f; // ÇöÀç À§Ä¡¿¡¼­ ÃÖ¼ÒÇÑ ÀÌµ¿ÇØ¾ß ÇÏ´Â °Å¸®
+        [SerializeField] private float minimumMoveDistance = 8.0f; // í˜„ì¬ ìœ„ì¹˜ì—ì„œ ìµœì†Œí•œ ì´ë™í•´ì•¼ í•˜ëŠ” ê±°ë¦¬
 
         [Min(0.1f)]
-        [SerializeField] private float convoySafeDistance = 6.0f; // ÄÁº¸ÀÌ ¸Ó¸® ±ÙÃ³¿¡ ³ªÅ¸³ªÁö ¾Êµµ·Ï ÇÏ´Â ¾ÈÀü°Å¸®
+        [SerializeField] private float convoySafeDistance = 6.0f; // ì»¨ë³´ì´ ë¨¸ë¦¬ ê·¼ì²˜ì— ë‚˜íƒ€ë‚˜ì§€ ì•Šë„ë¡ í•˜ëŠ” ì•ˆì „ê±°ë¦¬
 
         [Min(0.0f)]
-        [SerializeField] private float groundHeight = 0.0f; // º¸½º RootÀÇ ¹Ù´Ú ³ôÀÌ º¸Á¤°ª
+        [SerializeField] private float groundHeight = 0.0f; // ë³´ìŠ¤ Rootì˜ ë°”ë‹¥ ë†’ì´ ë³´ì •ê°’
 
         [Min(1)]
-        [SerializeField] private int positionSearchAttempts = 20; // ÀûÇÕÇÑ À§Ä¡¸¦ Ã£±â À§ÇØ ¹İº¹ÇÒ ÃÖ´ë È½¼ö
+        [SerializeField] private int positionSearchAttempts = 20; // ì í•©í•œ ìœ„ì¹˜ë¥¼ ì°¾ê¸° ìœ„í•´ ë°˜ë³µí•  ìµœëŒ€ íšŸìˆ˜
 
         [Header("Visual")]
-        [SerializeField] private GameObject bossVisualRoot; // ¼ø°£ÀÌµ¿ÇÒ ¶§ ¼û±æ BossVisual ¿ÀºêÁ§Æ®
+        [SerializeField] private GameObject bossVisualRoot; // ìˆœê°„ì´ë™í•  ë•Œ ìˆ¨ê¸¸ BossVisual ì˜¤ë¸Œì íŠ¸
 
-        [SerializeField] private Transform teleportMarker; // ¼ø°£ÀÌµ¿ µµÂø À§Ä¡¸¦ ¹Ì¸® Ç¥½ÃÇÒ ¿ÀºêÁ§Æ®
+        [SerializeField] private Transform teleportMarker; // ìˆœê°„ì´ë™ ë„ì°© ìœ„ì¹˜ë¥¼ ë¯¸ë¦¬ í‘œì‹œí•  ì˜¤ë¸Œì íŠ¸
 
         [Min(0.0f)]
-        [SerializeField] private float markerHeight = 0.05f; // ¸¶Ä¿°¡ ¹Ù´Ú¿¡ ÆÄ¹¯È÷Áö ¾Êµµ·Ï ¿Ã¸± ³ôÀÌ
+        [SerializeField] private float markerHeight = 0.05f; // ë§ˆì»¤ê°€ ë°”ë‹¥ì— íŒŒë¬»íˆì§€ ì•Šë„ë¡ ì˜¬ë¦´ ë†’ì´
 
-        private BossController bossController; // º¸½º »óÅÂ¿Í Çàµ¿ Àá±İÀ» °ü¸®ÇÏ´Â Script Component
-        private Transform nexus; // ¼ø°£ÀÌµ¿ À§Ä¡ÀÇ Áß½ÉÀÌ µÇ´Â Nexus_Core
-        private Coroutine teleportCoroutine; // ÇöÀç ½ÇÇà ÁßÀÎ ¼ø°£ÀÌµ¿ Coroutine
-        private float nextTeleportTime; // ´ÙÀ½ ¼ø°£ÀÌµ¿ÀÌ °¡´ÉÇÑ ½Ã°£
-        private bool ownsActionLock; // ÀÌ Script°¡ º¸½º Çàµ¿ Àá±İÀ» »ç¿ë ÁßÀÎÁö ³ªÅ¸³»´Â °ª
+        private BossController bossController; // ë³´ìŠ¤ ìƒíƒœì™€ í–‰ë™ ì ê¸ˆì„ ê´€ë¦¬í•˜ëŠ” Script Component
+        private Transform nexus; // ìˆœê°„ì´ë™ ìœ„ì¹˜ì˜ ì¤‘ì‹¬ì´ ë˜ëŠ” Nexus_Core
+        private Coroutine teleportCoroutine; // í˜„ì¬ ì‹¤í–‰ ì¤‘ì¸ ìˆœê°„ì´ë™ Coroutine
+        private float nextTeleportTime; // ë‹¤ìŒ ìˆœê°„ì´ë™ì´ ê°€ëŠ¥í•œ ì‹œê°„
+        private bool ownsActionLock; // ì´ Scriptê°€ ë³´ìŠ¤ í–‰ë™ ì ê¸ˆì„ ì‚¬ìš© ì¤‘ì¸ì§€ ë‚˜íƒ€ë‚´ëŠ” ê°’
 
-        public bool IsTeleporting { get; private set; } // ÇöÀç ¼ø°£ÀÌµ¿ °úÁ¤ÀÌ ÁøÇà ÁßÀÎÁö ¿ÜºÎ¿¡¼­ ÀĞ´Â °ª
+        public bool IsTeleporting { get; private set; } // í˜„ì¬ ìˆœê°„ì´ë™ ê³¼ì •ì´ ì§„í–‰ ì¤‘ì¸ì§€ ì™¸ë¶€ì—ì„œ ì½ëŠ” ê°’
 
         private void Awake()
         {
-            bossController = GetComponent<BossController>(); // °°Àº Boss01¿¡¼­ BossController¸¦ °¡Á®¿Â´Ù.
-            FindNexus(); // Nexus_Core¸¦ Ã£¾Æ ÀúÀåÇÑ´Ù.
+            bossController = GetComponent<BossController>(); // ê°™ì€ Boss01ì—ì„œ BossControllerë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+            FindNexus(); // Nexus_Coreë¥¼ ì°¾ì•„ ì €ì¥í•œë‹¤.
 
             if (teleportMarker != null)
             {
-                teleportMarker.SetParent(null, true); // ¸¶Ä¿°¡ º¸½º¸¦ µû¶ó ÀÌµ¿ÇÏÁö ¾Êµµ·Ï Boss01¿¡¼­ ºĞ¸®ÇÑ´Ù.
-                teleportMarker.gameObject.SetActive(false); // Ã³À½¿¡´Â ¼ø°£ÀÌµ¿ ¸¶Ä¿¸¦ ¼û±ä´Ù.
+                teleportMarker.SetParent(null, true); // ë§ˆì»¤ê°€ ë³´ìŠ¤ë¥¼ ë”°ë¼ ì´ë™í•˜ì§€ ì•Šë„ë¡ Boss01ì—ì„œ ë¶„ë¦¬í•œë‹¤.
+                teleportMarker.gameObject.SetActive(false); // ì²˜ìŒì—ëŠ” ìˆœê°„ì´ë™ ë§ˆì»¤ë¥¼ ìˆ¨ê¸´ë‹¤.
             }
         }
 
         private void Start()
         {
-            ScheduleNextTeleport(); // º¸½º°¡ »ı¼ºµÈ µÚ Ã¹ ¼ø°£ÀÌµ¿ ½Ã°£À» ¿¹¾àÇÑ´Ù.
+            ScheduleNextTeleport(); // ë³´ìŠ¤ê°€ ìƒì„±ëœ ë’¤ ì²« ìˆœê°„ì´ë™ ì‹œê°„ì„ ì˜ˆì•½í•œë‹¤.
         }
 
         private void Update()
         {
-            if (bossController == null || bossController.IsDead) // BossController°¡ ¾ø°Å³ª º¸½º°¡ »ç¸ÁÇß´Ù¸é
+            if (bossController == null || bossController.IsDead) // BossControllerê°€ ì—†ê±°ë‚˜ ë³´ìŠ¤ê°€ ì‚¬ë§í–ˆë‹¤ë©´
             {
-                return; // ¼ø°£ÀÌµ¿À» ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return; // ìˆœê°„ì´ë™ì„ ì‹¤í–‰í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (teleportCoroutine != null) // ÀÌ¹Ì ¼ø°£ÀÌµ¿ÀÌ ÁøÇà ÁßÀÌ¶ó¸é
+            if (teleportCoroutine != null) // ì´ë¯¸ ìˆœê°„ì´ë™ì´ ì§„í–‰ ì¤‘ì´ë¼ë©´
             {
-                return; // »õ·Î¿î ¼ø°£ÀÌµ¿À» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return; // ìƒˆë¡œìš´ ìˆœê°„ì´ë™ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (bossController.IsActionRunning) // ´Ù¸¥ °ø°İ ÆĞÅÏÀÌ ½ÇÇà ÁßÀÌ¶ó¸é
+            if (bossController.IsActionRunning) // ë‹¤ë¥¸ ê³µê²© íŒ¨í„´ì´ ì‹¤í–‰ ì¤‘ì´ë¼ë©´
             {
-                return; // °ø°İ µµÁß¿¡´Â ¼ø°£ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
+                return; // ê³µê²© ë„ì¤‘ì—ëŠ” ìˆœê°„ì´ë™í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (Time.time < nextTeleportTime) // ¼ø°£ÀÌµ¿ °£°İÀÌ ¾ÆÁ÷ Áö³ªÁö ¾Ê¾Ò´Ù¸é
+            if (Time.time < nextTeleportTime) // ìˆœê°„ì´ë™ ê°„ê²©ì´ ì•„ì§ ì§€ë‚˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                return; // ÇöÀç À§Ä¡¸¦ À¯ÁöÇÑ´Ù.
+                return; // í˜„ì¬ ìœ„ì¹˜ë¥¼ ìœ ì§€í•œë‹¤.
             }
 
             if (nexus == null)
             {
-                FindNexus(); // Nexus ÂüÁ¶°¡ ¾ø¾îÁ³´Ù¸é ´Ù½Ã Ã£´Â´Ù.
+                FindNexus(); // Nexus ì°¸ì¡°ê°€ ì—†ì–´ì¡Œë‹¤ë©´ ë‹¤ì‹œ ì°¾ëŠ”ë‹¤.
 
                 if (nexus == null)
                 {
-                    nextTeleportTime = Time.time + 1.0f; // Nexus¸¦ Ã£Áö ¸øÇß´Ù¸é 1ÃÊ µÚ ´Ù½Ã ½ÃµµÇÑ´Ù.
+                    nextTeleportTime = Time.time + 1.0f; // Nexusë¥¼ ì°¾ì§€ ëª»í–ˆë‹¤ë©´ 1ì´ˆ ë’¤ ë‹¤ì‹œ ì‹œë„í•œë‹¤.
                     return;
                 }
             }
 
-            if (!TryFindTeleportDestination(out Vector3 destination)) // ÀÌµ¿ °¡´ÉÇÑ À§Ä¡¸¦ Ã£Áö ¸øÇß´Ù¸é
+            if (!TryFindTeleportDestination(out Vector3 destination)) // ì´ë™ ê°€ëŠ¥í•œ ìœ„ì¹˜ë¥¼ ì°¾ì§€ ëª»í–ˆë‹¤ë©´
             {
-                nextTeleportTime = Time.time + 1.0f; // 1ÃÊ µÚ À§Ä¡ Å½»öÀ» ´Ù½Ã ½ÃµµÇÑ´Ù.
+                nextTeleportTime = Time.time + 1.0f; // 1ì´ˆ ë’¤ ìœ„ì¹˜ íƒìƒ‰ì„ ë‹¤ì‹œ ì‹œë„í•œë‹¤.
                 return;
             }
 
-            if (!bossController.TryBeginAction()) // º¸½º Çàµ¿ Àá±İÀ» ¾òÁö ¸øÇß´Ù¸é
+            if (!bossController.TryBeginAction()) // ë³´ìŠ¤ í–‰ë™ ì ê¸ˆì„ ì–»ì§€ ëª»í–ˆë‹¤ë©´
             {
-                return; // ´Ù¸¥ ÆĞÅÏÀÌ ¸ÕÀú ½ÃÀÛµÈ °ÍÀÌ¹Ç·Î ¼ø°£ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
+                return; // ë‹¤ë¥¸ íŒ¨í„´ì´ ë¨¼ì € ì‹œì‘ëœ ê²ƒì´ë¯€ë¡œ ìˆœê°„ì´ë™í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            ownsActionLock = true; // ÀÌ Script°¡ Çàµ¿ Àá±İÀ» »ç¿ë ÁßÀÌ¶ó°í ÀúÀåÇÑ´Ù.
-            teleportCoroutine = StartCoroutine(TeleportRoutine(destination)); // ¼ø°£ÀÌµ¿ °úÁ¤À» ½ÃÀÛÇÑ´Ù.
+            ownsActionLock = true; // ì´ Scriptê°€ í–‰ë™ ì ê¸ˆì„ ì‚¬ìš© ì¤‘ì´ë¼ê³  ì €ì¥í•œë‹¤.
+            teleportCoroutine = StartCoroutine(TeleportRoutine(destination)); // ìˆœê°„ì´ë™ ê³¼ì •ì„ ì‹œì‘í•œë‹¤.
         }
 
         private void OnDisable()
         {
             if (teleportCoroutine != null)
             {
-                StopCoroutine(teleportCoroutine); // ÁøÇà ÁßÀÎ ¼ø°£ÀÌµ¿ CoroutineÀ» Áß´ÜÇÑ´Ù.
+                StopCoroutine(teleportCoroutine); // ì§„í–‰ ì¤‘ì¸ ìˆœê°„ì´ë™ Coroutineì„ ì¤‘ë‹¨í•œë‹¤.
                 teleportCoroutine = null;
             }
 
-            RestoreVisualState(); // ºñÈ°¼ºÈ­µÉ ¶§ º¸½º ¿ÜÇü°ú ¸¶Ä¿ »óÅÂ¸¦ º¹±¸ÇÑ´Ù.
-            IsTeleporting = false; // ¼ø°£ÀÌµ¿ »óÅÂ¸¦ Á¾·áÇÑ´Ù.
-            ReleaseActionLock(); // ÀÌ Script°¡ »ç¿ëÇÏ´ø Çàµ¿ Àá±İÀ» ÇØÁ¦ÇÑ´Ù.
+            RestoreVisualState(); // ë¹„í™œì„±í™”ë  ë•Œ ë³´ìŠ¤ ì™¸í˜•ê³¼ ë§ˆì»¤ ìƒíƒœë¥¼ ë³µêµ¬í•œë‹¤.
+            IsTeleporting = false; // ìˆœê°„ì´ë™ ìƒíƒœë¥¼ ì¢…ë£Œí•œë‹¤.
+            ReleaseActionLock(); // ì´ Scriptê°€ ì‚¬ìš©í•˜ë˜ í–‰ë™ ì ê¸ˆì„ í•´ì œí•œë‹¤.
         }
 
         private void OnDestroy()
         {
             if (teleportMarker != null)
             {
-                Destroy(teleportMarker.gameObject); // Boss01¿¡¼­ ºĞ¸®Çß´ø ¼ø°£ÀÌµ¿ ¸¶Ä¿¸¦ ÇÔ²² Á¦°ÅÇÑ´Ù.
+                Destroy(teleportMarker.gameObject); // Boss01ì—ì„œ ë¶„ë¦¬í–ˆë˜ ìˆœê°„ì´ë™ ë§ˆì»¤ë¥¼ í•¨ê»˜ ì œê±°í•œë‹¤.
             }
         }
 
         private IEnumerator TeleportRoutine(Vector3 destination)
         {
-            IsTeleporting = true; // ¼ø°£ÀÌµ¿ °úÁ¤ÀÌ ½ÃÀÛµÆ´Ù°í ÀúÀåÇÑ´Ù.
-            ShowTeleportMarker(destination); // µµÂø ¿¹Á¤ À§Ä¡¿¡ ¸¶Ä¿¸¦ Ç¥½ÃÇÑ´Ù.
+            IsTeleporting = true; // ìˆœê°„ì´ë™ ê³¼ì •ì´ ì‹œì‘ëë‹¤ê³  ì €ì¥í•œë‹¤.
+            ShowTeleportMarker(destination); // ë„ì°© ì˜ˆì • ìœ„ì¹˜ì— ë§ˆì»¤ë¥¼ í‘œì‹œí•œë‹¤.
 
-            yield return new WaitForSeconds(telegraphDuration); // ÇÃ·¹ÀÌ¾î°¡ µµÂø À§Ä¡¸¦ È®ÀÎÇÒ ½Ã°£À» ÁØ´Ù.
+            yield return new WaitForSeconds(telegraphDuration); // í”Œë ˆì´ì–´ê°€ ë„ì°© ìœ„ì¹˜ë¥¼ í™•ì¸í•  ì‹œê°„ì„ ì¤€ë‹¤.
 
             if (bossController == null || bossController.IsDead)
             {
-                FinishTeleport(); // ¿¹°í µµÁß º¸½º°¡ Á×¾ú´Ù¸é ¼ø°£ÀÌµ¿À» Ãë¼ÒÇÏ°í Á¤¸®ÇÑ´Ù.
+                FinishTeleport(); // ì˜ˆê³  ë„ì¤‘ ë³´ìŠ¤ê°€ ì£½ì—ˆë‹¤ë©´ ìˆœê°„ì´ë™ì„ ì·¨ì†Œí•˜ê³  ì •ë¦¬í•œë‹¤.
                 yield break;
             }
+
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossTeleport, transform.position, true);
 
             if (bossVisualRoot != null)
             {
-                bossVisualRoot.SetActive(false); // ½ÇÁ¦ ÀÌµ¿ Á÷Àü¿¡ º¸½º ¿ÜÇüÀ» ¼û±ä´Ù.
+                bossVisualRoot.SetActive(false); // ì‹¤ì œ ì´ë™ ì§ì „ì— ë³´ìŠ¤ ì™¸í˜•ì„ ìˆ¨ê¸´ë‹¤.
             }
 
-            yield return new WaitForSeconds(disappearDuration); // º¸½º°¡ »ç¶óÁö´Â ÂªÀº ½Ã°£À» ¸¸µç´Ù.
+            yield return new WaitForSeconds(disappearDuration); // ë³´ìŠ¤ê°€ ì‚¬ë¼ì§€ëŠ” ì§§ì€ ì‹œê°„ì„ ë§Œë“ ë‹¤.
 
             if (bossController == null || bossController.IsDead)
             {
-                FinishTeleport(); // »ç¶óÁø »óÅÂ¿¡¼­ Á×¾ú´Ù¸é ¿ÜÇüÀ» º¹±¸ÇÏ°í Á¾·áÇÑ´Ù.
+                FinishTeleport(); // ì‚¬ë¼ì§„ ìƒíƒœì—ì„œ ì£½ì—ˆë‹¤ë©´ ì™¸í˜•ì„ ë³µêµ¬í•˜ê³  ì¢…ë£Œí•œë‹¤.
                 yield break;
             }
 
-            transform.position = destination; // Boss01 Root¸¦ ¼±ÅÃµÈ µµÂø À§Ä¡·Î ÀÌµ¿½ÃÅ²´Ù.
-            LookAtNexus(); // ¼ø°£ÀÌµ¿ ÈÄ Nexus ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            transform.position = destination; // Boss01 Rootë¥¼ ì„ íƒëœ ë„ì°© ìœ„ì¹˜ë¡œ ì´ë™ì‹œí‚¨ë‹¤.
+            LookAtNexus(); // ìˆœê°„ì´ë™ í›„ Nexus ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
 
             if (teleportMarker != null)
             {
-                teleportMarker.gameObject.SetActive(false); // µµÂøÇßÀ¸¹Ç·Î À§Ä¡ ¿¹°í ¸¶Ä¿¸¦ ¼û±ä´Ù.
+                teleportMarker.gameObject.SetActive(false); // ë„ì°©í–ˆìœ¼ë¯€ë¡œ ìœ„ì¹˜ ì˜ˆê³  ë§ˆì»¤ë¥¼ ìˆ¨ê¸´ë‹¤.
             }
 
             if (bossVisualRoot != null)
             {
-                bossVisualRoot.SetActive(true); // µµÂø À§Ä¡¿¡¼­ º¸½º ¿ÜÇüÀ» ´Ù½Ã Ç¥½ÃÇÑ´Ù.
+                bossVisualRoot.SetActive(true); // ë„ì°© ìœ„ì¹˜ì—ì„œ ë³´ìŠ¤ ì™¸í˜•ì„ ë‹¤ì‹œ í‘œì‹œí•œë‹¤.
             }
 
-            yield return new WaitForSeconds(recoveryDuration); // ¼ø°£ÀÌµ¿ Á÷ÈÄ °ø°İÀÌ Áï½Ã ½ÃÀÛµÇÁö ¾Êµµ·Ï Àá½Ã ±â´Ù¸°´Ù.
+            yield return new WaitForSeconds(recoveryDuration); // ìˆœê°„ì´ë™ ì§í›„ ê³µê²©ì´ ì¦‰ì‹œ ì‹œì‘ë˜ì§€ ì•Šë„ë¡ ì ì‹œ ê¸°ë‹¤ë¦°ë‹¤.
 
-            FinishTeleport(); // ¼ø°£ÀÌµ¿ »óÅÂ¿Í Çàµ¿ Àá±İÀ» Á¤¸®ÇÑ´Ù.
+            FinishTeleport(); // ìˆœê°„ì´ë™ ìƒíƒœì™€ í–‰ë™ ì ê¸ˆì„ ì •ë¦¬í•œë‹¤.
         }
 
         private bool TryFindTeleportDestination(out Vector3 destination)
         {
-            destination = transform.position; // À§Ä¡ Å½»ö¿¡ ½ÇÆĞÇÏ¸é ÇöÀç À§Ä¡¸¦ ±âº»°ªÀ¸·Î »ç¿ëÇÑ´Ù.
+            destination = transform.position; // ìœ„ì¹˜ íƒìƒ‰ì— ì‹¤íŒ¨í•˜ë©´ í˜„ì¬ ìœ„ì¹˜ë¥¼ ê¸°ë³¸ê°’ìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
 
             float minimumRadius = Mathf.Min(minimumTeleportRadius, maximumTeleportRadius);
             float maximumRadius = Mathf.Max(minimumTeleportRadius, maximumTeleportRadius);
             float minimumMoveDistanceSqr = minimumMoveDistance * minimumMoveDistance;
             float convoySafeDistanceSqr = convoySafeDistance * convoySafeDistance;
 
-            MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget); // µî·ÏµÈ ÄÁº¸ÀÌ ¸Ó¸®¸¦ °¡Á®¿Â´Ù.
+            MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget); // ë“±ë¡ëœ ì»¨ë³´ì´ ë¨¸ë¦¬ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
             for (int i = 0; i < positionSearchAttempts; i++)
             {
-                Vector2 randomDirection = Random.insideUnitCircle; // Æò¸é»óÀÇ ¹«ÀÛÀ§ ¹æÇâÀ» ¸¸µç´Ù.
+                Vector2 randomDirection = Random.insideUnitCircle; // í‰ë©´ìƒì˜ ë¬´ì‘ìœ„ ë°©í–¥ì„ ë§Œë“ ë‹¤.
 
                 if (randomDirection.sqrMagnitude <= 0.0001f)
                 {
-                    continue; // ¹æÇâÀÇ ±æÀÌ°¡ ³Ê¹« ÀÛ´Ù¸é ´Ù½Ã ¼±ÅÃÇÑ´Ù.
+                    continue; // ë°©í–¥ì˜ ê¸¸ì´ê°€ ë„ˆë¬´ ì‘ë‹¤ë©´ ë‹¤ì‹œ ì„ íƒí•œë‹¤.
                 }
 
-                randomDirection.Normalize(); // ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
+                randomDirection.Normalize(); // ë°©í–¥ì˜ ê¸¸ì´ë¥¼ 1ë¡œ ë§Œë“ ë‹¤.
 
-                float radius = Random.Range(minimumRadius, maximumRadius); // Nexus·ÎºÎÅÍ ¶³¾îÁú °Å¸®¸¦ ¹«ÀÛÀ§·Î ¼±ÅÃÇÑ´Ù.
+                float radius = Random.Range(minimumRadius, maximumRadius); // Nexusë¡œë¶€í„° ë–¨ì–´ì§ˆ ê±°ë¦¬ë¥¼ ë¬´ì‘ìœ„ë¡œ ì„ íƒí•œë‹¤.
 
                 Vector3 candidate = nexus.position;
                 candidate.x += randomDirection.x * radius;
                 candidate.z += randomDirection.y * radius;
-                candidate = GroundService.ProjectToGround(candidate, groundHeight); // ¼±ÅÃÇÑ À§Ä¡¸¦ ½ÇÁ¦ ¹Ù´Ú ³ôÀÌ¿¡ ¸ÂÃá´Ù.
+                candidate = GroundService.ProjectToGround(candidate, groundHeight); // ì„ íƒí•œ ìœ„ì¹˜ë¥¼ ì‹¤ì œ ë°”ë‹¥ ë†’ì´ì— ë§ì¶˜ë‹¤.
 
                 Vector3 currentOffset = candidate - transform.position;
                 currentOffset.y = 0.0f;
 
                 if (currentOffset.sqrMagnitude < minimumMoveDistanceSqr)
                 {
-                    continue; // ÇöÀç À§Ä¡¿Í ³Ê¹« °¡±õ´Ù¸é ´Ù¸¥ À§Ä¡¸¦ Ã£´Â´Ù.
+                    continue; // í˜„ì¬ ìœ„ì¹˜ì™€ ë„ˆë¬´ ê°€ê¹ë‹¤ë©´ ë‹¤ë¥¸ ìœ„ì¹˜ë¥¼ ì°¾ëŠ”ë‹¤.
                 }
 
                 if (convoyTarget != null)
@@ -237,39 +239,39 @@ namespace TeamProject01.Gameplay
 
                     if (convoyOffset.sqrMagnitude < convoySafeDistanceSqr)
                     {
-                        continue; // ÄÁº¸ÀÌ ¸Ó¸®¿¡ ³Ê¹« °¡±î¿î À§Ä¡¶ó¸é ´Ù¸¥ À§Ä¡¸¦ Ã£´Â´Ù.
+                        continue; // ì»¨ë³´ì´ ë¨¸ë¦¬ì— ë„ˆë¬´ ê°€ê¹Œìš´ ìœ„ì¹˜ë¼ë©´ ë‹¤ë¥¸ ìœ„ì¹˜ë¥¼ ì°¾ëŠ”ë‹¤.
                     }
                 }
 
-                destination = candidate; // ¸ğµç Á¶°ÇÀ» Åë°úÇÑ À§Ä¡¸¦ ÃÖÁ¾ µµÂø À§Ä¡·Î ÀúÀåÇÑ´Ù.
-                return true; // ÀûÇÕÇÑ À§Ä¡¸¦ Ã£¾Ò´Ù°í ¹İÈ¯ÇÑ´Ù.
+                destination = candidate; // ëª¨ë“  ì¡°ê±´ì„ í†µê³¼í•œ ìœ„ì¹˜ë¥¼ ìµœì¢… ë„ì°© ìœ„ì¹˜ë¡œ ì €ì¥í•œë‹¤.
+                return true; // ì í•©í•œ ìœ„ì¹˜ë¥¼ ì°¾ì•˜ë‹¤ê³  ë°˜í™˜í•œë‹¤.
             }
 
-            return false; // ¹İº¹ È½¼ö ¾È¿¡ ÀûÇÕÇÑ À§Ä¡¸¦ Ã£Áö ¸øÇß´Ù.
+            return false; // ë°˜ë³µ íšŸìˆ˜ ì•ˆì— ì í•©í•œ ìœ„ì¹˜ë¥¼ ì°¾ì§€ ëª»í–ˆë‹¤.
         }
 
         private void FindNexus()
         {
-            GameObject nexusObject = GameObject.Find("Nexus_Core"); // ÀÌ¸§ÀÌ Nexus_CoreÀÎ GameObject¸¦ Ã£´Â´Ù.
-            nexus = nexusObject != null ? nexusObject.transform : null; // Ã£¾Ò´Ù¸é TransformÀ» ÀúÀåÇÑ´Ù.
+            GameObject nexusObject = GameObject.Find("Nexus_Core"); // ì´ë¦„ì´ Nexus_Coreì¸ GameObjectë¥¼ ì°¾ëŠ”ë‹¤.
+            nexus = nexusObject != null ? nexusObject.transform : null; // ì°¾ì•˜ë‹¤ë©´ Transformì„ ì €ì¥í•œë‹¤.
         }
 
         private void ShowTeleportMarker(Vector3 destination)
         {
             if (teleportMarker == null)
             {
-                return; // ¿¬°áµÈ ¸¶Ä¿°¡ ¾ø´Ù¸é Ç¥½ÃÇÏÁö ¾Ê´Â´Ù.
+                return; // ì—°ê²°ëœ ë§ˆì»¤ê°€ ì—†ë‹¤ë©´ í‘œì‹œí•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            teleportMarker.position = destination + Vector3.up * markerHeight; // ¼±ÅÃµÈ µµÂø À§Ä¡¿¡ ¸¶Ä¿¸¦ ¹èÄ¡ÇÑ´Ù.
-            teleportMarker.gameObject.SetActive(true); // ¼ø°£ÀÌµ¿ À§Ä¡ ¿¹°í¸¦ Ç¥½ÃÇÑ´Ù.
+            teleportMarker.position = destination + Vector3.up * markerHeight; // ì„ íƒëœ ë„ì°© ìœ„ì¹˜ì— ë§ˆì»¤ë¥¼ ë°°ì¹˜í•œë‹¤.
+            teleportMarker.gameObject.SetActive(true); // ìˆœê°„ì´ë™ ìœ„ì¹˜ ì˜ˆê³ ë¥¼ í‘œì‹œí•œë‹¤.
         }
 
         private void LookAtNexus()
         {
             if (nexus == null)
             {
-                return; // Nexus°¡ ¾ø´Ù¸é È¸ÀüÇÏÁö ¾Ê´Â´Ù.
+                return; // Nexusê°€ ì—†ë‹¤ë©´ íšŒì „í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
             Vector3 direction = nexus.position - transform.position;
@@ -277,22 +279,22 @@ namespace TeamProject01.Gameplay
 
             if (direction.sqrMagnitude <= 0.0001f)
             {
-                return; // ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é È¸ÀüÇÏÁö ¾Ê´Â´Ù.
+                return; // ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ì—†ë‹¤ë©´ íšŒì „í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // º¸½º°¡ Nexus ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // ë³´ìŠ¤ê°€ Nexus ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
         }
 
         private void ScheduleNextTeleport()
         {
-            nextTeleportTime = Time.time + GetTeleportInterval(); // ÇöÀç »óÅÂ¿¡ ¸Â´Â ½Ã°£ÀÌ Áö³­ µÚ ¼ø°£ÀÌµ¿ÇÏµµ·Ï ¿¹¾àÇÑ´Ù.
+            nextTeleportTime = Time.time + GetTeleportInterval(); // í˜„ì¬ ìƒíƒœì— ë§ëŠ” ì‹œê°„ì´ ì§€ë‚œ ë’¤ ìˆœê°„ì´ë™í•˜ë„ë¡ ì˜ˆì•½í•œë‹¤.
         }
 
         private float GetTeleportInterval()
         {
             if (bossController == null)
             {
-                return normalInterval; // BossController°¡ ¾ø´Ù¸é Normal °£°İÀ» »ç¿ëÇÑ´Ù.
+                return normalInterval; // BossControllerê°€ ì—†ë‹¤ë©´ Normal ê°„ê²©ì„ ì‚¬ìš©í•œë‹¤.
             }
 
             switch (bossController.CurrentPhase)
@@ -313,23 +315,23 @@ namespace TeamProject01.Gameplay
 
         private void FinishTeleport()
         {
-            RestoreVisualState(); // ¸¶Ä¿¸¦ ¼û±â°í º¸½º ¿ÜÇüÀ» Ç¥½ÃÇÑ´Ù.
-            IsTeleporting = false; // ¼ø°£ÀÌµ¿ »óÅÂ¸¦ Á¾·áÇÑ´Ù.
-            ReleaseActionLock(); // ´ÙÀ½ °ø°İÀÌ³ª ¼ø°£ÀÌµ¿ÀÌ °¡´ÉÇÏµµ·Ï Àá±İÀ» ÇØÁ¦ÇÑ´Ù.
-            ScheduleNextTeleport(); // ´ÙÀ½ ¼ø°£ÀÌµ¿ ½Ã°£À» ¿¹¾àÇÑ´Ù.
-            teleportCoroutine = null; // ½ÇÇà ÁßÀÎ Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+            RestoreVisualState(); // ë§ˆì»¤ë¥¼ ìˆ¨ê¸°ê³  ë³´ìŠ¤ ì™¸í˜•ì„ í‘œì‹œí•œë‹¤.
+            IsTeleporting = false; // ìˆœê°„ì´ë™ ìƒíƒœë¥¼ ì¢…ë£Œí•œë‹¤.
+            ReleaseActionLock(); // ë‹¤ìŒ ê³µê²©ì´ë‚˜ ìˆœê°„ì´ë™ì´ ê°€ëŠ¥í•˜ë„ë¡ ì ê¸ˆì„ í•´ì œí•œë‹¤.
+            ScheduleNextTeleport(); // ë‹¤ìŒ ìˆœê°„ì´ë™ ì‹œê°„ì„ ì˜ˆì•½í•œë‹¤.
+            teleportCoroutine = null; // ì‹¤í–‰ ì¤‘ì¸ Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
         }
 
         private void RestoreVisualState()
         {
             if (teleportMarker != null)
             {
-                teleportMarker.gameObject.SetActive(false); // ¼ø°£ÀÌµ¿ ¿¹°í ¸¶Ä¿¸¦ ¼û±ä´Ù.
+                teleportMarker.gameObject.SetActive(false); // ìˆœê°„ì´ë™ ì˜ˆê³  ë§ˆì»¤ë¥¼ ìˆ¨ê¸´ë‹¤.
             }
 
             if (bossVisualRoot != null)
             {
-                bossVisualRoot.SetActive(true); // º¸½º ¿ÜÇüÀÌ ¼ûÀº »óÅÂ·Î ³²Áö ¾Ê°Ô ÇÑ´Ù.
+                bossVisualRoot.SetActive(true); // ë³´ìŠ¤ ì™¸í˜•ì´ ìˆ¨ì€ ìƒíƒœë¡œ ë‚¨ì§€ ì•Šê²Œ í•œë‹¤.
             }
         }
 
@@ -337,15 +339,15 @@ namespace TeamProject01.Gameplay
         {
             if (!ownsActionLock)
             {
-                return; // ÀÌ Script°¡ Àá±İÀ» »ç¿ëÇÏÁö ¾Ê¾Ò´Ù¸é ÇØÁ¦ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì´ Scriptê°€ ì ê¸ˆì„ ì‚¬ìš©í•˜ì§€ ì•Šì•˜ë‹¤ë©´ í•´ì œí•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
             if (bossController != null)
             {
-                bossController.EndAction(); // BossControllerÀÇ Çàµ¿ Àá±İÀ» ÇØÁ¦ÇÑ´Ù.
+                bossController.EndAction(); // BossControllerì˜ í–‰ë™ ì ê¸ˆì„ í•´ì œí•œë‹¤.
             }
 
-            ownsActionLock = false; // ´õ ÀÌ»ó Çàµ¿ Àá±İÀ» ¼ÒÀ¯ÇÏÁö ¾Ê´Â´Ù°í ÀúÀåÇÑ´Ù.
+            ownsActionLock = false; // ë” ì´ìƒ í–‰ë™ ì ê¸ˆì„ ì†Œìœ í•˜ì§€ ì•ŠëŠ”ë‹¤ê³  ì €ì¥í•œë‹¤.
         }
     }
 }

@@ -4,269 +4,272 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemyPortalTotemCaster : MonoBehaviour //ÅäÅÛ ¼ÒÈ¯ ¸ó½ºÅÍ Å¬·¡½º
+    public sealed class EnemyPortalTotemCaster : MonoBehaviour //í† í…œ ì†Œí™˜ ëª¬ìŠ¤í„° í´ë˜ìŠ¤
     {
-        private Transform nexus; // Ãâ±¸ ÅäÅÛ À§Ä¡¸¦ °è»êÇÒ Nexus
+        private Transform nexus; // ì¶œêµ¬ í† í…œ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•  Nexus
 
-        [SerializeField] private EnemyPortalTotem entryTotemPrefab;// ¸ó½ºÅÍµéÀÌ ¸ğ¿©µå´Â ÀÔ±¸ ÅäÅÛ Prefab
+        [SerializeField] private EnemyPortalTotem entryTotemPrefab;// ëª¬ìŠ¤í„°ë“¤ì´ ëª¨ì—¬ë“œëŠ” ì…êµ¬ í† í…œ Prefab
 
-        [SerializeField] private EnemyPortalTotem exitTotemPrefab;// ¸ó½ºÅÍµéÀÌ ¼ø°£ÀÌµ¿µÇ¾î ³ª¿À´Â Ãâ±¸ ÅäÅÛ Prefab
+        [SerializeField] private EnemyPortalTotem exitTotemPrefab;// ëª¬ìŠ¤í„°ë“¤ì´ ìˆœê°„ì´ë™ë˜ì–´ ë‚˜ì˜¤ëŠ” ì¶œêµ¬ í† í…œ Prefab
 
         [Header("Gather Setting")]
         [Min(1.0f)]
-        [SerializeField] private float gatherDuration = 10.0f;// ÅäÅÛ »ı¼º ÈÄ ½ÇÁ¦ ¼ø°£ÀÌµ¿±îÁö ¸ó½ºÅÍ¸¦ ¸ğÀ¸´Â ½Ã°£
+        [SerializeField] private float gatherDuration = 10.0f;// í† í…œ ìƒì„± í›„ ì‹¤ì œ ìˆœê°„ì´ë™ê¹Œì§€ ëª¬ìŠ¤í„°ë¥¼ ëª¨ìœ¼ëŠ” ì‹œê°„
 
         [Min(1.0f)]
-        [SerializeField] private float attractRadius = 12.0f;// ¸ó½ºÅÍ°¡ Nexus ´ë½Å ÀÔ±¸ ÅäÅÛÀ¸·Î ÀÌµ¿ÇÏ±â ½ÃÀÛÇÏ´Â ¹üÀ§
+        [SerializeField] private float attractRadius = 12.0f;// ëª¬ìŠ¤í„°ê°€ Nexus ëŒ€ì‹  ì…êµ¬ í† í…œìœ¼ë¡œ ì´ë™í•˜ê¸° ì‹œì‘í•˜ëŠ” ë²”ìœ„
 
         [Min(0.1f)]
-        [SerializeField] private float entryRadius = 6.0f;// ½Ã°£ÀÌ ³¡³µÀ» ¶§ ½ÇÁ¦·Î ¼ø°£ÀÌµ¿µÇ´Â ¸ó½ºÅÍ ÆÇÁ¤ ¹üÀ§
+        [SerializeField] private float entryRadius = 6.0f;// ì‹œê°„ì´ ëë‚¬ì„ ë•Œ ì‹¤ì œë¡œ ìˆœê°„ì´ë™ë˜ëŠ” ëª¬ìŠ¤í„° íŒì • ë²”ìœ„
 
         [Header("Exit Setting")]
         [Min(5.0f)]
-        [SerializeField] private float exitDistanceFromNexus = 5.0f;// Nexus Áß½É¿¡¼­ Ãâ±¸ ÅäÅÛÀ» ¶³¾î¶ß¸± °Å¸®
+        [SerializeField] private float exitDistanceFromNexus = 5.0f;// Nexus ì¤‘ì‹¬ì—ì„œ ì¶œêµ¬ í† í…œì„ ë–¨ì–´ëœ¨ë¦´ ê±°ë¦¬
 
         [Min(0.1f)]
-        [SerializeField] private float exitScatterRadius = 2.5f;// Ãâ±¸ ÁÖº¯¿¡ ¼ø°£ÀÌµ¿ ¸ó½ºÅÍ¸¦ Èğ¾î³õ´Â ±âº» ¹İ°æ
+        [SerializeField] private float exitScatterRadius = 2.5f;// ì¶œêµ¬ ì£¼ë³€ì— ìˆœê°„ì´ë™ ëª¬ìŠ¤í„°ë¥¼ í©ì–´ë†“ëŠ” ê¸°ë³¸ ë°˜ê²½
 
         [Min(0.0f)]
-        [SerializeField] private float totemGroundHeight = 0.03f;// ÀÔ±¸¿Í Ãâ±¸ ÅäÅÛÀ» ¹Ù´Ú À§¿¡ Ç¥½ÃÇÒ ³ôÀÌ
+        [SerializeField] private float totemGroundHeight = 0.03f;// ì…êµ¬ì™€ ì¶œêµ¬ í† í…œì„ ë°”ë‹¥ ìœ„ì— í‘œì‹œí•  ë†’ì´
 
         [Min(0.0f)]
-        [SerializeField] private float teleportGroundHeight = 0.72f;// ¼ø°£ÀÌµ¿µÈ ¸ó½ºÅÍ¸¦ ¹Ù´Ú À§¿¡ ¹èÄ¡ÇÒ ³ôÀÌ
+        [SerializeField] private float teleportGroundHeight = 0.72f;// ìˆœê°„ì´ë™ëœ ëª¬ìŠ¤í„°ë¥¼ ë°”ë‹¥ ìœ„ì— ë°°ì¹˜í•  ë†’ì´
 
-        private readonly List<EnemyController> gatheredEnemies = new List<EnemyController>(32);// ÀÔ±¸ ÅäÅÛ ¾È¿¡ ¸ğÀÎ ¼ø°£ÀÌµ¿ ´ë»ó ¸ñ·Ï
+        private readonly List<EnemyController> gatheredEnemies = new List<EnemyController>(32);// ì…êµ¬ í† í…œ ì•ˆì— ëª¨ì¸ ìˆœê°„ì´ë™ ëŒ€ìƒ ëª©ë¡
 
-        private EnemyPortalTotem entryTotem;// ÇöÀç »ı¼ºµÈ ÀÔ±¸ ÅäÅÛ
+        private EnemyPortalTotem entryTotem;// í˜„ì¬ ìƒì„±ëœ ì…êµ¬ í† í…œ
 
-        private EnemyPortalTotem exitTotem;// ÇöÀç »ı¼ºµÈ Ãâ±¸ ÅäÅÛ
+        private EnemyPortalTotem exitTotem;// í˜„ì¬ ìƒì„±ëœ ì¶œêµ¬ í† í…œ
 
-        private Coroutine portalRoutine;// ÇöÀç ÁøÇà ÁßÀÎ Áı°á ¹× ¼ø°£ÀÌµ¿ Coroutine
+        private Coroutine portalRoutine;// í˜„ì¬ ì§„í–‰ ì¤‘ì¸ ì§‘ê²° ë° ìˆœê°„ì´ë™ Coroutine
 
-        public bool IsChanneling { get; private set; }// ÇöÀç ¸ó½ºÅÍµéÀ» ¸ğÀ¸´Â ÁßÀÎÁö ¿ÜºÎ¿¡¼­ È®ÀÎÇÏ´Â Property
+        public bool IsChanneling { get; private set; }// í˜„ì¬ ëª¬ìŠ¤í„°ë“¤ì„ ëª¨ìœ¼ëŠ” ì¤‘ì¸ì§€ ì™¸ë¶€ì—ì„œ í™•ì¸í•˜ëŠ” Property
+        public event System.Action<Vector3> Teleported;
 
         private void Awake()
         {
-            GameObject nexusObject = GameObject.Find("Nexus_Core");// ¾À¿¡¼­ Nexus_Core¸¦ Ã£´Â´Ù.
+            GameObject nexusObject = GameObject.Find("Nexus_Core");// ì”¬ì—ì„œ Nexus_Coreë¥¼ ì°¾ëŠ”ë‹¤.
 
-            nexus = nexusObject != null ? nexusObject.transform : null;// Ã£¾Ò´Ù¸é Nexus TransformÀ» ÀúÀåÇÑ´Ù.
+            nexus = nexusObject != null ? nexusObject.transform : null;// ì°¾ì•˜ë‹¤ë©´ Nexus Transformì„ ì €ì¥í•œë‹¤.
         }
 
         private void Start()
         {
-            BeginPortalSequence();// ¸ó½ºÅÍ°¡ µîÀåÇÏ¸é Áï½Ã ÅäÅÛ ¼³Ä¡ °úÁ¤À» ½ÃÀÛÇÑ´Ù.
+            BeginPortalSequence();// ëª¬ìŠ¤í„°ê°€ ë“±ì¥í•˜ë©´ ì¦‰ì‹œ í† í…œ ì„¤ì¹˜ ê³¼ì •ì„ ì‹œì‘í•œë‹¤.
         }
 
         private void OnDisable()
         {
-            CancelPortalSequence();// Caster°¡ Á×°Å³ª ºñÈ°¼ºÈ­µÇ¸é ¼ø°£ÀÌµ¿À» Ãë¼ÒÇÏ°í ÅäÅÛÀ» Á¦°ÅÇÑ´Ù.
+            CancelPortalSequence();// Casterê°€ ì£½ê±°ë‚˜ ë¹„í™œì„±í™”ë˜ë©´ ìˆœê°„ì´ë™ì„ ì·¨ì†Œí•˜ê³  í† í…œì„ ì œê±°í•œë‹¤.
         }
 
         private void BeginPortalSequence()
         {
             if (portalRoutine != null)
             {
-                return;// ÀÌ¹Ì ÅäÅÛ °úÁ¤ÀÌ ÁøÇà ÁßÀÌ¸é Áßº¹ ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return;// ì´ë¯¸ í† í…œ ê³¼ì •ì´ ì§„í–‰ ì¤‘ì´ë©´ ì¤‘ë³µ ì‹¤í–‰í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
             if (nexus == null)
             {
-                return;// Ãâ±¸ À§Ä¡¸¦ °è»êÇÒ Nexus°¡ ¾øÀ¸¸é ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return;// ì¶œêµ¬ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•  Nexusê°€ ì—†ìœ¼ë©´ ì‹¤í–‰í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
             if (entryTotemPrefab == null || exitTotemPrefab == null)
             {
-                return;// ÇÊ¿äÇÑ ÅäÅÛ PrefabÀÌ ¿¬°áµÇÁö ¾Ê¾Ò´Ù¸é ½ÇÇàÇÏÁö ¾Ê´Â´Ù.
+                return;// í•„ìš”í•œ í† í…œ Prefabì´ ì—°ê²°ë˜ì§€ ì•Šì•˜ë‹¤ë©´ ì‹¤í–‰í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            CreateTotems();// ÀÔ±¸¿Í Ãâ±¸ ÅäÅÛÀ» »ı¼ºÇÑ´Ù.
+            CreateTotems();// ì…êµ¬ì™€ ì¶œêµ¬ í† í…œì„ ìƒì„±í•œë‹¤.
 
             if (entryTotem == null || exitTotem == null)
             {
-                DestroyTotems();// »ı¼º¿¡ ½ÇÆĞÇÑ ÅäÅÛÀ» Á¤¸®ÇÑ´Ù.
+                DestroyTotems();// ìƒì„±ì— ì‹¤íŒ¨í•œ í† í…œì„ ì •ë¦¬í•œë‹¤.
 
-                return;// ÅäÅÛ °úÁ¤À» ½ÃÀÛÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                return;// í† í…œ ê³¼ì •ì„ ì‹œì‘í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            portalRoutine = StartCoroutine(GatherAndTeleportRoutine());// ¸ó½ºÅÍ Áı°á ÈÄ ¼ø°£ÀÌµ¿ÇÏ´Â CoroutineÀ» ½ÃÀÛÇÑ´Ù.
+            portalRoutine = StartCoroutine(GatherAndTeleportRoutine());// ëª¬ìŠ¤í„° ì§‘ê²° í›„ ìˆœê°„ì´ë™í•˜ëŠ” Coroutineì„ ì‹œì‘í•œë‹¤.
         }
 
         private void CreateTotems()
         {
-            Transform spawnRoot = transform.parent;// Caster¿Í °°Àº ºÎ¸ğ ¾Æ·¡¿¡ ÅäÅÛÀ» »ı¼ºÇÑ´Ù.
+            Transform spawnRoot = transform.parent;// Casterì™€ ê°™ì€ ë¶€ëª¨ ì•„ë˜ì— í† í…œì„ ìƒì„±í•œë‹¤.
 
-            Vector3 entryPosition = GroundService.ProjectToGround(transform.position, totemGroundHeight);// Caster°¡ »ı¼ºµÈ À§Ä¡¸¦ ÀÔ±¸ ÅäÅÛ À§Ä¡·Î »ç¿ëÇÏ°í ¹Ù´Ú ³ôÀÌ¸¦ º¸Á¤ÇÑ´Ù.
+            Vector3 entryPosition = GroundService.ProjectToGround(transform.position, totemGroundHeight);// Casterê°€ ìƒì„±ëœ ìœ„ì¹˜ë¥¼ ì…êµ¬ í† í…œ ìœ„ì¹˜ë¡œ ì‚¬ìš©í•˜ê³  ë°”ë‹¥ ë†’ì´ë¥¼ ë³´ì •í•œë‹¤.
 
-            Vector3 exitPosition = CalculateExitPosition(entryPosition);// ÀÔ±¸ ¹æÇâÀ» ±âÁØÀ¸·Î Nexus ±ÙÃ³ Ãâ±¸ À§Ä¡¸¦ °è»êÇÑ´Ù.
+            Vector3 exitPosition = CalculateExitPosition(entryPosition);// ì…êµ¬ ë°©í–¥ì„ ê¸°ì¤€ìœ¼ë¡œ Nexus ê·¼ì²˜ ì¶œêµ¬ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
 
-            entryTotem = Instantiate(entryTotemPrefab, entryPosition, Quaternion.identity, spawnRoot);// ÀÔ±¸ ÅäÅÛÀ» »ı¼ºÇÑ´Ù.
+            entryTotem = Instantiate(entryTotemPrefab, entryPosition, Quaternion.identity, spawnRoot);// ì…êµ¬ í† í…œì„ ìƒì„±í•œë‹¤.
 
-            entryTotem.Configure(EnemyPortalTotemType.Entry, attractRadius, entryRadius);// ÀÔ±¸ Å¸ÀÔ°ú ¸ó½ºÅÍ À¯µµ¡¤¼ø°£ÀÌµ¿ ¹üÀ§¸¦ Àü´ŞÇÑ´Ù.
+            entryTotem.Configure(EnemyPortalTotemType.Entry, attractRadius, entryRadius);// ì…êµ¬ íƒ€ì…ê³¼ ëª¬ìŠ¤í„° ìœ ë„Â·ìˆœê°„ì´ë™ ë²”ìœ„ë¥¼ ì „ë‹¬í•œë‹¤.
 
-            exitTotem = Instantiate(exitTotemPrefab, exitPosition, Quaternion.identity, spawnRoot);// Nexus ±ÙÃ³¿¡ Ãâ±¸ ÅäÅÛÀ» »ı¼ºÇÑ´Ù.
+            exitTotem = Instantiate(exitTotemPrefab, exitPosition, Quaternion.identity, spawnRoot);// Nexus ê·¼ì²˜ì— ì¶œêµ¬ í† í…œì„ ìƒì„±í•œë‹¤.
 
-            exitTotem.Configure(EnemyPortalTotemType.Exit, 0.1f, 0.1f);// Ãâ±¸ ÅäÅÛÀº ¸ó½ºÅÍ¸¦ À¯µµÇÏÁö ¾ÊÀ¸¹Ç·Î ÃÖ¼Ò ¹üÀ§¸¸ Àü´ŞÇÑ´Ù.
+            exitTotem.Configure(EnemyPortalTotemType.Exit, 0.1f, 0.1f);// ì¶œêµ¬ í† í…œì€ ëª¬ìŠ¤í„°ë¥¼ ìœ ë„í•˜ì§€ ì•Šìœ¼ë¯€ë¡œ ìµœì†Œ ë²”ìœ„ë§Œ ì „ë‹¬í•œë‹¤.
         }
 
         private Vector3 CalculateExitPosition(Vector3 entryPosition)
         {
-            Vector3 outwardDirection = entryPosition - nexus.position;// Nexus¿¡¼­ ÀÔ±¸ ÅäÅÛ ¹æÇâÀ¸·Î ÇâÇÏ´Â º¤ÅÍ¸¦ ±¸ÇÑ´Ù.
+            Vector3 outwardDirection = entryPosition - nexus.position;// Nexusì—ì„œ ì…êµ¬ í† í…œ ë°©í–¥ìœ¼ë¡œ í–¥í•˜ëŠ” ë²¡í„°ë¥¼ êµ¬í•œë‹¤.
 
-            outwardDirection.y = 0.0f;// ³ôÀÌ Â÷ÀÌ´Â Á¦¿ÜÇÑ´Ù.
+            outwardDirection.y = 0.0f;// ë†’ì´ ì°¨ì´ëŠ” ì œì™¸í•œë‹¤.
 
             if (outwardDirection.sqrMagnitude <= 0.0001f)
             {
-                outwardDirection = -transform.forward;// ÀÔ±¸ ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é CasterÀÇ µÚÂÊ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
+                outwardDirection = -transform.forward;// ì…êµ¬ ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ì—†ë‹¤ë©´ Casterì˜ ë’¤ìª½ ë°©í–¥ì„ ì‚¬ìš©í•œë‹¤.
 
-                outwardDirection.y = 0.0f;// ³ôÀÌ ¹æÇâÀº Á¦¿ÜÇÑ´Ù.
+                outwardDirection.y = 0.0f;// ë†’ì´ ë°©í–¥ì€ ì œì™¸í•œë‹¤.
             }
 
             if (outwardDirection.sqrMagnitude <= 0.0001f)
             {
-                outwardDirection = Vector3.forward;// ¿¹ºñ ¹æÇâµµ ¾ø´Ù¸é ¿ùµå ¾Õ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
+                outwardDirection = Vector3.forward;// ì˜ˆë¹„ ë°©í–¥ë„ ì—†ë‹¤ë©´ ì›”ë“œ ì• ë°©í–¥ì„ ì‚¬ìš©í•œë‹¤.
             }
 
-            outwardDirection.Normalize();// ¹æÇâ º¤ÅÍÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
+            outwardDirection.Normalize();// ë°©í–¥ ë²¡í„°ì˜ ê¸¸ì´ë¥¼ 1ë¡œ ë§Œë“ ë‹¤.
 
-            Vector3 exitPosition = nexus.position + outwardDirection * exitDistanceFromNexus;// ÀÔ±¸ ÅäÅÛ°ú °°Àº ¹æÇâÀÇ Nexus ¿Ü°û¿¡ Ãâ±¸ À§Ä¡¸¦ ¸¸µç´Ù.
+            Vector3 exitPosition = nexus.position + outwardDirection * exitDistanceFromNexus;// ì…êµ¬ í† í…œê³¼ ê°™ì€ ë°©í–¥ì˜ Nexus ì™¸ê³½ì— ì¶œêµ¬ ìœ„ì¹˜ë¥¼ ë§Œë“ ë‹¤.
 
-            return GroundService.ProjectToGround(exitPosition, totemGroundHeight);// Ãâ±¸ À§Ä¡¸¦ ¹Ù´Ú ³ôÀÌ¿¡ ¸Â°Ô º¸Á¤ÇØ ¹İÈ¯ÇÑ´Ù.
+            return GroundService.ProjectToGround(exitPosition, totemGroundHeight);// ì¶œêµ¬ ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ë†’ì´ì— ë§ê²Œ ë³´ì •í•´ ë°˜í™˜í•œë‹¤.
         }
 
         private IEnumerator GatherAndTeleportRoutine()
         {
-            IsChanneling = true;// ÇöÀç ÅäÅÛÀ» À¯ÁöÇÏ¸é¼­ ¸ó½ºÅÍ¸¦ ¸ğÀ¸´Â ÁßÀÌ¶ó°í ÀúÀåÇÑ´Ù.
+            IsChanneling = true;// í˜„ì¬ í† í…œì„ ìœ ì§€í•˜ë©´ì„œ ëª¬ìŠ¤í„°ë¥¼ ëª¨ìœ¼ëŠ” ì¤‘ì´ë¼ê³  ì €ì¥í•œë‹¤.
 
-            float timer = 0.0f;// Áı°áÀÌ ÁøÇàµÈ ½Ã°£À» ÀúÀåÇÑ´Ù.
+            float timer = 0.0f;// ì§‘ê²°ì´ ì§„í–‰ëœ ì‹œê°„ì„ ì €ì¥í•œë‹¤.
 
             while (timer < gatherDuration)
             {
                 if (entryTotem == null || exitTotem == null)
                 {
-                    IsChanneling = false;// ÅäÅÛ Áı°á »óÅÂ¸¦ Á¾·áÇÑ´Ù.
+                    IsChanneling = false;// í† í…œ ì§‘ê²° ìƒíƒœë¥¼ ì¢…ë£Œí•œë‹¤.
 
-                    portalRoutine = null;// ÁøÇà ÁßÀÎ Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+                    portalRoutine = null;// ì§„í–‰ ì¤‘ì¸ Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
 
-                    DestroyTotems();// ³²¾Æ ÀÖ´Â ÅäÅÛÀ» Á¦°ÅÇÑ´Ù.
+                    DestroyTotems();// ë‚¨ì•„ ìˆëŠ” í† í…œì„ ì œê±°í•œë‹¤.
 
-                    yield break;// ÅäÅÛÀÌ »ç¶óÁ³À¸¹Ç·Î ¼ø°£ÀÌµ¿ÇÏÁö ¾Ê°í CoroutineÀ» Á¾·áÇÑ´Ù.
+                    yield break;// í† í…œì´ ì‚¬ë¼ì¡Œìœ¼ë¯€ë¡œ ìˆœê°„ì´ë™í•˜ì§€ ì•Šê³  Coroutineì„ ì¢…ë£Œí•œë‹¤.
                 }
 
-                timer += Time.deltaTime;// Áö³­ ÇÁ·¹ÀÓ ½Ã°£¸¸Å­ Áı°á ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
+                timer += Time.deltaTime;// ì§€ë‚œ í”„ë ˆì„ ì‹œê°„ë§Œí¼ ì§‘ê²° ì‹œê°„ì„ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-                yield return null;// ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ±â´Ù¸°´Ù.
+                yield return null;// ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€ ê¸°ë‹¤ë¦°ë‹¤.
             }
 
-            TeleportGatheredEnemies();// Áı°á ½Ã°£ÀÌ ³¡³ª¸é ÀÔ±¸ ¹üÀ§ ¾È ¸ó½ºÅÍ ÀüºÎ¸¦ ÀÌµ¿½ÃÅ²´Ù.
+            TeleportGatheredEnemies();// ì§‘ê²° ì‹œê°„ì´ ëë‚˜ë©´ ì…êµ¬ ë²”ìœ„ ì•ˆ ëª¬ìŠ¤í„° ì „ë¶€ë¥¼ ì´ë™ì‹œí‚¨ë‹¤.
 
-            FinishPortalSequence();// ¼ø°£ÀÌµ¿ ¿Ï·á ÈÄ ÅäÅÛÀ» Á¦°ÅÇÏ°í °úÁ¤À» ³¡³½´Ù.
+            FinishPortalSequence();// ìˆœê°„ì´ë™ ì™„ë£Œ í›„ í† í…œì„ ì œê±°í•˜ê³  ê³¼ì •ì„ ëë‚¸ë‹¤.
         }
 
         private void TeleportGatheredEnemies()
         {
             if (entryTotem == null || exitTotem == null)
             {
-                return;// ÀÔ±¸³ª Ãâ±¸°¡ ¾ø´Ù¸é ¼ø°£ÀÌµ¿ÇÒ ¼ö ¾ø´Ù.
+                return;// ì…êµ¬ë‚˜ ì¶œêµ¬ê°€ ì—†ë‹¤ë©´ ìˆœê°„ì´ë™í•  ìˆ˜ ì—†ë‹¤.
             }
 
-            gatheredEnemies.Clear();// ÀÌÀü Áı°á ´ë»óÀÌ ³²¾Æ ÀÖÁö ¾Êµµ·Ï ¸ñ·ÏÀ» ºñ¿î´Ù.
+            gatheredEnemies.Clear();// ì´ì „ ì§‘ê²° ëŒ€ìƒì´ ë‚¨ì•„ ìˆì§€ ì•Šë„ë¡ ëª©ë¡ì„ ë¹„ìš´ë‹¤.
 
-            EnemyController.CollectActiveInRange(entryTotem.transform.position, entryTotem.EntryRadius, gatheredEnemies, IsTeleportCandidate);// ÀÔ±¸ ÅäÅÛÀÇ Entry Radius ¾È¿¡ ¸ğÀÎ ¸ó½ºÅÍ¸¦ ¸ğµÎ ¼öÁıÇÑ´Ù.
+            EnemyController.CollectActiveInRange(entryTotem.transform.position, entryTotem.EntryRadius, gatheredEnemies, IsTeleportCandidate);// ì…êµ¬ í† í…œì˜ Entry Radius ì•ˆì— ëª¨ì¸ ëª¬ìŠ¤í„°ë¥¼ ëª¨ë‘ ìˆ˜ì§‘í•œë‹¤.
 
             for (int i = 0; i < gatheredEnemies.Count; i++)
             {
-                EnemyController enemy = gatheredEnemies[i];// ÇöÀç ¼ø°£ÀÌµ¿½ÃÅ³ ¸ó½ºÅÍ¸¦ °¡Á®¿Â´Ù.
+                EnemyController enemy = gatheredEnemies[i];// í˜„ì¬ ìˆœê°„ì´ë™ì‹œí‚¬ ëª¬ìŠ¤í„°ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
                 if (enemy == null)
                 {
-                    continue;// ¼ø°£ÀÌµ¿ Àü¿¡ »ç¶óÁø ¸ó½ºÅÍ´Â Á¦¿ÜÇÑ´Ù.
+                    continue;// ìˆœê°„ì´ë™ ì „ì— ì‚¬ë¼ì§„ ëª¬ìŠ¤í„°ëŠ” ì œì™¸í•œë‹¤.
                 }
 
-                Vector3 teleportPosition = CalculateTeleportPosition(i);// °¢ ¸ó½ºÅÍ°¡ °ãÄ¡Áö ¾Êµµ·Ï Ãâ±¸ ÁÖº¯ À§Ä¡¸¦ °è»êÇÑ´Ù.
+                Vector3 teleportPosition = CalculateTeleportPosition(i);// ê° ëª¬ìŠ¤í„°ê°€ ê²¹ì¹˜ì§€ ì•Šë„ë¡ ì¶œêµ¬ ì£¼ë³€ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
 
-                enemy.transform.position = teleportPosition;// ¸ó½ºÅÍ À§Ä¡¸¦ Ãâ±¸ ÅäÅÛ ±ÙÃ³·Î Áï½Ã ÀÌµ¿½ÃÅ²´Ù.
+                enemy.transform.position = teleportPosition;// ëª¬ìŠ¤í„° ìœ„ì¹˜ë¥¼ ì¶œêµ¬ í† í…œ ê·¼ì²˜ë¡œ ì¦‰ì‹œ ì´ë™ì‹œí‚¨ë‹¤.
             }
+
+            Teleported?.Invoke(exitTotem.transform.position);
         }
 
         private bool IsTeleportCandidate(EnemyController enemy)
         {
             if (enemy == null)
             {
-                return false;// ´ë»óÀÌ ¾øÀ¸¸é Á¦¿ÜÇÑ´Ù.
+                return false;// ëŒ€ìƒì´ ì—†ìœ¼ë©´ ì œì™¸í•œë‹¤.
             }
 
             if (enemy.Grade == EnemyGrade.Boss)
             {
-                return false;// Boss µî±Ş ¸ó½ºÅÍ´Â ¼ø°£ÀÌµ¿½ÃÅ°Áö ¾Ê´Â´Ù.
+                return false;// Boss ë“±ê¸‰ ëª¬ìŠ¤í„°ëŠ” ìˆœê°„ì´ë™ì‹œí‚¤ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            return true;// ÀÔ±¸ ÅäÅÛ ¹üÀ§ ¾È¿¡ ¸ğÀÎ ÀÏ¹İ ¸ó½ºÅÍ, ¿¤¸®Æ® ¸ó½ºÅÍ, PortalTotemCaster ÀÚ½Åµµ ¼ø°£ÀÌµ¿½ÃÅ²´Ù.
+            return true;// ì…êµ¬ í† í…œ ë²”ìœ„ ì•ˆì— ëª¨ì¸ ì¼ë°˜ ëª¬ìŠ¤í„°, ì—˜ë¦¬íŠ¸ ëª¬ìŠ¤í„°, PortalTotemCaster ìì‹ ë„ ìˆœê°„ì´ë™ì‹œí‚¨ë‹¤.
         }
 
         private Vector3 CalculateTeleportPosition(int index)
         {
-            Vector3 center = exitTotem.transform.position;// Ãâ±¸ ÅäÅÛ À§Ä¡¸¦ ¹èÄ¡ Áß½ÉÀ¸·Î »ç¿ëÇÑ´Ù.
+            Vector3 center = exitTotem.transform.position;// ì¶œêµ¬ í† í…œ ìœ„ì¹˜ë¥¼ ë°°ì¹˜ ì¤‘ì‹¬ìœ¼ë¡œ ì‚¬ìš©í•œë‹¤.
 
-            const int slotsPerRing = 12;// ¿øÇü ÇÑ ÁÙ¿¡ ¹èÄ¡ÇÒ ¸ó½ºÅÍ ¼ö
+            const int slotsPerRing = 12;// ì›í˜• í•œ ì¤„ì— ë°°ì¹˜í•  ëª¬ìŠ¤í„° ìˆ˜
 
-            int ringIndex = index / slotsPerRing + 1;// ¸î ¹øÂ° ¿øÇü ÁÙ¿¡ ¹èÄ¡ÇÒÁö °è»êÇÑ´Ù.
+            int ringIndex = index / slotsPerRing + 1;// ëª‡ ë²ˆì§¸ ì›í˜• ì¤„ì— ë°°ì¹˜í• ì§€ ê³„ì‚°í•œë‹¤.
 
-            int slotIndex = index % slotsPerRing;// ÇöÀç ¿øÇü ÁÙ¿¡¼­ ¸î ¹øÂ° À§Ä¡ÀÎÁö °è»êÇÑ´Ù.
+            int slotIndex = index % slotsPerRing;// í˜„ì¬ ì›í˜• ì¤„ì—ì„œ ëª‡ ë²ˆì§¸ ìœ„ì¹˜ì¸ì§€ ê³„ì‚°í•œë‹¤.
 
-            float angle = 360.0f / slotsPerRing * slotIndex + ringIndex * 15.0f;// ¿øÇü ÁÙ¸¶´Ù °¢µµ¸¦ Á¶±İ µ¹·Á ¸ó½ºÅÍ °ãÄ§À» ÁÙÀÎ´Ù.
+            float angle = 360.0f / slotsPerRing * slotIndex + ringIndex * 15.0f;// ì›í˜• ì¤„ë§ˆë‹¤ ê°ë„ë¥¼ ì¡°ê¸ˆ ëŒë ¤ ëª¬ìŠ¤í„° ê²¹ì¹¨ì„ ì¤„ì¸ë‹¤.
 
-            float radius = exitScatterRadius * ringIndex;// ¸ó½ºÅÍ°¡ ¸¹À¸¸é ¹Ù±ùÂÊ ¿øÇü ÁÙÀ» Ãß°¡ÇÑ´Ù.
+            float radius = exitScatterRadius * ringIndex;// ëª¬ìŠ¤í„°ê°€ ë§ìœ¼ë©´ ë°”ê¹¥ìª½ ì›í˜• ì¤„ì„ ì¶”ê°€í•œë‹¤.
 
-            Vector3 offset = Quaternion.Euler(0.0f, angle, 0.0f) * Vector3.forward * radius;// °¢µµ¿Í ¹İ°æÀ¸·Î Ãâ±¸ ÁÖº¯ ¹èÄ¡ À§Ä¡¸¦ ¸¸µç´Ù.
+            Vector3 offset = Quaternion.Euler(0.0f, angle, 0.0f) * Vector3.forward * radius;// ê°ë„ì™€ ë°˜ê²½ìœ¼ë¡œ ì¶œêµ¬ ì£¼ë³€ ë°°ì¹˜ ìœ„ì¹˜ë¥¼ ë§Œë“ ë‹¤.
 
-            Vector3 position = center + offset;// Ãâ±¸ Áß½É¿¡ ºĞ»ê À§Ä¡¸¦ ´õÇÑ´Ù.
+            Vector3 position = center + offset;// ì¶œêµ¬ ì¤‘ì‹¬ì— ë¶„ì‚° ìœ„ì¹˜ë¥¼ ë”í•œë‹¤.
 
-            return GroundService.ProjectToGround(position, teleportGroundHeight);// ¸ó½ºÅÍ ³ôÀÌ¿¡ ¸ÂÃç ¹Ù´Ú À§Ä¡¸¦ º¸Á¤ÇÑ´Ù.
+            return GroundService.ProjectToGround(position, teleportGroundHeight);// ëª¬ìŠ¤í„° ë†’ì´ì— ë§ì¶° ë°”ë‹¥ ìœ„ì¹˜ë¥¼ ë³´ì •í•œë‹¤.
         }
 
         private void FinishPortalSequence()
         {
-            IsChanneling = false;// ´õ ÀÌ»ó Áı°á ÁßÀÌ ¾Æ´Ï¶ó°í ÀúÀåÇÑ´Ù.
+            IsChanneling = false;// ë” ì´ìƒ ì§‘ê²° ì¤‘ì´ ì•„ë‹ˆë¼ê³  ì €ì¥í•œë‹¤.
 
-            portalRoutine = null;// ÁøÇà ÁßÀÎ Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+            portalRoutine = null;// ì§„í–‰ ì¤‘ì¸ Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
 
-            DestroyTotems();// »ç¿ëÀÌ ³¡³­ ÀÔ±¸¿Í Ãâ±¸ ÅäÅÛÀ» Á¦°ÅÇÑ´Ù.
+            DestroyTotems();// ì‚¬ìš©ì´ ëë‚œ ì…êµ¬ì™€ ì¶œêµ¬ í† í…œì„ ì œê±°í•œë‹¤.
 
-            enabled = false;// ÇÑ ¹ø¸¸ »ç¿ëÇÏ´Â ¸ó½ºÅÍÀÌ¹Ç·Î ÀÌ Script Component¸¦ Á¾·áÇÑ´Ù.
+            enabled = false;// í•œ ë²ˆë§Œ ì‚¬ìš©í•˜ëŠ” ëª¬ìŠ¤í„°ì´ë¯€ë¡œ ì´ Script Componentë¥¼ ì¢…ë£Œí•œë‹¤.
         }
 
         private void CancelPortalSequence()
         {
-            IsChanneling = false;// Áı°á »óÅÂ¸¦ Á¾·áÇÑ´Ù.
+            IsChanneling = false;// ì§‘ê²° ìƒíƒœë¥¼ ì¢…ë£Œí•œë‹¤.
 
             if (portalRoutine != null)
             {
-                StopCoroutine(portalRoutine);// ÁøÇà ÁßÀÎ Áı°á CoroutineÀ» ÁßÁöÇÑ´Ù.
+                StopCoroutine(portalRoutine);// ì§„í–‰ ì¤‘ì¸ ì§‘ê²° Coroutineì„ ì¤‘ì§€í•œë‹¤.
 
-                portalRoutine = null;// Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+                portalRoutine = null;// Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
 
-            DestroyTotems();// Ãë¼ÒµÇ¸é ÀÔ±¸¿Í Ãâ±¸ ÅäÅÛÀ» ¸ğµÎ Á¦°ÅÇÑ´Ù.
+            DestroyTotems();// ì·¨ì†Œë˜ë©´ ì…êµ¬ì™€ ì¶œêµ¬ í† í…œì„ ëª¨ë‘ ì œê±°í•œë‹¤.
         }
 
         private void DestroyTotems()
         {
             if (entryTotem != null)
             {
-                entryTotem.Deactivate();// ¸ó½ºÅÍµéÀÌ ´õ ÀÌ»ó ÀÔ±¸ ÅäÅÛÀ¸·Î ÀÌµ¿ÇÏÁö ¾Ê°Ô ÇÑ´Ù.
+                entryTotem.Deactivate();// ëª¬ìŠ¤í„°ë“¤ì´ ë” ì´ìƒ ì…êµ¬ í† í…œìœ¼ë¡œ ì´ë™í•˜ì§€ ì•Šê²Œ í•œë‹¤.
 
-                Destroy(entryTotem.gameObject);// ÀÔ±¸ ÅäÅÛÀ» Á¦°ÅÇÑ´Ù.
+                Destroy(entryTotem.gameObject);// ì…êµ¬ í† í…œì„ ì œê±°í•œë‹¤.
 
-                entryTotem = null;// ÀÔ±¸ ÅäÅÛ ÂüÁ¶¸¦ ºñ¿î´Ù.
+                entryTotem = null;// ì…êµ¬ í† í…œ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
 
             if (exitTotem != null)
             {
-                exitTotem.Deactivate();// Ãâ±¸ ÅäÅÛ ±â´ÉÀ» Á¾·áÇÑ´Ù.
+                exitTotem.Deactivate();// ì¶œêµ¬ í† í…œ ê¸°ëŠ¥ì„ ì¢…ë£Œí•œë‹¤.
 
-                Destroy(exitTotem.gameObject);// Ãâ±¸ ÅäÅÛÀ» Á¦°ÅÇÑ´Ù.
+                Destroy(exitTotem.gameObject);// ì¶œêµ¬ í† í…œì„ ì œê±°í•œë‹¤.
 
-                exitTotem = null;// Ãâ±¸ ÅäÅÛ ÂüÁ¶¸¦ ºñ¿î´Ù.
+                exitTotem = null;// ì¶œêµ¬ í† í…œ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
         }
     }

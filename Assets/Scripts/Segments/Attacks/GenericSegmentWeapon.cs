@@ -76,6 +76,7 @@ namespace TeamProject01.Gameplay
                 projectileSequencePreferredSide = 0;
                 hasProjectileSequenceLastAimPoint = false;
                 StopSustainedMuzzleVfx(true);
+                StopFireLoopSfx();
             }
 
             if (!active)
@@ -84,6 +85,7 @@ namespace TeamProject01.Gameplay
                 StopTrebuchetFireMotion(); // 분리/비활성 시 숟가락 모션 복구
                 ResetFireRecoilPose(); // 분리/비활성 시 반동 중간 pose 복구
                 StopSustainedMuzzleVfx(true);
+                StopFireLoopSfx();
             }
         }
 
@@ -93,6 +95,7 @@ namespace TeamProject01.Gameplay
             {
                 ClearSawTargetLock(); // 사용 불가 시 대상 해제
                 StopSustainedMuzzleVfx(true);
+                StopFireLoopSfx();
                 return; // 발사 불가
             }
 

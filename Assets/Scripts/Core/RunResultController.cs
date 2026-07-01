@@ -117,6 +117,7 @@ namespace TeamProject01.Gameplay
                 DisplayDiamond = finalDiamond
             };
 
+            PlayResultSfx(isClear);
             if (overlayView == null)
             {
                 ReturnToTitleScene(); // 팝업 누락 시 결과 저장 후 복귀
@@ -139,6 +140,19 @@ namespace TeamProject01.Gameplay
             }
 
             return Mathf.Max(0, Mathf.FloorToInt(collectedDiamond * Mathf.Clamp01(clearDiamondBonusRate))); // 20%
+        }
+
+        private void PlayResultSfx(bool isClear)
+        {
+            GameplaySfxCue cue = isClear ? GameplaySfxCue.ResultClear : GameplaySfxCue.ResultGameOver;
+            Transform root = overlayView != null ? overlayView.transform : transform;
+            Vector3 position = root != null ? root.position : Vector3.zero;
+            if (root != null && GameplaySfxEmitter.TryPlayAt(root, cue, position, true))
+            {
+                return;
+            }
+
+            GameplaySfxEmitter.TryPlayCatalogAt(cue, position);
         }
 
         private void ReturnToTitleScene()

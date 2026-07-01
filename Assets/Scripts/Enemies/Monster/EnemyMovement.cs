@@ -43,10 +43,12 @@ namespace TeamProject01.Gameplay
         private EnemySupportDebuffState supportDebuff; // 전찬우추가-0621 - 지원형 디버프 상태
 
         private EnemyPortalTotemCaster portalTotemCaster; // 같은 GameObject에 붙은 포탈 토템 소환 Script Component 참조
+        private EnemyCrowdBlocker crowdBlocker; // 몬스터끼리 한 점에 겹치지 않도록 보정하는 Script Component 참조
 
         private void Awake()
         {
             enemyController = GetComponent<EnemyController>(); // 같은 GameObject에 붙은 EnemyController Script Component를 찾는다.
+            crowdBlocker = GetComponent<EnemyCrowdBlocker>(); // 같은 GameObject에 붙은 EnemyCrowdBlocker Script Component를 찾는다.
 
             meleeAttack = GetComponent<EnemyMeleeAttack>(); // 같은 GameObject에 붙은 EnemyMeleeAttack Script Component를 찾는다.
             rangedAttack = GetComponent<EnemyRangedAttack>(); // 같은 GameObject에 붙은 EnemyRangedAttack Script Component를 찾는다.
@@ -68,9 +70,11 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
+            SetCrowdMoving(false); // 실제 이동 분기에서만 켜서 정지 몬스터가 밀림을 받을 수 있게 한다.
+
             if (IsFrozenBySupport()) // 전찬우추가-0621 - 얼음종 동결 중 이동 정지
             {
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 정지 중 위치 보정
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 정지 중 위치 보정
                 transform.position = resolvedPosition; // 보정 위치 적용
 
                 return;
@@ -84,6 +88,7 @@ namespace TeamProject01.Gameplay
                 knockbackPosition = GroundService.ProjectToGround(knockbackPosition, groundHeight); //바닥 높이에 맞춘다.
 
                 Vector3 resolvedKnockbackPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, knockbackPosition, bodyRadius); //밀리는 중에 컨보이와 겹치지 않게 한다.
+                resolvedKnockbackPosition = ResolveCrowdPosition(transform.position, resolvedKnockbackPosition); // 몬스터끼리 겹치지 않게 한다.
                 transform.position = resolvedKnockbackPosition; //보정 위치를 적용한다.
 
                 return;
@@ -93,32 +98,52 @@ namespace TeamProject01.Gameplay
             {
                 staggerTimer -= Time.deltaTime; // 전찬우추가-6019(몬스터피드백관련) - 경직 시간 감소
 
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-6019(몬스터피드백관련) - 정지 중 위치 보정
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 전찬우추가-6019(몬스터피드백관련) - 정지 중 위치 보정
                 transform.position = resolvedPosition; // 전찬우추가-6019(몬스터피드백관련) - 보정 위치 적용
 
                 return;
             }
 
-            if (nexus == null) //이동 목표가 없으면
+            bool isSegmentCutFollower = segmentCutCaster != null; // 전찬우수정-0630 - 절단 몬스터는 넥서스가 아니라 컨보이 꼬리를 따라간다.
+            Transform movementTarget = nexus; // 기본 몬스터는 Nexus를 이동 목표로 사용한다.
+
+            if (isSegmentCutFollower)
+            {
+                assignedPortalTotem = null; // 전찬우수정-0630 - 절단 몬스터는 포탈 토템 유도 대신 꼬리 추적만 사용한다.
+
+                if (!segmentCutCaster.TryGetTailFollowTarget(out movementTarget))
+                {
+                    IsInStopRange = false;
+
+                    Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position);
+                    transform.position = resolvedPosition;
+
+                    return;
+                }
+            }
+            else if (nexus == null) //이동 목표가 없으면
             {
                 return; //종료한다.
             }
 
-            if (portalTotemCaster != null && portalTotemCaster.IsChanneling) // 토템 소환 몬스터가 집결 과정을 진행 중이라면
+            if (!isSegmentCutFollower && portalTotemCaster != null && portalTotemCaster.IsChanneling) // 토템 소환 몬스터가 집결 과정을 진행 중이라면
             {
                 IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
 
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 채널링 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 채널링 중에도 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 토템을 유지하는 동안 이동하지 않는다.
             }
 
-            UpdateAssignedPortalTotem(); // 현재 이동할 입구 토템을 찾거나 기존 토템 상태를 확인한다.
+            if (!isSegmentCutFollower)
+            {
+                UpdateAssignedPortalTotem(); // 현재 이동할 입구 토템을 찾거나 기존 토템 상태를 확인한다.
+            }
 
-            bool isMovingToPortalTotem = assignedPortalTotem != null; // 현재 입구 토템으로 이동 중인지 확인한다.
+            bool isMovingToPortalTotem = !isSegmentCutFollower && assignedPortalTotem != null; // 현재 입구 토템으로 이동 중인지 확인한다.
 
-            Vector3 offset = nexus.position - transform.position; // 현재 몬스터 위치에서 Nexus까지의 방향과 거리 벡터를 구한다.
+            Vector3 offset = movementTarget.position - transform.position; // 현재 몬스터 위치에서 이동 목표까지의 방향과 거리 벡터를 구한다.
 
             if (isMovingToPortalTotem) // 이동할 입구 토템이 있다면
             {
@@ -127,7 +152,7 @@ namespace TeamProject01.Gameplay
 
             offset.y = 0f; //높이 차이는 제거한다.
 
-            float stopDistance = GetStopDistance(); // 공격 Script의 AttackRange 또는 예비 정지 거리를 가져온다.
+            float stopDistance = isSegmentCutFollower ? segmentCutCaster.CastRange : GetStopDistance(); // 전찬우수정-0630 - 절단 몬스터는 절단 사거리를 꼬리 추적 정지 거리로 사용한다.
 
             if (isMovingToPortalTotem) // 입구 토템으로 이동 중이라면
             {
@@ -136,21 +161,22 @@ namespace TeamProject01.Gameplay
 
             bool isTargetInStopRange = offset.sqrMagnitude <= stopDistance * stopDistance; // 현재 이동 목표가 멈춤 거리 안에 있는지 확인한다.
 
-            bool isNexusInStopRange = !isMovingToPortalTotem && isTargetInStopRange; // Nexus가 공격 사거리 안에 있는지 확인한다.
+            bool isNexusInStopRange = !isSegmentCutFollower && !isMovingToPortalTotem && isTargetInStopRange; // Nexus가 공격 사거리 안에 있는지 확인한다.
+            bool isSegmentCutTailInStopRange = isSegmentCutFollower && isTargetInStopRange; // 전찬우수정-0630 - 꼬리 세그먼트가 절단 사거리 안인지 확인한다.
 
-            bool isSlowTargetInRange = !isMovingToPortalTotem && slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
+            bool isSlowTargetInRange = !isSegmentCutFollower && !isMovingToPortalTotem && slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
             bool isObstacleSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; // 장애물 소환 과정이 진행 중인지 확인한다.
 
             // 조성원삭제-0626 - 절단 마법 쿨타임 중에도 20 사거리에서 계속 정지하므로 단순 사거리 조건을 사용하지 않는다.
             // bool isSegmentCutTargetInRange = !isMovingToPortalTotem && segmentCutCaster != null && segmentCutCaster.IsTargetInCastRange(); //컨보이가 절단 마법 시전 범위 안에 있는지 확인한다.
 
-            bool shouldPrioritizeSegmentCut = !isMovingToPortalTotem && segmentCutCaster != null && segmentCutCaster.ShouldPrioritizeCast; // 조성원추가-0626 - 절단 마법을 우선해야 할 때만 이동을 멈춘다.
+            bool shouldPrioritizeSegmentCut = isSegmentCutFollower && segmentCutCaster.ShouldPrioritizeCast; // 전찬우수정-0630 - 절단 몬스터는 꼬리 사거리 안에서만 절단 마법을 우선한다.
 
             if (isMovingToPortalTotem && isTargetInStopRange) // 입구 토템의 Entry Radius 안에 도착했다면
             {
                 IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
 
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 토템 주변에서 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 토템 주변에서 정지 중에도 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 순간이동할 때까지 입구 토템 주변에서 정지한다.
@@ -159,12 +185,17 @@ namespace TeamProject01.Gameplay
             // 조성원삭제-0626 - 절단 마법 사거리 안에 있다는 이유만으로 계속 정지하는 기존 조건을 사용하지 않는다.
             // if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning || isSegmentCutTargetInRange) // 공격 가능 거리거나, 투척 가능 거리거나, 장애물 소환 중이거나 절단마법 중이 거나
 
-            if (isNexusInStopRange || isSlowTargetInRange || isObstacleSummoning || shouldPrioritizeSegmentCut) // 조성원추가-0626 - 절단 마법 우선 상태일 때만 정지한다.
+            if (isNexusInStopRange || isSegmentCutTailInStopRange || isSlowTargetInRange || isObstacleSummoning || shouldPrioritizeSegmentCut) // 전찬우수정-0630 - 절단 몬스터는 꼬리 사거리 안에서 정지한다.
             {
-                IsInStopRange = isNexusInStopRange; // 이 값은 Nexus 공격 사거리 여부만 저장한다.
+                IsInStopRange = isNexusInStopRange || isSegmentCutTailInStopRange || shouldPrioritizeSegmentCut; // 절단 몬스터의 정지 상태도 이동 애니메이션에 반영한다.
+
+                if (isSegmentCutFollower && offset.sqrMagnitude > 0.0001f)
+                {
+                    transform.rotation = Quaternion.LookRotation(offset.normalized, Vector3.up); // 꼬리 정지 중에도 꼬리 방향을 바라본다.
+                }
 
                 ////// 전찬우추가-0619 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-0619 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 전찬우추가-0619 - 정지 중에도 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 공격, 투척, 소환 중이면 Nexus 쪽으로 더 이동하지 않는다.
@@ -186,9 +217,9 @@ namespace TeamProject01.Gameplay
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
             ////// 전찬우추가-0619 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
-            Vector3 position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가-0619 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
+            Vector3 segmentResolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가-0619 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
 
-            Vector3 pushOffset = position - desiredPosition; // 원래 이동하려던 위치에서 얼마나 밀려났는지 계산한다.
+            Vector3 pushOffset = segmentResolvedPosition - desiredPosition; // 원래 이동하려던 위치에서 얼마나 밀려났는지 계산한다.
 
             if (pushOffset.sqrMagnitude > 0.0001f) // 세그먼트 때문에 위치가 보정되었다면
             {
@@ -198,6 +229,7 @@ namespace TeamProject01.Gameplay
                 knockbackTimer = knockbackDuration; // 짧은 시간 동안 밀림 상태로 만든다.
             }
 
+            Vector3 position = ResolveCrowdPosition(transform.position, segmentResolvedPosition, true); // 몬스터끼리 겹치지 않도록 최종 위치를 보정한다.
             transform.position = position; // 최종 보정된 위치를 몬스터 Transform에 적용한다.
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 몬스터가 이동 방향을 바라보게 회전시킨다.
         }
@@ -296,9 +328,15 @@ namespace TeamProject01.Gameplay
             staggerTimer = 0f; // 경직 중단
             knockbackDirection = Vector3.zero; // 방향 초기화
             IsInStopRange = false; // 넥서스 정지 상태 해제
+            SetCrowdMoving(false); // 강제 이동 직전 몬스터 군집 이동 상태를 정리한다.
+
+            if (crowdBlocker != null)
+            {
+                crowdBlocker.ClearPendingPush(); // 이전 프레임에 예약된 밀림이 순간이동 위치를 흔들지 않게 한다.
+            }
 
             Vector3 groundedPosition = GroundService.ProjectToGround(worldPosition, groundHeight); // 바닥 높이 보정
-            transform.position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, groundedPosition, bodyRadius); // 겹침 보정
+            transform.position = ResolveMonsterPosition(transform.position, groundedPosition); // 겹침 보정
         }
 
         public void Configure(Transform nexus, float moveSpeed, float groundHeight)// Spawner나 Controller가 이동 초기값을 넣어주는 함수
@@ -318,8 +356,6 @@ namespace TeamProject01.Gameplay
             moveSpeed = Mathf.Max(0.01f, moveSpeed * multiplier); // 기본 이동속도 배율
         }
 
-
-
         private bool IsFrozenBySupport() // 전찬우추가-0621 - 지원형 동결 여부
         {
             if (supportDebuff == null)
@@ -338,6 +374,36 @@ namespace TeamProject01.Gameplay
             }
 
             return supportDebuff != null ? supportDebuff.MoveSpeedMultiplier : 1f;
+        }
+
+        private Vector3 ResolveMonsterPosition(Vector3 currentPosition, Vector3 desiredPosition)
+        {
+            Vector3 segmentResolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(currentPosition, desiredPosition, bodyRadius);
+            return ResolveCrowdPosition(currentPosition, segmentResolvedPosition);
+        }
+
+        private Vector3 ResolveCrowdPosition(Vector3 currentPosition, Vector3 desiredPosition, bool isMoving = false)
+        {
+            if (crowdBlocker == null)
+            {
+                crowdBlocker = GetComponent<EnemyCrowdBlocker>();
+            }
+
+            SetCrowdMoving(isMoving);
+            return MonsterInteractionApi.ResolveMonsterCrowdPosition(crowdBlocker, currentPosition, desiredPosition, bodyRadius);
+        }
+
+        private void SetCrowdMoving(bool isMoving)
+        {
+            if (crowdBlocker == null)
+            {
+                crowdBlocker = GetComponent<EnemyCrowdBlocker>();
+            }
+
+            if (crowdBlocker != null)
+            {
+                crowdBlocker.SetCrowdMoving(isMoving);
+            }
         }
     }
 }

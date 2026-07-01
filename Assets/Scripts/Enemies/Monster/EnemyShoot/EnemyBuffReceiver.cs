@@ -2,132 +2,203 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public class EnemyBuffReceiver : MonoBehaviour//¸ó½ºÅÍ ¹öÇÁ »óÅÂ °ü¸®
+    public class EnemyBuffReceiver : MonoBehaviour//ëª¬ìŠ¤í„° ë²„í”„ ìƒíƒœ ê´€ë¦¬
     {        
-        private EnemyBuffType activeBuffType = EnemyBuffType.None; //ÇöÀç ¸ó½ºÅÍ Àû¿ë ¹öÇÁ´Â ¾øÀ½
+        private EnemyHealth enemyHealth; // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì‹œ ë²„í”„ ìƒíƒœë¥¼ ì¦‰ì‹œ ì§€ìš°ê¸° ìœ„í•œ ì²´ë ¥ ì°¸ì¡°
+        private EnemyController enemyController; // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ëŒ€ê¸° ì¤‘ì¸ ì»¨íŠ¸ë¡¤ëŸ¬ ìƒíƒœ í™•ì¸
+        private EnemyBuffType activeBuffType = EnemyBuffType.None; //í˜„ì¬ ëª¬ìŠ¤í„° ì ìš© ë²„í”„ëŠ” ì—†ìŒ
 
         
-        private float activeBuffMultiplier = 1.0f; //ÇöÀç Àû¿ë ÁßÀÎ ¹öÇÁ ¹èÀ²
+        private float activeBuffMultiplier = 1.0f; //í˜„ì¬ ì ìš© ì¤‘ì¸ ë²„í”„ ë°°ìœ¨
 
         
-        private float remainingBuffTime; //ÇöÀç ¹öÇÁ À¯Áö ½Ã°£
+        private float remainingBuffTime; //í˜„ì¬ ë²„í”„ ìœ ì§€ ì‹œê°„
 
-        public EnemyBuffType ActiveBuffType//ÇöÀç ¹öÇÁ Á¾·ù¸¦ ÀĞ±â À§ÇÑ property
+        public EnemyBuffType ActiveBuffType//í˜„ì¬ ë²„í”„ ì¢…ë¥˜ë¥¼ ì½ê¸° ìœ„í•œ property
         {
             get
             {
-                return activeBuffType; //ÇöÀç ¹öÇÁ Á¾·ù¸¦ ¹İÈ¯ÇÑ´Ù.
+                return activeBuffType; //í˜„ì¬ ë²„í”„ ì¢…ë¥˜ë¥¼ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public bool HasActiveBuff //ÇöÀç ¹öÇÁ°¡ Àû¿ë ÁßÀÎÁö È®ÀÎÇÏ´Â property
+        public bool HasActiveBuff //í˜„ì¬ ë²„í”„ê°€ ì ìš© ì¤‘ì¸ì§€ í™•ì¸í•˜ëŠ” property
         {
             get
             {
-                return activeBuffType != EnemyBuffType.None && remainingBuffTime > 0.0f;//ÇöÀç ¹öÇÁ Á¾·ù°¡ NoneÀÌ ¾Æ´Ï°í, ¹öÇÁ À¯Áö ½Ã°£ÀÌ ³²¾Æ ÀÖÀ¸¸é true¸¦ ¹İÈ¯ÇÑ´Ù.
+                return activeBuffType != EnemyBuffType.None && remainingBuffTime > 0.0f;//í˜„ì¬ ë²„í”„ ì¢…ë¥˜ê°€ Noneì´ ì•„ë‹ˆê³ , ë²„í”„ ìœ ì§€ ì‹œê°„ì´ ë‚¨ì•„ ìˆìœ¼ë©´ trueë¥¼ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public float ActiveBuffMultiplier//ÇöÀç Àû¿ë ¹öÇÁ¸¦ ÀĞ±â À§ÇÑ property
+        public float ActiveBuffMultiplier//í˜„ì¬ ì ìš© ë²„í”„ë¥¼ ì½ê¸° ìœ„í•œ property
         {
             get
             {
-                return activeBuffMultiplier; //ÇöÀç Àû¿ë ÁßÀÎ ¹öÇÁ¸¦ ¹İÈ¯ÇÑ´Ù.
+                return activeBuffMultiplier; //í˜„ì¬ ì ìš© ì¤‘ì¸ ë²„í”„ë¥¼ ë°˜í™˜í•œë‹¤.
             }
+        }
+
+        private void Awake()
+        {
+            enemyHealth = GetComponent<EnemyHealth>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì´ë²¤íŠ¸ êµ¬ë…ìš© ì²´ë ¥ ì»´í¬ë„ŒíŠ¸ ì—°ê²°
+            enemyController = GetComponent<EnemyController>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ë³´ìƒ ì²˜ë¦¬ í›„ ì‚¬ë§ í”Œë˜ê·¸ í™•ì¸
+        }
+
+        private void OnEnable()
+        {
+            SubscribeHealth(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì£½ëŠ” ì¦‰ì‹œ ë²„í”„ ìƒíƒœë¥¼ ì œê±°í•˜ë„ë¡ ì´ë²¤íŠ¸ ì—°ê²°
         }
 
         private void Update()
         {
-            if (!HasActiveBuff) //ÇöÀç Àû¿ë ÁßÀÎ ¹öÇÁ°¡ ¾ø´Ù¸é
+            if (IsOwnerDead()) // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ì¤‘ ë²„í”„ê°€ ë‚¨ì•„ìˆì§€ ì•Šê²Œ ë°©ì–´
             {
-                return; // °è»êÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                ClearBuff();
+                return;
             }
 
-            remainingBuffTime -= Time.deltaTime; //Áö³­ ½Ã°£¸¸Å­ ¹öÇÁ À¯Áö ½Ã°£À» °¨¼ÒÇÑ´Ù.
-
-            if(remainingBuffTime <= 0) //¹öÇÁ À¯Áö½Ã°£ÀÌ ³¡³ª¸é
+            if (!HasActiveBuff) //í˜„ì¬ ì ìš© ì¤‘ì¸ ë²„í”„ê°€ ì—†ë‹¤ë©´
             {
-                ClearBuff(); //¹öÇÁ¸¦ Á¦°ÅÇÑ´Ù.
+                return; // ê³„ì‚°í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
+            }
+
+            remainingBuffTime -= Time.deltaTime; //ì§€ë‚œ ì‹œê°„ë§Œí¼ ë²„í”„ ìœ ì§€ ì‹œê°„ì„ ê°ì†Œí•œë‹¤.
+
+            if(remainingBuffTime <= 0) //ë²„í”„ ìœ ì§€ì‹œê°„ì´ ëë‚˜ë©´
+            {
+                ClearBuff(); //ë²„í”„ë¥¼ ì œê±°í•œë‹¤.
             }
         }
 
         private void OnDisable()
         {
-            ClearBuff(); //¹öÇÁ°¡ ºñÈ°¼ºÈ­ »óÅÂ¸é ¹öÇÁ »óÅÂ¸¦ ÃÊ±âÈ­ ÇÑ´Ù.
+            UnsubscribeHealth(); // ì „ì°¬ìš°ìˆ˜ì • -0630 íŒŒê´´/ë¹„í™œì„±í™” ì‹œ ì´ë²¤íŠ¸ ì°¸ì¡° í•´ì œ
+            ClearBuff(); //ë²„í”„ê°€ ë¹„í™œì„±í™” ìƒíƒœë©´ ë²„í”„ ìƒíƒœë¥¼ ì´ˆê¸°í™” í•œë‹¤.
         }
 
-        public void ApplyBuff(EnemyBuffType newBuffType, float newBuffMultiplier, float newBuffDuration) //¿ÜºÎ¿¡¼­ ¸ó½ºÅÍ¿¡°Ô ¹öÇÁ¸¦ Àû¿ëÇÏ´Â ÇÔ¼ö
+        private void SubscribeHealth()
         {
-            if(newBuffType == EnemyBuffType.None) //Àû¿ëÇÒ ¹öÇÁ°¡ None¶ó¸é
+            if (enemyHealth == null)
             {
-                ClearBuff(); //ÇöÀç ¹öÇÁ¸¦ Á¦°ÅÇÑ´Ù.
-                return; // Á¾·áÇÑ´Ù.
+                enemyHealth = GetComponent<EnemyHealth>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ëŸ°íƒ€ì„ ì¶”ê°€/ì¬í™œì„±í™” ëŒ€ì‘
             }
 
-            if(activeBuffType == newBuffType) //°°Àº Á¾·ùÀÇ ¹öÇÁ¶ó¸é
+            if (enemyHealth != null)
             {
-                remainingBuffTime = Mathf.Max(0.1f, newBuffDuration);//À¯Áö½Ã°£¸¸ »õ·Î °»½ÅÇÑ´Ù.
+                enemyHealth.HealthChanged -= HandleHealthChanged;
+                enemyHealth.HealthChanged += HandleHealthChanged;
+            }
+        }
+
+        private void UnsubscribeHealth()
+        {
+            if (enemyHealth != null)
+            {
+                enemyHealth.HealthChanged -= HandleHealthChanged;
+            }
+        }
+
+        private void HandleHealthChanged(EnemyHealth changedHealth)
+        {
+            if (changedHealth != null && changedHealth.IsDead) // ì „ì°¬ìš°ìˆ˜ì • -0630 HP ì‚¬ë§ ì¦‰ì‹œ ë²„í”„ ìƒíƒœ ì œê±°
+            {
+                ClearBuff();
+            }
+        }
+
+        private bool IsOwnerDead()
+        {
+            if (enemyController == null)
+            {
+                enemyController = GetComponent<EnemyController>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì§€ì—° ì‚¬ë§ ì œê±° ëŒ€ê¸° ìƒíƒœ í™•ì¸
+            }
+
+            if (enemyHealth == null)
+            {
+                enemyHealth = GetComponent<EnemyHealth>(); // ì „ì°¬ìš°ìˆ˜ì • -0630 ì²´ë ¥ ì‚¬ë§ ìƒíƒœ í™•ì¸
+            }
+
+            return (enemyController != null && enemyController.IsDead) || (enemyHealth != null && enemyHealth.IsDead);
+        }
+
+        public void ApplyBuff(EnemyBuffType newBuffType, float newBuffMultiplier, float newBuffDuration) //ì™¸ë¶€ì—ì„œ ëª¬ìŠ¤í„°ì—ê²Œ ë²„í”„ë¥¼ ì ìš©í•˜ëŠ” í•¨ìˆ˜
+        {
+            if (IsOwnerDead()) // ì „ì°¬ìš°ìˆ˜ì • -0630 ì‚¬ë§ ì²˜ë¦¬ëœ ëª¬ìŠ¤í„°ì—ê²Œ ë²„í”„ê°€ ë‹¤ì‹œ ë“¤ì–´ì˜¤ëŠ” ê²ƒ ë°©ì§€
+            {
+                ClearBuff();
                 return;
             }
 
-            //ÀÌ¼Ó 1ÃÊ ³²À½        //ÀÌ¼Ó 1ÃÊ ³²À½
-            //ÀÌ¼Ó ´Ù½Ã ¹ŞÀ½ 5ÃÊ   //°ø°İ¼Óµµ ¹ŞÀ½ 5ÃÊ
-            //ÀÌ¼Ó 5ÃÊ °»½Å        //°ø°İ¼Óµµ 5ÃÊ°»½Å
-            activeBuffType = newBuffType; //ÇöÀç Àû¿ë ¹öÇÁ Á¾·ù¸¦ ÀúÀåÇÑ´Ù.
-            activeBuffMultiplier = Mathf.Max(1.0f, newBuffMultiplier); //ÇöÀç Àû¿ëÇÒ ¹öÇÁ ¹èÀ²À» ÃÖ¼Ò 1·Î Á¦ÇÑ
-            remainingBuffTime = Mathf.Max(0.1f, newBuffDuration); //ÇöÀç Àû¿ëÇÒ ¹öÇÁ À¯Áö½Ã°£À» 1ÃÊ·Î Á¦ÇÑ.
+            if(newBuffType == EnemyBuffType.None) //ì ìš©í•  ë²„í”„ê°€ Noneë¼ë©´
+            {
+                ClearBuff(); //í˜„ì¬ ë²„í”„ë¥¼ ì œê±°í•œë‹¤.
+                return; // ì¢…ë£Œí•œë‹¤.
+            }
+
+            if(activeBuffType == newBuffType) //ê°™ì€ ì¢…ë¥˜ì˜ ë²„í”„ë¼ë©´
+            {
+                remainingBuffTime = Mathf.Max(0.1f, newBuffDuration);//ìœ ì§€ì‹œê°„ë§Œ ìƒˆë¡œ ê°±ì‹ í•œë‹¤.
+                return;
+            }
+
+            //ì´ì† 1ì´ˆ ë‚¨ìŒ        //ì´ì† 1ì´ˆ ë‚¨ìŒ
+            //ì´ì† ë‹¤ì‹œ ë°›ìŒ 5ì´ˆ   //ê³µê²©ì†ë„ ë°›ìŒ 5ì´ˆ
+            //ì´ì† 5ì´ˆ ê°±ì‹         //ê³µê²©ì†ë„ 5ì´ˆê°±ì‹ 
+            activeBuffType = newBuffType; //í˜„ì¬ ì ìš© ë²„í”„ ì¢…ë¥˜ë¥¼ ì €ì¥í•œë‹¤.
+            activeBuffMultiplier = Mathf.Max(1.0f, newBuffMultiplier); //í˜„ì¬ ì ìš©í•  ë²„í”„ ë°°ìœ¨ì„ ìµœì†Œ 1ë¡œ ì œí•œ
+            remainingBuffTime = Mathf.Max(0.1f, newBuffDuration); //í˜„ì¬ ì ìš©í•  ë²„í”„ ìœ ì§€ì‹œê°„ì„ 1ì´ˆë¡œ ì œí•œ.
         }
 
-        public void ClearBuff() //¹öÇÁ¸¦ Á¦°ÅÇÏ´Â ÇÔ¼ö
+        public void ClearBuff() //ë²„í”„ë¥¼ ì œê±°í•˜ëŠ” í•¨ìˆ˜
         {
-            activeBuffType = EnemyBuffType.None; //ÇöÀç ¹öÇÁÁ¾·ù¸¦ None·Î ÇÑ´Ù.
-            activeBuffMultiplier = 1.0f; //¹öÇÁ Àû¿ëÀ» ±âº»°ªÀ¸·Î ÀúÀåÇÑ´Ù.
-            remainingBuffTime = 0.0f; //¹öÇÁ À¯Áö½Ã°£À» 0ÃÊ·Î ÀúÀåÇÑ´Ù.
+            activeBuffType = EnemyBuffType.None; //í˜„ì¬ ë²„í”„ì¢…ë¥˜ë¥¼ Noneë¡œ í•œë‹¤.
+            activeBuffMultiplier = 1.0f; //ë²„í”„ ì ìš©ì„ ê¸°ë³¸ê°’ìœ¼ë¡œ ì €ì¥í•œë‹¤.
+            remainingBuffTime = 0.0f; //ë²„í”„ ìœ ì§€ì‹œê°„ì„ 0ì´ˆë¡œ ì €ì¥í•œë‹¤.
         }
 
-        public float GetAttackPowerMultiplier() //°ø°İ·Â ¹öÇÁ Á¾·ù¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+        public float GetAttackPowerMultiplier() //ê³µê²©ë ¥ ë²„í”„ ì¢…ë¥˜ë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
         {
-            if(!HasActiveBuff) //ÇöÀç ¹öÇÁ°¡ ¾ø´Ù¸é
+            if(!HasActiveBuff) //í˜„ì¬ ë²„í”„ê°€ ì—†ë‹¤ë©´
             {
-                return 1.0f; //ÇöÀç ¹öÇÁ Àû¿ëÀ» ±âº»À¸·Î ¹İÈ¯ÇÑ´Ù.
+                return 1.0f; //í˜„ì¬ ë²„í”„ ì ìš©ì„ ê¸°ë³¸ìœ¼ë¡œ ë°˜í™˜í•œë‹¤.
             }
 
-            if(activeBuffType != EnemyBuffType.AttackPower)//ÇöÀç ¹öÇÁ°¡ °ø°İ·Â ¹öÇÁ Á¾·ù°¡ ¾Æ´Ï¶ó¸é
+            if(activeBuffType != EnemyBuffType.AttackPower)//í˜„ì¬ ë²„í”„ê°€ ê³µê²©ë ¥ ë²„í”„ ì¢…ë¥˜ê°€ ì•„ë‹ˆë¼ë©´
             {
-                return 1.0f; //ÇöÀç ¹öÇÁ Àû¿ëÀ» ±âº»À¸·Î ¹İÈ¯ÇÑ´Ù.
+                return 1.0f; //í˜„ì¬ ë²„í”„ ì ìš©ì„ ê¸°ë³¸ìœ¼ë¡œ ë°˜í™˜í•œë‹¤.
             }
 
-            return activeBuffMultiplier; //ÇöÀç ¹öÇÁ Àû¿ë°¡´ÉÇÑ »óÅÂ¸¦ ¹İÈ¯ÇÑ´Ù.
+            return activeBuffMultiplier; //í˜„ì¬ ë²„í”„ ì ìš©ê°€ëŠ¥í•œ ìƒíƒœë¥¼ ë°˜í™˜í•œë‹¤.
         }
 
-        public float GetMoveSpeedMultiplier() //ÀÌµ¿¼Óµµ ¹öÇÁ Á¾·ù¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+        public float GetMoveSpeedMultiplier() //ì´ë™ì†ë„ ë²„í”„ ì¢…ë¥˜ë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
         {
-            if (!HasActiveBuff) //ÇöÀç ¹öÇÁ°¡ ¾ø´Ù¸é
+            if (!HasActiveBuff) //í˜„ì¬ ë²„í”„ê°€ ì—†ë‹¤ë©´
             {
-                return 1.0f; //ÇöÀç ¹öÇÁ Àû¿ëÀ» ±âº»À¸·Î ¹İÈ¯ÇÑ´Ù.
+                return 1.0f; //í˜„ì¬ ë²„í”„ ì ìš©ì„ ê¸°ë³¸ìœ¼ë¡œ ë°˜í™˜í•œë‹¤.
             }
 
-            if (activeBuffType != EnemyBuffType.MoveSpeed)//ÇöÀç ¹öÇÁ°¡ ÀÌµ¿¼Óµµ ¹öÇÁ Á¾·ù°¡ ¾Æ´Ï¶ó¸é
+            if (activeBuffType != EnemyBuffType.MoveSpeed)//í˜„ì¬ ë²„í”„ê°€ ì´ë™ì†ë„ ë²„í”„ ì¢…ë¥˜ê°€ ì•„ë‹ˆë¼ë©´
             {
-                return 1.0f; //ÇöÀç ¹öÇÁ Àû¿ëÀ» ±âº»À¸·Î ¹İÈ¯ÇÑ´Ù.
+                return 1.0f; //í˜„ì¬ ë²„í”„ ì ìš©ì„ ê¸°ë³¸ìœ¼ë¡œ ë°˜í™˜í•œë‹¤.
             }
 
-            return activeBuffMultiplier; //ÇöÀç ¹öÇÁ Àû¿ë°¡´ÉÇÑ »óÅÂ¸¦ ¹İÈ¯ÇÑ´Ù.
+            return activeBuffMultiplier; //í˜„ì¬ ë²„í”„ ì ìš©ê°€ëŠ¥í•œ ìƒíƒœë¥¼ ë°˜í™˜í•œë‹¤.
         }
 
-        public float GetAttackSpeedMultiplier() //°ø°İ¼Óµµ ¹öÇÁ Á¾·ù¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+        public float GetAttackSpeedMultiplier() //ê³µê²©ì†ë„ ë²„í”„ ì¢…ë¥˜ë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
         {
-            if (!HasActiveBuff) //ÇöÀç ¹öÇÁ°¡ ¾ø´Ù¸é
+            if (!HasActiveBuff) //í˜„ì¬ ë²„í”„ê°€ ì—†ë‹¤ë©´
             {
-                return 1.0f; //ÇöÀç ¹öÇÁ Àû¿ëÀ» ±âº»À¸·Î ¹İÈ¯ÇÑ´Ù.
+                return 1.0f; //í˜„ì¬ ë²„í”„ ì ìš©ì„ ê¸°ë³¸ìœ¼ë¡œ ë°˜í™˜í•œë‹¤.
             }
 
-            if (activeBuffType != EnemyBuffType.AttackSpeed)//ÇöÀç ¹öÇÁ°¡ °ø°İ¼Óµµ ¹öÇÁ Á¾·ù°¡ ¾Æ´Ï¶ó¸é
+            if (activeBuffType != EnemyBuffType.AttackSpeed)//í˜„ì¬ ë²„í”„ê°€ ê³µê²©ì†ë„ ë²„í”„ ì¢…ë¥˜ê°€ ì•„ë‹ˆë¼ë©´
             {
-                return 1.0f; //ÇöÀç ¹öÇÁ Àû¿ëÀ» ±âº»À¸·Î ¹İÈ¯ÇÑ´Ù.
+                return 1.0f; //í˜„ì¬ ë²„í”„ ì ìš©ì„ ê¸°ë³¸ìœ¼ë¡œ ë°˜í™˜í•œë‹¤.
             }
 
-            return activeBuffMultiplier; //ÇöÀç ¹öÇÁ Àû¿ë°¡´ÉÇÑ »óÅÂ¸¦ ¹İÈ¯ÇÑ´Ù.
+            return activeBuffMultiplier; //í˜„ì¬ ë²„í”„ ì ìš©ê°€ëŠ¥í•œ ìƒíƒœë¥¼ ë°˜í™˜í•œë‹¤.
         }
     }
 }

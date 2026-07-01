@@ -3,8 +3,10 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed partial class ConvoyController //partial ÇÏ³ªÀÇ Å¬·¡½º¸¦ ¿©·¯ Script ÆÄÀÏ·Î ³ª´² ÀÛ¼ºÇÒ ¼ö ÀÖ´Ù. ConvoyControllerÅ¬·¡½º ÀÌ¸§À¸·Î »ç¿ëÇÑ´Ù. ±×·¡¾ß segments, HeadVisual °°Àº private¿¡ Á¢±Ù °¡´ÉÇÏ´Ù.
+    public sealed partial class ConvoyController
     {
+        private const int SegmentCutTailCandidateCount = 3; // ì „ì°¬ìš°ìˆ˜ì •-0630 - ì ˆë‹¨ ëª¬ìŠ¤í„°ëŠ” ê¼¬ë¦¬ ê¸°ì¤€ 1~3ë²ˆì§¸ ì„¸ê·¸ë¨¼íŠ¸ë§Œ ë…¸ë¦°ë‹¤.
+
         private readonly HashSet<Transform> reservedSegmentCutTargets = new HashSet<Transform>();
 
         public bool TryGetRandomAttachedWeaponSegment(out Transform targetSegment)
@@ -13,60 +15,51 @@ namespace TeamProject01.Gameplay
 
             CleanupReservedSegmentCutTargets();
 
-            int weaponSegmentCount = 0;
+            List<Transform> tailCandidates = GetAvailableTailSegmentCutTargets();
 
-            for (int i = 0; i < segments.Count; i++)
-            {
-                Transform segment = segments[i];
-
-                if (!IsAvailableSegmentCutTarget(segment))
-                {
-                    continue;
-                }
-
-                weaponSegmentCount++;
-            }
-
-            if (weaponSegmentCount <= 0)
+            if (tailCandidates.Count <= 0)
             {
                 return false;
             }
 
-            int randomWeaponIndex = Random.Range(0, weaponSegmentCount);
-            int currentWeaponIndex = 0;
+            int randomWeaponIndex = Random.Range(0, tailCandidates.Count);
 
-            for (int i = 0; i < segments.Count; i++)
-            {
-                Transform segment = segments[i];
+            targetSegment = tailCandidates[randomWeaponIndex];
+            reservedSegmentCutTargets.Add(targetSegment);
 
-                if (!IsAvailableSegmentCutTarget(segment))
-                {
-                    continue;
-                }
-
-                if (currentWeaponIndex == randomWeaponIndex)
-                {
-                    targetSegment = segment;
-                    reservedSegmentCutTargets.Add(targetSegment);
-                    return true;
-                }
-
-                currentWeaponIndex++;
-            }
-
-            return false;
+            return true;
         }
 
         public bool HasAvailableSegmentCutTarget()
         {
             CleanupReservedSegmentCutTargets();
 
-            for (int i = 0; i < segments.Count; i++) 
+            for (int i = segments.Count - 1, checkedCount = 0; i >= GetFirstDetachableSegmentIndex() && checkedCount < SegmentCutTailCandidateCount; i--, checkedCount++)
             {
-                if (IsAvailableSegmentCutTarget(segments[i])) 
+                if (IsAvailableSegmentCutTarget(segments[i]))
                 {
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        public bool TryGetSegmentCutTailFollowTarget(out Transform tailSegment)
+        {
+            tailSegment = null;
+
+            for (int i = segments.Count - 1; i >= 0; i--)
+            {
+                Transform segment = segments[i];
+
+                if (segment == null || !segment.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                tailSegment = segment;
+                return true;
             }
 
             return false;
@@ -153,6 +146,25 @@ namespace TeamProject01.Gameplay
             CleanupReservedSegmentCutTargets();
 
             return true;
+        }
+
+        private List<Transform> GetAvailableTailSegmentCutTargets()
+        {
+            List<Transform> tailCandidates = new List<Transform>(SegmentCutTailCandidateCount);
+
+            for (int i = segments.Count - 1, checkedCount = 0; i >= GetFirstDetachableSegmentIndex() && checkedCount < SegmentCutTailCandidateCount; i--, checkedCount++)
+            {
+                Transform segment = segments[i];
+
+                if (!IsAvailableSegmentCutTarget(segment))
+                {
+                    continue;
+                }
+
+                tailCandidates.Add(segment);
+            }
+
+            return tailCandidates;
         }
 
         private bool IsAvailableSegmentCutTarget(Transform segment)

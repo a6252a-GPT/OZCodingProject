@@ -52,11 +52,18 @@ namespace TeamProject01.Gameplay
         public GoldActionNexusShieldUpgradeSkill ShieldUpgradeSkill; // 5번 실드 강화 실제 효과
 
         [Header("Default Values")]
-        [Min(1)] public int UpgradeCostMultiplier = 2;
-        [Min(1)] public int ShieldUpgradeCostMultiplier = 2;
+        private const float DefaultUpgradeCostMultiplier = 2f;
+        private const float DefaultUpgradeCostGrowthMultiplier = 1.5f;
+        private const float DefaultShieldUpgradeCostMultiplier = 1.5f;
+        private static readonly int[] ShieldUpgradeCostSteps = { 500, 750, 1200, 1700, 2500 };
+
+        [Min(0f)] public float UpgradeCostMultiplier = DefaultUpgradeCostMultiplier;
+        [Min(1f)] public float UpgradeCostGrowthMultiplier = DefaultUpgradeCostGrowthMultiplier;
+        [Min(1f)] public float ShieldUpgradeCostMultiplier = DefaultShieldUpgradeCostMultiplier;
         [Min(1)] public int DefaultMaxSkillLevel = 5;
 
         private SkillState[] states = Array.Empty<SkillState>();
+        private global::LevelUpUi levelUpUi;
 
         private void Awake()
         {
@@ -86,6 +93,7 @@ namespace TeamProject01.Gameplay
                 Skills = CreateDefaultSkills();
             }
 
+            NormalizeCostMultipliers();
             NormalizeSkillDefinitions(); // 기존 씬 직렬화값 보정
 
             if (states == null || states.Length != Skills.Length)
@@ -97,6 +105,24 @@ namespace TeamProject01.Gameplay
                 }
 
                 states = next;
+            }
+        }
+
+        private void NormalizeCostMultipliers()
+        {
+            if (UpgradeCostMultiplier <= 0f || Mathf.Approximately(UpgradeCostMultiplier, DefaultUpgradeCostGrowthMultiplier))
+            {
+                UpgradeCostMultiplier = DefaultUpgradeCostMultiplier;
+            }
+
+            if (UpgradeCostGrowthMultiplier < 1f)
+            {
+                UpgradeCostGrowthMultiplier = DefaultUpgradeCostGrowthMultiplier;
+            }
+
+            if (ShieldUpgradeCostMultiplier < 1f || Mathf.Approximately(ShieldUpgradeCostMultiplier, 2f))
+            {
+                ShieldUpgradeCostMultiplier = DefaultShieldUpgradeCostMultiplier;
             }
         }
 
@@ -118,6 +144,16 @@ namespace TeamProject01.Gameplay
                 if (skill.MaxLevel <= 0)
                 {
                     skill.MaxLevel = GetDefaultMaxLevel(skill.Kind); // 기존 씬 0값 보정
+                }
+
+                if (skill.UnlockLevel <= 0 || IsLegacyDefaultUnlockLevel(skill.Kind, skill.UnlockLevel))
+                {
+                    skill.UnlockLevel = GetDefaultUnlockLevel(skill.Kind);
+                }
+
+                if (skill.BaseCost <= 0 || IsLegacyDefaultBaseCost(skill.Kind, skill.BaseCost))
+                {
+                    skill.BaseCost = GetDefaultBaseCost(skill.Kind);
                 }
             }
         }
@@ -222,7 +258,7 @@ namespace TeamProject01.Gameplay
         private void HandleKeyboardInput()
         {
             Keyboard keyboard = Keyboard.current;
-            if (keyboard == null || GameplayInputBlocker.IsGameplayInputBlocked)
+            if (keyboard == null || GameplayInputBlocker.IsGameplayInputBlocked || IsHudKeyboardInputBlocked())
             {
                 return;
             }
@@ -234,16 +270,56 @@ namespace TeamProject01.Gameplay
             if (keyboard.digit5Key.wasPressedThisFrame || keyboard.numpad5Key.wasPressedThisFrame) TryUseSkillByKey(5);
         }
 
+        private bool IsHudKeyboardInputBlocked()
+        {
+            if (Time.timeScale <= 0f)
+            {
+                return true;
+            }
+
+            if (levelUpUi == null)
+            {
+                levelUpUi = FindFirstObjectByType<global::LevelUpUi>(FindObjectsInactive.Include);
+            }
+
+            return levelUpUi != null && (levelUpUi.IsPanelOpen || levelUpUi.IsPanelVisible);
+        }
+
         private void TryUseSkillByKey(int keyNumber)
         {
             for (int i = 0; i < Skills.Length; i++)
             {
                 if (Skills[i] != null && Skills[i].KeyNumber == keyNumber)
                 {
-                    TryUseSkill(i);
+                    TryActivateSkillByKey(i);
                     return;
                 }
             }
+        }
+
+        private bool TryActivateSkillByKey(int index)
+        {
+            if (!TryGetSkill(index, out SkillDefinition skill, out SkillState state) || !IsUnlocked(skill))
+            {
+                return false;
+            }
+
+            if (skill.Kind == GoldActionSkillKind.NexusHeal)
+            {
+                return TryUseSkill(index);
+            }
+
+            if (skill.RepeatPurchase)
+            {
+                return TryRepeatPurchase(index);
+            }
+
+            if (skill.RequiresPurchase && !state.Purchased)
+            {
+                return TryPurchase(index);
+            }
+
+            return TryUseSkill(index);
         }
 
         private void HandleSlotButton(int index)
@@ -736,7 +812,7 @@ namespace TeamProject01.Gameplay
 
             if (!state.Purchased)
             {
-                return $"보유 골드 {stats.Gold}G / 버튼: 구매";
+                return $"보유 골드 {stats.Gold}G / 키 {skill.KeyNumber}: 구매 / 버튼: 구매";
             }
 
             if (skill.CanUpgrade && !IsMaxLevel(skill, state))
@@ -900,6 +976,82 @@ namespace TeamProject01.Gameplay
             return kind == GoldActionSkillKind.NexusHeal ? 1 : Mathf.Max(1, DefaultMaxSkillLevel); // 회복은 사용형
         }
 
+        private static int GetDefaultUnlockLevel(GoldActionSkillKind kind)
+        {
+            switch (kind)
+            {
+                case GoldActionSkillKind.Meteor:
+                    return 5;
+                case GoldActionSkillKind.Shockwave:
+                    return 10;
+                case GoldActionSkillKind.TimeStop:
+                    return 15;
+                case GoldActionSkillKind.NexusHeal:
+                    return 20;
+                case GoldActionSkillKind.NexusShieldUpgrade:
+                    return 30;
+                default:
+                    return 1;
+            }
+        }
+
+        private static bool IsLegacyDefaultUnlockLevel(GoldActionSkillKind kind, int unlockLevel)
+        {
+            switch (kind)
+            {
+                case GoldActionSkillKind.Meteor:
+                    return unlockLevel == 10;
+                case GoldActionSkillKind.Shockwave:
+                    return unlockLevel == 15;
+                case GoldActionSkillKind.TimeStop:
+                    return unlockLevel == 30;
+                case GoldActionSkillKind.NexusHeal:
+                    return unlockLevel == 40;
+                case GoldActionSkillKind.NexusShieldUpgrade:
+                    return unlockLevel == 40;
+                default:
+                    return false;
+            }
+        }
+
+        private static int GetDefaultBaseCost(GoldActionSkillKind kind)
+        {
+            switch (kind)
+            {
+                case GoldActionSkillKind.Meteor:
+                    return 200;
+                case GoldActionSkillKind.Shockwave:
+                    return 400;
+                case GoldActionSkillKind.TimeStop:
+                    return 400;
+                case GoldActionSkillKind.NexusHeal:
+                    return 500;
+                case GoldActionSkillKind.NexusShieldUpgrade:
+                    return 500;
+                default:
+                    return 0;
+            }
+        }
+
+        private static bool IsLegacyDefaultBaseCost(GoldActionSkillKind kind, int baseCost)
+        {
+            switch (kind)
+            {
+                case GoldActionSkillKind.Meteor:
+                    return baseCost == 200;
+                case GoldActionSkillKind.Shockwave:
+                    return baseCost == 500;
+                case GoldActionSkillKind.TimeStop:
+                    return baseCost == 800;
+                case GoldActionSkillKind.NexusHeal:
+                    return baseCost == 1000;
+                case GoldActionSkillKind.NexusShieldUpgrade:
+                    return baseCost == 500;
+                default:
+                    return false;
+            }
+        }
+
         private bool TryGetSkill(int index, out SkillDefinition skill, out SkillState state)
         {
             skill = null;
@@ -917,19 +1069,22 @@ namespace TeamProject01.Gameplay
         private int GetUpgradeCost(SkillDefinition skill, SkillState state)
         {
             int level = Mathf.Max(1, state.UpgradeLevel);
-            return Mathf.Max(0, skill.BaseCost * Mathf.Max(1, UpgradeCostMultiplier) * level);
+            float firstUpgradeCost = Mathf.Max(0, skill.BaseCost) * Mathf.Max(0f, UpgradeCostMultiplier);
+            float growth = Mathf.Pow(Mathf.Max(1f, UpgradeCostGrowthMultiplier), level - 1);
+            return Mathf.Max(0, Mathf.RoundToInt(firstUpgradeCost * growth));
         }
 
         private int GetRepeatPurchaseCost(SkillDefinition skill, SkillState state)
         {
-            int multiplier = Mathf.Max(1, ShieldUpgradeCostMultiplier);
-            int cost = Mathf.Max(0, skill.BaseCost);
-            for (int i = 0; i < state.RepeatPurchaseCount; i++)
+            int purchaseCount = Mathf.Max(0, state.RepeatPurchaseCount);
+            if (skill.Kind == GoldActionSkillKind.NexusShieldUpgrade && ShieldUpgradeCostSteps.Length > 0)
             {
-                cost *= multiplier;
+                int index = Mathf.Clamp(purchaseCount, 0, ShieldUpgradeCostSteps.Length - 1);
+                return ShieldUpgradeCostSteps[index];
             }
 
-            return cost;
+            float growth = Mathf.Pow(Mathf.Max(1f, ShieldUpgradeCostMultiplier), purchaseCount);
+            return Mathf.Max(0, Mathf.RoundToInt(Mathf.Max(0, skill.BaseCost) * growth));
         }
 
         private static string FormatSeconds(float seconds)
@@ -940,6 +1095,7 @@ namespace TeamProject01.Gameplay
 #if UNITY_EDITOR
         private void OnValidate() // 에디터 표시값 보정
         {
+            NormalizeCostMultipliers();
             NormalizeSkillDefinitions(); // MaxLevel 0 방지
         }
 #endif
@@ -948,11 +1104,11 @@ namespace TeamProject01.Gameplay
         {
             return new[]
             {
-                new SkillDefinition { Kind = GoldActionSkillKind.Meteor, DisplayName = "Meteor", KeyNumber = 1, UnlockLevel = 10, BaseCost = 200, MaxLevel = 5, CooldownSeconds = 120f, RequiresPurchase = true, CanUpgrade = true },
-                new SkillDefinition { Kind = GoldActionSkillKind.Shockwave, DisplayName = "Shield Shockwave", KeyNumber = 2, UnlockLevel = 15, BaseCost = 500, MaxLevel = 5, CooldownSeconds = 90f, RequiresPurchase = true, CanUpgrade = true },
-                new SkillDefinition { Kind = GoldActionSkillKind.TimeStop, DisplayName = "Time Stop", KeyNumber = 3, UnlockLevel = 30, BaseCost = 800, MaxLevel = 5, CooldownSeconds = 150f, RequiresPurchase = true, CanUpgrade = true },
-                new SkillDefinition { Kind = GoldActionSkillKind.NexusHeal, DisplayName = "Nexus Heal", KeyNumber = 4, UnlockLevel = 40, BaseCost = 1000, MaxLevel = 1, CooldownSeconds = 240f, RequiresPurchase = false, CanUpgrade = false, CostOnUse = true },
-                new SkillDefinition { Kind = GoldActionSkillKind.NexusShieldUpgrade, DisplayName = "Shield Upgrade", KeyNumber = 5, UnlockLevel = 40, BaseCost = 500, MaxLevel = 5, CooldownSeconds = 0f, RequiresPurchase = false, CanUpgrade = false, RepeatPurchase = true }
+                new SkillDefinition { Kind = GoldActionSkillKind.Meteor, DisplayName = "Meteor", KeyNumber = 1, UnlockLevel = 5, BaseCost = 200, MaxLevel = 5, CooldownSeconds = 120f, RequiresPurchase = true, CanUpgrade = true },
+                new SkillDefinition { Kind = GoldActionSkillKind.Shockwave, DisplayName = "Shield Shockwave", KeyNumber = 2, UnlockLevel = 10, BaseCost = 400, MaxLevel = 5, CooldownSeconds = 90f, RequiresPurchase = true, CanUpgrade = true },
+                new SkillDefinition { Kind = GoldActionSkillKind.TimeStop, DisplayName = "Time Stop", KeyNumber = 3, UnlockLevel = 15, BaseCost = 400, MaxLevel = 5, CooldownSeconds = 150f, RequiresPurchase = true, CanUpgrade = true },
+                new SkillDefinition { Kind = GoldActionSkillKind.NexusHeal, DisplayName = "Nexus Heal", KeyNumber = 4, UnlockLevel = 20, BaseCost = 500, MaxLevel = 1, CooldownSeconds = 240f, RequiresPurchase = false, CanUpgrade = false, CostOnUse = true },
+                new SkillDefinition { Kind = GoldActionSkillKind.NexusShieldUpgrade, DisplayName = "Shield Upgrade", KeyNumber = 5, UnlockLevel = 30, BaseCost = 500, MaxLevel = 5, CooldownSeconds = 0f, RequiresPurchase = false, CanUpgrade = false, RepeatPurchase = true }
             };
         }
     }
