@@ -34,6 +34,37 @@ Transform:
   - {fileID: 1312685986221036224}
   m_Father: {fileID: 3288711662962441372}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2497075904127087823
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3824118160888233692}
+  m_Layer: 0
+  m_Name: CrowdCore
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3824118160888233692
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2497075904127087823}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3288711662962441372}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3213085976218101505
 GameObject:
   m_ObjectHideFlags: 0
@@ -287,6 +318,7 @@ GameObject:
   - component: {fileID: 7545327022618642168}
   - component: {fileID: 5835925850707274760}
   - component: {fileID: 117016681582158720}
+  - component: {fileID: 3085998654662502779}
   m_Layer: 0
   m_Name: Enemy_Elite_DragonHatchling
   m_TagString: Untagged
@@ -311,6 +343,7 @@ Transform:
   - {fileID: 8712152117048289002}
   - {fileID: 493925700711782943}
   - {fileID: 4877297156322405753}
+  - {fileID: 3824118160888233692}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &8443110167102078242
@@ -553,6 +586,25 @@ MonoBehaviour:
   meleeAttackCue: 38
   shieldLoopCue: 0
   portalTeleportCue: 0
+--- !u!114 &3085998654662502779
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4908572894271289537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3f1871e4f4d4cefb5a5378e8d6c1a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyCrowdBlocker
+  enableCrowdBlock: 1
+  blockRadius: 0.2
+  centerTransform: {fileID: 3824118160888233692}
+  centerOffset: {x: 0, y: 0, z: 0}
+  pushStrength: 1
+  maxCorrectionPerFrame: 0.25
+  drawGizmo: 1
 --- !u!1 &5339047331345878657
 GameObject:
   m_ObjectHideFlags: 0

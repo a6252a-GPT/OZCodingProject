@@ -264,5 +264,10 @@ namespace TeamProject01.Gameplay
         {
             return SegmentBlocker.ResolveMonsterPosition(currentPosition, desiredPosition, monsterRadius);
         }
+
+        public static Vector3 ResolveMonsterCrowdPosition(EnemyCrowdBlocker crowdBlocker, Vector3 currentPosition, Vector3 desiredPosition, float fallbackRadius)
+        {
+            return EnemyCrowdBlocker.ResolvePosition(crowdBlocker, currentPosition, desiredPosition, fallbackRadius);
+        }
     }
 }
