@@ -31,6 +31,7 @@ namespace TeamProject01.Gameplay
             Vector3 queuedThrowSwayDirection = Vector3.zero; // 예약된 던지는 방향
             Transform queuedThrowSwayMuzzle = null; // 예약된 포구
 
+            PlayTrebuchetFireStartSfx(ResolveMuzzle());
             yield return motion.PlayReleaseMotion(() =>
             {
                 if (!CanUseWeapon())

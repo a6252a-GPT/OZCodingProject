@@ -8,9 +8,141 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+#endif
 
 public partial class CardUI
 {
+    private void HandleCardChoiceKeyboardShortcuts()
+    {
+        if (!spawnedForCurrentOpen || isProcessingSelection || !IsLevelUpPanelOpen() || IsCardChoiceTextInputFocused())
+        {
+            return;
+        }
+
+        int choiceIndex = ResolvePressedCardChoiceShortcutIndex();
+        if (!TryResolveCardChoiceByVisualOrder(choiceIndex, out SpawnedCardEntry entry))
+        {
+            return;
+        }
+
+        if (entry == null || !entry.CanSelect || !entry.IsClickable)
+        {
+            return;
+        }
+
+        StopAutoSelect(); // 수동 선택 우선
+        NotifySpawnedCardClicked(entry);
+    }
+
+    private static int ResolvePressedCardChoiceShortcutIndex()
+    {
+        if (WasCardChoiceShortcutPressed(1))
+        {
+            return 0;
+        }
+
+        if (WasCardChoiceShortcutPressed(2))
+        {
+            return 1;
+        }
+
+        if (WasCardChoiceShortcutPressed(3))
+        {
+            return 2;
+        }
+
+        return -1;
+    }
+
+    private bool TryResolveCardChoiceByVisualOrder(int choiceIndex, out SpawnedCardEntry entry)
+    {
+        entry = null;
+        if (choiceIndex < 0 || spawnedCards == null || spawnedCards.Count == 0)
+        {
+            return false;
+        }
+
+        List<int> orderedIndices = new List<int>(spawnedCards.Count);
+        for (int i = 0; i < spawnedCards.Count; i++)
+        {
+            SpawnedCardEntry card = spawnedCards[i];
+            if (card?.RootTransform == null)
+            {
+                continue;
+            }
+
+            orderedIndices.Add(i);
+        }
+
+        orderedIndices.Sort((left, right) =>
+        {
+            float leftX = GetSpawnedCardVisualCenterX(spawnedCards[left]);
+            float rightX = GetSpawnedCardVisualCenterX(spawnedCards[right]);
+            int compare = leftX.CompareTo(rightX);
+            return compare != 0 ? compare : left.CompareTo(right);
+        });
+
+        if (choiceIndex >= orderedIndices.Count)
+        {
+            return false;
+        }
+
+        entry = spawnedCards[orderedIndices[choiceIndex]];
+        return entry != null;
+    }
+
+    private static float GetSpawnedCardVisualCenterX(SpawnedCardEntry entry)
+    {
+        if (entry?.RootTransform != null)
+        {
+            return entry.RootTransform.position.x;
+        }
+
+        return entry?.Root != null ? entry.Root.transform.position.x : float.PositiveInfinity;
+    }
+
+    private static bool WasCardChoiceShortcutPressed(int number)
+    {
+#if ENABLE_INPUT_SYSTEM
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null)
+        {
+            switch (number)
+            {
+                case 1:
+                    return WasKeyboardKeyPressed(keyboard.digit1Key) || WasKeyboardKeyPressed(keyboard.numpad1Key);
+                case 2:
+                    return WasKeyboardKeyPressed(keyboard.digit2Key) || WasKeyboardKeyPressed(keyboard.numpad2Key);
+                case 3:
+                    return WasKeyboardKeyPressed(keyboard.digit3Key) || WasKeyboardKeyPressed(keyboard.numpad3Key);
+            }
+        }
+#endif
+
+        return false;
+    }
+
+#if ENABLE_INPUT_SYSTEM
+    private static bool WasKeyboardKeyPressed(KeyControl key)
+    {
+        return key != null && key.wasPressedThisFrame;
+    }
+#endif
+
+    private static bool IsCardChoiceTextInputFocused()
+    {
+        GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (selected == null)
+        {
+            return false;
+        }
+
+        return selected.GetComponent<InputField>() != null || selected.GetComponent<TMP_InputField>() != null;
+    }
+
     private void NotifySpawnedCardClicked(SpawnedCardEntry entry)
     {
         ForceHideAllCardTooltips(); // 클릭 후 화면 전환 중 툴팁 잔상 제거

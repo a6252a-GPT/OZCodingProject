@@ -3,327 +3,328 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class BossJumpShockwaveAttack : MonoBehaviour // Rage Phase¿¡¼­ ÄÁº¸ÀÌ ±ÙÃ³·Î Á¡ÇÁÇÏ°í ÂøÁö Ãæ°İÆÄ¸¦ ¹ß»ı½ÃÅ°´Â º¸½º ÆĞÅÏ
+    public sealed class BossJumpShockwaveAttack : MonoBehaviour // Rage Phaseì—ì„œ ì»¨ë³´ì´ ê·¼ì²˜ë¡œ ì í”„í•˜ê³  ì°©ì§€ ì¶©ê²©íŒŒë¥¼ ë°œìƒì‹œí‚¤ëŠ” ë³´ìŠ¤ íŒ¨í„´
     {
-        private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor"); // URP MaterialÀÇ ±âº» »ö»ó Property ID
-        private static readonly int ColorProperty = Shader.PropertyToID("_Color"); // Standard MaterialÀÇ ±âº» »ö»ó Property ID
+        private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor"); // URP Materialì˜ ê¸°ë³¸ ìƒ‰ìƒ Property ID
+        private static readonly int ColorProperty = Shader.PropertyToID("_Color"); // Standard Materialì˜ ê¸°ë³¸ ìƒ‰ìƒ Property ID
 
         [Header("Telegraph")]
-        [SerializeField] private GameObject landingTelegraphPrefab; // º¸½º°¡ ÂøÁöÇÒ À§Ä¡¸¦ Ç¥½ÃÇÒ ¿øÇü ¿¹°í Prefab
+        [SerializeField] private GameObject landingTelegraphPrefab; // ë³´ìŠ¤ê°€ ì°©ì§€í•  ìœ„ì¹˜ë¥¼ í‘œì‹œí•  ì›í˜• ì˜ˆê³  Prefab
 
         [Min(0.0f)]
-        [SerializeField] private float telegraphGroundHeight = 0.03f; // ¿¹°í Ç¥½Ã°¡ Áö¸é¿¡ ¹¯È÷Áö ¾Êµµ·Ï Àû¿ëÇÒ ³ôÀÌ
+        [SerializeField] private float telegraphGroundHeight = 0.03f; // ì˜ˆê³  í‘œì‹œê°€ ì§€ë©´ì— ë¬»íˆì§€ ì•Šë„ë¡ ì ìš©í•  ë†’ì´
 
         [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphStartAlpha = 0.07f; // ¿¹°í Ç¥½Ã°¡ Ã³À½ »ı¼ºµÆÀ» ¶§ÀÇ Åõ¸íµµ
+        [SerializeField] private float telegraphStartAlpha = 0.07f; // ì˜ˆê³  í‘œì‹œê°€ ì²˜ìŒ ìƒì„±ëì„ ë•Œì˜ íˆ¬ëª…ë„
 
         [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphEndAlpha = 1.0f; // Á¡ÇÁ Á÷Àü ¿¹°í Ç¥½ÃÀÇ Åõ¸íµµ
+        [SerializeField] private float telegraphEndAlpha = 1.0f; // ì í”„ ì§ì „ ì˜ˆê³  í‘œì‹œì˜ íˆ¬ëª…ë„
 
         [Header("Jump VFX")]
-        [SerializeField] private GameObject takeoffVfxPrefab; // Á¡ÇÁ Àü ¶¥Ä¡±â ¼ø°£ »ı¼ºÇÒ VFX
+        [SerializeField] private GameObject takeoffVfxPrefab; // ì í”„ ì „ ë•…ì¹˜ê¸° ìˆœê°„ ìƒì„±í•  VFX
 
-        [SerializeField] private GameObject landingImpactVfxPrefab; // ÂøÁö ¼ø°£ »ı¼ºÇÒ VFX
-
-        [Min(0.0f)]
-        [SerializeField] private float takeoffVfxGroundHeight = 0.03f; // Á¡ÇÁ Àü VFX°¡ Áö¸é¿¡ ¹¯È÷Áö ¾Êµµ·Ï Àû¿ëÇÒ ³ôÀÌ
+        [SerializeField] private GameObject landingImpactVfxPrefab; // ì°©ì§€ ìˆœê°„ ìƒì„±í•  VFX
 
         [Min(0.0f)]
-        [SerializeField] private float landingImpactVfxGroundHeight = 0.03f; // ÂøÁö VFX°¡ Áö¸é¿¡ ¹¯È÷Áö ¾Êµµ·Ï Àû¿ëÇÒ ³ôÀÌ
+        [SerializeField] private float takeoffVfxGroundHeight = 0.03f; // ì í”„ ì „ VFXê°€ ì§€ë©´ì— ë¬»íˆì§€ ì•Šë„ë¡ ì ìš©í•  ë†’ì´
+
+        [Min(0.0f)]
+        [SerializeField] private float landingImpactVfxGroundHeight = 0.03f; // ì°©ì§€ VFXê°€ ì§€ë©´ì— ë¬»íˆì§€ ì•Šë„ë¡ ì ìš©í•  ë†’ì´
 
         [Min(0.1f)]
-        [SerializeField] private float takeoffVfxScale = 1.0f; // Á¡ÇÁ Àü VFX Å©±â ¹èÀ²
+        [SerializeField] private float takeoffVfxScale = 1.0f; // ì í”„ ì „ VFX í¬ê¸° ë°°ìœ¨
 
         [Min(0.1f)]
-        [SerializeField] private float landingImpactVfxScale = 1.5f; // ÂøÁö VFX Å©±â ¹èÀ²
+        [SerializeField] private float landingImpactVfxScale = 1.5f; // ì°©ì§€ VFX í¬ê¸° ë°°ìœ¨
 
         [Min(0.01f)]
-        [SerializeField] private float takeoffVfxLifeTime = 2.0f; // Á¡ÇÁ Àü VFX Á¦°Å ½Ã°£
+        [SerializeField] private float takeoffVfxLifeTime = 2.0f; // ì í”„ ì „ VFX ì œê±° ì‹œê°„
 
         [Min(0.01f)]
-        [SerializeField] private float landingImpactVfxLifeTime = 2.5f; // ÂøÁö VFX Á¦°Å ½Ã°£
+        [SerializeField] private float landingImpactVfxLifeTime = 2.5f; // ì°©ì§€ VFX ì œê±° ì‹œê°„
 
         [Header("Landing Position")]
         [Min(0.0f)]
-        [SerializeField] private float minimumLandingDistance = 2.5f; // ÄÁº¸ÀÌ Áß½É¿¡¼­ ÂøÁö ÁöÁ¡±îÁöÀÇ ÃÖ¼Ò °Å¸®
+        [SerializeField] private float minimumLandingDistance = 2.5f; // ì»¨ë³´ì´ ì¤‘ì‹¬ì—ì„œ ì°©ì§€ ì§€ì ê¹Œì§€ì˜ ìµœì†Œ ê±°ë¦¬
 
         [Min(0.1f)]
-        [SerializeField] private float maximumLandingDistance = 5.0f; // ÄÁº¸ÀÌ Áß½É¿¡¼­ ÂøÁö ÁöÁ¡±îÁöÀÇ ÃÖ´ë °Å¸®
+        [SerializeField] private float maximumLandingDistance = 5.0f; // ì»¨ë³´ì´ ì¤‘ì‹¬ì—ì„œ ì°©ì§€ ì§€ì ê¹Œì§€ì˜ ìµœëŒ€ ê±°ë¦¬
 
         [Header("Jump")]
         [Min(0.1f)]
-        [SerializeField] private float jumpHeight = 8.0f; // Á¡ÇÁ Æ÷¹°¼±ÀÇ ÃÖ´ë ³ôÀÌ
+        [SerializeField] private float jumpHeight = 8.0f; // ì í”„ í¬ë¬¼ì„ ì˜ ìµœëŒ€ ë†’ì´
 
         [Min(0.05f)]
-        [SerializeField] private float jumpDuration = 0.9f; // ½ÃÀÛ À§Ä¡¿¡¼­ ÂøÁö À§Ä¡±îÁö ÀÌµ¿ÇÏ´Â ½Ã°£
+        [SerializeField] private float jumpDuration = 0.9f; // ì‹œì‘ ìœ„ì¹˜ì—ì„œ ì°©ì§€ ìœ„ì¹˜ê¹Œì§€ ì´ë™í•˜ëŠ” ì‹œê°„
 
         [Header("Landing Shockwave")]
         [Min(0.1f)]
-        [SerializeField] private float shockwaveRadius = 7.0f; // ÂøÁö Ãæ°İÆÄ°¡ ¼¼±×¸ÕÆ®¸¦ °¨ÁöÇÒ ¹üÀ§
+        [SerializeField] private float shockwaveRadius = 7.0f; // ì°©ì§€ ì¶©ê²©íŒŒê°€ ì„¸ê·¸ë¨¼íŠ¸ë¥¼ ê°ì§€í•  ë²”ìœ„
 
         [Min(0.0f)]
-        [SerializeField] private float shockwavePushDistance = 3.0f; // Ãæ°İÆÄ°¡ ÄÁº¸ÀÌ °æ·Î¸¦ ¹Ù±ùÂÊÀ¸·Î º¯ÇüÇÒ °Å¸®
+        [SerializeField] private float shockwavePushDistance = 3.0f; // ì¶©ê²©íŒŒê°€ ì»¨ë³´ì´ ê²½ë¡œë¥¼ ë°”ê¹¥ìª½ìœ¼ë¡œ ë³€í˜•í•  ê±°ë¦¬
 
         [Min(0.01f)]
-        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // Ãæ°İÆÄ ÀÌÈÄ ÄÁº¸ÀÌ°¡ ¿ø·¡ °æ·Î·Î º¹±¸µÇ´Â ±âÁØ ½Ã°£
+        [SerializeField] private float shockwaveRecoveryDuration = 1.5f; // ì¶©ê²©íŒŒ ì´í›„ ì»¨ë³´ì´ê°€ ì›ë˜ ê²½ë¡œë¡œ ë³µêµ¬ë˜ëŠ” ê¸°ì¤€ ì‹œê°„
 
         [Header("Timing")]
         [Min(0.1f)]
-        [SerializeField] private float attackInterval = 9.0f; // ´ÙÀ½ Á¡ÇÁ Ãæ°İÆÄ ÆĞÅÏÀ» »ç¿ëÇÒ ¶§±îÁöÀÇ ½Ã°£
+        [SerializeField] private float attackInterval = 9.0f; // ë‹¤ìŒ ì í”„ ì¶©ê²©íŒŒ íŒ¨í„´ì„ ì‚¬ìš©í•  ë•Œê¹Œì§€ì˜ ì‹œê°„
 
         [Min(0.1f)]
-        [SerializeField] private float telegraphDuration = 1.2f; // ¿¹°í Ç¥½Ã ÈÄ º¸½º°¡ Á¡ÇÁÇÏ±â±îÁöÀÇ ½Ã°£
+        [SerializeField] private float telegraphDuration = 1.2f; // ì˜ˆê³  í‘œì‹œ í›„ ë³´ìŠ¤ê°€ ì í”„í•˜ê¸°ê¹Œì§€ì˜ ì‹œê°„
 
         [Min(0.0f)]
-        [SerializeField] private float landingRecoveryDuration = 0.7f; // ÂøÁö ÈÄ ´Ù¸¥ º¸½º Çàµ¿À» Çã¿ëÇÏ±â±îÁöÀÇ ½Ã°£
+        [SerializeField] private float landingRecoveryDuration = 0.7f; // ì°©ì§€ í›„ ë‹¤ë¥¸ ë³´ìŠ¤ í–‰ë™ì„ í—ˆìš©í•˜ê¸°ê¹Œì§€ì˜ ì‹œê°„
 
-        private BossController bossController; // º¸½º Phase¿Í Çàµ¿ Àá±İÀ» °ü¸®ÇÏ´Â Script Component
+        private BossController bossController; // ë³´ìŠ¤ Phaseì™€ í–‰ë™ ì ê¸ˆì„ ê´€ë¦¬í•˜ëŠ” Script Component
 
-        private Transform convoyTarget; // º¸½º°¡ Á¡ÇÁÇÒ À§Ä¡ÀÇ ±âÁØÀÌ µÇ´Â ÄÁº¸ÀÌ Transform
+        private Transform convoyTarget; // ë³´ìŠ¤ê°€ ì í”„í•  ìœ„ì¹˜ì˜ ê¸°ì¤€ì´ ë˜ëŠ” ì»¨ë³´ì´ Transform
 
-        private Coroutine attackCoroutine; // ÇöÀç ½ÇÇà ÁßÀÎ Á¡ÇÁ °ø°İ Coroutine
+        private Coroutine attackCoroutine; // í˜„ì¬ ì‹¤í–‰ ì¤‘ì¸ ì í”„ ê³µê²© Coroutine
 
-        private GameObject activeTelegraph; // ÇöÀç »ı¼ºµÈ ÂøÁö ¿¹°í Ç¥½Ã
+        private GameObject activeTelegraph; // í˜„ì¬ ìƒì„±ëœ ì°©ì§€ ì˜ˆê³  í‘œì‹œ
 
-        private float nextAttackTime; // ´ÙÀ½ Á¡ÇÁ °ø°İÀÌ °¡´ÉÇÑ ½Ã°£
+        private float nextAttackTime; // ë‹¤ìŒ ì í”„ ê³µê²©ì´ ê°€ëŠ¥í•œ ì‹œê°„
 
-        private float jumpGroundHeight; // Á¡ÇÁ¸¦ ½ÃÀÛÇßÀ» ¶§ Boss01ÀÇ Áö¸é ³ôÀÌ
+        private float jumpGroundHeight; // ì í”„ë¥¼ ì‹œì‘í–ˆì„ ë•Œ Boss01ì˜ ì§€ë©´ ë†’ì´
 
-        private bool ownsActionLock; // ÀÌ Script°¡ BossController Çàµ¿ Àá±İÀ» ¼ÒÀ¯ÇÏ°í ÀÖ´ÂÁö ³ªÅ¸³»´Â °ª
+        private bool ownsActionLock; // ì´ Scriptê°€ BossController í–‰ë™ ì ê¸ˆì„ ì†Œìœ í•˜ê³  ìˆëŠ”ì§€ ë‚˜íƒ€ë‚´ëŠ” ê°’
 
-        private bool isAirborne; // ÇöÀç Boss01ÀÌ Á¡ÇÁ ÁßÀÎÁö ³ªÅ¸³»´Â °ª
+        private bool isAirborne; // í˜„ì¬ Boss01ì´ ì í”„ ì¤‘ì¸ì§€ ë‚˜íƒ€ë‚´ëŠ” ê°’
 
-        private bool jumpInterrupted; // Á¡ÇÁ µµÁß º¸½º°¡ »ç¸ÁÇØ °ø°İÀÌ Áß´ÜµÆ´ÂÁö ³ªÅ¸³»´Â °ª
+        private bool jumpInterrupted; // ì í”„ ë„ì¤‘ ë³´ìŠ¤ê°€ ì‚¬ë§í•´ ê³µê²©ì´ ì¤‘ë‹¨ëëŠ”ì§€ ë‚˜íƒ€ë‚´ëŠ” ê°’
 
-        public bool IsAttacking { get; private set; } // ÇöÀç Á¡ÇÁ Ãæ°İÆÄ ÆĞÅÏÀÌ ÁøÇà ÁßÀÎÁö ³ªÅ¸³»´Â °ª
+        public bool IsAttacking { get; private set; } // í˜„ì¬ ì í”„ ì¶©ê²©íŒŒ íŒ¨í„´ì´ ì§„í–‰ ì¤‘ì¸ì§€ ë‚˜íƒ€ë‚´ëŠ” ê°’
 
         private void Awake()
         {
-            bossController = GetComponent<BossController>(); // °°Àº Boss01¿¡ ºÙ¾î ÀÖ´Â BossController¸¦ °¡Á®¿Â´Ù.
-            TryFindConvoyTarget(); // MonsterInteractionApi¿¡ µî·ÏµÈ ÇöÀç ÄÁº¸ÀÌ¸¦ Ã£´Â´Ù.
+            bossController = GetComponent<BossController>(); // ê°™ì€ Boss01ì— ë¶™ì–´ ìˆëŠ” BossControllerë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+            TryFindConvoyTarget(); // MonsterInteractionApiì— ë“±ë¡ëœ í˜„ì¬ ì»¨ë³´ì´ë¥¼ ì°¾ëŠ”ë‹¤.
         }
 
         private void Start()
         {
-            ScheduleNextAttack(); // º¸½º »ı¼º ÈÄ Ã¹ ¹øÂ° Á¡ÇÁ °ø°İ ½Ã°£À» ¿¹¾àÇÑ´Ù.
+            ScheduleNextAttack(); // ë³´ìŠ¤ ìƒì„± í›„ ì²« ë²ˆì§¸ ì í”„ ê³µê²© ì‹œê°„ì„ ì˜ˆì•½í•œë‹¤.
         }
 
         private void Update()
         {
-            if (bossController == null || bossController.IsDead) // BossController°¡ ¾ø°Å³ª º¸½º°¡ »ç¸ÁÇß´Ù¸é
+            if (bossController == null || bossController.IsDead) // BossControllerê°€ ì—†ê±°ë‚˜ ë³´ìŠ¤ê°€ ì‚¬ë§í–ˆë‹¤ë©´
             {
-                return; // »õ·Î¿î Á¡ÇÁ °ø°İÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return; // ìƒˆë¡œìš´ ì í”„ ê³µê²©ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (bossController.CurrentPhase != BossPhase.Rage) // ÇöÀç º¸½º Phase°¡ Rage°¡ ¾Æ´Ï¶ó¸é
+            if (bossController.CurrentPhase != BossPhase.Rage) // í˜„ì¬ ë³´ìŠ¤ Phaseê°€ Rageê°€ ì•„ë‹ˆë¼ë©´
             {
-                return; // Á¡ÇÁ Ãæ°İÆÄ ÆĞÅÏÀ» »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+                return; // ì í”„ ì¶©ê²©íŒŒ íŒ¨í„´ì„ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (attackCoroutine != null) // ÀÌ¹Ì Á¡ÇÁ °ø°İÀÌ ÁøÇà ÁßÀÌ¶ó¸é
+            if (attackCoroutine != null) // ì´ë¯¸ ì í”„ ê³µê²©ì´ ì§„í–‰ ì¤‘ì´ë¼ë©´
             {
-                return; // Áßº¹ °ø°İÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return; // ì¤‘ë³µ ê³µê²©ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (bossController.IsActionRunning) // ¼ø°£ÀÌµ¿ÀÌ³ª ´Ù¸¥ º¸½º ÆĞÅÏÀÌ ÁøÇà ÁßÀÌ¶ó¸é
+            if (bossController.IsActionRunning) // ìˆœê°„ì´ë™ì´ë‚˜ ë‹¤ë¥¸ ë³´ìŠ¤ íŒ¨í„´ì´ ì§„í–‰ ì¤‘ì´ë¼ë©´
             {
-                return; // µ¿½Ã¿¡ Á¡ÇÁ °ø°İÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return; // ë™ì‹œì— ì í”„ ê³µê²©ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (Time.time < nextAttackTime) // Á¡ÇÁ °ø°İ °£°İÀÌ ¾ÆÁ÷ ³¡³ªÁö ¾Ê¾Ò´Ù¸é
+            if (Time.time < nextAttackTime) // ì í”„ ê³µê²© ê°„ê²©ì´ ì•„ì§ ëë‚˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                return; // ´ÙÀ½ °ø°İ ½Ã°£ÀÌ µÉ ¶§±îÁö ±â´Ù¸°´Ù.
+                return; // ë‹¤ìŒ ê³µê²© ì‹œê°„ì´ ë  ë•Œê¹Œì§€ ê¸°ë‹¤ë¦°ë‹¤.
             }
 
-            if (!TryFindConvoyTarget()) // ÇöÀç ÄÁº¸ÀÌ¸¦ Ã£Áö ¸øÇß´Ù¸é
+            if (!TryFindConvoyTarget()) // í˜„ì¬ ì»¨ë³´ì´ë¥¼ ì°¾ì§€ ëª»í–ˆë‹¤ë©´
             {
-                nextAttackTime = Time.time + 1.0f; // 1ÃÊ µÚ ´Ù½Ã È®ÀÎÇÏµµ·Ï ¿¹¾àÇÑ´Ù.
-                return; // Á¡ÇÁ °ø°İÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                nextAttackTime = Time.time + 1.0f; // 1ì´ˆ ë’¤ ë‹¤ì‹œ í™•ì¸í•˜ë„ë¡ ì˜ˆì•½í•œë‹¤.
+                return; // ì í”„ ê³µê²©ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (landingTelegraphPrefab == null) // ÂøÁö ¿¹°í PrefabÀÌ ¿¬°áµÇÁö ¾Ê¾Ò´Ù¸é
+            if (landingTelegraphPrefab == null) // ì°©ì§€ ì˜ˆê³  Prefabì´ ì—°ê²°ë˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                nextAttackTime = Time.time + 1.0f; // 1ÃÊ µÚ ´Ù½Ã È®ÀÎÇÏµµ·Ï ¿¹¾àÇÑ´Ù.
-                return; // Á¡ÇÁ °ø°İÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                nextAttackTime = Time.time + 1.0f; // 1ì´ˆ ë’¤ ë‹¤ì‹œ í™•ì¸í•˜ë„ë¡ ì˜ˆì•½í•œë‹¤.
+                return; // ì í”„ ê³µê²©ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (!bossController.TryBeginAction()) // º¸½º Çàµ¿ Àá±İÀ» ¾òÁö ¸øÇß´Ù¸é
+            if (!bossController.TryBeginAction()) // ë³´ìŠ¤ í–‰ë™ ì ê¸ˆì„ ì–»ì§€ ëª»í–ˆë‹¤ë©´
             {
-                return; // ´Ù¸¥ ÆĞÅÏÀÌ ¸ÕÀú ½ÇÇà ÁßÀÌ¹Ç·Î ±â´Ù¸°´Ù.
+                return; // ë‹¤ë¥¸ íŒ¨í„´ì´ ë¨¼ì € ì‹¤í–‰ ì¤‘ì´ë¯€ë¡œ ê¸°ë‹¤ë¦°ë‹¤.
             }
 
-            ownsActionLock = true; // ÀÌ Script°¡ Çàµ¿ Àá±İÀ» ¼ÒÀ¯ÇÑ´Ù°í ÀúÀåÇÑ´Ù.
-            attackCoroutine = StartCoroutine(AttackRoutine()); // Á¡ÇÁ Ãæ°İÆÄ °ø°İ CoroutineÀ» ½ÃÀÛÇÑ´Ù.
+            ownsActionLock = true; // ì´ Scriptê°€ í–‰ë™ ì ê¸ˆì„ ì†Œìœ í•œë‹¤ê³  ì €ì¥í•œë‹¤.
+            attackCoroutine = StartCoroutine(AttackRoutine()); // ì í”„ ì¶©ê²©íŒŒ ê³µê²© Coroutineì„ ì‹œì‘í•œë‹¤.
         }
 
         private void OnDisable()
         {
-            if (attackCoroutine != null) // ½ÇÇà ÁßÀÎ Á¡ÇÁ °ø°İ CoroutineÀÌ ÀÖ´Ù¸é
+            if (attackCoroutine != null) // ì‹¤í–‰ ì¤‘ì¸ ì í”„ ê³µê²© Coroutineì´ ìˆë‹¤ë©´
             {
-                StopCoroutine(attackCoroutine); // ÇöÀç CoroutineÀ» Áß´ÜÇÑ´Ù.
-                attackCoroutine = null; // Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+                StopCoroutine(attackCoroutine); // í˜„ì¬ Coroutineì„ ì¤‘ë‹¨í•œë‹¤.
+                attackCoroutine = null; // Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
 
-            if (isAirborne) // Á¡ÇÁ µµÁß Script°¡ ºñÈ°¼ºÈ­µÆ´Ù¸é
+            if (isAirborne) // ì í”„ ë„ì¤‘ Scriptê°€ ë¹„í™œì„±í™”ëë‹¤ë©´
             {
-                Vector3 groundedPosition = transform.position; // ÇöÀç Boss01 À§Ä¡¸¦ °¡Á®¿Â´Ù.
-                groundedPosition.y = jumpGroundHeight; // Á¡ÇÁ ½ÃÀÛ ´ç½ÃÀÇ Áö¸é ³ôÀÌ·Î µÇµ¹¸°´Ù.
-                transform.position = groundedPosition; // Boss01ÀÌ °øÁß¿¡ ³²Áö ¾Êµµ·Ï À§Ä¡¸¦ Àû¿ëÇÑ´Ù.
+                Vector3 groundedPosition = transform.position; // í˜„ì¬ Boss01 ìœ„ì¹˜ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
+                groundedPosition.y = jumpGroundHeight; // ì í”„ ì‹œì‘ ë‹¹ì‹œì˜ ì§€ë©´ ë†’ì´ë¡œ ë˜ëŒë¦°ë‹¤.
+                transform.position = groundedPosition; // Boss01ì´ ê³µì¤‘ì— ë‚¨ì§€ ì•Šë„ë¡ ìœ„ì¹˜ë¥¼ ì ìš©í•œë‹¤.
             }
 
-            CleanupTelegraph(); // ³²¾Æ ÀÖ´Â ÂøÁö ¿¹°í Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
+            CleanupTelegraph(); // ë‚¨ì•„ ìˆëŠ” ì°©ì§€ ì˜ˆê³  í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
 
-            IsAttacking = false; // °ø°İ »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
-            isAirborne = false; // Á¡ÇÁ »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
-            jumpInterrupted = false; // Á¡ÇÁ Áß´Ü »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+            IsAttacking = false; // ê³µê²© ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
+            isAirborne = false; // ì í”„ ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
+            jumpInterrupted = false; // ì í”„ ì¤‘ë‹¨ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
 
-            ReleaseActionLock(); // ÀÌ Script°¡ ¼ÒÀ¯ÇÑ Çàµ¿ Àá±İÀ» ÇØÁ¦ÇÑ´Ù.
+            ReleaseActionLock(); // ì´ Scriptê°€ ì†Œìœ í•œ í–‰ë™ ì ê¸ˆì„ í•´ì œí•œë‹¤.
         }
 
-        private IEnumerator AttackRoutine() // ÂøÁö ¿¹°íºÎÅÍ Á¡ÇÁ¿Í Ãæ°İÆÄ±îÁö Ã³¸®ÇÏ´Â ÀüÃ¼ °ø°İ Èå¸§
+        private IEnumerator AttackRoutine() // ì°©ì§€ ì˜ˆê³ ë¶€í„° ì í”„ì™€ ì¶©ê²©íŒŒê¹Œì§€ ì²˜ë¦¬í•˜ëŠ” ì „ì²´ ê³µê²© íë¦„
         {
-            IsAttacking = true; // Á¡ÇÁ Ãæ°İÆÄ ÆĞÅÏÀÌ ½ÃÀÛµÆ´Ù°í ÀúÀåÇÑ´Ù.
-            jumpInterrupted = false; // ÀÌÀü Á¡ÇÁ Áß´Ü »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+            IsAttacking = true; // ì í”„ ì¶©ê²©íŒŒ íŒ¨í„´ì´ ì‹œì‘ëë‹¤ê³  ì €ì¥í•œë‹¤.
+            jumpInterrupted = false; // ì´ì „ ì í”„ ì¤‘ë‹¨ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
 
-            if (!TryFindConvoyTarget()) // °ø°İ ½ÃÀÛ ½ÃÁ¡¿¡ ÄÁº¸ÀÌ¸¦ Ã£Áö ¸øÇß´Ù¸é
+            if (!TryFindConvoyTarget()) // ê³µê²© ì‹œì‘ ì‹œì ì— ì»¨ë³´ì´ë¥¼ ì°¾ì§€ ëª»í–ˆë‹¤ë©´
             {
-                FinishAttack(); // °ø°İ »óÅÂ¸¦ Á¤¸®ÇÑ´Ù.
-                yield break; // Á¡ÇÁ¸¦ ½ÃÀÛÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                FinishAttack(); // ê³µê²© ìƒíƒœë¥¼ ì •ë¦¬í•œë‹¤.
+                yield break; // ì í”„ë¥¼ ì‹œì‘í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            Vector3 jumpStartPosition = transform.position; // Boss01ÀÇ ÇöÀç À§Ä¡¸¦ Á¡ÇÁ ½ÃÀÛÁ¡À¸·Î ÀúÀåÇÑ´Ù.
-            Vector3 landingPosition = CalculateLandingPosition(jumpStartPosition.y); // ÄÁº¸ÀÌ ±ÙÃ³ÀÇ ¹«ÀÛÀ§ ÂøÁö ÁöÁ¡À» °è»êÇÑ´Ù.
+            Vector3 jumpStartPosition = transform.position; // Boss01ì˜ í˜„ì¬ ìœ„ì¹˜ë¥¼ ì í”„ ì‹œì‘ì ìœ¼ë¡œ ì €ì¥í•œë‹¤.
+            Vector3 landingPosition = CalculateLandingPosition(jumpStartPosition.y); // ì»¨ë³´ì´ ê·¼ì²˜ì˜ ë¬´ì‘ìœ„ ì°©ì§€ ì§€ì ì„ ê³„ì‚°í•œë‹¤.
 
-            SpawnLandingTelegraph(landingPosition); // °è»êµÈ ÂøÁö À§Ä¡¿¡ ¿øÇü ¿¹°í Ç¥½Ã¸¦ »ı¼ºÇÑ´Ù.
+            SpawnLandingTelegraph(landingPosition); // ê³„ì‚°ëœ ì°©ì§€ ìœ„ì¹˜ì— ì›í˜• ì˜ˆê³  í‘œì‹œë¥¼ ìƒì„±í•œë‹¤.
 
-            float telegraphTimer = 0.0f; // ¿¹°í Ç¥½Ã°¡ À¯ÁöµÈ ½Ã°£À» ÀúÀåÇÑ´Ù.
+            float telegraphTimer = 0.0f; // ì˜ˆê³  í‘œì‹œê°€ ìœ ì§€ëœ ì‹œê°„ì„ ì €ì¥í•œë‹¤.
 
-            while (telegraphTimer < telegraphDuration) // ¼³Á¤µÈ ¿¹°í ½Ã°£ÀÌ ³¡³¯ ¶§±îÁö ¹İº¹ÇÑ´Ù.
+            while (telegraphTimer < telegraphDuration) // ì„¤ì •ëœ ì˜ˆê³  ì‹œê°„ì´ ëë‚  ë•Œê¹Œì§€ ë°˜ë³µí•œë‹¤.
             {
-                if (!CanContinueTelegraph()) // ¿¹°í µµÁß º¸½º°¡ »ç¸ÁÇÏ°Å³ª Rage Phase°¡ ³¡³µ´Ù¸é
+                if (!CanContinueTelegraph()) // ì˜ˆê³  ë„ì¤‘ ë³´ìŠ¤ê°€ ì‚¬ë§í•˜ê±°ë‚˜ Rage Phaseê°€ ëë‚¬ë‹¤ë©´
                 {
-                    FinishAttack(); // ¿¹°í Ç¥½Ã¿Í Çàµ¿ Àá±İÀ» Á¤¸®ÇÑ´Ù.
-                    yield break; // Á¡ÇÁÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                    FinishAttack(); // ì˜ˆê³  í‘œì‹œì™€ í–‰ë™ ì ê¸ˆì„ ì •ë¦¬í•œë‹¤.
+                    yield break; // ì í”„í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
                 }
 
-                telegraphTimer += Time.deltaTime; // Áö³­ ÇÁ·¹ÀÓ ½Ã°£À» ¿¹°í Å¸ÀÌ¸Ó¿¡ ´õÇÑ´Ù.
+                telegraphTimer += Time.deltaTime; // ì§€ë‚œ í”„ë ˆì„ ì‹œê°„ì„ ì˜ˆê³  íƒ€ì´ë¨¸ì— ë”í•œë‹¤.
 
-                float progress = Mathf.Clamp01(telegraphTimer / telegraphDuration); // ¿¹°í ÁøÇàµµ¸¦ 0¿¡¼­ 1 »çÀÌ·Î °è»êÇÑ´Ù.
-                float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); // ¿¹°í°¡ Á¡Á¡ ÁøÇØÁöµµ·Ï Åõ¸íµµ¸¦ °è»êÇÑ´Ù.
+                float progress = Mathf.Clamp01(telegraphTimer / telegraphDuration); // ì˜ˆê³  ì§„í–‰ë„ë¥¼ 0ì—ì„œ 1 ì‚¬ì´ë¡œ ê³„ì‚°í•œë‹¤.
+                float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); // ì˜ˆê³ ê°€ ì ì  ì§„í•´ì§€ë„ë¡ íˆ¬ëª…ë„ë¥¼ ê³„ì‚°í•œë‹¤.
 
-                SetTelegraphAlpha(activeTelegraph, alpha); // ÇöÀç ÂøÁö ¿¹°í Ç¥½ÃÀÇ Åõ¸íµµ¸¦ º¯°æÇÑ´Ù.
+                SetTelegraphAlpha(activeTelegraph, alpha); // í˜„ì¬ ì°©ì§€ ì˜ˆê³  í‘œì‹œì˜ íˆ¬ëª…ë„ë¥¼ ë³€ê²½í•œë‹¤.
 
-                yield return null; // ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ±â´Ù¸°´Ù.
+                yield return null; // ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€ ê¸°ë‹¤ë¦°ë‹¤.
             }
 
-            if (bossController == null || bossController.IsDead) // Á¡ÇÁ Á÷Àü¿¡ º¸½º°¡ »ç¸ÁÇß´Ù¸é
+            if (bossController == null || bossController.IsDead) // ì í”„ ì§ì „ì— ë³´ìŠ¤ê°€ ì‚¬ë§í–ˆë‹¤ë©´
             {
-                FinishAttack(); // °ø°İ »óÅÂ¸¦ Á¤¸®ÇÑ´Ù.
-                yield break; // Á¡ÇÁÇÏÁö ¾Ê°í Á¾·áÇÑ´Ù.
+                FinishAttack(); // ê³µê²© ìƒíƒœë¥¼ ì •ë¦¬í•œë‹¤.
+                yield break; // ì í”„í•˜ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            SpawnTakeoffVfx(jumpStartPosition); // Á¡ÇÁ Á÷Àü ¶¥Ä¡±â VFX¸¦ »ı¼ºÇÑ´Ù.
-            BeginJumpState(jumpStartPosition.y); // Á¡ÇÁ Áß ºñÈ°¼ºÈ­ ¾ÈÀü Ã³¸®¸¦ À§ÇØ Áö¸é ³ôÀÌ¿Í Á¡ÇÁ »óÅÂ¸¦ ÀúÀåÇÑ´Ù.
+            SpawnTakeoffVfx(jumpStartPosition); // ì í”„ ì§ì „ ë•…ì¹˜ê¸° VFXë¥¼ ìƒì„±í•œë‹¤.
+            BeginJumpState(jumpStartPosition.y); // ì í”„ ì¤‘ ë¹„í™œì„±í™” ì•ˆì „ ì²˜ë¦¬ë¥¼ ìœ„í•´ ì§€ë©´ ë†’ì´ì™€ ì í”„ ìƒíƒœë¥¼ ì €ì¥í•œë‹¤.
 
-            yield return ArcMove(jumpStartPosition, landingPosition); // Boss01À» ÂøÁö À§Ä¡±îÁö Æ÷¹°¼±À¸·Î ÀÌµ¿½ÃÅ²´Ù.
+            yield return ArcMove(jumpStartPosition, landingPosition); // Boss01ì„ ì°©ì§€ ìœ„ì¹˜ê¹Œì§€ í¬ë¬¼ì„ ìœ¼ë¡œ ì´ë™ì‹œí‚¨ë‹¤.
 
-            isAirborne = false; // °øÁß »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
+            isAirborne = false; // ê³µì¤‘ ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
 
-            if (jumpInterrupted || bossController == null || bossController.IsDead) // Á¡ÇÁ µµÁß º¸½º°¡ »ç¸ÁÇß´Ù¸é
+            if (jumpInterrupted || bossController == null || bossController.IsDead) // ì í”„ ë„ì¤‘ ë³´ìŠ¤ê°€ ì‚¬ë§í–ˆë‹¤ë©´
             {
-                CleanupTelegraph(); // ÂøÁö ¿¹°í Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
-                FinishAttack(); // °ø°İ »óÅÂ¸¦ Á¤¸®ÇÑ´Ù.
-                yield break; // Ãæ°İÆÄ¸¦ ¹ß»ı½ÃÅ°Áö ¾Ê°í Á¾·áÇÑ´Ù.
+                CleanupTelegraph(); // ì°©ì§€ ì˜ˆê³  í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
+                FinishAttack(); // ê³µê²© ìƒíƒœë¥¼ ì •ë¦¬í•œë‹¤.
+                yield break; // ì¶©ê²©íŒŒë¥¼ ë°œìƒì‹œí‚¤ì§€ ì•Šê³  ì¢…ë£Œí•œë‹¤.
             }
 
-            transform.position = landingPosition; // Æ÷¹°¼± °è»ê ÈÄ ÃÖÁ¾ ÂøÁö À§Ä¡¸¦ Á¤È®ÇÏ°Ô ¸ÂÃá´Ù.
+            transform.position = landingPosition; // í¬ë¬¼ì„  ê³„ì‚° í›„ ìµœì¢… ì°©ì§€ ìœ„ì¹˜ë¥¼ ì •í™•í•˜ê²Œ ë§ì¶˜ë‹¤.
 
-            CleanupTelegraph(); // ÂøÁö¿Í µ¿½Ã¿¡ ¿¹°í Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
-            SpawnLandingImpactVfx(landingPosition); // ÂøÁö ¼ø°£ Ãæ°İ VFX¸¦ »ı¼ºÇÑ´Ù.
+            CleanupTelegraph(); // ì°©ì§€ì™€ ë™ì‹œì— ì˜ˆê³  í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
+            SpawnLandingImpactVfx(landingPosition); // ì°©ì§€ ìˆœê°„ ì¶©ê²© VFXë¥¼ ìƒì„±í•œë‹¤.
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossJumpImpact, landingPosition, true);
 
-            ApplyLandingShockwave(); // ±âÁ¸ ÄÁº¸ÀÌ ¼¼±×¸ÕÆ® Ãæ°İÆÄ API¸¦ È£ÃâÇÑ´Ù.
+            ApplyLandingShockwave(); // ê¸°ì¡´ ì»¨ë³´ì´ ì„¸ê·¸ë¨¼íŠ¸ ì¶©ê²©íŒŒ APIë¥¼ í˜¸ì¶œí•œë‹¤.
 
-            yield return new WaitForSeconds(landingRecoveryDuration); // ÂøÁö ÈÄ ÂªÀº È¸º¹½Ã°£ µ¿¾È Çàµ¿ Àá±İÀ» À¯ÁöÇÑ´Ù.
+            yield return new WaitForSeconds(landingRecoveryDuration); // ì°©ì§€ í›„ ì§§ì€ íšŒë³µì‹œê°„ ë™ì•ˆ í–‰ë™ ì ê¸ˆì„ ìœ ì§€í•œë‹¤.
 
-            FinishAttack(); // °ø°İ »óÅÂ¸¦ Á¾·áÇÏ°í ´ÙÀ½ Á¡ÇÁ ½Ã°£À» ¿¹¾àÇÑ´Ù.
+            FinishAttack(); // ê³µê²© ìƒíƒœë¥¼ ì¢…ë£Œí•˜ê³  ë‹¤ìŒ ì í”„ ì‹œê°„ì„ ì˜ˆì•½í•œë‹¤.
         }
 
-        private Vector3 CalculateLandingPosition(float bossGroundHeight) // ÄÁº¸ÀÌ ±ÙÃ³ÀÇ ¹«ÀÛÀ§ ÂøÁö À§Ä¡¸¦ °è»êÇÏ´Â ÇÔ¼ö
+        private Vector3 CalculateLandingPosition(float bossGroundHeight) // ì»¨ë³´ì´ ê·¼ì²˜ì˜ ë¬´ì‘ìœ„ ì°©ì§€ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•˜ëŠ” í•¨ìˆ˜
         {
-            float minimumDistance = Mathf.Min(minimumLandingDistance, maximumLandingDistance); // µÎ °Å¸® Áß ÀÛÀº °ªÀ» ÃÖ¼Ò °Å¸®·Î »ç¿ëÇÑ´Ù.
-            float maximumDistance = Mathf.Max(minimumLandingDistance, maximumLandingDistance); // µÎ °Å¸® Áß Å« °ªÀ» ÃÖ´ë °Å¸®·Î »ç¿ëÇÑ´Ù.
+            float minimumDistance = Mathf.Min(minimumLandingDistance, maximumLandingDistance); // ë‘ ê±°ë¦¬ ì¤‘ ì‘ì€ ê°’ì„ ìµœì†Œ ê±°ë¦¬ë¡œ ì‚¬ìš©í•œë‹¤.
+            float maximumDistance = Mathf.Max(minimumLandingDistance, maximumLandingDistance); // ë‘ ê±°ë¦¬ ì¤‘ í° ê°’ì„ ìµœëŒ€ ê±°ë¦¬ë¡œ ì‚¬ìš©í•œë‹¤.
 
-            Vector2 randomCircleDirection = Random.insideUnitCircle; // XZ Æò¸é¿¡¼­ »ç¿ëÇÒ ¹«ÀÛÀ§ ¹æÇâÀ» ¼±ÅÃÇÑ´Ù.
+            Vector2 randomCircleDirection = Random.insideUnitCircle; // XZ í‰ë©´ì—ì„œ ì‚¬ìš©í•  ë¬´ì‘ìœ„ ë°©í–¥ì„ ì„ íƒí•œë‹¤.
 
-            if (randomCircleDirection.sqrMagnitude <= 0.0001f) // ¹«ÀÛÀ§ ¹æÇâÀÇ ±æÀÌ°¡ ³Ê¹« ÀÛ´Ù¸é
+            if (randomCircleDirection.sqrMagnitude <= 0.0001f) // ë¬´ì‘ìœ„ ë°©í–¥ì˜ ê¸¸ì´ê°€ ë„ˆë¬´ ì‘ë‹¤ë©´
             {
-                randomCircleDirection = Vector2.right; // ±âº» ¿À¸¥ÂÊ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
+                randomCircleDirection = Vector2.right; // ê¸°ë³¸ ì˜¤ë¥¸ìª½ ë°©í–¥ì„ ì‚¬ìš©í•œë‹¤.
             }
 
-            randomCircleDirection.Normalize(); // ¹«ÀÛÀ§ ¹æÇâÀÇ ±æÀÌ¸¦ 1·Î ¸¸µç´Ù.
+            randomCircleDirection.Normalize(); // ë¬´ì‘ìœ„ ë°©í–¥ì˜ ê¸¸ì´ë¥¼ 1ë¡œ ë§Œë“ ë‹¤.
 
-            float landingDistance = Random.Range(minimumDistance, maximumDistance); // ÄÁº¸ÀÌ¿¡¼­ ¶³¾îÁú ÂøÁö °Å¸®¸¦ ¹«ÀÛÀ§·Î ¼±ÅÃÇÑ´Ù.
+            float landingDistance = Random.Range(minimumDistance, maximumDistance); // ì»¨ë³´ì´ì—ì„œ ë–¨ì–´ì§ˆ ì°©ì§€ ê±°ë¦¬ë¥¼ ë¬´ì‘ìœ„ë¡œ ì„ íƒí•œë‹¤.
 
-            Vector3 landingOffset = new Vector3(randomCircleDirection.x, 0.0f, randomCircleDirection.y) * landingDistance; // XZ Æò¸éÀÇ ÂøÁö ¿ÀÇÁ¼ÂÀ» °è»êÇÑ´Ù.
-            Vector3 landingPosition = convoyTarget.position + landingOffset; // ÄÁº¸ÀÌ À§Ä¡¿¡ ¹«ÀÛÀ§ ¿ÀÇÁ¼ÂÀ» ´õÇÑ´Ù.
+            Vector3 landingOffset = new Vector3(randomCircleDirection.x, 0.0f, randomCircleDirection.y) * landingDistance; // XZ í‰ë©´ì˜ ì°©ì§€ ì˜¤í”„ì…‹ì„ ê³„ì‚°í•œë‹¤.
+            Vector3 landingPosition = convoyTarget.position + landingOffset; // ì»¨ë³´ì´ ìœ„ì¹˜ì— ë¬´ì‘ìœ„ ì˜¤í”„ì…‹ì„ ë”í•œë‹¤.
 
-            landingPosition.y = bossGroundHeight; // ÂøÁö ÈÄ Boss01ÀÌ ±âÁ¸ Áö¸é ³ôÀÌ¸¦ À¯ÁöÇÏµµ·Ï ¼³Á¤ÇÑ´Ù.
+            landingPosition.y = bossGroundHeight; // ì°©ì§€ í›„ Boss01ì´ ê¸°ì¡´ ì§€ë©´ ë†’ì´ë¥¼ ìœ ì§€í•˜ë„ë¡ ì„¤ì •í•œë‹¤.
 
-            return landingPosition; // °è»êµÈ ÃÖÁ¾ ÂøÁö À§Ä¡¸¦ ¹İÈ¯ÇÑ´Ù.
+            return landingPosition; // ê³„ì‚°ëœ ìµœì¢… ì°©ì§€ ìœ„ì¹˜ë¥¼ ë°˜í™˜í•œë‹¤.
         }
 
-        private IEnumerator ArcMove(Vector3 from, Vector3 to) // Boss01À» ½ÃÀÛÁ¡¿¡¼­ ÂøÁöÁ¡±îÁö Æ÷¹°¼±À¸·Î ÀÌµ¿½ÃÅ°´Â ÇÔ¼ö
+        private IEnumerator ArcMove(Vector3 from, Vector3 to) // Boss01ì„ ì‹œì‘ì ì—ì„œ ì°©ì§€ì ê¹Œì§€ í¬ë¬¼ì„ ìœ¼ë¡œ ì´ë™ì‹œí‚¤ëŠ” í•¨ìˆ˜
         {
-            float elapsed = 0.0f; // Á¡ÇÁ°¡ ÁøÇàµÈ ½Ã°£À» ÀúÀåÇÑ´Ù.
+            float elapsed = 0.0f; // ì í”„ê°€ ì§„í–‰ëœ ì‹œê°„ì„ ì €ì¥í•œë‹¤.
 
-            while (elapsed < jumpDuration) // ¼³Á¤µÈ Á¡ÇÁ ½Ã°£ÀÌ ³¡³¯ ¶§±îÁö ¹İº¹ÇÑ´Ù.
+            while (elapsed < jumpDuration) // ì„¤ì •ëœ ì í”„ ì‹œê°„ì´ ëë‚  ë•Œê¹Œì§€ ë°˜ë³µí•œë‹¤.
             {
-                if (bossController == null || bossController.IsDead) // Á¡ÇÁ µµÁß º¸½º°¡ »ç¸ÁÇß´Ù¸é
+                if (bossController == null || bossController.IsDead) // ì í”„ ë„ì¤‘ ë³´ìŠ¤ê°€ ì‚¬ë§í–ˆë‹¤ë©´
                 {
-                    jumpInterrupted = true; // Á¡ÇÁ°¡ Áß´ÜµÆ´Ù°í ÀúÀåÇÑ´Ù.
-                    yield break; // Æ÷¹°¼± ÀÌµ¿À» Áï½Ã Á¾·áÇÑ´Ù.
+                    jumpInterrupted = true; // ì í”„ê°€ ì¤‘ë‹¨ëë‹¤ê³  ì €ì¥í•œë‹¤.
+                    yield break; // í¬ë¬¼ì„  ì´ë™ì„ ì¦‰ì‹œ ì¢…ë£Œí•œë‹¤.
                 }
 
-                elapsed += Time.deltaTime; // Áö³­ ÇÁ·¹ÀÓ ½Ã°£À» Á¡ÇÁ ÁøÇà½Ã°£¿¡ ´õÇÑ´Ù.
+                elapsed += Time.deltaTime; // ì§€ë‚œ í”„ë ˆì„ ì‹œê°„ì„ ì í”„ ì§„í–‰ì‹œê°„ì— ë”í•œë‹¤.
 
-                float progress = Mathf.Clamp01(elapsed / jumpDuration); // Á¡ÇÁ ÁøÇàµµ¸¦ 0¿¡¼­ 1 »çÀÌ·Î °è»êÇÑ´Ù.
+                float progress = Mathf.Clamp01(elapsed / jumpDuration); // ì í”„ ì§„í–‰ë„ë¥¼ 0ì—ì„œ 1 ì‚¬ì´ë¡œ ê³„ì‚°í•œë‹¤.
 
-                Vector3 position = Vector3.Lerp(from, to, progress); // ½ÃÀÛÁ¡°ú ÂøÁöÁ¡ »çÀÌÀÇ ±âº» Á÷¼± À§Ä¡¸¦ °è»êÇÑ´Ù.
-                position.y += Mathf.Sin(progress * Mathf.PI) * jumpHeight; // »çÀÎ °î¼±À» ÀÌ¿ëÇØ Æ÷¹°¼± ³ôÀÌ¸¦ ´õÇÑ´Ù.
+                Vector3 position = Vector3.Lerp(from, to, progress); // ì‹œì‘ì ê³¼ ì°©ì§€ì  ì‚¬ì´ì˜ ê¸°ë³¸ ì§ì„  ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
+                position.y += Mathf.Sin(progress * Mathf.PI) * jumpHeight; // ì‚¬ì¸ ê³¡ì„ ì„ ì´ìš©í•´ í¬ë¬¼ì„  ë†’ì´ë¥¼ ë”í•œë‹¤.
 
-                Vector3 movementDirection = to - from; // Á¡ÇÁ ½ÃÀÛÁ¡¿¡¼­ ÂøÁöÁ¡±îÁöÀÇ ¹æÇâÀ» °è»êÇÑ´Ù.
-                movementDirection.y = 0.0f; // º¸½º°¡ À§¾Æ·¡·Î ±â¿ïÁö ¾Êµµ·Ï YÃà ¹æÇâÀ» Á¦°ÅÇÑ´Ù.
+                Vector3 movementDirection = to - from; // ì í”„ ì‹œì‘ì ì—ì„œ ì°©ì§€ì ê¹Œì§€ì˜ ë°©í–¥ì„ ê³„ì‚°í•œë‹¤.
+                movementDirection.y = 0.0f; // ë³´ìŠ¤ê°€ ìœ„ì•„ë˜ë¡œ ê¸°ìš¸ì§€ ì•Šë„ë¡ Yì¶• ë°©í–¥ì„ ì œê±°í•œë‹¤.
 
-                transform.position = position; // °è»êµÈ Æ÷¹°¼± À§Ä¡·Î Boss01À» ÀÌµ¿½ÃÅ²´Ù.
+                transform.position = position; // ê³„ì‚°ëœ í¬ë¬¼ì„  ìœ„ì¹˜ë¡œ Boss01ì„ ì´ë™ì‹œí‚¨ë‹¤.
 
-                if (movementDirection.sqrMagnitude > 0.0001f) // ÂøÁö ¹æÇâÀÌ À¯È¿ÇÏ´Ù¸é
+                if (movementDirection.sqrMagnitude > 0.0001f) // ì°©ì§€ ë°©í–¥ì´ ìœ íš¨í•˜ë‹¤ë©´
                 {
-                    transform.rotation = Quaternion.LookRotation(movementDirection.normalized, Vector3.up); // º¸½º°¡ ÂøÁö ¹æÇâÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+                    transform.rotation = Quaternion.LookRotation(movementDirection.normalized, Vector3.up); // ë³´ìŠ¤ê°€ ì°©ì§€ ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
                 }
 
-                yield return null; // ´ÙÀ½ ÇÁ·¹ÀÓ±îÁö ±â´Ù¸°´Ù.
+                yield return null; // ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€ ê¸°ë‹¤ë¦°ë‹¤.
             }
 
-            transform.position = to; // Á¡ÇÁ°¡ ³¡³ª¸é ÃÖÁ¾ ÂøÁö À§Ä¡¸¦ Á¤È®ÇÏ°Ô Àû¿ëÇÑ´Ù.
+            transform.position = to; // ì í”„ê°€ ëë‚˜ë©´ ìµœì¢… ì°©ì§€ ìœ„ì¹˜ë¥¼ ì •í™•í•˜ê²Œ ì ìš©í•œë‹¤.
         }
 
-        private void BeginJumpState(float groundHeight) // Á¡ÇÁ Áß ºñÈ°¼ºÈ­ »óÈ²¿¡ ´ëºñÇØ ÇöÀç Áö¸é ³ôÀÌ¿Í Á¡ÇÁ »óÅÂ¸¦ ÀúÀåÇÑ´Ù.
+        private void BeginJumpState(float groundHeight) // ì í”„ ì¤‘ ë¹„í™œì„±í™” ìƒí™©ì— ëŒ€ë¹„í•´ í˜„ì¬ ì§€ë©´ ë†’ì´ì™€ ì í”„ ìƒíƒœë¥¼ ì €ì¥í•œë‹¤.
         {
-            jumpGroundHeight = groundHeight; // Á¡ÇÁ ½ÃÀÛ ´ç½ÃÀÇ Boss01 Áö¸é ³ôÀÌ¸¦ ÀúÀåÇÑ´Ù.
-            isAirborne = true; // Boss01ÀÌ Á¡ÇÁ »óÅÂ¶ó°í ÀúÀåÇÑ´Ù.
+            jumpGroundHeight = groundHeight; // ì í”„ ì‹œì‘ ë‹¹ì‹œì˜ Boss01 ì§€ë©´ ë†’ì´ë¥¼ ì €ì¥í•œë‹¤.
+            isAirborne = true; // Boss01ì´ ì í”„ ìƒíƒœë¼ê³  ì €ì¥í•œë‹¤.
         }
 
-        private void SpawnTakeoffVfx(Vector3 position) // Á¡ÇÁ Àü ¶¥Ä¡±â VFX¸¦ »ı¼ºÇÑ´Ù.
+        private void SpawnTakeoffVfx(Vector3 position) // ì í”„ ì „ ë•…ì¹˜ê¸° VFXë¥¼ ìƒì„±í•œë‹¤.
         {
             SpawnOneShotVfx(takeoffVfxPrefab, position, takeoffVfxGroundHeight, takeoffVfxScale, takeoffVfxLifeTime);
         }
 
-        private void SpawnLandingImpactVfx(Vector3 position) // ÂøÁö ¼ø°£ Ãæ°İ VFX¸¦ »ı¼ºÇÑ´Ù.
+        private void SpawnLandingImpactVfx(Vector3 position) // ì°©ì§€ ìˆœê°„ ì¶©ê²© VFXë¥¼ ìƒì„±í•œë‹¤.
         {
             SpawnOneShotVfx(landingImpactVfxPrefab, position, landingImpactVfxGroundHeight, landingImpactVfxScale, landingImpactVfxLifeTime);
         }
 
-        private void SpawnOneShotVfx(GameObject prefab, Vector3 position, float groundHeight, float scaleMultiplier, float lifeTime) // ´Ü¹ß¼º VFX¸¦ ¹Ù´Ú¿¡ »ı¼ºÇÏ°í ÀÚµ¿ Á¦°ÅÇÑ´Ù.
+        private void SpawnOneShotVfx(GameObject prefab, Vector3 position, float groundHeight, float scaleMultiplier, float lifeTime) // ë‹¨ë°œì„± VFXë¥¼ ë°”ë‹¥ì— ìƒì„±í•˜ê³  ìë™ ì œê±°í•œë‹¤.
         {
             if (prefab == null)
             {
@@ -337,141 +338,141 @@ namespace TeamProject01.Gameplay
             Destroy(vfx, lifeTime);
         }
 
-        private void ApplyLandingShockwave() // ÂøÁö À§Ä¡¸¦ Áß½ÉÀ¸·Î ±âÁ¸ ÄÁº¸ÀÌ Ãæ°İÆÄ ½Ã½ºÅÛÀ» È£ÃâÇÏ´Â ÇÔ¼ö
+        private void ApplyLandingShockwave() // ì°©ì§€ ìœ„ì¹˜ë¥¼ ì¤‘ì‹¬ìœ¼ë¡œ ê¸°ì¡´ ì»¨ë³´ì´ ì¶©ê²©íŒŒ ì‹œìŠ¤í…œì„ í˜¸ì¶œí•˜ëŠ” í•¨ìˆ˜
         {
-            MonsterInteractionApi.RequestSegmentShockwave(transform.position, shockwaveRadius, shockwavePushDistance, shockwaveRecoveryDuration); // ±âÁ¸ EnemyJump¿Í µ¿ÀÏÇÑ ¼¼±×¸ÕÆ® Ãæ°İÆÄ API¸¦ È£ÃâÇÑ´Ù.
+            MonsterInteractionApi.RequestSegmentShockwave(transform.position, shockwaveRadius, shockwavePushDistance, shockwaveRecoveryDuration); // ê¸°ì¡´ EnemyJumpì™€ ë™ì¼í•œ ì„¸ê·¸ë¨¼íŠ¸ ì¶©ê²©íŒŒ APIë¥¼ í˜¸ì¶œí•œë‹¤.
         }
 
-        private bool TryFindConvoyTarget() // MonsterInteractionApi¿¡ µî·ÏµÈ ÄÁº¸ÀÌ TransformÀ» °¡Á®¿À´Â ÇÔ¼ö
+        private bool TryFindConvoyTarget() // MonsterInteractionApiì— ë“±ë¡ëœ ì»¨ë³´ì´ Transformì„ ê°€ì ¸ì˜¤ëŠ” í•¨ìˆ˜
         {
-            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform target)) // ÇöÀç È°¼ºÈ­µÈ ÄÁº¸ÀÌ°¡ µî·ÏµÇ¾î ÀÖ´Ù¸é
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform target)) // í˜„ì¬ í™œì„±í™”ëœ ì»¨ë³´ì´ê°€ ë“±ë¡ë˜ì–´ ìˆë‹¤ë©´
             {
-                convoyTarget = target; // Á¶È¸µÈ ÄÁº¸ÀÌ TransformÀ» ÀúÀåÇÑ´Ù.
-                return true; // ÄÁº¸ÀÌ¸¦ Ã£¾Ò´Ù°í ¹İÈ¯ÇÑ´Ù.
+                convoyTarget = target; // ì¡°íšŒëœ ì»¨ë³´ì´ Transformì„ ì €ì¥í•œë‹¤.
+                return true; // ì»¨ë³´ì´ë¥¼ ì°¾ì•˜ë‹¤ê³  ë°˜í™˜í•œë‹¤.
             }
 
-            convoyTarget = null; // ÄÁº¸ÀÌ¸¦ Ã£Áö ¸øÇß´Ù¸é ±âÁ¸ ÂüÁ¶¸¦ ºñ¿î´Ù.
-            return false; // ÄÁº¸ÀÌ¸¦ Ã£Áö ¸øÇß´Ù°í ¹İÈ¯ÇÑ´Ù.
+            convoyTarget = null; // ì»¨ë³´ì´ë¥¼ ì°¾ì§€ ëª»í–ˆë‹¤ë©´ ê¸°ì¡´ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
+            return false; // ì»¨ë³´ì´ë¥¼ ì°¾ì§€ ëª»í–ˆë‹¤ê³  ë°˜í™˜í•œë‹¤.
         }
 
-        private bool CanContinueTelegraph() // ¿¹°í ´Ü°è¿¡¼­ Á¡ÇÁ¸¦ °è¼Ó ÁØºñÇÒ ¼ö ÀÖ´ÂÁö È®ÀÎÇÏ´Â ÇÔ¼ö
+        private bool CanContinueTelegraph() // ì˜ˆê³  ë‹¨ê³„ì—ì„œ ì í”„ë¥¼ ê³„ì† ì¤€ë¹„í•  ìˆ˜ ìˆëŠ”ì§€ í™•ì¸í•˜ëŠ” í•¨ìˆ˜
         {
-            if (bossController == null || bossController.IsDead) // BossController°¡ ¾ø°Å³ª º¸½º°¡ »ç¸ÁÇß´Ù¸é
+            if (bossController == null || bossController.IsDead) // BossControllerê°€ ì—†ê±°ë‚˜ ë³´ìŠ¤ê°€ ì‚¬ë§í–ˆë‹¤ë©´
             {
-                return false; // Á¡ÇÁ °ø°İÀ» °è¼ÓÇÒ ¼ö ¾ø´Ù.
+                return false; // ì í”„ ê³µê²©ì„ ê³„ì†í•  ìˆ˜ ì—†ë‹¤.
             }
 
-            if (bossController.CurrentPhase != BossPhase.Rage) // Á¡ÇÁ Àü¿¡ Rage Phase°¡ ³¡³µ´Ù¸é
+            if (bossController.CurrentPhase != BossPhase.Rage) // ì í”„ ì „ì— Rage Phaseê°€ ëë‚¬ë‹¤ë©´
             {
-                return false; // ÀÌ¹ø Á¡ÇÁ °ø°İÀ» Ãë¼ÒÇÑ´Ù.
+                return false; // ì´ë²ˆ ì í”„ ê³µê²©ì„ ì·¨ì†Œí•œë‹¤.
             }
 
-            if (convoyTarget == null || !convoyTarget.gameObject.activeInHierarchy) // ÄÁº¸ÀÌ°¡ ¾ø°Å³ª ºñÈ°¼ºÈ­µÆ´Ù¸é
+            if (convoyTarget == null || !convoyTarget.gameObject.activeInHierarchy) // ì»¨ë³´ì´ê°€ ì—†ê±°ë‚˜ ë¹„í™œì„±í™”ëë‹¤ë©´
             {
-                return TryFindConvoyTarget(); // ÇöÀç ÄÁº¸ÀÌ¸¦ ´Ù½Ã È®ÀÎÇÑ´Ù.
+                return TryFindConvoyTarget(); // í˜„ì¬ ì»¨ë³´ì´ë¥¼ ë‹¤ì‹œ í™•ì¸í•œë‹¤.
             }
 
-            return true; // ¿¹°í¿Í Á¡ÇÁ ÁØºñ¸¦ °è¼ÓÇÒ ¼ö ÀÖ´Ù°í ¹İÈ¯ÇÑ´Ù.
+            return true; // ì˜ˆê³ ì™€ ì í”„ ì¤€ë¹„ë¥¼ ê³„ì†í•  ìˆ˜ ìˆë‹¤ê³  ë°˜í™˜í•œë‹¤.
         }
 
-        private void SpawnLandingTelegraph(Vector3 landingPosition) // °è»êµÈ ÂøÁö À§Ä¡¿¡ ¿øÇü ¿¹°í Ç¥½Ã¸¦ »ı¼ºÇÏ´Â ÇÔ¼ö
+        private void SpawnLandingTelegraph(Vector3 landingPosition) // ê³„ì‚°ëœ ì°©ì§€ ìœ„ì¹˜ì— ì›í˜• ì˜ˆê³  í‘œì‹œë¥¼ ìƒì„±í•˜ëŠ” í•¨ìˆ˜
         {
-            CleanupTelegraph(); // ÀÌÀü °ø°İ¿¡¼­ ³²¾Æ ÀÖÀ» ¼ö ÀÖ´Â ¿¹°í Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
+            CleanupTelegraph(); // ì´ì „ ê³µê²©ì—ì„œ ë‚¨ì•„ ìˆì„ ìˆ˜ ìˆëŠ” ì˜ˆê³  í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
 
             Vector3 telegraphPosition = GroundService.ProjectToGround(landingPosition, telegraphGroundHeight);
 
-            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monsters Runtime Root¸¦ °¡Á®¿Â´Ù.
+            Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent); // Monsters Runtime Rootë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
-            activeTelegraph = Instantiate(landingTelegraphPrefab, telegraphPosition, Quaternion.identity, runtimeRoot); // Monsters ¾Æ·¡¿¡ ÂøÁö ¿¹°í PrefabÀ» »ı¼ºÇÑ´Ù.
+            activeTelegraph = Instantiate(landingTelegraphPrefab, telegraphPosition, Quaternion.identity, runtimeRoot); // Monsters ì•„ë˜ì— ì°©ì§€ ì˜ˆê³  Prefabì„ ìƒì„±í•œë‹¤.
 
-            Vector3 telegraphScale = activeTelegraph.transform.localScale; // ¿¹°í PrefabÀÇ ±âÁ¸ ScaleÀ» °¡Á®¿Â´Ù.
-            telegraphScale.x = shockwaveRadius * 2.0f; // ¿¹°í Ç¥½ÃÀÇ X Å©±â¸¦ Ãæ°İÆÄ Áö¸§¿¡ ¸ÂÃá´Ù.
-            telegraphScale.z = shockwaveRadius * 2.0f; // ¿¹°í Ç¥½ÃÀÇ Z Å©±â¸¦ Ãæ°İÆÄ Áö¸§¿¡ ¸ÂÃá´Ù.
-            activeTelegraph.transform.localScale = telegraphScale; // °è»êµÈ ¿¹°í Ç¥½Ã Å©±â¸¦ Àû¿ëÇÑ´Ù.
+            Vector3 telegraphScale = activeTelegraph.transform.localScale; // ì˜ˆê³  Prefabì˜ ê¸°ì¡´ Scaleì„ ê°€ì ¸ì˜¨ë‹¤.
+            telegraphScale.x = shockwaveRadius * 2.0f; // ì˜ˆê³  í‘œì‹œì˜ X í¬ê¸°ë¥¼ ì¶©ê²©íŒŒ ì§€ë¦„ì— ë§ì¶˜ë‹¤.
+            telegraphScale.z = shockwaveRadius * 2.0f; // ì˜ˆê³  í‘œì‹œì˜ Z í¬ê¸°ë¥¼ ì¶©ê²©íŒŒ ì§€ë¦„ì— ë§ì¶˜ë‹¤.
+            activeTelegraph.transform.localScale = telegraphScale; // ê³„ì‚°ëœ ì˜ˆê³  í‘œì‹œ í¬ê¸°ë¥¼ ì ìš©í•œë‹¤.
 
-            SetTelegraphAlpha(activeTelegraph, telegraphStartAlpha); // »ı¼º Á÷ÈÄ ¿¹°í Ç¥½ÃÀÇ ½ÃÀÛ Åõ¸íµµ¸¦ Àû¿ëÇÑ´Ù.
+            SetTelegraphAlpha(activeTelegraph, telegraphStartAlpha); // ìƒì„± ì§í›„ ì˜ˆê³  í‘œì‹œì˜ ì‹œì‘ íˆ¬ëª…ë„ë¥¼ ì ìš©í•œë‹¤.
         }
 
-        private void SetTelegraphAlpha(GameObject telegraph, float alpha) // ÂøÁö ¿¹°í Ç¥½ÃÀÇ Åõ¸íµµ¸¦ º¯°æÇÏ´Â ÇÔ¼ö
+        private void SetTelegraphAlpha(GameObject telegraph, float alpha) // ì°©ì§€ ì˜ˆê³  í‘œì‹œì˜ íˆ¬ëª…ë„ë¥¼ ë³€ê²½í•˜ëŠ” í•¨ìˆ˜
         {
-            if (telegraph == null) // ¿¹°í Ç¥½Ã°¡ Á¦°ÅµÆ°Å³ª »ı¼ºµÇÁö ¾Ê¾Ò´Ù¸é
+            if (telegraph == null) // ì˜ˆê³  í‘œì‹œê°€ ì œê±°ëê±°ë‚˜ ìƒì„±ë˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                return; // MaterialÀ» ¼öÁ¤ÇÏÁö ¾Ê´Â´Ù.
+                return; // Materialì„ ìˆ˜ì •í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(true); // ¿¹°í Ç¥½Ã¿Í ÀÚ½ÄÀÇ ¸ğµç Renderer¸¦ °¡Á®¿Â´Ù.
+            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(true); // ì˜ˆê³  í‘œì‹œì™€ ìì‹ì˜ ëª¨ë“  Rendererë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
-            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++) // ¸ğµç Renderer¸¦ ¼øÈ¸ÇÑ´Ù.
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++) // ëª¨ë“  Rendererë¥¼ ìˆœíšŒí•œë‹¤.
             {
-                Material[] materials = renderers[rendererIndex].materials; // ÇöÀç Renderer°¡ »ç¿ëÇÏ´Â Material ÀÎ½ºÅÏ½º¸¦ °¡Á®¿Â´Ù.
+                Material[] materials = renderers[rendererIndex].materials; // í˜„ì¬ Rendererê°€ ì‚¬ìš©í•˜ëŠ” Material ì¸ìŠ¤í„´ìŠ¤ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
-                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++) // ¸ğµç MaterialÀ» ¼øÈ¸ÇÑ´Ù.
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++) // ëª¨ë“  Materialì„ ìˆœíšŒí•œë‹¤.
                 {
-                    Material material = materials[materialIndex]; // ÇöÀç ¼öÁ¤ÇÒ MaterialÀ» °¡Á®¿Â´Ù.
+                    Material material = materials[materialIndex]; // í˜„ì¬ ìˆ˜ì •í•  Materialì„ ê°€ì ¸ì˜¨ë‹¤.
 
-                    if (material == null) // MaterialÀÌ ¾ø´Ù¸é
+                    if (material == null) // Materialì´ ì—†ë‹¤ë©´
                     {
-                        continue; // ´ÙÀ½ MaterialÀ» È®ÀÎÇÑ´Ù.
+                        continue; // ë‹¤ìŒ Materialì„ í™•ì¸í•œë‹¤.
                     }
 
-                    if (material.HasProperty(BaseColorProperty)) // URP ±âº» »ö»ó Property°¡ ÀÖ´Ù¸é
+                    if (material.HasProperty(BaseColorProperty)) // URP ê¸°ë³¸ ìƒ‰ìƒ Propertyê°€ ìˆë‹¤ë©´
                     {
-                        Color color = material.GetColor(BaseColorProperty); // ±âÁ¸ »ö»óÀ» °¡Á®¿Â´Ù.
-                        color.a = alpha; // ±âÁ¸ RGB´Â À¯ÁöÇÏ°í Alpha¸¸ º¯°æÇÑ´Ù.
-                        material.SetColor(BaseColorProperty, color); // º¯°æµÈ »ö»óÀ» Material¿¡ Àû¿ëÇÑ´Ù.
+                        Color color = material.GetColor(BaseColorProperty); // ê¸°ì¡´ ìƒ‰ìƒì„ ê°€ì ¸ì˜¨ë‹¤.
+                        color.a = alpha; // ê¸°ì¡´ RGBëŠ” ìœ ì§€í•˜ê³  Alphaë§Œ ë³€ê²½í•œë‹¤.
+                        material.SetColor(BaseColorProperty, color); // ë³€ê²½ëœ ìƒ‰ìƒì„ Materialì— ì ìš©í•œë‹¤.
                     }
 
-                    if (material.HasProperty(ColorProperty)) // Standard ±âº» »ö»ó Property°¡ ÀÖ´Ù¸é
+                    if (material.HasProperty(ColorProperty)) // Standard ê¸°ë³¸ ìƒ‰ìƒ Propertyê°€ ìˆë‹¤ë©´
                     {
-                        Color color = material.GetColor(ColorProperty); // ±âÁ¸ »ö»óÀ» °¡Á®¿Â´Ù.
-                        color.a = alpha; // ±âÁ¸ RGB´Â À¯ÁöÇÏ°í Alpha¸¸ º¯°æÇÑ´Ù.
-                        material.SetColor(ColorProperty, color); // º¯°æµÈ »ö»óÀ» Material¿¡ Àû¿ëÇÑ´Ù.
+                        Color color = material.GetColor(ColorProperty); // ê¸°ì¡´ ìƒ‰ìƒì„ ê°€ì ¸ì˜¨ë‹¤.
+                        color.a = alpha; // ê¸°ì¡´ RGBëŠ” ìœ ì§€í•˜ê³  Alphaë§Œ ë³€ê²½í•œë‹¤.
+                        material.SetColor(ColorProperty, color); // ë³€ê²½ëœ ìƒ‰ìƒì„ Materialì— ì ìš©í•œë‹¤.
                     }
                 }
             }
         }
 
-        private void CleanupTelegraph() // ÇöÀç »ı¼ºµÈ ÂøÁö ¿¹°í Ç¥½Ã¸¦ Á¦°ÅÇÏ´Â ÇÔ¼ö
+        private void CleanupTelegraph() // í˜„ì¬ ìƒì„±ëœ ì°©ì§€ ì˜ˆê³  í‘œì‹œë¥¼ ì œê±°í•˜ëŠ” í•¨ìˆ˜
         {
-            if (activeTelegraph != null) // ÂøÁö ¿¹°í Ç¥½Ã°¡ Á¸ÀçÇÑ´Ù¸é
+            if (activeTelegraph != null) // ì°©ì§€ ì˜ˆê³  í‘œì‹œê°€ ì¡´ì¬í•œë‹¤ë©´
             {
-                Destroy(activeTelegraph); // ¿¹°í Ç¥½Ã GameObject¸¦ Á¦°ÅÇÑ´Ù.
-                activeTelegraph = null; // Á¦°ÅµÈ ¿¹°í Ç¥½Ã ÂüÁ¶¸¦ ºñ¿î´Ù.
+                Destroy(activeTelegraph); // ì˜ˆê³  í‘œì‹œ GameObjectë¥¼ ì œê±°í•œë‹¤.
+                activeTelegraph = null; // ì œê±°ëœ ì˜ˆê³  í‘œì‹œ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
         }
 
-        private void ScheduleNextAttack() // ´ÙÀ½ Á¡ÇÁ Ãæ°İÆÄ °ø°İ ½Ã°£À» ¿¹¾àÇÏ´Â ÇÔ¼ö
+        private void ScheduleNextAttack() // ë‹¤ìŒ ì í”„ ì¶©ê²©íŒŒ ê³µê²© ì‹œê°„ì„ ì˜ˆì•½í•˜ëŠ” í•¨ìˆ˜
         {
-            nextAttackTime = Time.time + attackInterval; // ÇöÀç ½Ã°£¿¡ ¼³Á¤µÈ °ø°İ °£°İÀ» ´õÇÑ´Ù.
+            nextAttackTime = Time.time + attackInterval; // í˜„ì¬ ì‹œê°„ì— ì„¤ì •ëœ ê³µê²© ê°„ê²©ì„ ë”í•œë‹¤.
         }
 
-        private void FinishAttack() // Á¡ÇÁ Ãæ°İÆÄ °ø°İ »óÅÂ¸¦ Á¤¸®ÇÏ´Â ÇÔ¼ö
+        private void FinishAttack() // ì í”„ ì¶©ê²©íŒŒ ê³µê²© ìƒíƒœë¥¼ ì •ë¦¬í•˜ëŠ” í•¨ìˆ˜
         {
-            CleanupTelegraph(); // ³²¾Æ ÀÖÀ» ¼ö ÀÖ´Â ÂøÁö ¿¹°í Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
+            CleanupTelegraph(); // ë‚¨ì•„ ìˆì„ ìˆ˜ ìˆëŠ” ì°©ì§€ ì˜ˆê³  í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
 
-            IsAttacking = false; // °ø°İ ÁøÇà »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
-            isAirborne = false; // Á¡ÇÁ »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
-            jumpInterrupted = false; // Á¡ÇÁ Áß´Ü »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+            IsAttacking = false; // ê³µê²© ì§„í–‰ ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
+            isAirborne = false; // ì í”„ ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
+            jumpInterrupted = false; // ì í”„ ì¤‘ë‹¨ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
 
-            ReleaseActionLock(); // ´Ù¸¥ º¸½º ÆĞÅÏÀÌ ½ÇÇàµÉ ¼ö ÀÖµµ·Ï Çàµ¿ Àá±İÀ» ÇØÁ¦ÇÑ´Ù.
-            ScheduleNextAttack(); // ´ÙÀ½ Á¡ÇÁ Ãæ°İÆÄ °ø°İ ½Ã°£À» ¿¹¾àÇÑ´Ù.
+            ReleaseActionLock(); // ë‹¤ë¥¸ ë³´ìŠ¤ íŒ¨í„´ì´ ì‹¤í–‰ë  ìˆ˜ ìˆë„ë¡ í–‰ë™ ì ê¸ˆì„ í•´ì œí•œë‹¤.
+            ScheduleNextAttack(); // ë‹¤ìŒ ì í”„ ì¶©ê²©íŒŒ ê³µê²© ì‹œê°„ì„ ì˜ˆì•½í•œë‹¤.
 
-            attackCoroutine = null; // ÇöÀç °ø°İ Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+            attackCoroutine = null; // í˜„ì¬ ê³µê²© Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
         }
 
-        private void ReleaseActionLock() // ÀÌ Script°¡ ¼ÒÀ¯ÇÑ BossController Çàµ¿ Àá±İÀ» ÇØÁ¦ÇÏ´Â ÇÔ¼ö
+        private void ReleaseActionLock() // ì´ Scriptê°€ ì†Œìœ í•œ BossController í–‰ë™ ì ê¸ˆì„ í•´ì œí•˜ëŠ” í•¨ìˆ˜
         {
-            if (!ownsActionLock) // ÀÌ Script°¡ Çàµ¿ Àá±İÀ» °¡Áö°í ÀÖÁö ¾Ê´Ù¸é
+            if (!ownsActionLock) // ì´ Scriptê°€ í–‰ë™ ì ê¸ˆì„ ê°€ì§€ê³  ìˆì§€ ì•Šë‹¤ë©´
             {
-                return; // ´Ù¸¥ º¸½º ÆĞÅÏÀÇ Àá±İ¿¡´Â ¿µÇâÀ» ÁÖÁö ¾Ê´Â´Ù.
+                return; // ë‹¤ë¥¸ ë³´ìŠ¤ íŒ¨í„´ì˜ ì ê¸ˆì—ëŠ” ì˜í–¥ì„ ì£¼ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (bossController != null) // BossController°¡ Á¸ÀçÇÑ´Ù¸é
+            if (bossController != null) // BossControllerê°€ ì¡´ì¬í•œë‹¤ë©´
             {
-                bossController.EndAction(); // º¸½º Çàµ¿ Àá±İÀ» ÇØÁ¦ÇÑ´Ù.
+                bossController.EndAction(); // ë³´ìŠ¤ í–‰ë™ ì ê¸ˆì„ í•´ì œí•œë‹¤.
             }
 
-            ownsActionLock = false; // Çàµ¿ Àá±İÀ» ´õ ÀÌ»ó ¼ÒÀ¯ÇÏÁö ¾Ê´Â´Ù°í ÀúÀåÇÑ´Ù.
+            ownsActionLock = false; // í–‰ë™ ì ê¸ˆì„ ë” ì´ìƒ ì†Œìœ í•˜ì§€ ì•ŠëŠ”ë‹¤ê³  ì €ì¥í•œë‹¤.
         }
     }
 }

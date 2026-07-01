@@ -121,6 +121,13 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)]
         [SerializeField] private float berserkAttackInterval = 8.0f;
 
+        [Header("Runtime Damage Profile")]
+        [Min(0)]
+        [SerializeField] private int normalProjectileNexusDamage = 1;
+
+        [Min(0)]
+        [SerializeField] private int berserkProjectileNexusDamage = 1;
+
         [Header("Attack Timing")]
         [Min(0.0f)]
         [SerializeField] private float windupDuration = 1.0f;
@@ -154,6 +161,12 @@ namespace TeamProject01.Gameplay
         private bool hasNormalBurstHandRecoilOriginalPosition;
 
         public bool IsAttacking { get; private set; }
+
+        public void ApplyRuntimeDamageProfile(int normalDamage, int berserkDamage)
+        {
+            normalProjectileNexusDamage = Mathf.Max(0, normalDamage);
+            berserkProjectileNexusDamage = Mathf.Max(0, berserkDamage);
+        }
 
         private void Awake()
         {
@@ -241,7 +254,7 @@ namespace TeamProject01.Gameplay
             ReleaseActionLock();
         }
 
-        // ÇöÀç º¸½º Phase¿¡ ¸ÂÃç Normal ¼Õ¹Ù´Ú °ø°İ ¶Ç´Â Berserk ´ëÇü °ø°İÀ» ½ÇÇàÇÑ´Ù.
+        // ?ê¾©ì˜± è¹‚ëŒë’ª Phase??ï§ìšë–  Normal ?ë¨®ì»®??æ€¨ë“¦êº½ ?ë¨®ë’— Berserk ?Â€??æ€¨ë“¦êº½???ã…½ë»¾?ì’•ë–.
         private IEnumerator AttackRoutine(BossPhase attackPhase)
         {
             IsAttacking = true;
@@ -275,7 +288,7 @@ namespace TeamProject01.Gameplay
             FinishAttack();
         }
 
-        // Diamond ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Àç»ıÇÏ°í Animation Event ¶Ç´Â fallback Å¸ÀÌ¹Ö¿¡¼­ ¹ß»çÇÑ´Ù.
+        // Diamond ?ì¢Šë•²ï§ë¶¿ì” ?ì„ì“£ ?ÑŠê¹®?ì„í€¬ Animation Event ?ë¨®ë’— fallback ?Â€?ëŒ€ì»¢?ë¨¯ê½Œ è«›ì’–ê¶—?ì’•ë–.
         private IEnumerator NormalAnimationAttackRoutine()
         {
             waitsForNormalAnimationEvent = true;
@@ -316,7 +329,7 @@ namespace TeamProject01.Gameplay
             waitsForNormalAnimationEvent = false;
         }
 
-        // Animation Event°¡ ¼ÕÀ» ³»¹Î Á¤È®ÇÑ ÇÁ·¹ÀÓ¿¡¼­ È£ÃâÇÏ´Â ÇÔ¼ö´Ù.
+        // Animation Eventåª›Â€ ?ë¨¯ì“£ ?ëŒ€? ?ëº¥ì†—???ê¾¨ì …?ê¾©ë¿‰???ëª„í…§?ì„ë’— ?â‘¥ë‹”??
         public void OnDiamondAnimationFire()
         {
             if (!waitsForNormalAnimationEvent)
@@ -379,7 +392,7 @@ namespace TeamProject01.Gameplay
             yield return StartCoroutine(SpawnChargedProjectile(handFirePoint, normalSingleChargeDuration, normalSingleChargeScaleMultiplier, normalSingleChargeForwardOffset, normalFireShakeDuration, normalFireShakeDistance, normalFireShakeSpeed));
         }
 
-        // 3¿¬¹ßÀº °¢ ¹ß»ç ¼ø°£¸¶´Ù ÂªÀº ¸ö Èçµé¸²°ú ¼Õ/ÆÈ ¹Ì´Ï ¹İµ¿À» ¹İº¹ÇÑ´Ù.
+        // 3?ê³•ì»»?Â€ åª›?è«›ì’–ê¶— ?ì’“ì»™ï§ëˆë– ï§ãƒ? ï§??ë¶¾ë±¾ç”±ì‡¨ë‚µ ????èª˜ëªƒë•² è«›ì„ë£??è«›ì„ë‚¬?ì’•ë–.
         private IEnumerator FireNormalBurstFromHand()
         {
             int shotCount = Mathf.Max(1, normalBurstShotCount);
@@ -407,7 +420,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        // ¼Õ¹Ù´Ú ¾Õ¿¡¼­ ´ÙÀÌ¾Æ¸óµå¸¦ Å°¿ì°í, ÇÊ¿äÇÏ¸é Ä¿Áö´Â µ¿¾È ¾ÕÀ¸·Î ¹Ğ¾î³½ µÚ ¹ß»çÇÑ´Ù.
+        // ?ë¨®ì»®???ìšë¿‰???ã…¼ì” ?ê¾¨ãŒ?ì’•? ?ã…¼ìŠ¦æ€¨? ?ê¾©ìŠ‚?ì„ãˆƒ è€Œã…¼????ìˆˆë¸ ?ìšì‘æ¿¡?è«›Â€?ëŒ€ê¶¦ ??è«›ì’–ê¶—?ì’•ë–.
         private IEnumerator SpawnChargedProjectile(Transform selectedFirePoint, float chargeDuration, float scaleMultiplier, float forwardOffset, float shakeDuration, float shakeDistance, float shakeSpeed)
         {
             Vector3 spawnPosition = selectedFirePoint.position;
@@ -417,7 +430,9 @@ namespace TeamProject01.Gameplay
 
             BossDiamondProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, runtimeRoot);
 
+            projectile.SetNexusDamage(normalProjectileNexusDamage);
             chargingProjectile = projectile;
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossDiamondCharge, spawnPosition, true);
 
             Transform projectileTransform = projectile.transform;
             Vector3 originalScale = projectileTransform.localScale;
@@ -463,6 +478,7 @@ namespace TeamProject01.Gameplay
 
             PlayNormalFireShake(shakeDuration, shakeDistance, shakeSpeed);
             ClearChargingProjectile(projectile);
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossDiamondLaunch, chargedPosition, true);
             projectile.Configure(nexus);
         }
 
@@ -489,10 +505,12 @@ namespace TeamProject01.Gameplay
         {
             int shotCount = Mathf.Max(1, berserkShotCount);
             Transform runtimeRoot = MonsterRuntimeRoot.GetRootOrFallback(transform.parent);
+            Vector3 burstPosition = burstCenter != null ? burstCenter.position : transform.position;
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.BossDiamondBurstLarge, burstPosition, true);
 
             for (int i = 0; i < shotCount; i++)
             {
-                Vector3 spawnPosition = burstCenter.position;
+                Vector3 spawnPosition = burstPosition;
                 Vector3 formationPosition = CalculateFormationPosition(i);
                 Vector3 homingTargetOffset = CalculateHomingTargetOffset(i, shotCount);
                 Vector3 formationDirection = formationPosition - spawnPosition;
@@ -503,6 +521,7 @@ namespace TeamProject01.Gameplay
 
                 BossDiamondProjectile projectile = Instantiate(projectilePrefab, spawnPosition, spawnRotation, runtimeRoot);
 
+                projectile.SetNexusDamage(berserkProjectileNexusDamage);
                 projectile.ConfigureFormationHoming(nexus, formationPosition, standbyDuration, homingTargetOffset);
             }
         }
@@ -685,7 +704,7 @@ namespace TeamProject01.Gameplay
             isAnimatorPausedByAttack = true;
         }
 
-        // ¹ß»ç ÈÄ ¼ÕÀ» ´Ù½Ã °¡Á®¿À´Â ¾Ö´Ï¸ŞÀÌ¼Ç ±¸°£¸¸ ºü¸£°Ô Àç»ıÇÑ´Ù.
+        // è«›ì’–ê¶— ???ë¨¯ì“£ ?ã…¼ë–† åª›Â€?ëª„ì‚¤???ì¢Šë•²ï§ë¶¿ì” ??æ´Ñˆì»™ï§?é®ì¢Šâ…¤å¯ƒ??ÑŠê¹®?ì’•ë–.
         private IEnumerator PlayNormalRecoilAnimationRoutine()
         {
             if (bossAnimator == null)
@@ -760,7 +779,7 @@ namespace TeamProject01.Gameplay
             normalFireShakeCoroutine = StartCoroutine(NormalFireShakeRoutine(shakeDuration, shakeDistance, shakeSpeed));
         }
 
-        // ¹ß»ç ¼ø°£ º¸½º Visual¸¸ Âª°Ô µÚ·Î Èçµé¾î ¹İµ¿À» ¸¸µç´Ù.
+        // è«›ì’–ê¶— ?ì’“ì»™ è¹‚ëŒë’ª Visualï§?ï§ãì¾¶ ?ã…»ì¤ˆ ?ë¶¾ë±¾??è«›ì„ë£??ï§ëš®ë±º??
         private IEnumerator NormalFireShakeRoutine(float shakeDuration, float shakeDistance, float shakeSpeed)
         {
             Transform shakeTarget = normalFireShakeTarget;
@@ -820,7 +839,7 @@ namespace TeamProject01.Gameplay
             normalBurstHandRecoilCoroutine = StartCoroutine(NormalBurstHandRecoilRoutine());
         }
 
-        // 3¿¬¹ß ¹ß»ç¸¶´Ù ¼Õ/ÆÈ º»À» Âª°Ô µÚ·Î ¹Ğ¾ú´Ù°¡ ¿øÀ§Ä¡½ÃÅ²´Ù.
+        // 3?ê³•ì»» è«›ì’–ê¶—ï§ëˆë– ????è¹‚ëª„ì“£ ï§ãì¾¶ ?ã…»ì¤ˆ è«›Â€?ëˆë–åª›Â€ ?ë¨¯ìç§»ì„ë–†?â‘¤ë–.
         private IEnumerator NormalBurstHandRecoilRoutine()
         {
             Transform recoilTarget = normalBurstHandRecoilTarget;

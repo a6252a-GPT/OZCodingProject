@@ -278,6 +278,11 @@ namespace TeamProject01.Gameplay
                     return false;
                 }
 
+                if (TryCaptureStarterShockwaveTargetPose(segment, i))
+                {
+                    continue;
+                }
+
                 GetPoseBehindHead(GetSegmentDistanceBehindHead(i), out Vector3 targetPosition, out Vector3 targetForward);
 
                 targetPosition = SnapSegmentToGround(i, targetPosition);
@@ -287,6 +292,23 @@ namespace TeamProject01.Gameplay
                 segmentShockwaveTargetRotations[i] = targetForward.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(targetForward.normalized, Vector3.up) : segmentShockwaveStartRotations[i];
             }
 
+            return true;
+        }
+
+        private bool TryCaptureStarterShockwaveTargetPose(Transform segment, int segmentIndex)
+        {
+            if (!HasActiveStarterSegment || segmentIndex != 0)
+            {
+                return false;
+            }
+
+            if (!TryGetJointBasedSegmentPose(segment, segmentIndex, 1f, true, out Vector3 targetPosition, out Quaternion targetRotation))
+            {
+                return false;
+            }
+
+            segmentShockwaveTargetPositions[segmentIndex] = targetPosition;
+            segmentShockwaveTargetRotations[segmentIndex] = targetRotation;
             return true;
         }
 

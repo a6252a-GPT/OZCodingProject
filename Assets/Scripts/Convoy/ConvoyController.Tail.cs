@@ -182,8 +182,8 @@ namespace TeamProject01.Gameplay
                 ConfigurableJoint joint = segment.gameObject.AddComponent<ConfigurableJoint>(); // 링크 조인트
                 joint.connectedBody = previousBody; // 앞 조각 연결
                 joint.autoConfigureConnectedAnchor = false; // 수동 앵커
-                joint.anchor = Vector3.forward * (SegmentSpacing * 0.5f); // 현재 앞쪽
-                joint.connectedAnchor = Vector3.back * (SegmentSpacing * 0.5f); // 이전 뒤쪽
+                joint.anchor = GetSegmentSocketLocalPointOrFallback(segment, FrontSocketName, Vector3.forward * (SegmentSpacing * 0.5f));
+                joint.connectedAnchor = GetSegmentSocketLocalPointOrFallback(previous, RearSocketName, Vector3.back * (SegmentSpacing * 0.5f));
                 joint.xMotion = ConfigurableJointMotion.Locked; // 거리 고정
                 joint.yMotion = ConfigurableJointMotion.Locked; // 거리 고정
                 joint.zMotion = ConfigurableJointMotion.Locked; // 거리 고정

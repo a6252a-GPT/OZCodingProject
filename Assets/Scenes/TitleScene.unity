@@ -5991,8 +5991,9 @@ GameObject:
   - component: {fileID: 440063909}
   - component: {fileID: 440063911}
   - component: {fileID: 440063910}
+  - component: {fileID: 440063912}
   m_Layer: 0
-  m_Name: WormPurchaseButton_LayoutOnly
+  m_Name: WormPurchaseButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6056,6 +6057,62 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 440063908}
   m_CullTransparentMesh: 1
+--- !u!114 &440063912
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 440063908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 440063910}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1355802669}
+        m_TargetAssemblyTypeName: TeamProject01.Gameplay.TitleMenuController, Assembly-CSharp
+        m_MethodName: PurchasePreviewWorm
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &447756202
 GameObject:
   m_ObjectHideFlags: 0
@@ -8188,8 +8245,9 @@ GameObject:
   - component: {fileID: 571051308}
   - component: {fileID: 571051310}
   - component: {fileID: 571051309}
+  - component: {fileID: 571051311}
   m_Layer: 0
-  m_Name: WormSelectButton_LayoutOnly
+  m_Name: WormSelectButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8253,6 +8311,62 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 571051307}
   m_CullTransparentMesh: 1
+--- !u!114 &571051311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 571051307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 1
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 571051309}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1355802669}
+        m_TargetAssemblyTypeName: TeamProject01.Gameplay.TitleMenuController, Assembly-CSharp
+        m_MethodName: SelectPreviewWorm
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &572036001
 GameObject:
   m_ObjectHideFlags: 0
@@ -8903,6 +9017,51 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &606529736
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 606529738}
+  - component: {fileID: 606529737}
+  m_Layer: 0
+  m_Name: GameManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &606529737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 606529736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a66c96e916cbb8747962f07493e6badb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  logBackgroundStateChanges: 0
+--- !u!4 &606529738
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 606529736}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.38723, y: -8.54269, z: 8.23319}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &610290948
 GameObject:
   m_ObjectHideFlags: 0
@@ -13256,17 +13415,31 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 32f808275bc2d1d4582e6b8a331fd850, type: 3}
     volume: 0.5
   - type: 3
-    clip: {fileID: 0}
-    volume: 0
+    clip: {fileID: 8300000, guid: a7562eaa159d641498049d05732a67eb, type: 3}
+    volume: 0.5
   - type: 4
-    clip: {fileID: 8300000, guid: 0ee332a789321456988bfbd32d4debe0, type: 3}
+    clip: {fileID: 8300000, guid: fd942b7243e3dd249bd6e7d9b25b6d97, type: 3}
     volume: 0.5
   - type: 5
-    clip: {fileID: 8300000, guid: a7a1d437f0b6f46f8bb6ed112a21d525, type: 3}
+    clip: {fileID: 8300000, guid: 9c62eb1609dc946b8a3445ae37ad0f46, type: 3}
     volume: 0.5
   - type: 6
     clip: {fileID: 0}
     volume: 0.5
+  bgmCrossfadeDuration: 1.2
+  stageBgmRotationClips:
+  - {fileID: 8300000, guid: 32f808275bc2d1d4582e6b8a331fd850, type: 3}
+  - {fileID: 8300000, guid: 422a91f1e9b8d9f41bfd006c08cce48e, type: 3}
+  - {fileID: 8300000, guid: fd7841e04d96b9041897e7c94f59bebd, type: 3}
+  - {fileID: 8300000, guid: adf0e496a8bba684db64695a61231eb4, type: 3}
+  - {fileID: 8300000, guid: 55013508df9f0104fab868d387007e84, type: 3}
+  - {fileID: 8300000, guid: 7881bfafba2518d4082efbc522a9f647, type: 3}
+  - {fileID: 8300000, guid: 1f368934c32a08048898cdc28e432313, type: 3}
+  - {fileID: 8300000, guid: 0d041da28819a4e4badaf414719d672d, type: 3}
+  - {fileID: 8300000, guid: 992270185d6596c4192010a59c601f49, type: 3}
+  - {fileID: 8300000, guid: 4afb23657a36c33479cab14e7f741cff, type: 3}
+  - {fileID: 8300000, guid: 0327651d6ba6a4b458626bda7ea41723, type: 3}
+  stageBgmWavesPerTrack: 10
   sfxClips:
   - type: 0
     clip: {fileID: 8300000, guid: 72ee2562b7c4aa0449b4cebbc53ddb4f, type: 3}
@@ -20064,6 +20237,8 @@ MonoBehaviour:
   WormPortraitPreview: {fileID: 1355802672}
   SelectedWormNameText: {fileID: 75848070}
   SelectedWormBonusText: {fileID: 432884059}
+  WormPurchaseButton: {fileID: 440063912}
+  WormSelectButton: {fileID: 571051311}
   DiamondText: {fileID: 1683148731}
   HighestWaveText: {fileID: 1599974439}
   UpgradeSummaryText: {fileID: 0}
@@ -20458,6 +20633,7 @@ MonoBehaviour:
   hoverDuration: 0.15
   clickUpSeconds: 0.15
   clickDownSeconds: 0.1
+  fallbackClickClip: {fileID: 0}
 --- !u!1 &1369446252
 GameObject:
   m_ObjectHideFlags: 0
@@ -31230,3 +31406,4 @@ SceneRoots:
   - {fileID: 1561432266}
   - {fileID: 1045133497}
   - {fileID: 873723643}
+  - {fileID: 606529738}

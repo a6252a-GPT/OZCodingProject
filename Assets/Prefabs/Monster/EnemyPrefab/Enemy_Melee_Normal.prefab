@@ -23,6 +23,8 @@ GameObject:
   - component: {fileID: 4172602233752267069}
   - component: {fileID: 4161754835057380908}
   - component: {fileID: -2533752562893233888}
+  - component: {fileID: 5809848057514413129}
+  - component: {fileID: 8110350083767418440}
   m_Layer: 0
   m_Name: Enemy_Melee_Normal
   m_TagString: Untagged
@@ -46,6 +48,7 @@ Transform:
   - {fileID: 277217220329780762}
   - {fileID: 8871199525818449426}
   - {fileID: 377401861888585807}
+  - {fileID: 2216711659539913836}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8252647739634004996
@@ -180,7 +183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deb41073b7dba46abc3fa1481667f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHealth
-  maxHp: 30
+  maxHp: 36
 --- !u!114 &914317281394858524
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -193,7 +196,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9237098381bfde43b55d90ccba4bfc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMovement
-  moveSpeed: 1.25
+  moveSpeed: 1.1
   bodyRadius: 0.6
   groundHeight: 0.72
 --- !u!114 &1753462700800549454
@@ -210,7 +213,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMeleeAttack
   attackDamage: 1
   attackRange: 6
-  attackDelay: 1.8
+  attackDelay: 2
 --- !u!114 &5680843919327838414
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -225,6 +228,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyReward
   experienceReward: 1
   goldReward: 1
+  experienceDropChance: 0.5
+  goldDropChance: 0.5
+  worldRewardAmountMultiplier: 2
   enableEliteDiamondDrop: 1
   eliteDiamondDropChance: 0.5
   eliteDiamondReward: 2
@@ -298,6 +304,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
+--- !u!114 &5809848057514413129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708190925259269492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f8b54773e0ea94699c0c26022cbfc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySfxBridge
+  deathCue: 0
+  jumpLandingCue: 0
+  suicideExplosionCue: 0
+  slowZoneCastCue: 0
+  rangedAttackCue: 0
+  segmentCutCastCue: 0
+  segmentCutLaunchCue: 0
+  obstacleSummonCue: 0
+  meleeAttackCue: 0
+  shieldLoopCue: 0
+  portalTeleportCue: 0
+--- !u!114 &8110350083767418440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1708190925259269492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3f1871e4f4d4cefb5a5378e8d6c1a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyCrowdBlocker
+  enableCrowdBlock: 1
+  blockRadius: 0.2
+  centerTransform: {fileID: 2216711659539913836}
+  centerOffset: {x: 0, y: 0, z: 0}
+  pushStrength: 1
+  maxCorrectionPerFrame: 0.25
+  drawGizmo: 1
 --- !u!1 &6280874183795697455
 GameObject:
   m_ObjectHideFlags: 0
@@ -707,6 +755,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4404808666943801128}
+  m_Father: {fileID: 6567802561350673805}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8581589120517896518
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2216711659539913836}
+  m_Layer: 0
+  m_Name: CrowdCore
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2216711659539913836
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8581589120517896518}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
   m_Father: {fileID: 6567802561350673805}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &480187288821440044

@@ -230,6 +230,37 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
+--- !u!1 &3217025221106573493
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1765585163682502574}
+  m_Layer: 0
+  m_Name: CrowdCore
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1765585163682502574
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3217025221106573493}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5866186142316528430}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3468911808397024958
 GameObject:
   m_ObjectHideFlags: 0
@@ -251,6 +282,8 @@ GameObject:
   - component: {fileID: 3983255696831414499}
   - component: {fileID: 8301744388995193934}
   - component: {fileID: 7363406326334878710}
+  - component: {fileID: 6093251673412283569}
+  - component: {fileID: 1143566876387693021}
   m_Layer: 0
   m_Name: Enemy_Melee_SkeletonDagger
   m_TagString: Untagged
@@ -274,6 +307,7 @@ Transform:
   - {fileID: 6395450246306386866}
   - {fileID: 6421494700893779129}
   - {fileID: 7636320071162466196}
+  - {fileID: 1765585163682502574}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &2956553942661512776
@@ -351,7 +385,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88deb41073b7dba46abc3fa1481667f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHealth
-  maxHp: 30
+  maxHp: 22
 --- !u!114 &753775094605740039
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -364,7 +398,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9237098381bfde43b55d90ccba4bfc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMovement
-  moveSpeed: 1.25
+  moveSpeed: 1.5
   bodyRadius: 0.6
   groundHeight: 0.72
 --- !u!114 &68935929946750487
@@ -381,7 +415,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyMeleeAttack
   attackDamage: 1
   attackRange: 6
-  attackDelay: 1.8
+  attackDelay: 1.35
 --- !u!114 &1845304271793270824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -396,6 +430,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyReward
   experienceReward: 1
   goldReward: 1
+  experienceDropChance: 0.5
+  goldDropChance: 0.5
+  worldRewardAmountMultiplier: 2
   enableEliteDiamondDrop: 1
   eliteDiamondDropChance: 0.5
   eliteDiamondReward: 2
@@ -469,6 +506,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8457ddee0ae246e0b2fc016f6d02cec1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySupportDebuffState
+--- !u!114 &6093251673412283569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3468911808397024958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f8b54773e0ea94699c0c26022cbfc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemySfxBridge
+  deathCue: 0
+  jumpLandingCue: 0
+  suicideExplosionCue: 0
+  slowZoneCastCue: 0
+  rangedAttackCue: 0
+  segmentCutCastCue: 0
+  segmentCutLaunchCue: 0
+  obstacleSummonCue: 0
+  meleeAttackCue: 0
+  shieldLoopCue: 0
+  portalTeleportCue: 0
+--- !u!114 &1143566876387693021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3468911808397024958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3f1871e4f4d4cefb5a5378e8d6c1a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyCrowdBlocker
+  enableCrowdBlock: 1
+  blockRadius: 0.2
+  centerTransform: {fileID: 1765585163682502574}
+  centerOffset: {x: 0, y: 0, z: 0}
+  pushStrength: 1
+  maxCorrectionPerFrame: 0.25
+  drawGizmo: 1
 --- !u!1 &7431799540570305131
 GameObject:
   m_ObjectHideFlags: 0

@@ -53,6 +53,7 @@ namespace TeamProject01.Gameplay
 
         private float lastDamageTime = -999f; // 마지막 피해 시각
         private float shieldRegenBank; // 보호막 소수 회복 누적
+        private bool shieldRegenStartSfxPlayed;
 
         private void Awake() // 등록
         {
@@ -96,6 +97,7 @@ namespace TeamProject01.Gameplay
         {
             CurrentShield = fillToMax ? MaxShield : Mathf.Clamp(CurrentShield, 0, MaxShield); // 보호막 보정
             shieldRegenBank = 0f; // 회복 누적 초기화
+            shieldRegenStartSfxPlayed = false;
             NotifyShieldChanged(); // 변경 알림
         }
 
@@ -108,15 +110,25 @@ namespace TeamProject01.Gameplay
 
             lastDamageTime = Time.time; // 회복 대기 갱신
             shieldRegenBank = 0f; // 피해 직후 소수 회복 누적 제거
+            shieldRegenStartSfxPlayed = false;
 
             int remainingDamage = amount; // 남은 피해량
             int shieldDamage = 0; // 보호막 실제 피해
             if (CurrentShield > 0)
             {
+                int previousShield = CurrentShield;
                 shieldDamage = Mathf.Min(CurrentShield, remainingDamage); // 보호막 흡수량
                 CurrentShield -= shieldDamage; // 보호막 감소
                 remainingDamage -= shieldDamage; // 남은 피해 계산
                 NotifyShieldChanged(); // 보호막 변경 알림
+                if (previousShield > 0 && CurrentShield <= 0)
+                {
+                    PlayShieldBreakSfx();
+                }
+                else if (shieldDamage > 0)
+                {
+                    PlayNexusSfx(GameplaySfxCue.ShieldHit);
+                }
             }
 
             if (remainingDamage <= 0)
@@ -158,6 +170,7 @@ namespace TeamProject01.Gameplay
             NotifyHealthChanged(); // 변경 알림
             if (healedAmount > 0)
             {
+                PlayNexusSfx(GameplaySfxCue.NexusHeal);
                 NotifyScreenFeedback(NexusScreenFeedbackKind.Heal, healedAmount); // 회복 연출
             }
         }
@@ -272,7 +285,17 @@ namespace TeamProject01.Gameplay
             CurrentShield = Mathf.Min(MaxShield, CurrentShield + regenAmount); // 보호막 회복
             if (CurrentShield != previousShield)
             {
+                if (!shieldRegenStartSfxPlayed)
+                {
+                    PlayNexusSfx(GameplaySfxCue.ShieldRegenStart);
+                    shieldRegenStartSfxPlayed = true;
+                }
+
                 NotifyShieldChanged(); // 변경 알림
+                if (CurrentShield >= MaxShield)
+                {
+                    shieldRegenStartSfxPlayed = false;
+                }
             }
         }
 
@@ -305,6 +328,21 @@ namespace TeamProject01.Gameplay
         private void NotifyScreenFeedback(NexusScreenFeedbackKind kind, int amount) // 화면 연출 알림
         {
             ScreenFeedbackRequested?.Invoke(kind, Mathf.Max(0, amount));
+        }
+
+        private void PlayShieldBreakSfx()
+        {
+            PlayNexusSfx(GameplaySfxCue.ShieldBreak);
+        }
+
+        private void PlayNexusSfx(GameplaySfxCue cue)
+        {
+            if (GameplaySfxEmitter.TryPlay(transform, cue))
+            {
+                return;
+            }
+
+            GameplaySfxEmitter.TryPlayCatalogAt(cue, transform.position);
         }
 
         private void ConfigureSceneVfx() // 넥서스 부착 VFX 설정

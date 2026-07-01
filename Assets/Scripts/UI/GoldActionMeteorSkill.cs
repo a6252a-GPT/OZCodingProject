@@ -105,6 +105,7 @@ namespace TeamProject01.Gameplay
             float impactShakeAmplitude = GetImpactShakeAmplitude(); // 실제 착탄 흔들림 세기
             float impactShakeFrequency = GetImpactShakeFrequency(); // 실제 착탄 흔들림 속도
 
+            GameplaySfxEmitter.TryPlayCatalogAt(GameplaySfxCue.MeteorCast, center);
             StartCoroutine(MeteorWaveSequenceRoutine(center, meteorCount, damage, impactRadius, impactShakeDuration, impactShakeAmplitude, impactShakeFrequency)); // 시간차 웨이브 시작
             return true; // 발동 성공
         }
