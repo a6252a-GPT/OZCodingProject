@@ -11,6 +11,65 @@ using UnityEngine.UI;
 
 public partial class CardUI
 {
+    private void HandleCardChoiceKeyboardShortcuts()
+    {
+        if (!spawnedForCurrentOpen || isProcessingSelection || !IsLevelUpPanelOpen() || IsCardChoiceTextInputFocused())
+        {
+            return;
+        }
+
+        int choiceIndex = ResolvePressedCardChoiceShortcutIndex();
+        if (choiceIndex < 0 || spawnedCards == null || choiceIndex >= spawnedCards.Count)
+        {
+            return;
+        }
+
+        SpawnedCardEntry entry = spawnedCards[choiceIndex];
+        if (entry == null || !entry.CanSelect || !entry.IsClickable)
+        {
+            return;
+        }
+
+        StopAutoSelect(); // 수동 선택 우선
+        NotifySpawnedCardClicked(entry);
+    }
+
+    private static int ResolvePressedCardChoiceShortcutIndex()
+    {
+        if (WasCardChoiceShortcutPressed(KeyCode.Alpha1, KeyCode.Keypad1))
+        {
+            return 0;
+        }
+
+        if (WasCardChoiceShortcutPressed(KeyCode.Alpha2, KeyCode.Keypad2))
+        {
+            return 1;
+        }
+
+        if (WasCardChoiceShortcutPressed(KeyCode.Alpha3, KeyCode.Keypad3))
+        {
+            return 2;
+        }
+
+        return -1;
+    }
+
+    private static bool WasCardChoiceShortcutPressed(KeyCode alphaKey, KeyCode keypadKey)
+    {
+        return Input.GetKeyDown(alphaKey) || Input.GetKeyDown(keypadKey);
+    }
+
+    private static bool IsCardChoiceTextInputFocused()
+    {
+        GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (selected == null)
+        {
+            return false;
+        }
+
+        return selected.GetComponent<InputField>() != null || selected.GetComponent<TMP_InputField>() != null;
+    }
+
     private void NotifySpawnedCardClicked(SpawnedCardEntry entry)
     {
         ForceHideAllCardTooltips(); // 클릭 후 화면 전환 중 툴팁 잔상 제거

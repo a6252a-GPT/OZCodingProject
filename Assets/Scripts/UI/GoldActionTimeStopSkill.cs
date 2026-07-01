@@ -20,7 +20,7 @@ namespace TeamProject01.Gameplay
 
         [Header("Time Stop")]
         [Min(0.1f)] public float BaseDuration = 4f; // Lv1 지속 시간
-        [Min(0f)] public float DurationPerUpgrade = 0.75f; // 강화당 추가 시간
+        [Min(0f)] public float DurationPerUpgrade = 1f; // 강화당 추가 시간
         [Min(0.01f)] public float RefreshInterval = 0.1f; // 신규 스폰 포함 갱신 간격
         [Min(0.01f)] public float FreezeTickDuration = 0.25f; // 한 번 적용하는 동결 시간
         public bool AffectBosses = true; // 보스도 정지
