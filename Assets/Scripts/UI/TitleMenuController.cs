@@ -204,34 +204,29 @@ namespace TeamProject01.Gameplay
             RefreshAll(); // 표시 갱신
         }
 
-        public void SelectBasicWorm() // 기본형 선택
+        public void SelectBasicWorm() // 기본형 미리보기
         {
-            PreviewWorm(MetaWormIds.Basic); // 먼저 미리보기
-            SelectOrPurchaseWorm(MetaWormIds.Basic); // 기본형
+            PreviewWormChoice(MetaWormIds.Basic); // 카드 클릭은 미리보기만
         }
 
-        public void SelectAttackWorm() // 공격형 선택/구매
+        public void SelectAttackWorm() // 공격형 미리보기
         {
-            PreviewWorm(MetaWormIds.Attack); // 먼저 미리보기
-            SelectOrPurchaseWorm(MetaWormIds.Attack); // 공격형
+            PreviewWormChoice(MetaWormIds.Attack); // 카드 클릭은 미리보기만
         }
 
-        public void SelectMobilityWorm() // 이속형 선택/구매
+        public void SelectMobilityWorm() // 이속형 미리보기
         {
-            PreviewWorm(MetaWormIds.Mobility); // 먼저 미리보기
-            SelectOrPurchaseWorm(MetaWormIds.Mobility); // 이속형
+            PreviewWormChoice(MetaWormIds.Mobility); // 카드 클릭은 미리보기만
         }
 
-        public void SelectSupportWorm() // 지원형 선택/구매
+        public void SelectSupportWorm() // 지원형 미리보기
         {
-            PreviewWorm(MetaWormIds.Support); // 먼저 미리보기
-            SelectOrPurchaseWorm(MetaWormIds.Support); // 지원형
+            PreviewWormChoice(MetaWormIds.Support); // 카드 클릭은 미리보기만
         }
 
-        public void SelectMagicWorm() // 마법형 선택/구매
+        public void SelectMagicWorm() // 마법형 미리보기
         {
-            PreviewWorm(MetaWormIds.Magic); // 먼저 미리보기
-            SelectOrPurchaseWorm(MetaWormIds.Magic); // 마법형
+            PreviewWormChoice(MetaWormIds.Magic); // 카드 클릭은 미리보기만
         }
 
         public void SelectDefenseWorm() // 이전 버튼 호환
@@ -247,6 +242,12 @@ namespace TeamProject01.Gameplay
         public void SelectChargeWorm() // 이전 버튼 호환
         {
             SelectMobilityWorm(); // 이속형
+        }
+
+        private void PreviewWormChoice(string wormId) // 지렁이 카드 미리보기
+        {
+            PreviewWorm(wormId); // 표시 대상 변경
+            RefreshAll(); // 구매/선택 버튼 상태 갱신
         }
 
         public void PurchasePreviewWorm() // 미리보기 지렁이 구매
@@ -580,29 +581,6 @@ namespace TeamProject01.Gameplay
             }
 
             Meta.RegisterReachedWave(HighestReachedWave); // 메타 저장 기록으로 이전
-        }
-
-        private void SelectOrPurchaseWorm(string wormId) // 지렁이 선택/구매
-        {
-            if (Meta == null)
-            {
-                SetStatus("메타 시스템이 없습니다."); // 누락
-                return;
-            }
-
-            if (!Meta.IsWormUnlocked(wormId) && !Meta.TryPurchaseWorm(wormId))
-            {
-                SetStatus($"{TitleWormCatalog.GetDisplayName(wormId)} 구매에 필요한 다이아가 부족합니다."); // 구매 실패
-                RefreshAll(); // 갱신
-                return;
-            }
-
-            if (Meta.TrySelectWorm(wormId))
-            {
-                SetStatus($"{TitleWormCatalog.GetDisplayName(wormId)} 선택 완료"); // 성공
-            }
-
-            RefreshAll(); // 갱신
         }
 
         private void SelectMap(string mapId) // 맵 선택 표시
@@ -1123,7 +1101,7 @@ namespace TeamProject01.Gameplay
             bool affordable = unlocked || Meta.OwnedDiamond >= price;
             string state = selected
                 ? "선택됨"
-                : unlocked ? "선택 가능"
+                : unlocked ? "보유중"
                 : affordable ? $"구매 {price} 다이아" : $"부족 {price} 다이아";
 
             SetWormButtonLabel(objectName, $"{displayName}\n시작 무기: {starterName}\n{state}");
@@ -1155,7 +1133,7 @@ namespace TeamProject01.Gameplay
 
             SetWormActionButtonState(
                 WormPurchaseButton,
-                unlocked ? "보유" : affordable ? $"구매 {price}" : $"부족 {price}",
+                unlocked ? "보유중" : affordable ? $"구매 {price}" : $"부족 {price}",
                 !unlocked && affordable,
                 unlocked ? new Color(0.34f, 0.44f, 0.34f, 0.82f) : affordable ? new Color(0.23f, 0.42f, 0.62f, 0.92f) : new Color(0.34f, 0.30f, 0.27f, 0.82f));
 
