@@ -8,6 +8,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+#endif
 
 public partial class CardUI
 {
@@ -19,12 +23,11 @@ public partial class CardUI
         }
 
         int choiceIndex = ResolvePressedCardChoiceShortcutIndex();
-        if (choiceIndex < 0 || spawnedCards == null || choiceIndex >= spawnedCards.Count)
+        if (!TryResolveCardChoiceByVisualOrder(choiceIndex, out SpawnedCardEntry entry))
         {
             return;
         }
 
-        SpawnedCardEntry entry = spawnedCards[choiceIndex];
         if (entry == null || !entry.CanSelect || !entry.IsClickable)
         {
             return;
@@ -36,17 +39,17 @@ public partial class CardUI
 
     private static int ResolvePressedCardChoiceShortcutIndex()
     {
-        if (WasCardChoiceShortcutPressed(KeyCode.Alpha1, KeyCode.Keypad1))
+        if (WasCardChoiceShortcutPressed(1))
         {
             return 0;
         }
 
-        if (WasCardChoiceShortcutPressed(KeyCode.Alpha2, KeyCode.Keypad2))
+        if (WasCardChoiceShortcutPressed(2))
         {
             return 1;
         }
 
-        if (WasCardChoiceShortcutPressed(KeyCode.Alpha3, KeyCode.Keypad3))
+        if (WasCardChoiceShortcutPressed(3))
         {
             return 2;
         }
@@ -54,10 +57,80 @@ public partial class CardUI
         return -1;
     }
 
-    private static bool WasCardChoiceShortcutPressed(KeyCode alphaKey, KeyCode keypadKey)
+    private bool TryResolveCardChoiceByVisualOrder(int choiceIndex, out SpawnedCardEntry entry)
     {
-        return Input.GetKeyDown(alphaKey) || Input.GetKeyDown(keypadKey);
+        entry = null;
+        if (choiceIndex < 0 || spawnedCards == null || spawnedCards.Count == 0)
+        {
+            return false;
+        }
+
+        List<int> orderedIndices = new List<int>(spawnedCards.Count);
+        for (int i = 0; i < spawnedCards.Count; i++)
+        {
+            SpawnedCardEntry card = spawnedCards[i];
+            if (card?.RootTransform == null)
+            {
+                continue;
+            }
+
+            orderedIndices.Add(i);
+        }
+
+        orderedIndices.Sort((left, right) =>
+        {
+            float leftX = GetSpawnedCardVisualCenterX(spawnedCards[left]);
+            float rightX = GetSpawnedCardVisualCenterX(spawnedCards[right]);
+            int compare = leftX.CompareTo(rightX);
+            return compare != 0 ? compare : left.CompareTo(right);
+        });
+
+        if (choiceIndex >= orderedIndices.Count)
+        {
+            return false;
+        }
+
+        entry = spawnedCards[orderedIndices[choiceIndex]];
+        return entry != null;
     }
+
+    private static float GetSpawnedCardVisualCenterX(SpawnedCardEntry entry)
+    {
+        if (entry?.RootTransform != null)
+        {
+            return entry.RootTransform.position.x;
+        }
+
+        return entry?.Root != null ? entry.Root.transform.position.x : float.PositiveInfinity;
+    }
+
+    private static bool WasCardChoiceShortcutPressed(int number)
+    {
+#if ENABLE_INPUT_SYSTEM
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null)
+        {
+            switch (number)
+            {
+                case 1:
+                    return WasKeyboardKeyPressed(keyboard.digit1Key) || WasKeyboardKeyPressed(keyboard.numpad1Key);
+                case 2:
+                    return WasKeyboardKeyPressed(keyboard.digit2Key) || WasKeyboardKeyPressed(keyboard.numpad2Key);
+                case 3:
+                    return WasKeyboardKeyPressed(keyboard.digit3Key) || WasKeyboardKeyPressed(keyboard.numpad3Key);
+            }
+        }
+#endif
+
+        return false;
+    }
+
+#if ENABLE_INPUT_SYSTEM
+    private static bool WasKeyboardKeyPressed(KeyControl key)
+    {
+        return key != null && key.wasPressedThisFrame;
+    }
+#endif
 
     private static bool IsCardChoiceTextInputFocused()
     {

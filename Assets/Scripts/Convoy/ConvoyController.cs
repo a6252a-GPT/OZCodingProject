@@ -18,12 +18,16 @@ namespace TeamProject01.Gameplay
     public sealed partial class ConvoyController : MonoBehaviour // 컨보이 본체
     {
         private const ConvoyControlMode DefaultControlMode = ConvoyControlMode.WasdDirection; // 기본 조작
+        private const string HeadJointName = "Joint";
+        private const string FrontSocketName = "FrontSocket";
+        private const string RearSocketName = "RearSocket";
 
         [Header("Scene References")]
         public Transform SegmentRoot; // 세그먼트 부모
         public Transform DetachedTailRoot; // 분리 꼬리 부모
         public Transform ProjectileRoot; // 투사체 부모
         public Transform HeadVisual; // 머리 표시
+        public Transform HeadJoint; // visual chain anchor for the starter segment
         public GroundCheck HeadGroundCheck; // 머리 바닥 체크
         public GameObject SegmentPrefab; // 세그먼트 프리팹
         public Material HeadMaterial; // 머리 재질
@@ -257,17 +261,6 @@ namespace TeamProject01.Gameplay
             SamplePathIfNeeded(); // 경로 기록
             UpdateHeadVisual(deltaTime); // 머리 표시
 
-            if (HeadVisual != null && knockbackTimeRemaining > 0.0f && knockbackTotalTime > 0.0f) // 넉백 중이면
-            {
-                Vector3 localKnockbackDirection = transform.InverseTransformDirection(knockbackDirection); // 월드 넉백 방향을 플레이어 기준 방향으로 바꾼다.
-
-                float tumbleAngle = knockbackElapsedTime * 900.0f; // 넉백 진행 시간에 따라 회전 각도를 계산한다.
-
-                float pitchAngle = -localKnockbackDirection.z * tumbleAngle; // 앞뒤로 밀리면 X축 회전
-                float rollAngle = localKnockbackDirection.x * tumbleAngle; // 좌우로 밀리면 Z축 회전
-
-                HeadVisual.localRotation = Quaternion.Euler(pitchAngle, 0.0f, rollAngle); // 현재 넉백 시간 기준 회전을 적용한다.
-            }
             UpdateSegments(deltaTime); // 몸통 추적
             UpdateSegmentWeapons(deltaTime); // 세그먼트 사격
             UpdateTailCollision(deltaTime); // 자기 충돌

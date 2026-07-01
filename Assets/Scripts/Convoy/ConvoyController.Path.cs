@@ -4,183 +4,381 @@ namespace TeamProject01.Gameplay
 {
     public sealed partial class ConvoyController
     {
-        private void ResetPath() // 경로 초기화
-        {
-            path.Clear(); // 기존 경로 제거
+        private const float HeadVisualLeanDebugMultiplier = 3f;
 
-            float starterExtraDistance = EnableStarterSegment ? Mathf.Max(0f, GetEffectiveStarterSegmentDistance() - SegmentSpacing) : 0f; // 스타터 추가 거리
-            float requiredDistance = Mathf.Max((MaxSegmentCount + 4) * SegmentSpacing + starterExtraDistance, 24f); // 필요 길이
-            float sampleStep = Mathf.Max(MinPathSampleDistance * 4f, 0.25f); // 초기 간격
+        private void ResetPath()
+        {
+            path.Clear();
+
+            Vector3 anchorPosition = GetPathAnchorPosition();
+            Vector3 anchorForward = GetPathAnchorForward();
+            float starterExtraDistance = EnableStarterSegment ? Mathf.Max(0f, GetEffectiveStarterSegmentDistance() - SegmentSpacing) : 0f;
+            float requiredDistance = Mathf.Max((MaxSegmentCount + 4) * SegmentSpacing + starterExtraDistance, 24f);
+            float sampleStep = Mathf.Max(MinPathSampleDistance * 4f, 0.25f);
 
             for (float distance = requiredDistance; distance >= 0f; distance -= sampleStep)
             {
-                path.Add(transform.position - transform.forward * distance); // 뒤쪽 경로
+                path.Add(anchorPosition - anchorForward * distance);
             }
 
-            if (path.Count == 0 || Vector3.Distance(path[path.Count - 1], transform.position) > 0.001f)
+            if (path.Count == 0 || HorizontalDistance(path[path.Count - 1], anchorPosition) > 0.001f)
             {
-                path.Add(transform.position); // 현재 위치
+                path.Add(anchorPosition);
             }
         }
 
-        private void SamplePathIfNeeded() // 경로 샘플
+        private void SamplePathIfNeeded()
         {
+            Vector3 anchorPosition = GetPathAnchorPosition();
             if (path.Count == 0)
             {
-                path.Add(transform.position); // 첫 샘플
-                return; // 완료
+                path.Add(anchorPosition);
+                return;
             }
 
-            Vector3 last = path[path.Count - 1]; // 마지막 샘플
-            if (Vector3.Distance(last, transform.position) >= MinPathSampleDistance)
+            Vector3 last = path[path.Count - 1];
+            if (HorizontalDistance(last, anchorPosition) >= MinPathSampleDistance)
             {
-                path.Add(transform.position); // 새 샘플
+                path.Add(anchorPosition);
             }
         }
 
-        private void UpdateHeadVisual(float deltaTime) // 머리 표시
+        private void UpdateHeadVisual(float deltaTime)
         {
             if (HeadVisual == null)
             {
-                return; // 표시 없음
+                return;
             }
 
-            Vector3 targetLocalPosition = new Vector3(0f, VisualCenterHeight + knockbackVisualHeight, 0f); // 공중 연출 높이
+            Vector3 targetLocalPosition = new Vector3(0f, VisualCenterHeight + knockbackVisualHeight, 0f);
             HeadVisual.localPosition = Vector3.Lerp(
                 HeadVisual.localPosition,
                 targetLocalPosition,
-                ExpLerpFactor(18f, deltaTime)); // 높이 보간
+                ExpLerpFactor(18f, deltaTime));
 
-            Quaternion targetRotation = Quaternion.Euler(0f, 0f, -currentTurnInput * HeadVisualLean); // 기울기
-            HeadVisual.localRotation = Quaternion.Slerp(
-                HeadVisual.localRotation,
-                targetRotation,
-                ExpLerpFactor(18f, deltaTime)); // 회전 보간
+            Quaternion targetRotation = GetHeadVisualTargetRotation();
+            if (HasActiveKnockbackVisualRotation())
+            {
+                HeadVisual.localRotation = targetRotation;
+                return;
+            }
+
+            HeadVisual.localRotation = Quaternion.Slerp(HeadVisual.localRotation, targetRotation, ExpLerpFactor(18f, deltaTime));
         }
 
-        private void UpdateSegments(float deltaTime) // 몸통 추적
+        private Quaternion GetHeadVisualTargetRotation()
         {
-            SyncSegmentGroundChecks(); // 체크 목록 보정
-            float moveFactor = ExpLerpFactor(SegmentFollowResponse, deltaTime); // 위치 보간값
-            float turnFactor = ExpLerpFactor(SegmentTurnResponse, deltaTime); // 회전 보간값
+            float pitchAngle = 0f;
+            float rollAngle = -GetHeadVisualTurnLeanAmount() * HeadVisualLean * HeadVisualLeanDebugMultiplier;
+            if (HasActiveKnockbackVisualRotation())
+            {
+                Vector3 localKnockbackDirection = transform.InverseTransformDirection(knockbackDirection);
+                float tumbleAngle = knockbackElapsedTime * 900f;
+                pitchAngle += -localKnockbackDirection.z * tumbleAngle;
+                rollAngle += localKnockbackDirection.x * tumbleAngle;
+            }
+
+            return Quaternion.Euler(pitchAngle, 0f, rollAngle);
+        }
+
+        private float GetHeadVisualTurnLeanAmount()
+        {
+            float maxTurnSpeed = Mathf.Max(1f, GetEffectiveTurnSpeed());
+            return Mathf.Clamp(currentTurnVelocity / maxTurnSpeed, -1f, 1f);
+        }
+
+        private bool HasActiveKnockbackVisualRotation()
+        {
+            return knockbackTimeRemaining > 0f && knockbackTotalTime > 0f;
+        }
+
+        private void UpdateSegments(float deltaTime)
+        {
+            SyncSegmentGroundChecks();
+            float moveFactor = ExpLerpFactor(SegmentFollowResponse, deltaTime);
+            float turnFactor = ExpLerpFactor(SegmentTurnResponse, deltaTime);
 
             for (int i = 0; i < segments.Count; i++)
             {
-                Transform segment = segments[i]; // 현재 몸통
+                Transform segment = segments[i];
                 if (segment == null)
                 {
-                    continue; // 삭제됨
+                    continue;
+                }
+
+                if (TryGetJointBasedSegmentPose(segment, i, turnFactor, false, out Vector3 socketPosition, out Quaternion socketRotation))
+                {
+                    segment.SetPositionAndRotation(socketPosition, socketRotation);
+                    continue;
                 }
 
                 GetPoseBehindHead(GetSegmentDistanceBehindHead(i), out Vector3 targetPosition, out Vector3 targetForward);
-                targetPosition = SnapSegmentToGround(i, targetPosition); // 몸통 바닥 유지
+                targetPosition = SnapSegmentToGround(i, targetPosition);
 
-                segment.position = Vector3.Lerp(segment.position, targetPosition, moveFactor); // 위치 추적
+                segment.position = Vector3.Lerp(segment.position, targetPosition, moveFactor);
 
                 if (targetForward.sqrMagnitude > 0.0001f)
                 {
-                    Vector3 horizontalForward = FlattenSegmentForward(targetForward, segment.forward); // 수평 회전 유지
-                    Quaternion targetRotation = Quaternion.LookRotation(horizontalForward, Vector3.up); // 목표 회전
-                    segment.rotation = Quaternion.Slerp(segment.rotation, targetRotation, turnFactor); // 회전 추적
+                    Vector3 horizontalForward = FlattenSegmentForward(targetForward, segment.forward);
+                    Quaternion targetRotation = Quaternion.LookRotation(horizontalForward, Vector3.up);
+                    segment.rotation = Quaternion.Slerp(segment.rotation, targetRotation, turnFactor);
                 }
             }
         }
 
-        private void SnapSegmentsToPath() // 몸통 즉시 정렬
+        private void SnapSegmentsToPath()
         {
-            SyncSegmentGroundChecks(); // 체크 목록 보정
+            SyncSegmentGroundChecks();
             for (int i = 0; i < segments.Count; i++)
             {
-                SnapSegmentToPath(segments[i], i); // 순번별 배치
+                SnapSegmentToPath(segments[i], i);
             }
         }
 
-        private void SnapSegmentToPath(Transform segment, int segmentIndex) // 단일 몸통 정렬
+        private void SnapSegmentToPath(Transform segment, int segmentIndex)
         {
             if (segment == null)
             {
-                return; // 대상 없음
+                return;
+            }
+
+            if (TryGetJointBasedSegmentPose(segment, segmentIndex, 1f, true, out Vector3 socketPosition, out Quaternion socketRotation))
+            {
+                segment.SetPositionAndRotation(socketPosition, socketRotation);
+                return;
             }
 
             GetPoseBehindHead(GetSegmentDistanceBehindHead(segmentIndex), out Vector3 targetPosition, out Vector3 targetForward);
-            targetPosition = SnapSegmentToGround(segmentIndex, targetPosition); // 몸통 바닥 유지
-            Vector3 horizontalForward = FlattenSegmentForward(targetForward, transform.forward); // 수평 방향
-            segment.SetPositionAndRotation(targetPosition, Quaternion.LookRotation(horizontalForward, Vector3.up)); // pose 적용
+            targetPosition = SnapSegmentToGround(segmentIndex, targetPosition);
+            Vector3 horizontalForward = FlattenSegmentForward(targetForward, transform.forward);
+            segment.SetPositionAndRotation(targetPosition, Quaternion.LookRotation(horizontalForward, Vector3.up));
         }
 
-        private float GetSegmentDistanceBehindHead(int segmentIndex) // 머리에서 세그먼트까지의 경로 거리
+        private bool TryGetJointBasedSegmentPose(
+            Transform segment,
+            int segmentIndex,
+            float turnFactor,
+            bool snapRotation,
+            out Vector3 targetPosition,
+            out Quaternion targetRotation)
         {
-            int safeIndex = Mathf.Max(0, segmentIndex); // 음수 방지
-            if (HasActiveStarterSegment)
+            targetPosition = segment != null ? segment.position : Vector3.zero;
+            targetRotation = segment != null ? segment.rotation : Quaternion.identity;
+            if (!UseJointBasedSegmentLayout() || !TryGetSegmentJointSockets(segment, out Transform frontSocket, out _))
             {
-                float starterDistance = GetEffectiveStarterSegmentDistance(); // 스타터 전용 간격
-                if (safeIndex == 0)
-                {
-                    return starterDistance; // 스타터는 머리에서 조금 더 떨어진다.
-                }
-
-                return starterDistance + safeIndex * SegmentSpacing; // 스타터 뒤는 기존 간격 유지
+                return false;
             }
 
-            return (safeIndex + 1) * SegmentSpacing; // 일반 체인 기존 규칙
+            float frontDistance = GetSegmentFrontDistanceBehindHead(segmentIndex);
+            float segmentLength = GetSegmentJointLength(segment);
+            Vector3 frontTarget = GetSegmentFrontSocketTarget(segmentIndex, frontDistance);
+            GetPoseBehindHead(frontDistance + segmentLength, out Vector3 rearTarget, out Vector3 rearForward);
+
+            Vector3 desiredForward = FlattenSegmentForward(frontTarget - rearTarget, rearForward);
+            Quaternion desiredRotation = Quaternion.LookRotation(desiredForward, Vector3.up);
+            targetRotation = snapRotation ? desiredRotation : Quaternion.Slerp(segment.rotation, desiredRotation, turnFactor);
+            targetPosition = GetSocketAlignedRootPosition(segment, frontSocket, targetRotation, frontTarget);
+            targetPosition = SnapSegmentToGround(segmentIndex, targetPosition);
+            return true;
         }
 
-        private void GetPoseBehindHead(float distanceBehindHead, out Vector3 position, out Vector3 forward) // 뒤쪽 pose
+        private Vector3 GetSegmentFrontSocketTarget(int segmentIndex, float frontDistance)
         {
-            Vector3 previous = transform.position; // 시작점
-            float accumulated = 0f; // 누적 거리
+            if (segmentIndex <= 0)
+            {
+                return GetPathAnchorPosition();
+            }
+
+            int previousIndex = segmentIndex - 1;
+            Transform previous = previousIndex >= 0 && previousIndex < segments.Count ? segments[previousIndex] : null;
+            if (TryFindSegmentSocket(previous, RearSocketName, out Transform rearSocket))
+            {
+                return rearSocket.position;
+            }
+
+            GetPoseBehindHead(frontDistance, out Vector3 targetPosition, out _);
+            return targetPosition;
+        }
+
+        private float GetSegmentFrontDistanceBehindHead(int segmentIndex)
+        {
+            if (!UseJointBasedSegmentLayout())
+            {
+                return GetSegmentDistanceBehindHead(segmentIndex);
+            }
+
+            float distance = 0f;
+            int safeIndex = Mathf.Clamp(segmentIndex, 0, segments.Count);
+            for (int i = 0; i < safeIndex; i++)
+            {
+                distance += GetSegmentJointLength(segments[i]);
+            }
+
+            return distance;
+        }
+
+        private float GetSegmentDistanceBehindHead(int segmentIndex)
+        {
+            int safeIndex = Mathf.Max(0, segmentIndex);
+            if (HasActiveStarterSegment)
+            {
+                float starterDistance = GetEffectiveStarterSegmentDistance();
+                if (safeIndex == 0)
+                {
+                    return starterDistance;
+                }
+
+                return starterDistance + safeIndex * SegmentSpacing;
+            }
+
+            return (safeIndex + 1) * SegmentSpacing;
+        }
+
+        private void GetPoseBehindHead(float distanceBehindHead, out Vector3 position, out Vector3 forward)
+        {
+            Vector3 previous = GetPathAnchorPosition();
+            float accumulated = 0f;
 
             for (int i = path.Count - 1; i >= 0; i--)
             {
-                Vector3 current = path[i]; // 경로 점
-                float length = Vector3.Distance(previous, current); // 구간 길이
+                Vector3 current = path[i];
+                float length = HorizontalDistance(previous, current);
 
                 if (length <= 0.0001f)
                 {
-                    previous = current; // 중복점 스킵
-                    continue; // 다음 점
+                    previous = current;
+                    continue;
                 }
 
                 if (accumulated + length >= distanceBehindHead)
                 {
-                    float t = (distanceBehindHead - accumulated) / length; // 구간 비율
-                    position = Vector3.Lerp(previous, current, t); // 보간 위치
-                    forward = (previous - current).normalized; // 진행 방향
-                    return; // pose 확정
+                    float t = (distanceBehindHead - accumulated) / length;
+                    position = Vector3.Lerp(previous, current, t);
+                    forward = previous - current;
+                    return;
                 }
 
-                accumulated += length; // 거리 누적
-                previous = current; // 이전점 이동
+                accumulated += length;
+                previous = current;
             }
 
-            float remaining = distanceBehindHead - accumulated; // 부족 거리
-            forward = transform.forward; // fallback 방향
-            position = previous - forward * remaining; // 외삽 위치
+            float remaining = distanceBehindHead - accumulated;
+            forward = GetPathAnchorForward();
+            position = previous - forward * remaining;
         }
 
-        private static Vector3 FlattenSegmentForward(Vector3 forward, Vector3 fallback) // 세그먼트 회전 수평화
+        private bool UseJointBasedSegmentLayout()
         {
-            forward.y = 0.0f; // 공중 경사 제거
+            return GetHeadJoint() != null;
+        }
+
+        private Transform GetHeadJoint()
+        {
+            if (HeadJoint != null)
+            {
+                return HeadJoint;
+            }
+
+            Transform directJoint = transform.Find(HeadJointName);
+            if (directJoint != null)
+            {
+                HeadJoint = directJoint;
+            }
+
+            return HeadJoint;
+        }
+
+        private Vector3 GetPathAnchorPosition()
+        {
+            Transform joint = GetHeadJoint();
+            return joint != null ? joint.position : transform.position;
+        }
+
+        private Vector3 GetPathAnchorForward()
+        {
+            Transform joint = GetHeadJoint();
+            Vector3 forward = joint != null ? joint.forward : transform.forward;
+            return FlattenSegmentForward(forward, transform.forward);
+        }
+
+        private bool TryGetSegmentJointSockets(Transform segment, out Transform frontSocket, out Transform rearSocket)
+        {
+            bool hasFront = TryFindSegmentSocket(segment, FrontSocketName, out frontSocket);
+            bool hasRear = TryFindSegmentSocket(segment, RearSocketName, out rearSocket);
+            return hasFront && hasRear;
+        }
+
+        private bool TryFindSegmentSocket(Transform segment, string socketName, out Transform socket)
+        {
+            socket = segment != null ? FindChildRecursive(segment, socketName) : null;
+            return socket != null;
+        }
+
+        private float GetSegmentJointLength(Transform segment)
+        {
+            if (TryGetSegmentJointSockets(segment, out Transform frontSocket, out Transform rearSocket))
+            {
+                float socketDistance = HorizontalDistance(frontSocket.position, rearSocket.position);
+                if (socketDistance > 0.01f)
+                {
+                    return socketDistance;
+                }
+            }
+
+            return Mathf.Max(0.1f, SegmentSpacing);
+        }
+
+        private Vector3 GetSocketAlignedRootPosition(
+            Transform segment,
+            Transform socket,
+            Quaternion targetRotation,
+            Vector3 targetSocketPosition)
+        {
+            Vector3 localSocket = segment.InverseTransformPoint(socket.position);
+            Vector3 scaledLocalSocket = Vector3.Scale(localSocket, segment.lossyScale);
+            return targetSocketPosition - targetRotation * scaledLocalSocket;
+        }
+
+        private Vector3 GetSegmentSocketLocalPointOrFallback(Transform segment, string socketName, Vector3 fallback)
+        {
+            if (TryFindSegmentSocket(segment, socketName, out Transform socket))
+            {
+                return segment.InverseTransformPoint(socket.position);
+            }
+
+            return fallback;
+        }
+
+        private static float HorizontalDistance(Vector3 a, Vector3 b)
+        {
+            a.y = 0f;
+            b.y = 0f;
+            return Vector3.Distance(a, b);
+        }
+
+        private static Vector3 FlattenSegmentForward(Vector3 forward, Vector3 fallback)
+        {
+            forward.y = 0.0f;
             if (forward.sqrMagnitude > 0.0001f)
             {
-                return forward.normalized; // 수평 방향 사용
+                return forward.normalized;
             }
 
-            fallback.y = 0.0f; // fallback도 수평화
+            fallback.y = 0.0f;
             if (fallback.sqrMagnitude > 0.0001f)
             {
-                return fallback.normalized; // 이전 방향 유지
+                return fallback.normalized;
             }
 
-            return Vector3.forward; // 최종 fallback
+            return Vector3.forward;
         }
 
-        private void PrunePath() // 경로 제한
+        private void PrunePath()
         {
-            int overflow = path.Count - PathSampleLimit; // 초과 수
+            int overflow = path.Count - PathSampleLimit;
             if (overflow > 0)
             {
-                path.RemoveRange(0, overflow); // 오래된 경로 제거
+                path.RemoveRange(0, overflow);
             }
         }
     }
