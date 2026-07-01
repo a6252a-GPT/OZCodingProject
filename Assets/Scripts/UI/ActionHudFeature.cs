@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.UI.Extensions.FantasyRPG;
 
 namespace TeamProject01.Gameplay
 {
@@ -30,8 +31,41 @@ namespace TeamProject01.Gameplay
         [SerializeField] private AudioClip skillUpgradeClip;
         [Range(0f, 1f)] [SerializeField] private float skillUpgradeVolume = 1f;
 
+        [Header("스킬 활성 이팩트")]
+        [SerializeField] private GameObject skillReadyVfxPrefab; // FX_CardRimLine_B
+        [Header("스킬 활성 이팩트 오브젝트 위치 (UI RectTransform, Canvas 하위)")]
+        [SerializeField] private Transform[] skillReadyVfxAnchors = new Transform[5]; // 슬롯 1~5 — VFX_Canvas에 스크린 좌표로 매칭
+
+        [Header("스킬 활성 이팩트 크기·위치")]
+        [Tooltip("앵커 가로 대비 배율")]
+        [Min(0.01f)] [SerializeField] private float readyVfxWidthScale = 1f;
+        [Tooltip("앵커 세로 대비 배율")]
+        [Min(0.01f)] [SerializeField] private float readyVfxHeightScale = 1f;
+        [Range(-100f, 100f)]
+        [Tooltip("전체 크기 보정 (%) — 0=기본, -50=절반")]
+        [SerializeField] private float readyVfxSizeOffsetPercent;
+        [Tooltip("가로 픽셀 추가 (양수=넓게)")]
+        [Range(-300f, 300f)] [SerializeField] private float readyVfxWidthOffsetPx;
+        [Tooltip("세로 픽셀 추가 (양수=넓게)")]
+        [Range(-300f, 300f)] [SerializeField] private float readyVfxHeightOffsetPx;
+        [Tooltip("위치 X 오프셋 (px)")]
+        [Range(-300f, 300f)] [SerializeField] private float readyVfxPositionOffsetX;
+        [Tooltip("위치 Y 오프셋 (px)")]
+        [Range(-300f, 300f)] [SerializeField] private float readyVfxPositionOffsetY;
+        [Tooltip("파티클 localScale 추가 배율 (XYZ)")]
+        [SerializeField] private Vector3 readyVfxParticleScale = Vector3.one;
+
+        private static readonly int[] ShieldUpgradeCostSteps = { 500, 750, 1200, 1700, 2500 };
+
         private FieldInfo statesField;
         private FieldInfo purchasedField;
+        private FieldInfo upgradeLevelField;
+        private FieldInfo repeatPurchaseCountField;
+        private FieldInfo cooldownEndsAtField;
+
+        private GameObject[] activeReadyVfxInstances;
+        private bool readyVfxLoopRunning;
+        private Canvas hudVfxCanvas;
 
         private bool slotHooksApplied;
         private int slotHookRetryFrames;
@@ -72,6 +106,13 @@ namespace TeamProject01.Gameplay
             slotHooksApplied = false;
             slotHookRetryFrames = 30;
             StartCoroutine(HookSlotButtonsNextFrame());
+            StartReadyVfxLoop();
+        }
+
+        private void OnDisable()
+        {
+            readyVfxLoopRunning = false;
+            ClearAllReadyVfx();
         }
 
         private void Update()
@@ -126,6 +167,9 @@ namespace TeamProject01.Gameplay
             }
 
             purchasedField = stateType.GetField("Purchased", instance);
+            upgradeLevelField = stateType.GetField("UpgradeLevel", instance);
+            repeatPurchaseCountField = stateType.GetField("RepeatPurchaseCount", instance);
+            cooldownEndsAtField = stateType.GetField("CooldownEndsAt", instance);
             if (statesField == null || purchasedField == null)
             {
                 Debug.LogWarning("[ActionHudFeature] states / Purchased reflection 실패 — SFX 단계 판별 불가.", this);
@@ -468,8 +512,24 @@ namespace TeamProject01.Gameplay
             out GoldActionHudController.SkillDefinition skill,
             out bool purchased)
         {
+            if (TryReadSkillState(slotIndex, out skill, out SkillRuntimeState state))
+            {
+                purchased = state.Purchased;
+                return true;
+            }
+
             skill = null;
             purchased = false;
+            return false;
+        }
+
+        private bool TryReadSkillState(
+            int slotIndex,
+            out GoldActionHudController.SkillDefinition skill,
+            out SkillRuntimeState state)
+        {
+            skill = null;
+            state = default;
 
             if (hudController == null || hudController.Skills == null
                 || slotIndex < 0 || slotIndex >= hudController.Skills.Length)
@@ -478,7 +538,8 @@ namespace TeamProject01.Gameplay
             }
 
             skill = hudController.Skills[slotIndex];
-            if (skill == null || statesField == null || purchasedField == null)
+            if (skill == null || statesField == null || purchasedField == null
+                || upgradeLevelField == null || repeatPurchaseCountField == null || cooldownEndsAtField == null)
             {
                 return false;
             }
@@ -489,14 +550,405 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            object state = states.GetValue(slotIndex);
-            if (state == null)
+            object stateObject = states.GetValue(slotIndex);
+            if (stateObject == null)
             {
                 return false;
             }
 
-            purchased = (bool)purchasedField.GetValue(state);
+            state = new SkillRuntimeState
+            {
+                Purchased = (bool)purchasedField.GetValue(stateObject),
+                UpgradeLevel = (int)upgradeLevelField.GetValue(stateObject),
+                RepeatPurchaseCount = (int)repeatPurchaseCountField.GetValue(stateObject),
+                CooldownEndsAt = (float)cooldownEndsAtField.GetValue(stateObject)
+            };
             return true;
+        }
+
+        private struct SkillRuntimeState
+        {
+            public bool Purchased;
+            public int UpgradeLevel;
+            public int RepeatPurchaseCount;
+            public float CooldownEndsAt;
+        }
+
+        // GoldActionHudController.IsIconActive 와 동일 — 스킬 사용(아이콘) 가능 상태
+        private bool IsSkillUseReady(int slotIndex)
+        {
+            if (!TryReadSkillState(slotIndex, out GoldActionHudController.SkillDefinition skill, out SkillRuntimeState state))
+            {
+                return false;
+            }
+
+            CoreStatData stats = hudController.CoreStats != null
+                ? hudController.CoreStats.CurrentStats
+                : CoreStatProvider.GetCurrentOrDefault();
+
+            bool unlocked = stats.Level >= skill.UnlockLevel;
+            bool coolingDown = Time.time < state.CooldownEndsAt;
+            if (!unlocked || coolingDown)
+            {
+                return false;
+            }
+
+            if (skill.Kind == GoldActionHudController.GoldActionSkillKind.NexusHeal)
+            {
+                return stats.Gold >= skill.BaseCost
+                       && hudController.NexusHealSkill != null
+                       && hudController.NexusHealSkill.CanHeal();
+            }
+
+            if (skill.RepeatPurchase)
+            {
+                if (IsMaxSkillLevel(skill, state))
+                {
+                    return false;
+                }
+
+                if (skill.Kind == GoldActionHudController.GoldActionSkillKind.NexusShieldUpgrade
+                    && (hudController.ShieldUpgradeSkill == null || !hudController.ShieldUpgradeSkill.CanUpgradeShieldVisual()))
+                {
+                    return false;
+                }
+
+                return stats.Gold >= GetRepeatPurchaseCost(skill, state);
+            }
+
+            if (IsPurchaseThenUpgradeSkill(skill))
+            {
+                return state.Purchased;
+            }
+
+            if (skill.CostOnUse && !skill.RequiresPurchase)
+            {
+                return stats.Gold >= skill.BaseCost;
+            }
+
+            return false;
+        }
+
+        private static bool IsMaxSkillLevel(GoldActionHudController.SkillDefinition skill, SkillRuntimeState state)
+        {
+            int maxLevel = skill.MaxLevel > 0 ? skill.MaxLevel : 5;
+            if (skill.RepeatPurchase)
+            {
+                return state.RepeatPurchaseCount >= maxLevel;
+            }
+
+            return state.Purchased && state.UpgradeLevel >= maxLevel;
+        }
+
+        private int GetRepeatPurchaseCost(GoldActionHudController.SkillDefinition skill, SkillRuntimeState state)
+        {
+            int purchaseCount = Mathf.Max(0, state.RepeatPurchaseCount);
+            if (skill.Kind == GoldActionHudController.GoldActionSkillKind.NexusShieldUpgrade && ShieldUpgradeCostSteps.Length > 0)
+            {
+                int index = Mathf.Clamp(purchaseCount, 0, ShieldUpgradeCostSteps.Length - 1);
+                return ShieldUpgradeCostSteps[index];
+            }
+
+            float growth = Mathf.Pow(Mathf.Max(1f, hudController.ShieldUpgradeCostMultiplier), purchaseCount);
+            return Mathf.Max(0, Mathf.RoundToInt(Mathf.Max(0, skill.BaseCost) * growth));
+        }
+
+        private void StartReadyVfxLoop()
+        {
+            if (readyVfxLoopRunning)
+            {
+                return;
+            }
+
+            readyVfxLoopRunning = true;
+            StartCoroutine(RefreshReadyVfxEndOfFrameLoop());
+        }
+
+        private IEnumerator RefreshReadyVfxEndOfFrameLoop()
+        {
+            WaitForEndOfFrame wait = new WaitForEndOfFrame();
+            while (readyVfxLoopRunning && isActiveAndEnabled)
+            {
+                yield return wait;
+                RefreshSkillReadyVfx();
+            }
+        }
+
+        private void RefreshSkillReadyVfx()
+        {
+            if (skillReadyVfxPrefab == null || hudController == null || hudController.Skills == null)
+            {
+                ClearAllReadyVfx();
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+
+            int slotCount = hudController.Skills.Length;
+            EnsureReadyVfxInstanceCache(slotCount);
+
+            for (int i = 0; i < slotCount; i++)
+            {
+                bool shouldShow = IsSkillUseReady(i) && HasReadyVfxAnchor(i);
+                if (shouldShow)
+                {
+                    EnsureReadyVfxPlaying(i);
+                    SyncReadyVfxLayout(i);
+                }
+                else
+                {
+                    ClearReadyVfx(i);
+                }
+            }
+        }
+
+        private bool HasReadyVfxAnchor(int slotIndex)
+        {
+            return skillReadyVfxAnchors != null
+                   && slotIndex >= 0
+                   && slotIndex < skillReadyVfxAnchors.Length
+                   && skillReadyVfxAnchors[slotIndex] != null;
+        }
+
+        private void EnsureReadyVfxInstanceCache(int slotCount)
+        {
+            if (activeReadyVfxInstances != null && activeReadyVfxInstances.Length == slotCount)
+            {
+                return;
+            }
+
+            ClearAllReadyVfx();
+            activeReadyVfxInstances = new GameObject[slotCount];
+        }
+
+        private void EnsureReadyVfxPlaying(int slotIndex)
+        {
+            if (activeReadyVfxInstances == null || slotIndex < 0 || slotIndex >= activeReadyVfxInstances.Length)
+            {
+                return;
+            }
+
+            if (activeReadyVfxInstances[slotIndex] != null)
+            {
+                return;
+            }
+
+            if (!TryGetAnchorRectTransform(slotIndex, out RectTransform anchorRect, out Canvas referenceCanvas))
+            {
+                return;
+            }
+
+            Canvas targetCanvas = GetOrCreateVfxCanvas(referenceCanvas);
+
+            GameObject container = new GameObject($"VFX_HudSkillReady_{slotIndex + 1}");
+            RectTransform containerRect = container.AddComponent<RectTransform>();
+            container.transform.SetParent(targetCanvas.transform, false);
+
+            ApplyAnchorLayoutToContainer(containerRect, anchorRect);
+
+            GameObject vfxInstance = Instantiate(skillReadyVfxPrefab, container.transform);
+            vfxInstance.name = skillReadyVfxPrefab.name;
+            vfxInstance.transform.localPosition = Vector3.zero;
+            vfxInstance.transform.localRotation = Quaternion.identity;
+            ApplyVfxLocalScale(vfxInstance.transform, containerRect.sizeDelta);
+
+            SetupUiParticleLoop(vfxInstance);
+            activeReadyVfxInstances[slotIndex] = container;
+        }
+
+        private void SyncReadyVfxLayout(int slotIndex)
+        {
+            if (activeReadyVfxInstances == null || slotIndex < 0 || slotIndex >= activeReadyVfxInstances.Length)
+            {
+                return;
+            }
+
+            GameObject container = activeReadyVfxInstances[slotIndex];
+            if (container == null || !TryGetAnchorRectTransform(slotIndex, out RectTransform anchorRect, out Canvas referenceCanvas))
+            {
+                return;
+            }
+
+            GetOrCreateVfxCanvas(referenceCanvas);
+
+            RectTransform containerRect = container.GetComponent<RectTransform>();
+            if (containerRect == null)
+            {
+                return;
+            }
+
+            ApplyAnchorLayoutToContainer(containerRect, anchorRect);
+
+            if (containerRect.childCount > 0)
+            {
+                ApplyVfxLocalScale(containerRect.GetChild(0), containerRect.sizeDelta);
+            }
+        }
+
+        private bool TryGetAnchorRectTransform(int slotIndex, out RectTransform anchorRect, out Canvas referenceCanvas)
+        {
+            anchorRect = null;
+            referenceCanvas = null;
+
+            if (!HasReadyVfxAnchor(slotIndex))
+            {
+                return false;
+            }
+
+            Transform anchor = skillReadyVfxAnchors[slotIndex];
+            anchorRect = anchor as RectTransform ?? anchor.GetComponent<RectTransform>();
+            if (anchorRect == null)
+            {
+                return false;
+            }
+
+            referenceCanvas = anchorRect.GetComponentInParent<Canvas>();
+            return referenceCanvas != null;
+        }
+
+        // CardEffect 와 동일 — VFX 전용 Overlay 캔버스 (HUD/UI 위에 렌더)
+        private Canvas GetOrCreateVfxCanvas(Canvas referenceCanvas)
+        {
+            if (hudVfxCanvas == null)
+            {
+                Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+                for (int i = 0; i < canvases.Length; i++)
+                {
+                    Canvas canvas = canvases[i];
+                    if (canvas != null && canvas.name == "VFX_Canvas")
+                    {
+                        hudVfxCanvas = canvas;
+                        break;
+                    }
+                }
+            }
+
+            if (hudVfxCanvas == null)
+            {
+                GameObject canvasObject = new GameObject("VFX_Canvas");
+                hudVfxCanvas = canvasObject.AddComponent<Canvas>();
+                hudVfxCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            }
+
+            int desiredOrder = referenceCanvas.sortingOrder + 1;
+            if (hudVfxCanvas.sortingOrder < desiredOrder)
+            {
+                hudVfxCanvas.sortingOrder = desiredOrder;
+            }
+
+            return hudVfxCanvas;
+        }
+
+        private void ApplyAnchorLayoutToContainer(RectTransform containerRect, RectTransform anchorRect)
+        {
+            Vector3[] corners = new Vector3[4];
+            anchorRect.GetWorldCorners(corners);
+
+            Vector3 centerPx = (corners[0] + corners[2]) * 0.5f;
+            float pixelW = Mathf.Abs(corners[3].x - corners[0].x);
+            float pixelH = Mathf.Abs(corners[1].y - corners[0].y);
+
+            if (pixelW < 1f)
+            {
+                pixelW = anchorRect.rect.width * Mathf.Abs(anchorRect.lossyScale.x);
+            }
+
+            if (pixelH < 1f)
+            {
+                pixelH = anchorRect.rect.height * Mathf.Abs(anchorRect.lossyScale.y);
+            }
+
+            Vector2 effectSize = ComputeReadyVfxSize(pixelW, pixelH);
+
+            containerRect.anchorMin = Vector2.one * 0.5f;
+            containerRect.anchorMax = Vector2.one * 0.5f;
+            containerRect.pivot = Vector2.one * 0.5f;
+            containerRect.position = new Vector3(
+                centerPx.x + readyVfxPositionOffsetX,
+                centerPx.y + readyVfxPositionOffsetY,
+                0f);
+            containerRect.sizeDelta = effectSize;
+            containerRect.localRotation = Quaternion.identity;
+            containerRect.localScale = Vector3.one;
+        }
+
+        private Vector2 ComputeReadyVfxSize(float anchorPixelW, float anchorPixelH)
+        {
+            float sizeFactor = Mathf.Max(0.001f, 1f + readyVfxSizeOffsetPercent / 100f);
+            float width = Mathf.Max(1f, anchorPixelW * readyVfxWidthScale * sizeFactor + readyVfxWidthOffsetPx);
+            float height = Mathf.Max(1f, anchorPixelH * readyVfxHeightScale * sizeFactor + readyVfxHeightOffsetPx);
+            return new Vector2(width, height);
+        }
+
+        private void ApplyVfxLocalScale(Transform vfxTransform, Vector2 containerSize)
+        {
+            vfxTransform.localScale = new Vector3(
+                containerSize.x * readyVfxParticleScale.x,
+                containerSize.y * readyVfxParticleScale.y,
+                readyVfxParticleScale.z);
+        }
+
+        private static void SetupUiParticleLoop(GameObject vfxRoot)
+        {
+            ParticleSystem[] particleSystems = vfxRoot.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem ps = particleSystems[i];
+                if (ps.gameObject.GetComponent<UIParticleSystem>() != null)
+                {
+                    continue;
+                }
+
+                bool wasActive = ps.gameObject.activeSelf;
+                ps.gameObject.SetActive(false);
+
+                UIParticleSystem uiPs = ps.gameObject.AddComponent<UIParticleSystem>();
+                ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
+                if (renderer != null && renderer.sharedMaterial != null)
+                {
+                    uiPs.material = renderer.sharedMaterial;
+                }
+                else
+                {
+                    Destroy(uiPs);
+                    ps.gameObject.SetActive(wasActive);
+                    continue;
+                }
+
+                ps.gameObject.SetActive(wasActive);
+                ParticleSystem.MainModule main = ps.main;
+                main.loop = true;
+                ps.Play(withChildren: false);
+            }
+        }
+
+        private void ClearReadyVfx(int slotIndex)
+        {
+            if (activeReadyVfxInstances == null || slotIndex < 0 || slotIndex >= activeReadyVfxInstances.Length)
+            {
+                return;
+            }
+
+            if (activeReadyVfxInstances[slotIndex] == null)
+            {
+                return;
+            }
+
+            Destroy(activeReadyVfxInstances[slotIndex]);
+            activeReadyVfxInstances[slotIndex] = null;
+        }
+
+        private void ClearAllReadyVfx()
+        {
+            if (activeReadyVfxInstances == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < activeReadyVfxInstances.Length; i++)
+            {
+                ClearReadyVfx(i);
+            }
         }
 
         private void PlaySkillPurchaseSfx()

@@ -57691,6 +57691,21 @@ MonoBehaviour:
   skillPurchaseVolume: 0.5
   skillUpgradeClip: {fileID: 8300000, guid: 31aeeb90bed81d140866f8674081cb27, type: 3}
   skillUpgradeVolume: 0.5
+  skillReadyVfxPrefab: {fileID: 6359176657912482069, guid: a6a1e7297b6ae9e4ea2030da9cce8cb2, type: 3}
+  skillReadyVfxAnchors:
+  - {fileID: 340115632}
+  - {fileID: 1582851110}
+  - {fileID: 1982963987}
+  - {fileID: 1085667020}
+  - {fileID: 2136387642}
+  readyVfxWidthScale: 1
+  readyVfxHeightScale: 1
+  readyVfxSizeOffsetPercent: -60
+  readyVfxWidthOffsetPx: 0
+  readyVfxHeightOffsetPx: -12
+  readyVfxPositionOffsetX: 0
+  readyVfxPositionOffsetY: 0
+  readyVfxParticleScale: {x: 1, y: 1, z: 1}
 --- !u!1 &1761127527
 GameObject:
   m_ObjectHideFlags: 0
