@@ -360,7 +360,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.8
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -457,7 +457,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 3901862480586538890}
-  baseVolume: 0.8
+  baseVolume: 1
 --- !u!114 &6860762648188343172
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -474,7 +474,7 @@ MonoBehaviour:
   source: {fileID: 3901862480586538890}
   clips:
   - {fileID: 8300000, guid: c59f6f149d91f2d4089d1c15c255d191, type: 3}
-  volume: 0.8
+  volume: 1
   minPitch: 1
   maxPitch: 1
   cooldown: 0.12
@@ -1087,6 +1087,7 @@ MonoBehaviour:
   segmentCutLaunchCue: 36
   obstacleSummonCue: 0
   meleeAttackCue: 0
+  meleeAttackDelay: 0
   shieldLoopCue: 0
   portalTeleportCue: 0
 --- !u!114 &115020817055311902
@@ -1107,6 +1108,12 @@ MonoBehaviour:
   centerOffset: {x: 0, y: 0, z: 0}
   pushStrength: 1
   maxCorrectionPerFrame: 0.25
+  sideSpreadStrength: 0.65
+  blockedSidePushPerFrame: 0.08
+  pressureTransferRatio: 0.7
+  maxPendingPushPerFrame: 0.24
+  pushSmoothingSpeed: 10
+  pushDecaySpeed: 6
   drawGizmo: 1
 --- !u!1001 &631224397446548319
 PrefabInstance:

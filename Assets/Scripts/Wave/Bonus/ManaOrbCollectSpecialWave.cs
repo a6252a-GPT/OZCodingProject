@@ -10,15 +10,15 @@ namespace TeamProject01.Gameplay
     {
         private enum ManaOrbSpawnShape
         {
-            [InspectorName("별")]
+            [InspectorName("Star")]
             Star = 0,
-            [InspectorName("나선")]
+            [InspectorName("Spiral")]
             Spiral = 1,
-            [InspectorName("S자")]
+            [InspectorName("S Shape")]
             SShape = 2,
-            [InspectorName("십자가")]
+            [InspectorName("Cross")]
             Cross = 3,
-            [InspectorName("안 전 조 차")]
+            [InspectorName("Safety Text")]
             SafetyText = 4,
         }
 
@@ -56,82 +56,82 @@ namespace TeamProject01.Gameplay
 
         [Header("Special Wave Chance")]
         [Min(1)]
-        [SerializeField] private int minStartStage = 6; // 이 Stage부터 등장 확률을 체크합니다.
+        [SerializeField] private int minStartStage = 6; // ??Stage遺???깆옣 ?뺣쪧??泥댄겕?⑸땲??
         [Range(0, 100)]
-        [SerializeField] private int baseChancePercent = 20; // 첫 등장 체크 확률입니다.
+        [SerializeField] private int baseChancePercent = 20; // 泥??깆옣 泥댄겕 ?뺣쪧?낅땲??
         [Range(0, 100)]
-        [SerializeField] private int chanceIncreaseOnFailPercent = 5; // 등장 실패 시 다음 체크에 더할 확률입니다.
+        [SerializeField] private int chanceIncreaseOnFailPercent = 5; // ?깆옣 ?ㅽ뙣 ???ㅼ쓬 泥댄겕???뷀븷 ?뺣쪧?낅땲??
         [Range(0, 100)]
-        [SerializeField] private int maxChancePercent = 60; // 확률이 이 값보다 커지지 않게 제한합니다.
+        [SerializeField] private int maxChancePercent = 60; // ?뺣쪧????媛믩낫??而ㅼ?吏 ?딄쾶 ?쒗븳?⑸땲??
         [Min(0)]
-        [SerializeField] private int cooldownStageCount = 5; // 한 번 등장한 뒤 다시 등장하기 전 대기 Stage 수입니다.
-        [SerializeField] private bool blockBossStage = true; // 보스 Stage에서는 등장하지 않게 합니다.
+        [SerializeField] private int cooldownStageCount = 5; // ??踰??깆옣?????ㅼ떆 ?깆옣?섍린 ???湲?Stage ?섏엯?덈떎.
+        [SerializeField] private bool blockBossStage = true; // 蹂댁뒪 Stage?먯꽌???깆옣?섏? ?딄쾶 ?⑸땲??
 
         [Header("Mana Orb Collect")]
         [FormerlySerializedAs("goldPickupPrefab")]
-        [SerializeField] private GameObject manaOrbPickupPrefab; // 맵에 뿌릴 마력 구슬 오브젝트입니다.
+        [SerializeField] private GameObject manaOrbPickupPrefab; // 留듭뿉 肉뚮┫ 留덈젰 援ъ뒳 ?ㅻ툕?앺듃?낅땲??
         [FormerlySerializedAs("goldRoot")]
-        [SerializeField] private Transform manaOrbRoot; // 생성된 마력 구슬을 정리할 부모입니다.
-        [SerializeField] private Transform nexus; // 마력 구슬 생성 반경의 중심입니다.
+        [SerializeField] private Transform manaOrbRoot; // ?앹꽦??留덈젰 援ъ뒳???뺣━??遺紐⑥엯?덈떎.
+        [SerializeField] private Transform nexus; // 留덈젰 援ъ뒳 ?앹꽦 諛섍꼍??以묒떖?낅땲??
         [Min(1)]
         [FormerlySerializedAs("goldSpawnCount")]
-        [SerializeField] private int manaOrbSpawnCount = 80; // 특수웨이브 중 생성할 마력 구슬 개수입니다.
+        [SerializeField] private int manaOrbSpawnCount = 80; // ?뱀닔?⑥씠釉?以??앹꽦??留덈젰 援ъ뒳 媛쒖닔?낅땲??
         [Min(1.0f)]
-        [SerializeField] private float collectDurationSeconds = 20.0f; // 마력 구슬을 수집할 수 있는 시간입니다.
+        [SerializeField] private float collectDurationSeconds = 20.0f; // 留덈젰 援ъ뒳???섏쭛?????덈뒗 ?쒓컙?낅땲??
         [Range(0.0f, 200.0f)]
-        [SerializeField] private float minSpawnRadius = 15.0f; // Nexus 기준 최소 생성 반경입니다.
+        [SerializeField] private float minSpawnRadius = 15.0f; // Nexus 湲곗? 理쒖냼 ?앹꽦 諛섍꼍?낅땲??
         [Range(0.0f, 250.0f)]
-        [SerializeField] private float maxSpawnRadius = 45.0f; // Nexus 기준 최대 생성 반경입니다.
+        [SerializeField] private float maxSpawnRadius = 45.0f; // Nexus 湲곗? 理쒕? ?앹꽦 諛섍꼍?낅땲??
         [FormerlySerializedAs("useStarSpawnPattern")]
-        [SerializeField] private bool randomizeSpawnShape = true; // 특수웨이브마다 배치 도형을 랜덤 선택합니다.
-        [SerializeField] private ManaOrbSpawnShape fixedSpawnShape = ManaOrbSpawnShape.Star; // 랜덤을 끌 때 사용할 고정 도형입니다.
+        [SerializeField] private bool randomizeSpawnShape = true; // ?뱀닔?⑥씠釉뚮쭏??諛곗튂 ?꾪삎???쒕뜡 ?좏깮?⑸땲??
+        [SerializeField] private ManaOrbSpawnShape fixedSpawnShape = ManaOrbSpawnShape.Star; // ?쒕뜡???????ъ슜??怨좎젙 ?꾪삎?낅땲??
         [Range(0, 100)]
-        [SerializeField] private int safetyTextShapeChancePercent = 3; // 랜덤 도형 선택 전에 낮은 확률로 "안 전 조 차" 글자 배치를 선택합니다.
+        [SerializeField] private int safetyTextShapeChancePercent = 3; // ?쒕뜡 ?꾪삎 ?좏깮 ?꾩뿉 ??? ?뺣쪧濡?"????議?李? 湲??諛곗튂瑜??좏깮?⑸땲??
         [Range(-180.0f, 180.0f)]
         [FormerlySerializedAs("starSpawnRotationDegrees")]
-        [SerializeField] private float shapeSpawnRotationDegrees = 90.0f; // 도형 첫 꼭짓점이 향하는 각도입니다.
+        [SerializeField] private float shapeSpawnRotationDegrees = 90.0f; // ?꾪삎 泥?瑗?쭞?먯씠 ?ν븯??媛곷룄?낅땲??
         [FormerlySerializedAs("goldHeightOffset")]
-        [SerializeField] private float manaOrbHeightOffset = 0.35f; // 마력 구슬 생성 높이 보정값입니다.
+        [SerializeField] private float manaOrbHeightOffset = 0.35f; // 留덈젰 援ъ뒳 ?앹꽦 ?믪씠 蹂댁젙媛믪엯?덈떎.
         [Min(0.1f)]
-        [SerializeField] private float collectRadius = 1.5f; // 마력 구슬 수집 판정 거리입니다.
+        [SerializeField] private float collectRadius = 1.5f; // 留덈젰 援ъ뒳 ?섏쭛 ?먯젙 嫄곕━?낅땲??
 
         [Header("Reward Threshold")]
         [Range(0, 100)]
-        [SerializeField] private int normalChestPercent = 50; // 일반 상자가 나오는 최소 수집률입니다.
+        [SerializeField] private int normalChestPercent = 50; // ?쇰컲 ?곸옄媛 ?섏삤??理쒖냼 ?섏쭛瑜좎엯?덈떎.
         [Range(0, 100)]
-        [SerializeField] private int rareChestPercent = 70; // 레어 상자가 나오는 최소 수집률입니다.
+        [SerializeField] private int rareChestPercent = 70; // ?덉뼱 ?곸옄媛 ?섏삤??理쒖냼 ?섏쭛瑜좎엯?덈떎.
         [Range(0, 100)]
-        [SerializeField] private int uniqueChestPercent = 90; // 유니크 상자가 나오는 최소 수집률입니다.
+        [SerializeField] private int uniqueChestPercent = 90; // ?좊땲???곸옄媛 ?섏삤??理쒖냼 ?섏쭛瑜좎엯?덈떎.
 
         [Header("Reward Chest Prefabs")]
-        [SerializeField] private BonusChest normalChestPrefab; // 일반 상자 프리팹입니다.
-        [SerializeField] private BonusChest rareChestPrefab; // 레어 상자 프리팹입니다.
-        [SerializeField] private BonusChest uniqueChestPrefab; // 유니크 상자 프리팹입니다.
-        [SerializeField] private Transform chestRoot; // 생성된 보상 상자를 정리할 부모입니다.
+        [SerializeField] private BonusChest normalChestPrefab; // ?쇰컲 ?곸옄 ?꾨━?뱀엯?덈떎.
+        [SerializeField] private BonusChest rareChestPrefab; // ?덉뼱 ?곸옄 ?꾨━?뱀엯?덈떎.
+        [SerializeField] private BonusChest uniqueChestPrefab; // ?좊땲???곸옄 ?꾨━?뱀엯?덈떎.
+        [SerializeField] private Transform chestRoot; // ?앹꽦??蹂댁긽 ?곸옄瑜??뺣━??遺紐⑥엯?덈떎.
 
         [Header("Reward Layout")]
-        [SerializeField] private Transform rewardCenter; // 보상 상자 줄맞춤 중심 위치입니다.
-        [SerializeField] private Vector3 fallbackRewardDirection = Vector3.back; // rewardCenter가 없을 때 Nexus 기준 배치 방향입니다.
+        [SerializeField] private Transform rewardCenter; // 蹂댁긽 ?곸옄 以꾨쭪異?以묒떖 ?꾩튂?낅땲??
+        [SerializeField] private Vector3 fallbackRewardDirection = Vector3.back; // rewardCenter媛 ?놁쓣 ??Nexus 湲곗? 諛곗튂 諛⑺뼢?낅땲??
         [Min(0.0f)]
-        [SerializeField] private float fallbackRewardDistance = 8.0f; // rewardCenter가 없을 때 Nexus에서 떨어질 거리입니다.
+        [SerializeField] private float fallbackRewardDistance = 8.0f; // rewardCenter媛 ?놁쓣 ??Nexus?먯꽌 ?⑥뼱吏?嫄곕━?낅땲??
         [Min(0.0f)]
-        [SerializeField] private float chestSpacing = 4.0f; // 상자 사이 간격입니다.
-        [SerializeField] private float chestHeightOffset = 0.0f; // 상자 생성 높이 보정값입니다.
+        [SerializeField] private float chestSpacing = 4.0f; // ?곸옄 ?ъ씠 媛꾧꺽?낅땲??
+        [SerializeField] private float chestHeightOffset = 0.0f; // ?곸옄 ?앹꽦 ?믪씠 蹂댁젙媛믪엯?덈떎.
         [Min(0.0f)]
-        [SerializeField] private float rewardStageMaxWaitSeconds = 0.0f; // 0이면 상자가 모두 사라질 때까지 기다립니다.
+        [SerializeField] private float rewardStageMaxWaitSeconds = 0.0f; // 0?대㈃ ?곸옄媛 紐⑤몢 ?щ씪吏??뚭퉴吏 湲곕떎由쎈땲??
 
-        private readonly List<ManaOrbPickup> activeManaOrbPickups = new List<ManaOrbPickup>(); // 현재 이벤트 마력 구슬 목록입니다.
-        private readonly List<BonusChest> activeRewardChests = new List<BonusChest>(); // 현재 보상 상자 목록입니다.
-        private Coroutine runningRoutine; // 특수웨이브 진행 루틴입니다.
-        private Action onFinished; // 특수웨이브 완료 시 WaveController로 돌려줄 콜백입니다.
-        private int failedChanceCount; // 등장 실패 누적 횟수입니다.
-        private int lastTriggeredStage = -99999; // 마지막으로 특수웨이브가 등장한 Stage입니다.
-        private int collectedManaOrbCount; // 이번 이벤트에서 먹은 마력 구슬 수입니다.
-        private int spawnedManaOrbCount; // 이번 이벤트에서 생성한 마력 구슬 수입니다.
-        private bool rewardStageActive; // 보상 상자 대기 중인지 여부입니다.
-        private bool collectStageActive; // 마력 구슬을 먹을 수 있는 수집 시간인지 기록합니다.
-        private float collectEndTime; // 수집 단계가 끝나는 Time.time 기준 시각입니다.
-        private ManaOrbSpawnShape currentSpawnShape = ManaOrbSpawnShape.Star; // 이번 특수웨이브에서 선택된 배치 도형입니다.
+        private readonly List<ManaOrbPickup> activeManaOrbPickups = new List<ManaOrbPickup>(); // ?꾩옱 ?대깽??留덈젰 援ъ뒳 紐⑸줉?낅땲??
+        private readonly List<BonusChest> activeRewardChests = new List<BonusChest>(); // ?꾩옱 蹂댁긽 ?곸옄 紐⑸줉?낅땲??
+        private Coroutine runningRoutine; // ?뱀닔?⑥씠釉?吏꾪뻾 猷⑦떞?낅땲??
+        private Action onFinished; // ?뱀닔?⑥씠釉??꾨즺 ??WaveController濡??뚮젮以?肄쒕갚?낅땲??
+        private int failedChanceCount; // ?깆옣 ?ㅽ뙣 ?꾩쟻 ?잛닔?낅땲??
+        private int lastTriggeredStage = -99999; // 留덉?留됱쑝濡??뱀닔?⑥씠釉뚭? ?깆옣??Stage?낅땲??
+        private int collectedManaOrbCount; // ?대쾲 ?대깽?몄뿉??癒뱀? 留덈젰 援ъ뒳 ?섏엯?덈떎.
+        private int spawnedManaOrbCount; // ?대쾲 ?대깽?몄뿉???앹꽦??留덈젰 援ъ뒳 ?섏엯?덈떎.
+        private bool rewardStageActive; // 蹂댁긽 ?곸옄 ?湲?以묒씤吏 ?щ??낅땲??
+        private bool collectStageActive; // 留덈젰 援ъ뒳??癒뱀쓣 ???덈뒗 ?섏쭛 ?쒓컙?몄? 湲곕줉?⑸땲??
+        private float collectEndTime; // ?섏쭛 ?④퀎媛 ?앸굹??Time.time 湲곗? ?쒓컖?낅땲??
+        private ManaOrbSpawnShape currentSpawnShape = ManaOrbSpawnShape.Star; // ?대쾲 ?뱀닔?⑥씠釉뚯뿉???좏깮??諛곗튂 ?꾪삎?낅땲??
 
         public bool IsRunning => runningRoutine != null;
         public bool IsCollectStageActive => collectStageActive;
@@ -144,6 +144,17 @@ namespace TeamProject01.Gameplay
         public int CurrentChancePercent => Mathf.Clamp(baseChancePercent + failedChanceCount * chanceIncreaseOnFailPercent, baseChancePercent, maxChancePercent);
 
         public bool TryBeginStage(int stage, bool isBossStage, Action finishedCallback)
+        {
+            if (!TryReserveStage(stage, isBossStage))
+            {
+                return false;
+            }
+
+            BeginReservedStage(finishedCallback);
+            return true;
+        }
+
+        public bool TryReserveStage(int stage, bool isBossStage)
         {
             if (!CanCheckStage(stage, isBossStage))
             {
@@ -161,8 +172,17 @@ namespace TeamProject01.Gameplay
 
             failedChanceCount = 0;
             lastTriggeredStage = stage;
-            BeginSpecialWave(finishedCallback);
             return true;
+        }
+
+        public bool CanCheckStageForReservation(int stage, bool isBossStage)
+        {
+            return CanCheckStage(stage, isBossStage);
+        }
+
+        public void BeginReservedStage(Action finishedCallback)
+        {
+            BeginSpecialWave(finishedCallback);
         }
 
         public void BeginSpecialWave(Action finishedCallback)

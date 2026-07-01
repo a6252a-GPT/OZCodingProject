@@ -2,100 +2,100 @@ using UnityEngine;
 
 namespace TeamProject01.Gameplay
 {
-    public sealed class EnemySlowZoneProjectile : MonoBehaviour // ½½·Î¿ì ÀåÆÇÀ» ¸¸µå´Â Åõ»çÃ¼
+    public sealed class EnemySlowZoneProjectile : MonoBehaviour // ìŠ¬ë¡œìš° ì¥íŒì„ ë§Œë“œëŠ” íˆ¬ì‚¬ì²´
     {
         [Min(0.1f)]
-        [SerializeField] private float moveSpeed = 8.0f; // Åõ»çÃ¼ ÀÌµ¿ ¼Óµµ
+        [SerializeField] private float moveSpeed = 8.0f; // íˆ¬ì‚¬ì²´ ì´ë™ ì†ë„
 
         [Min(0.1f)]
-        [SerializeField] private float arcHeight = 3.0f; // Æ÷¹°¼± ³ôÀÌ
+        [SerializeField] private float arcHeight = 3.0f; // í¬ë¬¼ì„  ë†’ì´
 
         [Min(0.1f)]
-        [SerializeField] private float lifeTime = 5.0f; // Åõ»çÃ¼ ÃÖ´ë À¯Áö ½Ã°£
+        [SerializeField] private float lifeTime = 5.0f; // íˆ¬ì‚¬ì²´ ìµœëŒ€ ìœ ì§€ ì‹œê°„
 
         [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphStartAlpha = 0.1f; // ÂøÅº ¿¹°í Ç¥½Ã ½ÃÀÛ Åõ¸íµµ
+        [SerializeField] private float telegraphStartAlpha = 0.1f; // ì°©íƒ„ ì˜ˆê³  í‘œì‹œ ì‹œì‘ íˆ¬ëª…ë„
 
         [Range(0.01f, 1.0f)]
-        [SerializeField] private float telegraphEndAlpha = 1.0f; // ÂøÅº Á÷Àü Åõ¸íµµ
+        [SerializeField] private float telegraphEndAlpha = 1.0f; // ì°©íƒ„ ì§ì „ íˆ¬ëª…ë„
 
-        private Vector3 startPosition; //Åõ»çÃ¼°¡ ¹ß»çµÈ ½ÃÀÛ À§Ä¡
-        private Vector3 targetPosition; //Åõ»çÃ¼°¡ µµÂøÇÒ ¸ñÇ¥ À§Ä¡
+        private Vector3 startPosition; //íˆ¬ì‚¬ì²´ê°€ ë°œì‚¬ëœ ì‹œì‘ ìœ„ì¹˜
+        private Vector3 targetPosition; //íˆ¬ì‚¬ì²´ê°€ ë„ì°©í•  ëª©í‘œ ìœ„ì¹˜
 
-        private float lifeTimer; // Åõ»çÃ¼°¡ »ı¼ºµÈ µÚ Áö³­ ½Ã°£
-        private float travelTimer; // Åõ»çÃ¼°¡ ³¯¾Æ°£ ½Ã°£
-        private float travelDuration; // ½ÃÀÛ À§Ä¡¿¡¼­ ¸ñÇ¥ À§Ä¡±îÁö µµÂøÇÏ´Âµ¥ °É¸± ½Ã°£
+        private float lifeTimer; // íˆ¬ì‚¬ì²´ê°€ ìƒì„±ëœ ë’¤ ì§€ë‚œ ì‹œê°„
+        private float travelTimer; // íˆ¬ì‚¬ì²´ê°€ ë‚ ì•„ê°„ ì‹œê°„
+        private float travelDuration; // ì‹œì‘ ìœ„ì¹˜ì—ì„œ ëª©í‘œ ìœ„ì¹˜ê¹Œì§€ ë„ì°©í•˜ëŠ”ë° ê±¸ë¦´ ì‹œê°„
 
-        private bool isConfigured; // Configure°¡ È£ÃâµÇ¾ú´ÂÁö È®ÀÎÇÏ´Â °ª
+        private bool isConfigured; // Configureê°€ í˜¸ì¶œë˜ì—ˆëŠ”ì§€ í™•ì¸í•˜ëŠ” ê°’
 
-        private EnemySlowZone slowZonePrefab; // ÂøÅº ½Ã »ı¼ºÇÒ ½½·Î¿ì ÀåÆÇ Prefab
-        private GameObject areaTelegraphPrefab; // ÂøÅº ¿¹°í ¹üÀ§ Ç¥½Ã Prefab
-        private EnemyHealth ownerHealth; // ÀÌ Åõ»çÃ¼¸¦ ¹ß»çÇÑ ¸ó½ºÅÍÀÇ EnemyHealth
+        private EnemySlowZone slowZonePrefab; // ì°©íƒ„ ì‹œ ìƒì„±í•  ìŠ¬ë¡œìš° ì¥íŒ Prefab
+        private GameObject areaTelegraphPrefab; // ì°©íƒ„ ì˜ˆê³  ë²”ìœ„ í‘œì‹œ Prefab
+        private EnemyHealth ownerHealth; // ì´ íˆ¬ì‚¬ì²´ë¥¼ ë°œì‚¬í•œ ëª¬ìŠ¤í„°ì˜ EnemyHealth
 
-        private Transform slowZoneRoot; // »ı¼ºµÈ ÀåÆÇÀ» Á¤¸®ÇÒ ºÎ¸ğ Transform
-        private Transform telegraphRoot; // »ı¼ºµÈ ¹üÀ§ Ç¥½Ã¸¦ Á¤¸®ÇÒ ºÎ¸ğ Transform
+        private Transform slowZoneRoot; // ìƒì„±ëœ ì¥íŒì„ ì •ë¦¬í•  ë¶€ëª¨ Transform
+        private Transform telegraphRoot; // ìƒì„±ëœ ë²”ìœ„ í‘œì‹œë¥¼ ì •ë¦¬í•  ë¶€ëª¨ Transform
 
-        private float slowZoneRadius; // »ı¼ºµÉ ÀåÆÇ ¹İ°æ
-        private float slowZoneLifeTime; // »ı¼ºµÉ ÀåÆÇ À¯Áö ½Ã°£
-        private float speedMultiplier; // »ı¼ºµÉ ÀåÆÇÀÇ ½½·Î¿ì ¹èÀ²
+        private float slowZoneRadius; // ìƒì„±ë  ì¥íŒ ë°˜ê²½
+        private float slowZoneLifeTime; // ìƒì„±ë  ì¥íŒ ìœ ì§€ ì‹œê°„
+        private float speedMultiplier; // ìƒì„±ë  ì¥íŒì˜ ìŠ¬ë¡œìš° ë°°ìœ¨
 
-        private float telegraphGroundHeight; // ¹üÀ§ Ç¥½Ã ¹Ù´Ú ³ôÀÌ
-        private float slowZoneGroundHeight; // ÀåÆÇ ¹Ù´Ú ³ôÀÌ
+        private float telegraphGroundHeight; // ë²”ìœ„ í‘œì‹œ ë°”ë‹¥ ë†’ì´
+        private float slowZoneGroundHeight; // ì¥íŒ ë°”ë‹¥ ë†’ì´
 
-        private GameObject currentTelegraph; // ÇöÀç »ı¼ºµÈ ÂøÅº ¿¹°í Ç¥½Ã
+        private GameObject currentTelegraph; // í˜„ì¬ ìƒì„±ëœ ì°©íƒ„ ì˜ˆê³  í‘œì‹œ
 
         private void Update()
         {
-            if (ownerHealth != null && ownerHealth.IsDead) // ¹ß»çÇÑ ¸ó½ºÅÍ°¡ Á×¾ú´Ù¸é
+            if (ownerHealth != null && ownerHealth.IsDead) // ë°œì‚¬í•œ ëª¬ìŠ¤í„°ê°€ ì£½ì—ˆë‹¤ë©´
             {
-                DestroyTelegraph(); // ³²¾ÆÀÖ´Â ¹üÀ§ Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
-                Destroy(gameObject); // Á×Àº ¸ó½ºÅÍÀÇ Åõ»çÃ¼´Â ÀåÆÇÀ» ¸¸µéÁö ¾Ê°í Á¦°ÅÇÑ´Ù.
+                DestroyTelegraph(); // ë‚¨ì•„ìˆëŠ” ë²”ìœ„ í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
+                Destroy(gameObject); // ì£½ì€ ëª¬ìŠ¤í„°ì˜ íˆ¬ì‚¬ì²´ëŠ” ì¥íŒì„ ë§Œë“¤ì§€ ì•Šê³  ì œê±°í•œë‹¤.
                 return;
             }
 
-            lifeTimer += Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ À¯Áö ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
+            lifeTimer += Time.deltaTime; // ì§€ë‚œ ì‹œê°„ë§Œí¼ ìœ ì§€ ì‹œê°„ì„ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-            if (lifeTimer >= lifeTime) // ÃÖ´ë À¯Áö ½Ã°£ÀÌ ³¡³µ´Ù¸é
+            if (lifeTimer >= lifeTime) // ìµœëŒ€ ìœ ì§€ ì‹œê°„ì´ ëë‚¬ë‹¤ë©´
             {
-                DestroyTelegraph(); // ³²¾ÆÀÖ´Â ¹üÀ§ Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
-                Destroy(gameObject); // Åõ»çÃ¼¸¦ Á¦°ÅÇÑ´Ù.
+                DestroyTelegraph(); // ë‚¨ì•„ìˆëŠ” ë²”ìœ„ í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
+                Destroy(gameObject); // íˆ¬ì‚¬ì²´ë¥¼ ì œê±°í•œë‹¤.
                 return;
             }
 
-            if (!isConfigured) // ¾ÆÁ÷ ¼³Á¤ÀÌ ³¡³ªÁö ¾Ê¾Ò´Ù¸é
+            if (!isConfigured) // ì•„ì§ ì„¤ì •ì´ ëë‚˜ì§€ ì•Šì•˜ë‹¤ë©´
             {
-                return; // ÀÌµ¿ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì´ë™í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            travelTimer += Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ ºñÇà ½Ã°£À» Áõ°¡½ÃÅ²´Ù.
+            travelTimer += Time.deltaTime; // ì§€ë‚œ ì‹œê°„ë§Œí¼ ë¹„í–‰ ì‹œê°„ì„ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-            float progress = travelTimer / travelDuration; // ÇöÀç ºñÇà ÁøÇàµµ¸¦ °è»êÇÑ´Ù.
-            progress = Mathf.Clamp01(progress); // 0¿¡¼­ 1 »çÀÌ·Î Á¦ÇÑÇÑ´Ù.
+            float progress = travelTimer / travelDuration; // í˜„ì¬ ë¹„í–‰ ì§„í–‰ë„ë¥¼ ê³„ì‚°í•œë‹¤.
+            progress = Mathf.Clamp01(progress); // 0ì—ì„œ 1 ì‚¬ì´ë¡œ ì œí•œí•œë‹¤.
 
-            UpdateTelegraphAlpha(progress); // ÁøÇàµµ¿¡ ¸Â°Ô ÂøÅº ¿¹°í Ç¥½Ã¸¦ ÁøÇÏ°Ô ¸¸µç´Ù.
-            UpdateProjectilePosition(progress); // Æ÷¹°¼± À§Ä¡¸¦ °è»êÇØ¼­ Àû¿ëÇÑ´Ù.
+            UpdateTelegraphAlpha(progress); // ì§„í–‰ë„ì— ë§ê²Œ ì°©íƒ„ ì˜ˆê³  í‘œì‹œë¥¼ ì§„í•˜ê²Œ ë§Œë“ ë‹¤.
+            UpdateProjectilePosition(progress); // í¬ë¬¼ì„  ìœ„ì¹˜ë¥¼ ê³„ì‚°í•´ì„œ ì ìš©í•œë‹¤.
 
-            if (progress >= 1.0f) // ÂøÅº À§Ä¡¿¡ µµÂøÇß´Ù¸é
+            if (progress >= 1.0f) // ì°©íƒ„ ìœ„ì¹˜ì— ë„ì°©í–ˆë‹¤ë©´
             {
-                CreateSlowZone(); // ½½·Î¿ì ÀåÆÇÀ» »ı¼ºÇÑ´Ù.
-                DestroyTelegraph(); // ÂøÅº ¿¹°í Ç¥½Ã¸¦ Á¦°ÅÇÑ´Ù.
-                Destroy(gameObject); // Åõ»çÃ¼¸¦ Á¦°ÅÇÑ´Ù.
+                CreateSlowZone(); // ìŠ¬ë¡œìš° ì¥íŒì„ ìƒì„±í•œë‹¤.
+                DestroyTelegraph(); // ì°©íƒ„ ì˜ˆê³  í‘œì‹œë¥¼ ì œê±°í•œë‹¤.
+                Destroy(gameObject); // íˆ¬ì‚¬ì²´ë¥¼ ì œê±°í•œë‹¤.
             }
         }
 
         private void OnDisable()
         {
-            DestroyTelegraph(); // Åõ»çÃ¼°¡ Áß°£¿¡ »èÁ¦µÇ¾îµµ ¹üÀ§ Ç¥½Ã°¡ ³²Áö ¾Ê°Ô Á¦°ÅÇÑ´Ù.
+            DestroyTelegraph(); // íˆ¬ì‚¬ì²´ê°€ ì¤‘ê°„ì— ì‚­ì œë˜ì–´ë„ ë²”ìœ„ í‘œì‹œê°€ ë‚¨ì§€ ì•Šê²Œ ì œê±°í•œë‹¤.
         }
 
         public void Configure(Vector3 targetPosition, EnemySlowZone slowZonePrefab, GameObject areaTelegraphPrefab, Transform slowZoneRoot, Transform telegraphRoot,
-                              float slowZoneRadius, float slowZoneLifeTime, float speedMultiplier, float telegraphGroundHeight, float slowZoneGroundHeight) // ±âÁ¸ È£ÃâÀ» À¯ÁöÇÏ±â À§ÇÑ Configure ÇÔ¼ö
+                              float slowZoneRadius, float slowZoneLifeTime, float speedMultiplier, float telegraphGroundHeight, float slowZoneGroundHeight) // ê¸°ì¡´ í˜¸ì¶œì„ ìœ ì§€í•˜ê¸° ìœ„í•œ Configure í•¨ìˆ˜
         {
-            Configure(targetPosition, slowZonePrefab, areaTelegraphPrefab, slowZoneRoot, telegraphRoot, slowZoneRadius, slowZoneLifeTime, speedMultiplier, telegraphGroundHeight, slowZoneGroundHeight, null); // ½ÃÀüÀÚ Á¤º¸ ¾øÀÌ ¼³Á¤ÇÑ´Ù.
+            Configure(targetPosition, slowZonePrefab, areaTelegraphPrefab, slowZoneRoot, telegraphRoot, slowZoneRadius, slowZoneLifeTime, speedMultiplier, telegraphGroundHeight, slowZoneGroundHeight, null); // ì‹œì „ì ì •ë³´ ì—†ì´ ì„¤ì •í•œë‹¤.
         }
 
         public void Configure(Vector3 targetPosition, EnemySlowZone slowZonePrefab, GameObject areaTelegraphPrefab, Transform slowZoneRoot, Transform telegraphRoot,
-                              float slowZoneRadius, float slowZoneLifeTime, float speedMultiplier, float telegraphGroundHeight, float slowZoneGroundHeight, EnemyHealth ownerHealth) //Åõ»çÃ¼¸¦ »ı¼ºÇÑ µÚ ÇÊ¿äÇÑ °ªÀ» ³Ö¾îÁÖ´Â ÇÔ¼ö´Ù.
+                              float slowZoneRadius, float slowZoneLifeTime, float speedMultiplier, float telegraphGroundHeight, float slowZoneGroundHeight, EnemyHealth ownerHealth) //íˆ¬ì‚¬ì²´ë¥¼ ìƒì„±í•œ ë’¤ í•„ìš”í•œ ê°’ì„ ë„£ì–´ì£¼ëŠ” í•¨ìˆ˜ë‹¤.
         {
             this.slowZonePrefab = slowZonePrefab;
             this.areaTelegraphPrefab = areaTelegraphPrefab;
@@ -111,116 +111,117 @@ namespace TeamProject01.Gameplay
             this.telegraphGroundHeight = Mathf.Max(0.0f, telegraphGroundHeight);
             this.slowZoneGroundHeight = Mathf.Max(0.0f, slowZoneGroundHeight);
 
-            startPosition = transform.position; // ÇöÀç À§Ä¡¸¦ ¹ß»ç ½ÃÀÛ À§Ä¡·Î ÀúÀåÇÑ´Ù.
-            this.targetPosition = GroundService.ProjectToGround(targetPosition, this.slowZoneGroundHeight); // ÂøÅº À§Ä¡¸¦ ¹Ù´Ú ³ôÀÌ¿¡ ¸ÂÃá´Ù.
+            startPosition = transform.position; // í˜„ì¬ ìœ„ì¹˜ë¥¼ ë°œì‚¬ ì‹œì‘ ìœ„ì¹˜ë¡œ ì €ì¥í•œë‹¤.
+            this.targetPosition = GroundService.ProjectToGround(targetPosition, this.slowZoneGroundHeight); // ì°©íƒ„ ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ë†’ì´ì— ë§ì¶˜ë‹¤.
 
-            Vector3 flatOffset = this.targetPosition - startPosition; // ½ÃÀÛ À§Ä¡¿¡¼­ ÂøÅº À§Ä¡±îÁöÀÇ °Å¸® º¤ÅÍ
-            flatOffset.y = 0.0f; // Æò¸é °Å¸® ±âÁØÀ¸·Î °è»êÇÑ´Ù.
+            Vector3 flatOffset = this.targetPosition - startPosition; // ì‹œì‘ ìœ„ì¹˜ì—ì„œ ì°©íƒ„ ìœ„ì¹˜ê¹Œì§€ì˜ ê±°ë¦¬ ë²¡í„°
+            flatOffset.y = 0.0f; // í‰ë©´ ê±°ë¦¬ ê¸°ì¤€ìœ¼ë¡œ ê³„ì‚°í•œë‹¤.
 
-            float distance = flatOffset.magnitude; // Æò¸é °Å¸®
-            travelDuration = distance / moveSpeed; // °Å¸®¿Í ¼Óµµ·Î µµÂø ½Ã°£À» °è»êÇÑ´Ù.
-            travelDuration = Mathf.Max(0.1f, travelDuration); // ³Ê¹« ÂªÀº ºñÇà ½Ã°£ÀÌ µÇÁö ¾Ê°Ô º¸Á¤ÇÑ´Ù.
+            float distance = flatOffset.magnitude; // í‰ë©´ ê±°ë¦¬
+            travelDuration = distance / moveSpeed; // ê±°ë¦¬ì™€ ì†ë„ë¡œ ë„ì°© ì‹œê°„ì„ ê³„ì‚°í•œë‹¤.
+            travelDuration = Mathf.Max(0.1f, travelDuration); // ë„ˆë¬´ ì§§ì€ ë¹„í–‰ ì‹œê°„ì´ ë˜ì§€ ì•Šê²Œ ë³´ì •í•œë‹¤.
 
-            lifeTimer = 0.0f; // À¯Áö ½Ã°£ ÃÊ±âÈ­
-            travelTimer = 0.0f; // ºñÇà ½Ã°£ ÃÊ±âÈ­
+            lifeTimer = 0.0f; // ìœ ì§€ ì‹œê°„ ì´ˆê¸°í™”
+            travelTimer = 0.0f; // ë¹„í–‰ ì‹œê°„ ì´ˆê¸°í™”
 
-            CreateTelegraph(); // ÂøÅº À§Ä¡¿¡ ¹üÀ§ ¿¹°í Ç¥½Ã¸¦ ¸¸µç´Ù.
+            CreateTelegraph(); // ì°©íƒ„ ìœ„ì¹˜ì— ë²”ìœ„ ì˜ˆê³  í‘œì‹œë¥¼ ë§Œë“ ë‹¤.
 
-            isConfigured = true; // ¼³Á¤ ¿Ï·á
+            isConfigured = true; // ì„¤ì • ì™„ë£Œ
         }
 
         private void UpdateProjectilePosition(float progress)
         {
-            Vector3 flatPosition = Vector3.Lerp(startPosition, targetPosition, progress); // ½ÃÀÛ À§Ä¡¿¡¼­ ÂøÅº À§Ä¡±îÁö Á÷¼± º¸°£ÇÑ´Ù.
+            Vector3 flatPosition = Vector3.Lerp(startPosition, targetPosition, progress); // ì‹œì‘ ìœ„ì¹˜ì—ì„œ ì°©íƒ„ ìœ„ì¹˜ê¹Œì§€ ì§ì„  ë³´ê°„í•œë‹¤.
 
-            float height = Mathf.Sin(progress * Mathf.PI) * arcHeight; // Áß°£ ÁöÁ¡¿¡¼­ °¡Àå ³ô¾ÆÁö´Â Æ÷¹°¼± ³ôÀÌ
+            float height = Mathf.Sin(progress * Mathf.PI) * arcHeight; // ì¤‘ê°„ ì§€ì ì—ì„œ ê°€ì¥ ë†’ì•„ì§€ëŠ” í¬ë¬¼ì„  ë†’ì´
 
-            Vector3 nextPosition = flatPosition + Vector3.up * height; // Æò¸é À§Ä¡¿¡ ³ôÀÌ¸¦ ´õÇÑ ÃÖÁ¾ À§Ä¡
+            Vector3 nextPosition = flatPosition + Vector3.up * height; // í‰ë©´ ìœ„ì¹˜ì— ë†’ì´ë¥¼ ë”í•œ ìµœì¢… ìœ„ì¹˜
 
-            Vector3 moveDirection = nextPosition - transform.position; // ÇöÀç À§Ä¡¿¡¼­ ´ÙÀ½ À§Ä¡·Î ÇâÇÏ´Â ¹æÇâ
+            Vector3 moveDirection = nextPosition - transform.position; // í˜„ì¬ ìœ„ì¹˜ì—ì„œ ë‹¤ìŒ ìœ„ì¹˜ë¡œ í–¥í•˜ëŠ” ë°©í–¥
 
-            transform.position = nextPosition; // °è»êµÈ À§Ä¡ Àû¿ë
+            transform.position = nextPosition; // ê³„ì‚°ëœ ìœ„ì¹˜ ì ìš©
 
-            if (moveDirection.sqrMagnitude > 0.0001f) // ÀÌµ¿ ¹æÇâÀÌ ÃæºĞÈ÷ ÀÖ´Ù¸é
+            if (moveDirection.sqrMagnitude > 0.0001f) // ì´ë™ ë°©í–¥ì´ ì¶©ë¶„íˆ ìˆë‹¤ë©´
             {
-                transform.rotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up); // ÀÌµ¿ ¹æÇâÀ» ¹Ù¶óº¸°Ô È¸ÀüÇÑ´Ù.
+                transform.rotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up); // ì´ë™ ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ íšŒì „í•œë‹¤.
             }
         }
 
         private void CreateTelegraph()
         {
-            if (areaTelegraphPrefab == null) // ¹üÀ§ Ç¥½Ã PrefabÀÌ ¾ø´Ù¸é
+            if (areaTelegraphPrefab == null) // ë²”ìœ„ í‘œì‹œ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; //Á¾·áÇÑ´Ù.
+                return; //ì¢…ë£Œí•œë‹¤.
             }
 
-            Vector3 telegraphPosition = GroundService.ProjectToGround(targetPosition, telegraphGroundHeight); // ¹üÀ§ Ç¥½Ã À§Ä¡¸¦ ¹Ù´Ú ³ôÀÌ¿¡ ¸ÂÃá´Ù.
+            Vector3 telegraphPosition = GroundService.ProjectToGround(targetPosition, telegraphGroundHeight); // ë²”ìœ„ í‘œì‹œ ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ë†’ì´ì— ë§ì¶˜ë‹¤.
 
-            currentTelegraph = Instantiate(areaTelegraphPrefab, telegraphPosition, Quaternion.identity, telegraphRoot); // ¹üÀ§ Ç¥½Ã »ı¼º
+            currentTelegraph = Instantiate(areaTelegraphPrefab, telegraphPosition, Quaternion.identity, telegraphRoot); // ë²”ìœ„ í‘œì‹œ ìƒì„±
 
-            float diameter = slowZoneRadius * 2.0f; // ¹İ°æÀ» Áö¸§À¸·Î º¯È¯ÇÑ´Ù.
-            currentTelegraph.transform.localScale = new Vector3(diameter, currentTelegraph.transform.localScale.y, diameter); // ¹üÀ§ Ç¥½Ã Å©±â¸¦ ÀåÆÇ ¹İ°æ¿¡ ¸ÂÃá´Ù.
+            float diameter = slowZoneRadius * 2.0f; // ë°˜ê²½ì„ ì§€ë¦„ìœ¼ë¡œ ë³€í™˜í•œë‹¤.
+            currentTelegraph.transform.localScale = new Vector3(diameter, currentTelegraph.transform.localScale.y, diameter); // ë²”ìœ„ í‘œì‹œ í¬ê¸°ë¥¼ ì¥íŒ ë°˜ê²½ì— ë§ì¶˜ë‹¤.
 
-            SetTelegraphAlpha(currentTelegraph, telegraphStartAlpha); // Ã³À½¿¡´Â Èå¸®°Ô Ç¥½ÃÇÑ´Ù.
+            SetTelegraphAlpha(currentTelegraph, telegraphStartAlpha); // ì²˜ìŒì—ëŠ” íë¦¬ê²Œ í‘œì‹œí•œë‹¤.
         }
 
         private void UpdateTelegraphAlpha(float progress)
         {
-            if (currentTelegraph == null) // ¹üÀ§ Ç¥½Ã°¡ ¾ø´Ù¸é
+            if (currentTelegraph == null) // ë²”ìœ„ í‘œì‹œê°€ ì—†ë‹¤ë©´
             {
-                return; // Åõ¸íµµ º¯°æ ºÒ°¡
+                return; // íˆ¬ëª…ë„ ë³€ê²½ ë¶ˆê°€
             }
 
-            float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); // ÁøÇàµµ¿¡ µû¶ó Á¡Á¡ ÁøÇÏ°Ô ¸¸µç´Ù.
-            SetTelegraphAlpha(currentTelegraph, alpha); // °è»êµÈ ¾ËÆÄ¸¦ Àû¿ëÇÑ´Ù.
+            float alpha = Mathf.Lerp(telegraphStartAlpha, telegraphEndAlpha, progress); // ì§„í–‰ë„ì— ë”°ë¼ ì ì  ì§„í•˜ê²Œ ë§Œë“ ë‹¤.
+            SetTelegraphAlpha(currentTelegraph, alpha); // ê³„ì‚°ëœ ì•ŒíŒŒë¥¼ ì ìš©í•œë‹¤.
         }
 
         private void DestroyTelegraph()
         {
-            if (currentTelegraph != null) // ¹üÀ§ Ç¥½Ã°¡ ³²¾Æ ÀÖ´Ù¸é
+            if (currentTelegraph != null) // ë²”ìœ„ í‘œì‹œê°€ ë‚¨ì•„ ìˆë‹¤ë©´
             {
-                Destroy(currentTelegraph); // Á¦°ÅÇÑ´Ù.
-                currentTelegraph = null; // ÂüÁ¶¸¦ ºñ¿î´Ù.
+                Destroy(currentTelegraph); // ì œê±°í•œë‹¤.
+                currentTelegraph = null; // ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
         }
 
         private void CreateSlowZone()
         {
-            if (ownerHealth != null && ownerHealth.IsDead) // ÂøÅº Á÷Àü¿¡ ½ÃÀüÀÚ°¡ Á×¾ú´Ù¸é
+            if (ownerHealth != null && ownerHealth.IsDead) // ì°©íƒ„ ì§ì „ì— ì‹œì „ìê°€ ì£½ì—ˆë‹¤ë©´
             {
-                return; // Á×Àº ¸ó½ºÅÍÀÇ ÀåÆÇÀº »ı¼ºÇÏÁö ¾Ê´Â´Ù.
+                return; // ì£½ì€ ëª¬ìŠ¤í„°ì˜ ì¥íŒì€ ìƒì„±í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (slowZonePrefab == null) // »ı¼ºÇÒ ½½·Î¿ì ÀåÆÇ PrefabÀÌ ¾ø´Ù¸é
+            if (slowZonePrefab == null) // ìƒì„±í•  ìŠ¬ë¡œìš° ì¥íŒ Prefabì´ ì—†ë‹¤ë©´
             {
-                return; // ¸¸µé ¼ö ¾øÀ¸¹Ç·Î Á¾·áÇÑ´Ù.
+                return; // ë§Œë“¤ ìˆ˜ ì—†ìœ¼ë¯€ë¡œ ì¢…ë£Œí•œë‹¤.
             }
 
-            Vector3 slowZonePosition = GroundService.ProjectToGround(targetPosition, slowZoneGroundHeight); // ÀåÆÇ »ı¼º À§Ä¡¸¦ ¹Ù´Ú ³ôÀÌ¿¡ ¸ÂÃá´Ù.
+            Vector3 slowZonePosition = GroundService.ProjectToGround(targetPosition, slowZoneGroundHeight); // ì¥íŒ ìƒì„± ìœ„ì¹˜ë¥¼ ë°”ë‹¥ ë†’ì´ì— ë§ì¶˜ë‹¤.
 
-            EnemySlowZone slowZone = Instantiate(slowZonePrefab, slowZonePosition, Quaternion.identity, slowZoneRoot); // ½½·Î¿ì ÀåÆÇ »ı¼º
-            slowZone.Configure(slowZoneRadius, slowZoneLifeTime, speedMultiplier); // ÀåÆÇ ¼öÄ¡ Àü´Ş
+            EnemySlowZone slowZone = Instantiate(slowZonePrefab, slowZonePosition, Quaternion.identity, slowZoneRoot); // ìŠ¬ë¡œìš° ì¥íŒ ìƒì„±
+            slowZone.Configure(slowZoneRadius, slowZoneLifeTime, speedMultiplier); // ì¥íŒ ìˆ˜ì¹˜ ì „ë‹¬
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.MonsterSlowZoneImpact, slowZonePosition, true);
         }
 
         private void SetTelegraphAlpha(GameObject telegraph, float alpha)
         {
-            if (telegraph == null) // ¹üÀ§ Ç¥½Ã°¡ ¾ø´Ù¸é
+            if (telegraph == null) // ë²”ìœ„ í‘œì‹œê°€ ì—†ë‹¤ë©´
             {
-                return; //Á¾·áÇÑ´Ù.
+                return; //ì¢…ë£Œí•œë‹¤.
             }
 
-            alpha = Mathf.Clamp01(alpha); // 0¿¡¼­ 1 »çÀÌ·Î Á¦ÇÑÇÑ´Ù.
+            alpha = Mathf.Clamp01(alpha); // 0ì—ì„œ 1 ì‚¬ì´ë¡œ ì œí•œí•œë‹¤.
 
-            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(); // ¹üÀ§ Ç¥½ÃÀÇ ¸ğµç Renderer¸¦ °¡Á®¿Â´Ù.
+            Renderer[] renderers = telegraph.GetComponentsInChildren<Renderer>(); // ë²”ìœ„ í‘œì‹œì˜ ëª¨ë“  Rendererë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 
-            for (int i = 0; i < renderers.Length; i++) // Renderer¸¦ ¼øÈ¸ÇÑ´Ù.
+            for (int i = 0; i < renderers.Length; i++) // Rendererë¥¼ ìˆœíšŒí•œë‹¤.
             {
-                Material material = renderers[i].material; // ÇöÀç RendererÀÇ MaterialÀ» °¡Á®¿Â´Ù.
+                Material material = renderers[i].material; // í˜„ì¬ Rendererì˜ Materialì„ ê°€ì ¸ì˜¨ë‹¤.
 
                 if (material.HasProperty("_BaseColor"))
                 {
                     Color color = material.GetColor("_BaseColor");
-                    color.a = alpha; // ¾ËÆÄ º¯°æ
+                    color.a = alpha; // ì•ŒíŒŒ ë³€ê²½
                     material.SetColor("_BaseColor", color);
                 }
                 else if (material.HasProperty("_Color"))

@@ -1575,6 +1575,7 @@ MonoBehaviour:
   segmentCutLaunchCue: 0
   obstacleSummonCue: 0
   meleeAttackCue: 0
+  meleeAttackDelay: 0
   shieldLoopCue: 0
   portalTeleportCue: 0
 --- !u!1001 &1899498607800065979

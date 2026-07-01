@@ -47,7 +47,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.8
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -144,7 +144,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 4477170761894493246}
-  baseVolume: 0.8
+  baseVolume: 1
 --- !u!114 &3671863408991798204
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -161,7 +161,7 @@ MonoBehaviour:
   source: {fileID: 4477170761894493246}
   clips:
   - {fileID: 8300000, guid: 63811416e34938e429be8e299a7c8d6d, type: 3}
-  volume: 0.8
+  volume: 1
   minPitch: 1
   maxPitch: 1
   cooldown: 0.08
@@ -377,6 +377,7 @@ MonoBehaviour:
   segmentCutLaunchCue: 0
   obstacleSummonCue: 0
   meleeAttackCue: 0
+  meleeAttackDelay: 0
   shieldLoopCue: 0
   portalTeleportCue: 0
 --- !u!1 &2718801514984512411
