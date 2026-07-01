@@ -56,6 +56,12 @@ namespace TeamProject01.Gameplay
         [Min(0.0f)]
         [SerializeField] private float scaleIncreasePercentPerConsume = 0.05f; // 포식 1회당 크기 증가율
 
+        [Min(0.0f)]
+        [SerializeField] private float attackRangeIncreasePercentPerConsume = 0.03f; // 포식 1회당 공격 사거리 증가율
+
+        [Min(1.0f)]
+        [SerializeField] private float maxAttackRangeMultiplier = 1.3f; // 공격 사거리 최대 배율
+
         [Header("Runtime")]
         [SerializeField] private int growthStack; // 현재 먹은 몬스터 수, Inspector 확인용 런타임 값
 
@@ -126,6 +132,17 @@ namespace TeamProject01.Gameplay
             get
             {
                 return 1.0f + growthStack * attackSpeedIncreasePercentPerConsume; // 성장 스택에 따른 공격속도 배율을 반환한다.
+            }
+        }
+
+        public float AttackRangeMultiplier // 공격 Script와 이동 Script가 읽을 성장 공격 사거리 배율
+        {
+            get
+            {
+                float safeIncreasePercent = Mathf.Max(0.0f, attackRangeIncreasePercentPerConsume); // 음수 증가율을 방지한다.
+                float safeMaxMultiplier = Mathf.Max(1.0f, maxAttackRangeMultiplier); // 최대 배율이 1보다 작아지지 않게 한다.
+                float multiplier = 1.0f + growthStack * safeIncreasePercent; // 성장 스택에 따른 공격 사거리 배율을 계산한다.
+                return Mathf.Min(multiplier, safeMaxMultiplier); // 최대 배율을 넘지 않게 제한한다.
             }
         }
 

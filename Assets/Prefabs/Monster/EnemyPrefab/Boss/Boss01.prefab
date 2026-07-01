@@ -400,7 +400,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb64b2b91becc3441bb924fc8769db4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.BossLineWallAttack
-  obstaclePrefab: {fileID: 5254551350790090197, guid: 9fccf1ccaef857a4a805d1b083398aa6, type: 3}
+  obstaclePrefab: {fileID: 5254551350790090197, guid: 074f8fb3c6a69d64db0d645779b54bb6, type: 3}
   telegraphPrefab: {fileID: 1560000901720069291, guid: 0d5637ce3103f384e8e28665144d5604, type: 3}
   wallLineCount: 10
   minimumObstacleCountPerLine: 8
@@ -414,7 +414,7 @@ MonoBehaviour:
   convoySafeRadius: 3.5
   maximumPlacementAttemptsPerLine: 20
   telegraphGroundHeight: 3
-  obstacleGroundHeight: 1
+  obstacleGroundHeight: 0.03
   attackInterval: 8
   telegraphDuration: 1.5
   obstacleLifeTime: 6
@@ -514,6 +514,8 @@ MonoBehaviour:
   chargeTelegraphPrefab: {fileID: 8122270569936284802, guid: 00ae9b6a5baa7c348b222e81658eda49, type: 3}
   telegraphWidth: 3.5
   telegraphGroundHeight: 5
+  telegraphStartAlpha: 0.07
+  telegraphEndAlpha: 1
   chargeSpeed: 20
   chargeCollisionRadius: 1.5
   chargeCollisionHeight: 5

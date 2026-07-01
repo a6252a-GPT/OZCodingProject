@@ -44,6 +44,21 @@ namespace TeamProject01.Gameplay
 
         private EnemyPortalTotemCaster portalTotemCaster; // 같은 GameObject에 붙은 포탈 토템 소환 Script Component 참조
 
+        private NexusAttackSlotManager nexusAttackSlotManager; // Nexus 주변 공격 자리 관리자
+
+        [Header("Nexus Attack Slot")]
+        [SerializeField] private bool useCustomNexusAttackSlotRequestPadding = false; // 특정 몬스터만 Manager 공통값 대신 개별 슬롯 요청 거리를 사용할지
+
+        [Min(0.0f)]
+        [SerializeField] private float nexusAttackSlotRequestPadding = 1.0f; // Custom 사용 시 공격 사거리보다 이 거리만큼 바깥에서 미리 자리 예약을 시도한다.
+
+        [Min(0.01f)]
+        [SerializeField] private float nexusAttackSlotArriveRadius = 0.15f; // 예약한 공격 자리에 도착했다고 볼 거리
+
+        private bool hasNexusAttackSlot; // 현재 Nexus 공격 자리를 예약했는지
+        private Vector3 nexusAttackSlotPosition; // 예약한 Nexus 공격 자리 위치
+        private float nexusAttackSlotRadius; // 예약할 때 사용한 공격 사거리 반지름
+
         private void Awake()
         {
             enemyController = GetComponent<EnemyController>(); // 같은 GameObject에 붙은 EnemyController Script Component를 찾는다.
@@ -64,6 +79,13 @@ namespace TeamProject01.Gameplay
                 GameObject nexusObject = GameObject.Find("Nexus_Core"); //씬에서 이름이 Nexus_Core인 GameObject를 찾는다.
                 nexus = nexusObject != null ? nexusObject.transform : null; //찾았다면 Transform을 저장하고, 못 찾았다면 null로 둔다.
             }
+
+            FindNexusAttackSlotManagerIfNeeded(); // Nexus 공격 자리 관리자를 자동으로 찾는다.
+        }
+
+        private void OnDisable()
+        {
+            ReleaseNexusAttackSlot(); // 몬스터가 비활성화될 때 예약한 공격 자리를 해제한다.
         }
 
         private void Update()
@@ -101,11 +123,14 @@ namespace TeamProject01.Gameplay
 
             if (nexus == null) //이동 목표가 없으면
             {
+                ReleaseNexusAttackSlot(); // Nexus가 없으면 예약한 공격 자리를 해제한다.
                 return; //종료한다.
             }
 
             if (portalTotemCaster != null && portalTotemCaster.IsChanneling) // 토템 소환 몬스터가 집결 과정을 진행 중이라면
             {
+                ReleaseNexusAttackSlot(); // 토템 채널링 중에는 Nexus 공격 자리를 사용하지 않는다.
+
                 IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
 
                 Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 채널링 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
@@ -117,6 +142,11 @@ namespace TeamProject01.Gameplay
             UpdateAssignedPortalTotem(); // 현재 이동할 입구 토템을 찾거나 기존 토템 상태를 확인한다.
 
             bool isMovingToPortalTotem = assignedPortalTotem != null; // 현재 입구 토템으로 이동 중인지 확인한다.
+
+            if (isMovingToPortalTotem) // 입구 토템으로 이동 중이라면
+            {
+                ReleaseNexusAttackSlot(); // Nexus 공격 자리는 사용하지 않는다.
+            }
 
             Vector3 offset = nexus.position - transform.position; // 현재 몬스터 위치에서 Nexus까지의 방향과 거리 벡터를 구한다.
 
@@ -134,9 +164,36 @@ namespace TeamProject01.Gameplay
                 stopDistance = assignedPortalTotem.EntryRadius; // 입구 토템의 순간이동 판정 범위를 멈춤 거리로 사용한다.
             }
 
+            bool isUsingNexusAttackSlot = false; // 이번 프레임에 Nexus 공격 자리를 이동 목표로 사용할지
+            bool isNexusAttackSlotReached = false; // 예약한 Nexus 공격 자리에 도착했는지
+
+            if (!isMovingToPortalTotem) // Nexus로 이동 중이라면
+            {
+                UpdateNexusAttackSlot(stopDistance, offset.sqrMagnitude); // 공격 사거리 기준으로 Nexus 주변 빈 자리를 요청한다.
+                isUsingNexusAttackSlot = hasNexusAttackSlot; // 예약한 자리가 있으면 슬롯 이동을 사용한다.
+
+                if (isUsingNexusAttackSlot) // 예약한 공격 자리가 있다면
+                {
+                    Vector3 slotOffset = nexusAttackSlotPosition - transform.position; // 현재 위치에서 예약한 공격 자리까지의 방향과 거리
+                    slotOffset.y = 0.0f; // 높이 차이는 제거한다.
+                    isNexusAttackSlotReached = slotOffset.sqrMagnitude <= nexusAttackSlotArriveRadius * nexusAttackSlotArriveRadius; // 예약 자리에 도착했는지 확인한다.
+
+                    if (!isNexusAttackSlotReached) // 아직 예약 자리에 도착하지 않았다면
+                    {
+                        offset = slotOffset; // Nexus 대신 예약한 공격 자리로 이동한다.
+                    }
+                }
+            }
+
             bool isTargetInStopRange = offset.sqrMagnitude <= stopDistance * stopDistance; // 현재 이동 목표가 멈춤 거리 안에 있는지 확인한다.
 
             bool isNexusInStopRange = !isMovingToPortalTotem && isTargetInStopRange; // Nexus가 공격 사거리 안에 있는지 확인한다.
+
+            if (isUsingNexusAttackSlot) // Nexus 공격 자리를 사용 중이라면
+            {
+                isTargetInStopRange = isNexusAttackSlotReached; // 예약 자리에 도착했을 때만 멈춘다.
+                isNexusInStopRange = isNexusAttackSlotReached; // 예약 자리에 도착했을 때만 Nexus 공격 정지 상태로 본다.
+            }
 
             bool isSlowTargetInRange = !isMovingToPortalTotem && slowZoneThrower != null && slowZoneThrower.IsTargetInThrowRange(); // 컨보이가 슬로우 투척 사거리 안에 있는지 확인한다.
             bool isObstacleSummoning = obstacleSummoner != null && obstacleSummoner.IsSummoning; // 장애물 소환 과정이 진행 중인지 확인한다.
@@ -165,7 +222,7 @@ namespace TeamProject01.Gameplay
 
                 ////// 전찬우추가-0619 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
                 Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-0619 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
-                transform.position = resolvedPosition; // 보정된 위치를 적용한다.
+                transform.position = resolvedPosition; // 보정된 위치를 몬스터 Transform에 적용한다.
 
                 return; // 공격, 투척, 소환 중이면 Nexus 쪽으로 더 이동하지 않는다.
             }
@@ -245,6 +302,114 @@ namespace TeamProject01.Gameplay
             return FallbackStopRadius; // 공격 Script가 없는 몬스터라면 예비 정지 거리를 사용한다.
         }
 
+        private bool HasNexusAttackComponent() // Nexus를 직접 공격하는 Script Component가 있는지 확인한다.
+        {
+            return meleeAttack != null || rangedAttack != null; // 근거리 또는 원거리 공격이 있으면 Nexus 공격 몬스터로 본다.
+        }
+
+        private void UpdateNexusAttackSlot(float attackRadius, float nexusDistanceSqr) // Nexus 공격 자리 예약을 갱신한다.
+        {
+            if (!HasNexusAttackComponent()) // Nexus 공격 Script가 없는 몬스터라면
+            {
+                ReleaseNexusAttackSlot(); // 예약한 자리가 있어도 해제한다.
+                return; // 슬롯을 사용하지 않는다.
+            }
+
+            if (enemyController == null) // 예약 요청자로 사용할 EnemyController가 없다면
+            {
+                ReleaseNexusAttackSlot(); // 예약한 자리가 있어도 해제한다.
+                return; // 슬롯을 사용할 수 없다.
+            }
+
+            if (attackRadius <= 0.0f) // 공격 사거리가 잘못됐다면
+            {
+                ReleaseNexusAttackSlot(); // 예약한 자리가 있어도 해제한다.
+                return; // 슬롯을 사용할 수 없다.
+            }
+
+            if (hasNexusAttackSlot && Mathf.Abs(nexusAttackSlotRadius - attackRadius) > 0.05f) // 공격 사거리가 바뀌었다면
+            {
+                ReleaseNexusAttackSlot(); // 이전 반지름으로 잡은 자리를 해제한다.
+            }
+
+            float requestPadding = GetNexusAttackSlotRequestPadding(); // Manager 공통값 또는 Custom 값을 가져온다.
+            float requestDistance = attackRadius + requestPadding; // 자리 예약을 시작할 거리
+            float requestDistanceSqr = requestDistance * requestDistance; // 거리 비교용 제곱값
+
+            if (!hasNexusAttackSlot && nexusDistanceSqr > requestDistanceSqr) // 아직 Nexus에서 너무 멀다면
+            {
+                return; // 미리 자리를 잡지 않는다.
+            }
+
+            FindNexusAttackSlotManagerIfNeeded(); // Nexus 공격 자리 관리자를 찾는다.
+
+            if (nexusAttackSlotManager == null) // 관리자 오브젝트가 없다면
+            {
+                ReleaseNexusAttackSlot(); // 예약 상태를 정리한다.
+                return; // 슬롯 이동을 사용하지 않는다.
+            }
+
+            Vector3 reservedPosition; // 예약된 공격 자리 위치
+
+            if (nexusAttackSlotManager.TryReserveNearestSlot(enemyController, transform.position, attackRadius, out reservedPosition)) // 빈 공격 자리나 겹침 공격 자리를 예약할 수 있다면
+            {
+                hasNexusAttackSlot = true; // 예약 상태를 저장한다.
+                nexusAttackSlotPosition = reservedPosition; // 예약 위치를 저장한다.
+                nexusAttackSlotRadius = attackRadius; // 예약에 사용한 공격 사거리를 저장한다.
+                return; // 예약 성공
+            }
+
+            hasNexusAttackSlot = false; // 예외적으로 예약 실패하면 슬롯 사용 상태를 끈다.
+            nexusAttackSlotPosition = Vector3.zero; // 예약 위치를 초기화한다.
+            nexusAttackSlotRadius = 0.0f; // 예약 반지름을 초기화한다.
+        }
+
+        private void ReleaseNexusAttackSlot() // 예약한 Nexus 공격 자리를 해제한다.
+        {
+            if (nexusAttackSlotManager != null && enemyController != null) // 관리자와 요청자가 있다면
+            {
+                nexusAttackSlotManager.ReleaseSlot(enemyController); // 예약한 공격 자리를 해제한다.
+            }
+
+            hasNexusAttackSlot = false; // 예약 상태를 끈다.
+            nexusAttackSlotPosition = Vector3.zero; // 예약 위치를 초기화한다.
+            nexusAttackSlotRadius = 0.0f; // 예약 반지름을 초기화한다.
+        }
+
+        private float GetNexusAttackSlotRequestPadding()
+        {
+            if (useCustomNexusAttackSlotRequestPadding) // 이 몬스터만 개별 값을 쓰도록 설정했다면
+            {
+                return Mathf.Max(0.0f, nexusAttackSlotRequestPadding); // 개별 요청 거리를 반환한다.
+            }
+
+            FindNexusAttackSlotManagerIfNeeded(); // 공통값을 읽기 위해 Manager를 찾는다.
+
+            if (nexusAttackSlotManager != null) // Manager가 있다면
+            {
+                return nexusAttackSlotManager.DefaultSlotRequestPadding; // Manager의 공통 요청 거리를 사용한다.
+            }
+
+            return Mathf.Max(0.0f, nexusAttackSlotRequestPadding); // Manager가 없을 때만 기존 개별값을 예비값으로 사용한다.
+        }
+
+        private void FindNexusAttackSlotManagerIfNeeded() // Nexus 공격 자리 관리자를 자동으로 찾는다.
+        {
+            if (nexusAttackSlotManager != null) // 이미 연결되어 있다면
+            {
+                return; // 다시 찾지 않는다.
+            }
+
+            GameObject managerObject = GameObject.Find("NexusAttackSlotManager"); // 씬에서 NexusAttackSlotManager 오브젝트를 찾는다.
+
+            if (managerObject == null) // 오브젝트를 찾지 못했다면
+            {
+                return; // 자동 연결하지 않는다.
+            }
+
+            nexusAttackSlotManager = managerObject.GetComponent<NexusAttackSlotManager>(); // 공격 자리 관리자 Component를 가져온다.
+        }
+
         public void ApplyMonsterFeedback(MonsterFeedbackData feedback) // 전찬우추가-6019(몬스터피드백관련) - 공격 피드백 적용
         {
             if (!feedback.IsValid)
@@ -291,6 +456,8 @@ namespace TeamProject01.Gameplay
 
         public void ForceTeleport(Vector3 worldPosition) // 지원형 웜홀 강제 위치 이동
         {
+            ReleaseNexusAttackSlot(); // 순간이동 전 예약한 Nexus 공격 자리를 해제한다.
+
             assignedPortalTotem = null; // 기존 적 포탈 목표 해제
             knockbackTimer = 0f; // 밀림 중단
             staggerTimer = 0f; // 경직 중단
@@ -317,8 +484,6 @@ namespace TeamProject01.Gameplay
 
             moveSpeed = Mathf.Max(0.01f, moveSpeed * multiplier); // 기본 이동속도 배율
         }
-
-
 
         private bool IsFrozenBySupport() // 전찬우추가-0621 - 지원형 동결 여부
         {
