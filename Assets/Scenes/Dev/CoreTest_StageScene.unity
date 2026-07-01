@@ -50358,7 +50358,7 @@ MonoBehaviour:
   spawnBatchCount: 4
   normalSpawnWindowSeconds: 20
   normalSpawnSplitDivisor: 5
-  minMonstersPerSpawnTick: 20
+  minMonstersPerSpawnTick: 15
   maxMonstersPerSpawnTick: 50
   avoidPreviousSpawnDirections: 1
   batchGateCount: 2

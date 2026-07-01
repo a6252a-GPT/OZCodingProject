@@ -181,7 +181,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private int normalSpawnSplitDivisor = 5; // 일반 총량을 몇 등분 기준으로 1회 최대 수량을 잡을지입니다.
 
         [Min(1)]
-        [SerializeField] private int minMonstersPerSpawnTick = 20; // 초반이 너무 잘게 쪼개지지 않게 하는 1회 최소 기준입니다.
+        [SerializeField] private int minMonstersPerSpawnTick = 15; // 초반이 너무 잘게 쪼개지지 않게 하는 1회 최소 기준입니다.
 
         [Min(1)]
         [SerializeField] private int maxMonstersPerSpawnTick = 50; // 후반 한 번 스폰 덩어리의 최대 크기입니다.
