@@ -148,7 +148,6 @@ namespace TeamProject01.Gameplay
             PrepareOverlayForOpen();
 
             settingsPanel.SetCloseRequestHandler(Close);
-            settingsPanel.Open();
             ResolvePanelReferences();
             PreparePanelForOpen();
 
@@ -157,6 +156,9 @@ namespace TeamProject01.Gameplay
                 yield return backgroundBlurLayer.ShowRoutine(EffectiveOpenSeconds);
             }
 
+            settingsPanel.Open();
+            ResolvePanelReferences();
+            PreparePanelForOpen();
             PlayPanelOpenTween();
             openRoutine = null;
         }

@@ -49,7 +49,18 @@ public sealed class UiBackgroundBlurLayer : MonoBehaviour
     {
         gameObject.SetActive(true);
         ResolveReferences();
+
+        if (IsVisible && capturedTexture != null)
+        {
+            PlayFadeIn(duration, false);
+            showRoutine = null;
+            yield break;
+        }
+
         PrepareHiddenForCapture();
+        Canvas.ForceUpdateCanvases();
+
+        yield return null;
 
         yield return new WaitForEndOfFrame();
 
@@ -163,6 +174,7 @@ public sealed class UiBackgroundBlurLayer : MonoBehaviour
         if (blurBackgroundImage != null)
         {
             blurBackgroundImage.enabled = false;
+            blurBackgroundImage.texture = null;
             blurBackgroundImage.color = GetBlurColor(0f);
         }
 
@@ -190,15 +202,15 @@ public sealed class UiBackgroundBlurLayer : MonoBehaviour
         blurBackgroundImage.enabled = true;
     }
 
-    private void PlayFadeIn(float duration)
+    private void PlayFadeIn(float duration, bool resetAlpha = true)
     {
         fadeSequence?.Kill(false);
-        if (blurBackgroundImage != null)
+        if (resetAlpha && blurBackgroundImage != null)
         {
             blurBackgroundImage.color = GetBlurColor(0f);
         }
 
-        if (dimOverlayImage != null)
+        if (resetAlpha && dimOverlayImage != null)
         {
             dimOverlayImage.color = new Color(0f, 0f, 0f, 0f);
         }

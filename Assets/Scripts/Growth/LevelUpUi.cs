@@ -206,6 +206,7 @@ public class LevelUpUi : MonoBehaviour
         }
 
         ResolveTitleVisual(); // 정식 타이틀 오브젝트 재확인
+        EnsureTitleVisualActive();
         ApplyTitleSprite(); // 레벨업/보상 타이틀 모드 반영
 
         panelCanvasGroup.DOKill();
@@ -350,8 +351,18 @@ public class LevelUpUi : MonoBehaviour
             return;
         }
 
+        EnsureTitleVisualActive();
         target.localScale = Vector3.zero;
         target.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+    }
+
+    private void EnsureTitleVisualActive()
+    {
+        RectTransform target = ResolveTitleVisual();
+        if (target != null && !target.gameObject.activeSelf)
+        {
+            target.gameObject.SetActive(true);
+        }
     }
 
     private RectTransform ResolveTitleVisual()
@@ -397,6 +408,7 @@ public class LevelUpUi : MonoBehaviour
 
         image.sprite = target;
         image.color = Color.white;
+        image.enabled = true;
         image.preserveAspect = true;
     }
 

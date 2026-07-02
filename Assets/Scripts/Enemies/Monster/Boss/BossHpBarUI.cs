@@ -21,6 +21,7 @@ namespace TeamProject01.Gameplay
             ui = Instance;
             if (ui != null)
             {
+                ui.SetHudPanelActive(true);
                 return true;
             }
 
@@ -34,6 +35,7 @@ namespace TeamProject01.Gameplay
             // 첫 발견 시 패널 활성화
             if (Instance == null)
             {
+                ui.keepHudVisibleOnAwake = true;
                 ui.SetHudPanelActive(true);
             }
 
@@ -111,6 +113,7 @@ namespace TeamProject01.Gameplay
 
         private Coroutine damageTrailCoroutine;
         private Tween shakeTween;
+        private bool keepHudVisibleOnAwake;
 
         private void Awake()
         {
@@ -121,7 +124,10 @@ namespace TeamProject01.Gameplay
             DisableLegacyFillOverlay();
 
             ClearVisuals();
-            SetHudPanelActive(false);
+            if (!keepHudVisibleOnAwake)
+            {
+                SetHudPanelActive(false);
+            }
         }
 
         // 매 프레임 레이어 그리기 순서 갱신 (뒤→Hp2→앞)
