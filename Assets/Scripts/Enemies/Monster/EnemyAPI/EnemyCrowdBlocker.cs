@@ -32,6 +32,9 @@ namespace TeamProject01.Gameplay
         private EnemyController controller;
         private Vector3 pendingPush;
         private Vector3 smoothedPush;
+        private bool pendingPushNonBossOnly;
+        private bool smoothedPushNonBossOnly;
+        private bool consumedPushNonBossOnly;
         private bool isCrowdMoving;
 
         public float BlockRadius
@@ -116,6 +119,14 @@ namespace TeamProject01.Gameplay
         {
             pendingPush = Vector3.zero;
             smoothedPush = Vector3.zero;
+            pendingPushNonBossOnly = false;
+            smoothedPushNonBossOnly = false;
+            consumedPushNonBossOnly = false;
+        }
+
+        public void QueueExternalPush(Vector3 push, bool nonBossOnly = false) // 플레이어 충돌힘 등 외부 압력을 군중 밀림 큐에 넣는다.
+        {
+            QueuePendingPush(push, true, nonBossOnly);
         }
 
         public static Vector3 ResolvePosition(EnemyCrowdBlocker mover, Vector3 currentPosition, Vector3 desiredPosition, float fallbackRadius)
@@ -129,6 +140,7 @@ namespace TeamProject01.Gameplay
 
             Vector3 requestedDesired = desiredPosition;
             desiredPosition = mover.ConsumePendingPush(desiredPosition, out Vector3 consumedPush);
+            bool consumedNonBossOnly = mover.consumedPushNonBossOnly;
             Vector3 originalDesired = desiredPosition;
             Vector3 result = desiredPosition;
             float moverRadius = Mathf.Max(0.05f, mover.BlockRadius > 0.0f ? mover.BlockRadius : fallbackRadius);
@@ -165,7 +177,7 @@ namespace TeamProject01.Gameplay
             if (correction.sqrMagnitude <= 0.0001f)
             {
                 QueueSidePushIfMovementBlocked(mover, currentPosition, requestedDesired, originalDesired, moverRadius);
-                QueuePressureIfPendingPushBlocked(mover, currentPosition, consumedPush, originalDesired, moverRadius);
+                QueuePressureIfPendingPushBlocked(mover, currentPosition, consumedPush, originalDesired, moverRadius, consumedNonBossOnly);
                 return originalDesired;
             }
 
@@ -180,7 +192,7 @@ namespace TeamProject01.Gameplay
             Vector3 resolved = originalDesired + correction;
             resolved.y = desiredPosition.y;
             QueueSidePushIfMovementBlocked(mover, currentPosition, requestedDesired, resolved, moverRadius);
-            QueuePressureIfPendingPushBlocked(mover, currentPosition, consumedPush, resolved, moverRadius);
+            QueuePressureIfPendingPushBlocked(mover, currentPosition, consumedPush, resolved, moverRadius, consumedNonBossOnly);
             return resolved;
         }
 
@@ -294,7 +306,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private static void QueuePressureIfPendingPushBlocked(EnemyCrowdBlocker mover, Vector3 currentPosition, Vector3 consumedPush, Vector3 resolvedPosition, float moverRadius)
+        private static void QueuePressureIfPendingPushBlocked(EnemyCrowdBlocker mover, Vector3 currentPosition, Vector3 consumedPush, Vector3 resolvedPosition, float moverRadius, bool nonBossOnly)
         {
             consumedPush.y = 0.0f;
             float intendedDistance = consumedPush.magnitude;
@@ -320,10 +332,10 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            QueueDirectionalPressure(mover, currentPosition, pressureDirection, moverRadius, transferredMagnitude);
+            QueueDirectionalPressure(mover, currentPosition, pressureDirection, moverRadius, transferredMagnitude, nonBossOnly);
         }
 
-        private static void QueueDirectionalPressure(EnemyCrowdBlocker mover, Vector3 currentPosition, Vector3 pressureDirection, float moverRadius, float pushMagnitude)
+        private static void QueueDirectionalPressure(EnemyCrowdBlocker mover, Vector3 currentPosition, Vector3 pressureDirection, float moverRadius, float pushMagnitude, bool nonBossOnly)
         {
             Vector3 moverCenter = mover.GetCenterForPosition(currentPosition);
             moverCenter.y = currentPosition.y;
@@ -352,6 +364,11 @@ namespace TeamProject01.Gameplay
                             continue;
                         }
 
+                        if (nonBossOnly && !blocker.IsNonBossGrade())
+                        {
+                            continue;
+                        }
+
                         Vector3 blockerCenter = blocker.GetCenterPosition();
                         blockerCenter.y = moverCenter.y;
                         Vector3 toBlocker = blockerCenter - moverCenter;
@@ -370,7 +387,7 @@ namespace TeamProject01.Gameplay
                         }
 
                         float distanceFactor = 1.0f - Mathf.Clamp01(forwardDistance / searchDistance);
-                        blocker.QueuePendingPush(pressureDirection * pushMagnitude * Mathf.Max(0.35f, distanceFactor), true);
+                        blocker.QueuePendingPush(pressureDirection * pushMagnitude * Mathf.Max(0.35f, distanceFactor), true, nonBossOnly);
                     }
                 }
             }
@@ -381,11 +398,14 @@ namespace TeamProject01.Gameplay
             if (pendingPush.sqrMagnitude <= 0.0001f && smoothedPush.sqrMagnitude <= 0.000001f)
             {
                 consumedPush = Vector3.zero;
+                consumedPushNonBossOnly = false;
                 return desiredPosition;
             }
 
             Vector3 push = pendingPush;
             pendingPush = Vector3.zero;
+            bool consumedPendingNonBossOnly = pendingPushNonBossOnly;
+            pendingPushNonBossOnly = false;
             push.y = 0.0f;
 
             float maxPush = Mathf.Max(0.0f, maxPendingPushPerFrame);
@@ -396,13 +416,21 @@ namespace TeamProject01.Gameplay
 
             float smoothingSpeed = push.sqrMagnitude > 0.0001f ? pushSmoothingSpeed : pushDecaySpeed;
             float smoothing = smoothingSpeed > 0.0f ? 1.0f - Mathf.Exp(-smoothingSpeed * Time.deltaTime) : 1.0f;
+            if (push.sqrMagnitude > 0.0001f)
+            {
+                smoothedPushNonBossOnly = consumedPendingNonBossOnly;
+            }
+
             smoothedPush = Vector3.Lerp(smoothedPush, push, smoothing);
             smoothedPush.y = 0.0f;
+            consumedPushNonBossOnly = consumedPendingNonBossOnly || smoothedPushNonBossOnly;
 
             if (smoothedPush.sqrMagnitude <= 0.000001f)
             {
                 smoothedPush = Vector3.zero;
                 consumedPush = Vector3.zero;
+                smoothedPushNonBossOnly = false;
+                consumedPushNonBossOnly = false;
                 return desiredPosition;
             }
 
@@ -412,9 +440,14 @@ namespace TeamProject01.Gameplay
             return resolved;
         }
 
-        private void QueuePendingPush(Vector3 push, bool allowMoving = false)
+        private void QueuePendingPush(Vector3 push, bool allowMoving = false, bool nonBossOnly = false)
         {
             if (!IsBlockingEnabled || (!allowMoving && isCrowdMoving))
+            {
+                return;
+            }
+
+            if (nonBossOnly && !IsNonBossGrade())
             {
                 return;
             }
@@ -427,6 +460,7 @@ namespace TeamProject01.Gameplay
 
             pendingPush += push;
             pendingPush.y = 0.0f;
+            pendingPushNonBossOnly |= nonBossOnly;
 
             float maxStoredPush = Mathf.Max(0.0f, maxPendingPushPerFrame) * 2.0f;
             if (maxStoredPush > 0.0f && pendingPush.sqrMagnitude > maxStoredPush * maxStoredPush)
@@ -498,6 +532,11 @@ namespace TeamProject01.Gameplay
         private int GetStableId()
         {
             return controller != null ? controller.EnemyId : GetInstanceID();
+        }
+
+        private bool IsNonBossGrade()
+        {
+            return controller != null && controller.Grade != EnemyGrade.Boss;
         }
 
         private Vector3 GetCenterPosition()

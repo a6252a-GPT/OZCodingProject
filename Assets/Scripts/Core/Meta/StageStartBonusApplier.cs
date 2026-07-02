@@ -67,18 +67,6 @@ namespace TeamProject01.Gameplay
                 Nexus.MaxHealth = maxHealth; // 최대 체력
                 Nexus.ResetHealth(); // 현재 체력 동기화
             }
-
-            if (bonus.NexusRegenPerMinuteBonus > 0f)
-            {
-                NexusRunRegen regen = Nexus.GetComponent<NexusRunRegen>(); // 회복 컴포넌트
-                if (regen == null)
-                {
-                    regen = Nexus.gameObject.AddComponent<NexusRunRegen>(); // 런타임 추가
-                }
-
-                regen.Nexus = Nexus; // 대상
-                regen.RegenPerMinute += bonus.NexusRegenPerMinuteBonus; // 회복량
-            }
         }
 
         private void ApplyCoreBonus(RunStartBonusData bonus) // 코어 스탯 반영

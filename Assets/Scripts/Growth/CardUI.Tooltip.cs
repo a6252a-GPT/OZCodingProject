@@ -748,8 +748,9 @@ public partial class CardUI
         }
 
         SegmentUpgradeData segmentUpgrade = core.GetSegmentUpgrade(segmentId);
-        float baseDamage = weaponBonus.ResolveBaseDamage(profile.BaseDamage);
-        float commonDamageBonus = CalculateCommonBaseDamageBonus(core, segmentId, profile.BaseDamage, globalDamageBonus, meleeDamageBonus, magicDamageBonus);
+        float runBaseDamage = core.ApplyRunBaseAttackBonus(profile.BaseDamage);
+        float baseDamage = weaponBonus.ResolveBaseDamage(runBaseDamage);
+        float commonDamageBonus = CalculateCommonBaseDamageBonus(core, segmentId, runBaseDamage, globalDamageBonus, meleeDamageBonus, magicDamageBonus);
         float damage = Mathf.Max(0f, baseDamage) + commonDamageBonus + core.FlatDamageBonus;
         damage = segmentUpgrade.ApplyDamage(damage);
         return damage;
@@ -805,7 +806,8 @@ public partial class CardUI
         }
 
         SegmentUpgradeData segmentUpgrade = core.GetSegmentUpgrade(segmentId);
-        float cooldown = weaponBonus.ResolveCooldown(profile.Cooldown);
+        float runBaseCooldown = core.ApplyRunAttackSpeedBonus(profile.Cooldown);
+        float cooldown = weaponBonus.ResolveCooldown(runBaseCooldown);
         float attackSpeedMultiplier = Mathf.Max(0.01f, core.AttackSpeedMultiplier + cooldownBonus);
         float coreInterval = Mathf.Max(0.05f, cooldown / attackSpeedMultiplier);
         return segmentUpgrade.ApplyFireInterval(coreInterval);
@@ -909,29 +911,38 @@ public partial class CardUI
             return false; // 현재 보유 목록 조회 불가
         }
 
-        cardTooltipSegmentCountsById.Clear();
-        convoy.CollectAttachedSegmentCounts(cardTooltipSegmentCountsById); // 실제 장착 세그먼트 기준
-        bool ownsHoveredSegment = !string.IsNullOrWhiteSpace(hoveredSegmentId)
-            && cardTooltipSegmentCountsById.TryGetValue(hoveredSegmentId, out int hoveredCount)
-            && hoveredCount > 0;
-
-        List<string> sortedSegmentIds = new List<string>(cardTooltipSegmentCountsById.Keys);
-        sortedSegmentIds.Sort(System.StringComparer.OrdinalIgnoreCase);
+        cardTooltipAttachedSegments.Clear();
+        convoy.CollectAttachedSegmentDebugEntries(cardTooltipAttachedSegments); // 실제 컨보이 연결 순서
 
         StringBuilder builder = new StringBuilder(192);
-        for (int i = 0; i < sortedSegmentIds.Count; i++)
+        int displayIndex = 1;
+        for (int i = 0; i < cardTooltipAttachedSegments.Count; i++)
         {
-            string segmentId = sortedSegmentIds[i];
+            AttachedSegmentDebugEntry segment = cardTooltipAttachedSegments[i];
+            string segmentId = string.IsNullOrWhiteSpace(segment.SegmentId) ? string.Empty : segment.SegmentId.Trim();
+            if (string.IsNullOrWhiteSpace(segmentId))
+            {
+                continue; // 무기 ID 없는 런타임은 카드 선택 툴팁에서 제외
+            }
+
             string displayName = ResolveSegmentTooltipDisplayName(core, segmentId, entry.SegmentCatalogEntry);
-            int count = cardTooltipSegmentCountsById[segmentId];
+            string displayText = FormatSegmentChoiceTooltipDisplayText(displayName, segment.SegmentLevel);
             bool highlight = string.Equals(segmentId, hoveredSegmentId, System.StringComparison.OrdinalIgnoreCase);
-            AppendSegmentChoiceOwnedLine(builder, displayName, count, highlight);
+            AppendSegmentChoiceOwnedLine(builder, displayIndex, displayText, highlight);
+            displayIndex++;
         }
 
-        if (!ownsHoveredSegment && !string.IsNullOrWhiteSpace(hoveredSegmentId))
+        bool canAddHoveredSegment = core != null
+            && !string.IsNullOrWhiteSpace(hoveredSegmentId)
+            && core.CanAddSegment(hoveredSegmentId);
+        bool canLevelUpHoveredSegment = core != null
+            && !string.IsNullOrWhiteSpace(hoveredSegmentId)
+            && core.CanLevelUpSegmentModel(hoveredSegmentId);
+        if (canAddHoveredSegment && !canLevelUpHoveredSegment)
         {
             string displayName = ResolveSegmentTooltipDisplayName(core, hoveredSegmentId, entry.SegmentCatalogEntry);
-            AppendSegmentChoiceNewLine(builder, displayName);
+            int level = ResolveSegmentChoiceTooltipLevel(core, hoveredSegmentId);
+            AppendSegmentChoiceNewLine(builder, FormatSegmentChoiceTooltipDisplayText(displayName, level));
         }
 
         text = builder.ToString().TrimEnd();
@@ -966,7 +977,23 @@ public partial class CardUI
         return normalizedId; // 최후 fallback
     }
 
-    private static void AppendSegmentChoiceOwnedLine(StringBuilder builder, string displayName, int count, bool highlight)
+    private static string FormatSegmentChoiceTooltipDisplayText(string displayName, int level)
+    {
+        string name = string.IsNullOrWhiteSpace(displayName) ? "Segment" : displayName.Trim();
+        return $"{name} Lv.{Mathf.Max(1, level).ToString(CultureInfo.InvariantCulture)}";
+    }
+
+    private static int ResolveSegmentChoiceTooltipLevel(CoreStatProvider core, string segmentId)
+    {
+        if (core != null && core.TryGetSegmentModelLevelInfo(segmentId, out int currentLevel, out _))
+        {
+            return currentLevel;
+        }
+
+        return 1;
+    }
+
+    private static void AppendSegmentChoiceOwnedLine(StringBuilder builder, int displayIndex, string displayText, bool highlight)
     {
         if (builder.Length > 0)
         {
@@ -978,7 +1005,9 @@ public partial class CardUI
             builder.Append("<color=").Append(CardTooltipValueColor).Append("><b>");
         }
 
-        builder.Append(displayName).Append(" X ").Append(count.ToString(CultureInfo.InvariantCulture));
+        builder.Append(displayIndex.ToString(CultureInfo.InvariantCulture))
+            .Append(". ")
+            .Append(displayText);
 
         if (highlight)
         {
@@ -995,7 +1024,7 @@ public partial class CardUI
 
         builder.Append("<color=")
             .Append(CardTooltipNewColor)
-            .Append("><b>(NEW) ")
+            .Append("><b>(New) ")
             .Append(displayName)
             .Append("</b></color>");
     }

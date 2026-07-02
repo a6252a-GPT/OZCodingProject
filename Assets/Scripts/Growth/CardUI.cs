@@ -138,18 +138,6 @@ public partial class CardUI : MonoBehaviour
     private Coroutine autoSelectRoutine; // 자동선택 코루틴 참조
     // 안건준 추가 - 0622 ======
 
-    // 안건준 추가 - 0622 ======
-    [Header("세그먼트 리스트 호버 UI")]
-    [Tooltip("카드 패널이 열릴 때 함께 활성화되는 트리거 바 (Hierarchy의 Segment List Popup)")]
-    [SerializeField] private GameObject segmentListPopup; // 호버 트리거
-    [Tooltip("Popup 호버 시 표시되는 세그먼트 목록 (Hierarchy의 Segment List)")]
-    [SerializeField] private GameObject segmentList; // 호버 시 표시
-    [Tooltip("Segment List 안 Scroll View 텍스트 — 장착 세그먼트 이름 : 개수 표시")]
-    [SerializeField] private TextMeshProUGUI segmentListText; // 장착 세그먼트 이름:개수 TMP
-    [Tooltip("Segment List > Viewport > Content RectTransform — 스크롤 높이 자동 조정용")]
-    [SerializeField] private RectTransform segmentListContent; // 스크롤 Content RT
-    // 안건준 추가 - 0622 ======
-
     [Header("마법책 리롤 UI")]
     [SerializeField] private GameObject rerollUiRoot; // 씬에 배치된 리롤 UI 루트
     [SerializeField] private Button rerollButton; // 정사각형 리롤 버튼
@@ -162,6 +150,7 @@ public partial class CardUI : MonoBehaviour
     private readonly List<SpawnedCardEntry> spawnedCards = new List<SpawnedCardEntry>(); // 생성된 카드 목록
     private readonly Dictionary<string, int> rerollCountsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // 마법책 개수 집계용
     private readonly Dictionary<string, int> cardTooltipSegmentCountsById = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // 카드 툴팁용 보유 세그먼트 집계
+    private readonly List<AttachedSegmentDebugEntry> cardTooltipAttachedSegments = new List<AttachedSegmentDebugEntry>(16); // 카드 툴팁용 컨보이 순서 목록
     private const string MagicBookRerollSegmentId = "SG55_MagicBook"; // 마법책 세그먼트 ID
     private const int OwnedSegmentChoiceGuaranteeExcludedLevel = 3; // Lv3은 보유 확정 후보에서 제외
     private const int MaxSupportSegmentChoiceCount = 1; // 세그먼트 선택 3장 안 지원형 최대 수
@@ -180,7 +169,6 @@ public partial class CardUI : MonoBehaviour
     private LevelUpCardPhase currentSpawnPhase = LevelUpCardPhase.Upgrade; // 이번 레벨업 카드 종류
     private string selectedSegmentWeaponStatId; // 카드 선택으로 갱신되는 디버그 표시 대상
     private CoreStatProvider segmentWeaponStatSubscribedCore; // 스탯 변경 구독 대상
-    private Coroutine hideSegmentListCoroutine; // 안건준 추가 - 0622 — 코루틴 참조 (혹시 중복 방지용)
     private CardUiPrefabReferences cachedPrefabReferences; // Resources fallback 캐시
     private Sprite cachedTierFrameNormalSprite; // 일반 등급 카드 프레임
     private Sprite cachedTierFrameRareSprite; // 레어 등급 카드 프레임
@@ -192,11 +180,9 @@ public partial class CardUI : MonoBehaviour
     {
         LoadAutoSelectInAutoOrbitPreference(); // 자동궤도 카드자동 설정 복원
         ResolveManagerReferences(); // 참조 보강
-        SetupSegmentListHoverUi(); // 안건준 추가 - 0622 — 호버 브릿지 연결 + 기본 비활성
         SetupRerollUi(); // 마법책 리롤 버튼 연결
 
         // TMP 줄바꿈 재귀 오류 방지 — 긴 텍스트가 들어가는 TMP에 word wrap 비활성
-        if (segmentListText       != null) segmentListText.textWrappingMode         = TextWrappingModes.NoWrap;
         if (segmentWeaponStatText != null) segmentWeaponStatText.textWrappingMode   = TextWrappingModes.NoWrap;
         if (rerollCountText       != null) rerollCountText.textWrappingMode         = TextWrappingModes.NoWrap;
 
@@ -259,7 +245,6 @@ public partial class CardUI : MonoBehaviour
             BeginRerollForPanelOpen(); // 마법책 개수만큼 이번 선택창 리롤 충전
             SpawnLevelUpCards(); // 현재 레벨 구간에 맞는 카드 생성
             spawnedForCurrentOpen = true;
-            ShowSegmentListPopupOnPanelOpen(); // 안건준 추가 - 0622 — 트리거 바만 표시
             return;
         }
 
@@ -278,7 +263,6 @@ public partial class CardUI : MonoBehaviour
             remainingRerollCount = 0; // 패널 닫힘 → 리롤 소멸
             rerollAllowedForCurrentChoices = false; // 다음 오픈 전까지 비활성
             RefreshRerollUi(); // 버튼 숨김/비활성 갱신
-            HideSegmentListUi(); // 안건준 추가 - 0622 — 팝업·리스트 모두 숨김
             StopAutoSelect(); // 안건준 추가 - 0622 : 패널 닫힐 때 자동선택 코루틴 정리
             if (closingMode == CardPanelMode.LevelUp
                 && CoreStatProvider.Active != null
@@ -1562,7 +1546,6 @@ public partial class CardUI : MonoBehaviour
     {
         LogPlayerSegmentCountsDebug($"전체 세그먼트 : {segmentCount} / 각 세그먼트 : "); // CoreTest·카드 UI 공통
         RefreshSegmentWeaponStatUi(); // 건춘추가 - 0621 ====== 레벨업·추가 후 스탯 UI 갱신
-        RefreshSegmentListText(); // 안건준 추가 - 0622 — 세그먼트 변경 시 리스트 텍스트 갱신
     }
 
     private void LogPlayerSegmentCountsDebug(string reason) // ConvoySegments 현재 구성 출력

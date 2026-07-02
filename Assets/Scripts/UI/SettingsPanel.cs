@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
@@ -40,6 +41,7 @@ namespace TeamProject01.Gameplay
         private readonly Dictionary<Button, bool> hoverStates = new Dictionary<Button, bool>();
         private readonly Dictionary<Button, Vector3> buttonBaseScales = new Dictionary<Button, Vector3>();
 
+        private Action closeRequestHandler; // 인게임 오버레이 닫기 위임
         private bool suppressVolumeCallback;
 
         private void Awake()
@@ -76,6 +78,11 @@ namespace TeamProject01.Gameplay
         public void Close()
         {
             panelRoot.SetActive(false);
+        }
+
+        public void SetCloseRequestHandler(Action handler) // 외부 닫기 처리 연결
+        {
+            closeRequestHandler = handler;
         }
 
         private void ResolveReferences()
@@ -503,12 +510,23 @@ namespace TeamProject01.Gameplay
         private void HandleCloseClicked()
         {
             PlayClickFeedback(closeButton);
-            Close();
+            RequestClose();
         }
 
         private void HandleCloseWindowClicked()
         {
             PlayClickFeedback(closeWindowButton);
+            RequestClose();
+        }
+
+        private void RequestClose()
+        {
+            if (closeRequestHandler != null)
+            {
+                closeRequestHandler.Invoke();
+                return;
+            }
+
             Close();
         }
 

@@ -10,6 +10,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private HudIconToggleButton speed2xButton;
         [SerializeField] private HudIconToggleButton autoCardButton;
         [SerializeField] private HudIconToggleButton autoOrbitButton;
+        [SerializeField] private HudIconToggleButton dpsMeterButton;
+        [SerializeField] private SegmentDpsDebugPanel dpsDebugPanel;
         [SerializeField] private bool clearDoubleSpeedWhenAutoOrbitStops = true;
 
         private bool wired;
@@ -50,6 +52,11 @@ namespace TeamProject01.Gameplay
             {
                 cardUi = FindFirstObjectByType<CardUI>();
             }
+
+            if (dpsDebugPanel == null)
+            {
+                dpsDebugPanel = FindFirstObjectByType<SegmentDpsDebugPanel>(FindObjectsInactive.Include);
+            }
         }
 
         private void WireButtons()
@@ -62,6 +69,7 @@ namespace TeamProject01.Gameplay
             AddClickListener(autoOrbitButton, HandleAutoOrbitClicked);
             AddClickListener(autoCardButton, HandleAutoCardClicked);
             AddClickListener(speed2xButton, HandleSpeed2xClicked);
+            AddClickListener(dpsMeterButton, HandleDpsMeterClicked);
             wired = true;
         }
 
@@ -75,6 +83,7 @@ namespace TeamProject01.Gameplay
             RemoveClickListener(autoOrbitButton, HandleAutoOrbitClicked);
             RemoveClickListener(autoCardButton, HandleAutoCardClicked);
             RemoveClickListener(speed2xButton, HandleSpeed2xClicked);
+            RemoveClickListener(dpsMeterButton, HandleDpsMeterClicked);
             wired = false;
         }
 
@@ -138,6 +147,19 @@ namespace TeamProject01.Gameplay
             Refresh(true);
         }
 
+        private void HandleDpsMeterClicked()
+        {
+            ResolveReferences();
+            if (!IsAutoOrbitActive() || dpsDebugPanel == null)
+            {
+                return;
+            }
+
+            AudioManager.EnsureExists()?.PlaySFX(SFXType.ClickButton);
+            dpsDebugPanel.ToggleUserVisible();
+            Refresh(true);
+        }
+
         private void Refresh(bool force)
         {
             ResolveReferences();
@@ -146,6 +168,7 @@ namespace TeamProject01.Gameplay
 
             bool cardAutoActive = cardUi != null && cardUi.AutoSelectInAutoOrbit;
             bool speedActive = autoOrbitActive && GameSpeedController.IsDoubleSpeedPreferred();
+            bool dpsVisible = dpsDebugPanel != null && dpsDebugPanel.UserVisible;
 
             if (autoOrbitButton != null)
             {
@@ -163,6 +186,12 @@ namespace TeamProject01.Gameplay
             {
                 speed2xButton.SetVisible(autoOrbitActive);
                 speed2xButton.SetVisualState(speedActive, autoOrbitActive);
+            }
+
+            if (dpsMeterButton != null)
+            {
+                dpsMeterButton.SetVisible(autoOrbitActive);
+                dpsMeterButton.SetVisualState(dpsVisible, autoOrbitActive && dpsDebugPanel != null);
             }
 
             if (force)

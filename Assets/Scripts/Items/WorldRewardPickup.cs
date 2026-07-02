@@ -284,7 +284,7 @@ namespace TeamProject01.Gameplay
             SetSpecialDropIdleVfxActive(false); // 수집 후 idle VFX 숨김
             SetVfxRootActive(CollectVfxRoot, true);
             PlayCollectSfx();
-            RewardPickupCollectVfxPlayer.Play(ResolveCollectVfxPosition()); // 획득 VFX
+            PlayCollectVfx(); // 획득 VFX
             if (poolOwner != null && poolOwner.ReleasePickup(this, poolSourcePrefab))
             {
                 return;
@@ -500,6 +500,17 @@ namespace TeamProject01.Gameplay
         private Vector3 ResolveCollectVfxPosition()
         {
             return CollectVfxRoot != null ? CollectVfxRoot.position : transform.position + Vector3.up * HoverHeight;
+        }
+
+        private void PlayCollectVfx() // 루팅 위치 기준 획득 VFX
+        {
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                RewardPickupCollectVfxPlayer.PlayFollowing(lootingCenter, Vector3.zero); // 재생 중 Looting 추적
+                return;
+            }
+
+            RewardPickupCollectVfxPlayer.Play(ResolveCollectVfxPosition()); // fallback 월드 재생
         }
 
         private void PlayCollectSfx()

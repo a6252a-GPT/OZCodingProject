@@ -229,13 +229,13 @@ namespace TeamProject01.EditorTools
         {
             SlotSpec cannonFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 0.9f, 0.03f, false, true, "weapon_cannon_shot_01.wav");
             SlotSpec missileFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 0.91f, 0.08f, false, true, "weapon_missile_003.wav");
-            SlotSpec missileExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 1f, 0.05f, true, true, "explosion_med_long_tail_02.wav");
+            SlotSpec missileExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 0.95f, 0.05f, true, true, "explosion_med_long_tail_02.wav");
             SlotSpec flamethrowerStart = Slot("SFX_FireStart", GameplaySfxCue.FireStart, 1f, 1f, false, true, "gas_large_flame_ignite_01.wav");
-            SlotSpec flamethrowerLoop = Slot("SFX_FireLoop", GameplaySfxCue.FireLoop, 1f, 0f, false, true, "weapon_flame_005.wav");
+            SlotSpec flamethrowerLoop = Slot("SFX_FireLoop", GameplaySfxCue.FireLoop, 1.3f, 0f, false, true, "weapon_flame_005.wav");
             SlotSpec ballistaFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 1f, 0.03f, false, true, "bow_crossbow_arrow_shoot_type1_01.wav");
             SlotSpec ballistaHit = Slot("SFX_Hit", GameplaySfxCue.Hit, 0.8f, 0.04f, true, true, "bullet_impact_body_flesh_04.wav");
             SlotSpec sawFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 1f, 0.06f, false, true, "metal_door_hatch_close_slam_04.wav");
-            SlotSpec sawHit = Slot("SFX_Hit", GameplaySfxCue.Hit, 0.7f, 0.08f, true, true, "sword_impact_body.wav");
+            SlotSpec sawHit = Slot("SFX_Hit", GameplaySfxCue.Hit, 0.55f, 0.08f, true, true, "sword_impact_body.wav");
             SlotSpec trebuchetFireStart = Slot("SFX_FireStart", GameplaySfxCue.FireStart, 1f, 0.2f, false, true, "door_A_creak_05.wav");
             SlotSpec trebuchetExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 1f, 0.08f, true, true, "rock_smashable_hit_impact_large_03.wav");
             SlotSpec trebuchetRollHit = Slot("SFX_RollHit", GameplaySfxCue.RollHit, 1f, 0.12f, true, true, "punch_general_body_impact_02.wav");

@@ -150,8 +150,10 @@ namespace TeamProject01.Gameplay
 
             EnemyController.CollectActiveInRange(center, radius, enemyBuffer, IsTeleportCandidate);
             int maxTargets = Mathf.Max(1, profile.WormholeMaxTeleportTargets);
+            int teleportTargetCount = CountTeleportTargets(maxTargets);
             int movedCount = 0;
-            Vector3 destination = CalculateSharedTeleportDestination(center);
+            Vector3 destinationAnchor = CalculateTeleportAnchor(center);
+            float spreadStartAngle = Random.Range(0f, 360f);
             for (int i = 0; i < enemyBuffer.Count && movedCount < maxTargets; i++)
             {
                 EnemyController enemy = enemyBuffer[i];
@@ -160,6 +162,7 @@ namespace TeamProject01.Gameplay
                     continue;
                 }
 
+                Vector3 destination = CalculateSpreadTeleportDestination(destinationAnchor, movedCount, teleportTargetCount, spreadStartAngle);
                 if (MonsterInteractionApi.TeleportMonster(enemy, destination))
                 {
                     movedCount++;
@@ -168,13 +171,27 @@ namespace TeamProject01.Gameplay
 
             if (movedCount > 0)
             {
-                PlayBlackHoleVfx(destination, radius, false);
+                PlayBlackHoleVfx(destinationAnchor, radius, false);
             }
 
             Destroy(gameObject);
         }
 
-        private Vector3 CalculateSharedTeleportDestination(Vector3 blackHoleCenter)
+        private int CountTeleportTargets(int maxTargets)
+        {
+            int count = 0;
+            for (int i = 0; i < enemyBuffer.Count && count < maxTargets; i++)
+            {
+                if (IsTeleportCandidate(enemyBuffer[i]))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private Vector3 CalculateTeleportAnchor(Vector3 blackHoleCenter)
         {
             Vector3 fromNexus = blackHoleCenter - nexusPosition;
             fromNexus.y = 0f;
@@ -194,6 +211,23 @@ namespace TeamProject01.Gameplay
             float maxDistance = Mathf.Max(minDistance, profile.WormholeTeleportMaxNexusDistance);
             float distance = Random.Range(minDistance, maxDistance);
             return GroundService.ProjectToGround(nexusPosition + fromNexus.normalized * distance, 0f);
+        }
+
+        private Vector3 CalculateSpreadTeleportDestination(Vector3 anchor, int index, int targetCount, float startAngle)
+        {
+            if (targetCount <= 1)
+            {
+                return anchor;
+            }
+
+            int slotsPerRing = Mathf.Max(3, profile.WormholeTeleportSlotsPerRing);
+            float spacing = Mathf.Max(0.5f, profile.WormholeTeleportSpacing);
+            int ringIndex = index / slotsPerRing + 1;
+            int slotIndex = index % slotsPerRing;
+            float angle = startAngle + 360f / slotsPerRing * slotIndex + ringIndex * 15f;
+            float ringRadius = spacing / (2f * Mathf.Sin(Mathf.PI / slotsPerRing)) * ringIndex;
+            Vector3 offset = Quaternion.Euler(0f, angle, 0f) * Vector3.forward * ringRadius;
+            return GroundService.ProjectToGround(anchor + offset, 0f);
         }
 
         private bool IsTeleportCandidate(EnemyController enemy)

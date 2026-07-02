@@ -24,6 +24,12 @@ namespace TeamProject01.Gameplay
         private float knockbackDuration = ContactKnockbackDuration; // 전찬우수정-6019(몬스터피드백관련) - 현재 넉백 시간
         private Vector3 knockbackDirection; //현재 몬스터가 밀려나는 방향
         private float knockbackTimer; //밀리 상태 시간
+        private Transform knockbackVisualRoot; // 넉백 때 살짝 띄울 비주얼 루트
+        private Vector3 knockbackVisualBaseLocalPosition; // 비주얼 기본 위치
+        private bool hasKnockbackVisualBasePosition; // 기본 위치 캐시 여부
+        private float knockbackVisualLiftHeight; // 비주얼 상승 높이
+        private float knockbackVisualLiftDuration; // 비주얼 상승 전체 시간
+        private float knockbackVisualLiftElapsed; // 비주얼 상승 진행 시간
         private float staggerTimer; // 전찬우추가-6019(몬스터피드백관련) - 경직 남은 시간
 
         private EnemyPortalTotem assignedPortalTotem; // 현재 몬스터가 이동할 입구 토템
@@ -60,6 +66,7 @@ namespace TeamProject01.Gameplay
             supportDebuff = GetComponent<EnemySupportDebuffState>(); // 전찬우추가-0621 - 지원형 디버프 상태를 찾는다.
 
             portalTotemCaster = GetComponent<EnemyPortalTotemCaster>(); // 같은 GameObject에 붙은 포탈 토템 소환 Script Component를 찾는다.
+            CacheKnockbackVisualRoot(); // 비주얼만 살짝 띄울 루트를 찾는다.
 
             if (nexus == null) //Nexus가 연결되지 않았다면
             {
@@ -71,6 +78,7 @@ namespace TeamProject01.Gameplay
         private void Update()
         {
             SetCrowdMoving(false); // 실제 이동 분기에서만 켜서 정지 몬스터가 밀림을 받을 수 있게 한다.
+            UpdateKnockbackVisualLift(Time.deltaTime); // 루트 대신 비주얼만 살짝 뜨게 한다.
 
             if (IsFrozenBySupport()) // 전찬우추가-0621 - 얼음종 동결 중 이동 정지
             {
@@ -234,6 +242,11 @@ namespace TeamProject01.Gameplay
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 몬스터가 이동 방향을 바라보게 회전시킨다.
         }
 
+        private void OnDisable()
+        {
+            ResetKnockbackVisualLift();
+        }
+
         private void UpdateAssignedPortalTotem() // 몬스터가 이동할 입구 토템을 확인하는 함수
         {
             if (assignedPortalTotem != null) // 이미 이동 목표로 저장한 입구 토템이 있다면
@@ -319,6 +332,7 @@ namespace TeamProject01.Gameplay
             knockbackDuration = duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 시간 갱신
             knockbackSpeed = feedback.KnockbackDistance / duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 속도 계산
             knockbackTimer = duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 타이머 시작
+            BeginKnockbackVisualLift(feedback.VisualLiftHeight, duration); // 비주얼만 살짝 띄워 충돌감을 준다.
         }
 
         public void ForceTeleport(Vector3 worldPosition) // 지원형 웜홀 강제 위치 이동
@@ -327,6 +341,7 @@ namespace TeamProject01.Gameplay
             knockbackTimer = 0f; // 밀림 중단
             staggerTimer = 0f; // 경직 중단
             knockbackDirection = Vector3.zero; // 방향 초기화
+            ResetKnockbackVisualLift(); // 순간이동 전 비주얼 위치 복구
             IsInStopRange = false; // 넥서스 정지 상태 해제
             SetCrowdMoving(false); // 강제 이동 직전 몬스터 군집 이동 상태를 정리한다.
 
@@ -404,6 +419,127 @@ namespace TeamProject01.Gameplay
             {
                 crowdBlocker.SetCrowdMoving(isMoving);
             }
+        }
+
+        private void BeginKnockbackVisualLift(float height, float duration)
+        {
+            if (height <= 0.0f)
+            {
+                return;
+            }
+
+            if (knockbackVisualRoot == null)
+            {
+                CacheKnockbackVisualRoot();
+            }
+
+            if (knockbackVisualRoot == null)
+            {
+                return;
+            }
+
+            CacheKnockbackVisualBasePosition();
+            knockbackVisualLiftHeight = Mathf.Max(knockbackVisualLiftHeight, height);
+            knockbackVisualLiftDuration = Mathf.Max(0.01f, duration);
+            knockbackVisualLiftElapsed = 0.0f;
+        }
+
+        private void UpdateKnockbackVisualLift(float deltaTime)
+        {
+            if (knockbackVisualLiftDuration <= 0.0f || knockbackVisualRoot == null)
+            {
+                return;
+            }
+
+            CacheKnockbackVisualBasePosition();
+            knockbackVisualLiftElapsed += Mathf.Max(0.0f, deltaTime);
+
+            float progress = Mathf.Clamp01(knockbackVisualLiftElapsed / knockbackVisualLiftDuration);
+            float height = Mathf.Sin(progress * Mathf.PI) * knockbackVisualLiftHeight;
+            Vector3 localPosition = knockbackVisualBaseLocalPosition;
+            localPosition.y += height;
+            knockbackVisualRoot.localPosition = localPosition;
+
+            if (progress >= 1.0f)
+            {
+                ResetKnockbackVisualLift();
+            }
+        }
+
+        private void ResetKnockbackVisualLift()
+        {
+            if (knockbackVisualRoot != null && hasKnockbackVisualBasePosition)
+            {
+                knockbackVisualRoot.localPosition = knockbackVisualBaseLocalPosition;
+            }
+
+            knockbackVisualLiftHeight = 0.0f;
+            knockbackVisualLiftDuration = 0.0f;
+            knockbackVisualLiftElapsed = 0.0f;
+        }
+
+        private void CacheKnockbackVisualRoot()
+        {
+            if (knockbackVisualRoot != null)
+            {
+                CacheKnockbackVisualBasePosition();
+                return;
+            }
+
+            Transform visualRoot = FindChildRecursive(transform, "VisualRoot");
+            if (visualRoot == null)
+            {
+                visualRoot = FindChildRecursive(transform, "VisualOffsetRoot");
+            }
+
+            if (visualRoot == null)
+            {
+                Animator animator = GetComponentInChildren<Animator>(true);
+                visualRoot = animator != null ? animator.transform : null;
+            }
+
+            if (visualRoot == null || visualRoot == transform)
+            {
+                return;
+            }
+
+            knockbackVisualRoot = visualRoot;
+            CacheKnockbackVisualBasePosition();
+        }
+
+        private void CacheKnockbackVisualBasePosition()
+        {
+            if (knockbackVisualRoot == null || hasKnockbackVisualBasePosition)
+            {
+                return;
+            }
+
+            knockbackVisualBaseLocalPosition = knockbackVisualRoot.localPosition;
+            hasKnockbackVisualBasePosition = true;
+        }
+
+        private static Transform FindChildRecursive(Transform root, string childName)
+        {
+            if (root == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null;
+            }
+
+            if (root.name == childName)
+            {
+                return root;
+            }
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindChildRecursive(root.GetChild(i), childName);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
     }
 }

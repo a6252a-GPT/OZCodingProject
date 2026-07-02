@@ -9,24 +9,28 @@ namespace TeamProject01.Gameplay
         public string SelectedWormId; // 선택 지렁이
         public string SelectedMapId; // 선택 맵
         public float NexusMaxHealthPercentBonus; // 넥서스 최대 체력 비율 보너스
-        public float NexusRegenPerMinuteBonus; // 넥서스 분당 회복
         public float GoldGainPercentBonus; // 인게임 골드 획득 비율
         public float DiamondGainPercentBonus; // 종료 다이아 획득 비율
         public float TurnPercentBonus; // 회전력 비율 보너스
         public float CollisionForcePercentBonus; // 직접 충돌힘 비율 보너스
         public int BaseAttackFlatBonus; // 기본 공격력 고정 보너스
+        public float BaseAttackPercentBonus; // 기본 공격력 비율 보너스
         public float AttackSpeedPercentBonus; // 공격속도 비율 보너스
+        public float MoveSpeedPercentBonus; // 이동속도 비율 보너스
+        public float PickupRangePercentBonus; // 픽업 범위 비율 보너스
         public int StartingSegmentBonus; // 시작 세그먼트 추가 수
         public float RejoinRangeBonus; // 재결합 범위 고정 보너스
 
         public bool HasAnyValue => NexusMaxHealthPercentBonus != 0f
-            || NexusRegenPerMinuteBonus != 0f
             || GoldGainPercentBonus != 0f
             || DiamondGainPercentBonus != 0f
             || TurnPercentBonus != 0f
             || CollisionForcePercentBonus != 0f
             || BaseAttackFlatBonus != 0
+            || BaseAttackPercentBonus != 0f
             || AttackSpeedPercentBonus != 0f
+            || MoveSpeedPercentBonus != 0f
+            || PickupRangePercentBonus != 0f
             || StartingSegmentBonus != 0
             || RejoinRangeBonus != 0f; // 보너스 존재
 
@@ -41,13 +45,15 @@ namespace TeamProject01.Gameplay
         public void AddValues(RunStartBonusData other) // 보너스 누적
         {
             NexusMaxHealthPercentBonus += other.NexusMaxHealthPercentBonus; // 체력
-            NexusRegenPerMinuteBonus += other.NexusRegenPerMinuteBonus; // 회복
             GoldGainPercentBonus += other.GoldGainPercentBonus; // 골드
             DiamondGainPercentBonus += other.DiamondGainPercentBonus; // 다이아
             TurnPercentBonus += other.TurnPercentBonus; // 회전
             CollisionForcePercentBonus += other.CollisionForcePercentBonus; // 충돌
-            BaseAttackFlatBonus += other.BaseAttackFlatBonus; // 공격력
+            BaseAttackFlatBonus += other.BaseAttackFlatBonus; // 공격력 고정
+            BaseAttackPercentBonus += other.BaseAttackPercentBonus; // 공격력 비율
             AttackSpeedPercentBonus += other.AttackSpeedPercentBonus; // 공속
+            MoveSpeedPercentBonus += other.MoveSpeedPercentBonus; // 이동속도
+            PickupRangePercentBonus += other.PickupRangePercentBonus; // 픽업 범위
             StartingSegmentBonus += other.StartingSegmentBonus; // 세그먼트
             RejoinRangeBonus += other.RejoinRangeBonus; // 재결합
         }

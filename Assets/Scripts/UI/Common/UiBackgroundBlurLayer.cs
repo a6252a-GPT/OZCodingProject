@@ -42,6 +42,11 @@ public sealed class UiBackgroundBlurLayer : MonoBehaviour
 
     public IEnumerator ShowRoutine()
     {
+        return ShowRoutine(fadeSeconds);
+    }
+
+    public IEnumerator ShowRoutine(float duration)
+    {
         gameObject.SetActive(true);
         ResolveReferences();
         PrepareHiddenForCapture();
@@ -49,17 +54,24 @@ public sealed class UiBackgroundBlurLayer : MonoBehaviour
         yield return new WaitForEndOfFrame();
 
         CaptureBlurBackground();
-        PlayFadeIn();
+        PlayFadeIn(duration);
+        showRoutine = null;
     }
 
     public void Show()
     {
+        Show(fadeSeconds);
+    }
+
+    public void Show(float duration)
+    {
+        gameObject.SetActive(true);
         if (showRoutine != null)
         {
             StopCoroutine(showRoutine);
         }
 
-        showRoutine = StartCoroutine(ShowRoutine());
+        showRoutine = StartCoroutine(ShowRoutine(duration));
     }
 
     public void Hide(float duration)
@@ -178,7 +190,7 @@ public sealed class UiBackgroundBlurLayer : MonoBehaviour
         blurBackgroundImage.enabled = true;
     }
 
-    private void PlayFadeIn()
+    private void PlayFadeIn(float duration)
     {
         fadeSequence?.Kill(false);
         if (blurBackgroundImage != null)
@@ -191,15 +203,16 @@ public sealed class UiBackgroundBlurLayer : MonoBehaviour
             dimOverlayImage.color = new Color(0f, 0f, 0f, 0f);
         }
 
+        float safeDuration = Mathf.Max(0.01f, duration);
         fadeSequence = DOTween.Sequence().SetUpdate(true);
         if (blurBackgroundImage != null)
         {
-            fadeSequence.Join(blurBackgroundImage.DOFade(1f, fadeSeconds));
+            fadeSequence.Join(blurBackgroundImage.DOFade(1f, safeDuration));
         }
 
         if (dimOverlayImage != null)
         {
-            fadeSequence.Join(dimOverlayImage.DOFade(EffectiveDimAlpha, fadeSeconds));
+            fadeSequence.Join(dimOverlayImage.DOFade(EffectiveDimAlpha, safeDuration));
         }
     }
 

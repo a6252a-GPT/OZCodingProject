@@ -4,6 +4,7 @@ namespace TeamProject01.Gameplay
 {
     public sealed class PlayerPickupInteractor : MonoBehaviour // 플레이어 픽업 상호작용
     {
+        private const string LootingCenterName = "Looting";
         private const float MinimumRewardMagnetRadius = 4f;
         private const float MinimumRewardPullStrength = 570f;
         private const float MinimumRewardMaxPullSpeed = 252f;
@@ -46,6 +47,19 @@ namespace TeamProject01.Gameplay
                 return pickupCenter;
             }
 
+            if (cachedPickupCenter != null
+                && cachedPickupCenter.gameObject.activeInHierarchy
+                && cachedPickupCenter.name == LootingCenterName)
+            {
+                return cachedPickupCenter;
+            }
+
+            if (TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                cachedPickupCenter = lootingCenter;
+                return cachedPickupCenter;
+            }
+
             if (cachedPickupCenter != null && cachedPickupCenter.gameObject.activeInHierarchy)
             {
                 return cachedPickupCenter;
@@ -62,9 +76,49 @@ namespace TeamProject01.Gameplay
             return cachedPickupCenter;
         }
 
+        public static bool TryResolveLootingCenter(out Transform lootingCenter)
+        {
+            lootingCenter = null;
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget)
+                && TryFindActiveChildRecursive(convoyTarget, LootingCenterName, out lootingCenter))
+            {
+                return true;
+            }
+
+            ConvoyController controller = UnityEngine.Object.FindFirstObjectByType<ConvoyController>();
+            return controller != null && TryFindActiveChildRecursive(controller.transform, LootingCenterName, out lootingCenter);
+        }
+
+        private static bool TryFindActiveChildRecursive(Transform root, string childName, out Transform found)
+        {
+            found = null;
+            if (root == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return false;
+            }
+
+            if (root.name == childName && root.gameObject.activeInHierarchy)
+            {
+                found = root;
+                return true;
+            }
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (TryFindActiveChildRecursive(child, childName, out found))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private float GetEffectiveRewardMagnetRadius()
         {
-            return Mathf.Max(rewardMagnetRadius, MinimumRewardMagnetRadius);
+            float baseRadius = Mathf.Max(rewardMagnetRadius, MinimumRewardMagnetRadius);
+            return CoreStatProvider.ApplyRunPickupRangeBonusOrDefault(baseRadius);
         }
 
         private float GetEffectiveRewardPullStrength()
