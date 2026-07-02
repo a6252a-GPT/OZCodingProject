@@ -25,11 +25,11 @@ namespace TeamProject01.Gameplay
 
         [Header("구매 클립 (Bling05)")]
         [SerializeField] private AudioClip skillPurchaseClip;
-        [Range(0f, 1f)] [SerializeField] private float skillPurchaseVolume = 1f;
+        [Range(0f, 1f)] [SerializeField] private float skillPurchaseVolume = 0.15f;
 
         [Header("강화 클립 (chimes_magic_bell_ding_1)")]
         [SerializeField] private AudioClip skillUpgradeClip;
-        [Range(0f, 1f)] [SerializeField] private float skillUpgradeVolume = 1f;
+        [Range(0f, 1f)] [SerializeField] private float skillUpgradeVolume = 0.15f;
 
         [Header("스킬 활성 이팩트")]
         [SerializeField] private GameObject skillReadyVfxPrefab; // FX_CardRimLine_B
