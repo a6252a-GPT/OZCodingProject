@@ -379,7 +379,7 @@ MonoBehaviour:
   burrowAnimationDuration: 1.2
   spawnAnimationDuration: 1.2
   biteVfxDelay: 0.2
-  dustVfxPrefab: {fileID: 1925099574902134025, guid: 9be3e697509761946adbcbe2e6f9ec69, type: 3}
+  dustVfxPrefab: {fileID: 8972250831333991594, guid: c0cb0d479767894408573dd3f10f3b5c, type: 3}
   dustVfxHeightOffset: 0
   burrowDustVfxScale: 1
   spawnDustVfxScale: 1.2
