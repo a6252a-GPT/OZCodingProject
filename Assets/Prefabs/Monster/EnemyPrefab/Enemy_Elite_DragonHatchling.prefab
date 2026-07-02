@@ -322,7 +322,75 @@ MonoBehaviour:
   centerOffset: {x: 0, y: 0, z: 0}
   pushStrength: 1
   maxCorrectionPerFrame: 0.25
+  sideSpreadStrength: 0.65
+  blockedSidePushPerFrame: 0.08
+  pressureTransferRatio: 0.7
+  maxPendingPushPerFrame: 0.24
+  pushSmoothingSpeed: 10
+  pushDecaySpeed: 6
   drawGizmo: 1
+--- !u!114 &3818200855450114171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4908572894271289537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9313f56895f84a42ae15eb26e2e28b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHatchlingGrowth
+  consumeRange: 10
+  scanInterval: 2
+  consumeChance: 0.35
+  consumeDelayBeforeKill: 0.25
+  consumeRecoveryDuration: 0.35
+  spawnDistanceFromTarget: 1.6
+  consumeTeleportGroundHeight: 0.72
+  stopTargetMovementWhileConsuming: 1
+  maxGrowthStack: 35
+  maxHpIncreasePercentPerConsume: 0.12
+  attackPowerIncreasePercentPerConsume: 0.04
+  attackSpeedIncreasePercentPerConsume: 0.05
+  scaleIncreasePercentPerConsume: 0.15
+  attackRangeIncreasePercentPerConsume: 0.03
+  maxAttackRangeMultiplier: 1.3
+  growthStack: 0
+--- !u!114 &9161705279265017592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4908572894271289537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cf43caf427976a458ba68afa9fc4a2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHatchlingConsumePresentationBridge
+  animator: {fileID: 2155649109799135545}
+  consumingBoolName: IsConsuming
+  hitTriggerName: Hit
+  visualOffsetRoot: {fileID: 6061636889178475005}
+  burrowVisualDownOffset: 3
+  burrowAnimationDuration: 1.2
+  spawnAnimationDuration: 1.2
+  biteVfxDelay: 0.2
+  dustVfxPrefab: {fileID: 8972250831333991594, guid: c0cb0d479767894408573dd3f10f3b5c, type: 3}
+  dustVfxHeightOffset: 0
+  burrowDustVfxScale: 1
+  spawnDustVfxScale: 1.2
+  dustVfxLifeTime: 1.5
+  consumeVfxPrefab: {fileID: 7693804788672634309, guid: f60a7a5b20a0f9140b6b802667e7e62d, type: 3}
+  consumeVfxHeightOffset: 0
+  consumeVfxScale: 1.2
+  consumeVfxLifeTime: 1.5
+  growthVfxPrefab: {fileID: 8488710360190851975, guid: 26b5126bcc5eb7941b2025ae37aefc6e, type: 3}
+  attachGrowthVfxToOwner: 1
+  growthVfxHeightOffset: -0.5
+  growthVfxScale: 1
+  growthVfxLifeTime: 0.7
 --- !u!1 &5339047331345878657
 GameObject:
   m_ObjectHideFlags: 0
@@ -490,68 +558,6 @@ MonoBehaviour:
   cooldown: 0.08
   forceDetachedPlayback: 1
   oneShotLifetimePadding: 0.25
---- !u!114 &3818200855450114171
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4908572894271289537}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e9313f56895f84a42ae15eb26e2e28b9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHatchlingGrowth
-  consumeRange: 10
-  scanInterval: 2
-  consumeChance: 0.35
-  consumeDelayBeforeKill: 0.25
-  consumeRecoveryDuration: 0.35
-  spawnDistanceFromTarget: 1.6
-  consumeTeleportGroundHeight: 0.72
-  stopTargetMovementWhileConsuming: 1
-  maxGrowthStack: 35
-  maxHpIncreasePercentPerConsume: 0.12
-  attackPowerIncreasePercentPerConsume: 0.04
-  attackSpeedIncreasePercentPerConsume: 0.05
-  scaleIncreasePercentPerConsume: 0.15
-  attackRangeIncreasePercentPerConsume: 0.03
-  maxAttackRangeMultiplier: 1.3
-  growthStack: 0
---- !u!114 &9161705279265017592
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4908572894271289537}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6cf43caf427976a458ba68afa9fc4a2f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyHatchlingConsumePresentationBridge
-  animator: {fileID: 2155649109799135545}
-  consumingBoolName: IsConsuming
-  hitTriggerName: Hit
-  visualOffsetRoot: {fileID: 6061636889178475005}
-  burrowVisualDownOffset: 3
-  burrowAnimationDuration: 1.2
-  spawnAnimationDuration: 1.2
-  biteVfxDelay: 0.2
-  dustVfxPrefab: {fileID: 1925099574902134025, guid: 9be3e697509761946adbcbe2e6f9ec69, type: 3}
-  dustVfxHeightOffset: 0
-  burrowDustVfxScale: 1
-  spawnDustVfxScale: 1.2
-  dustVfxLifeTime: 1.5
-  consumeVfxPrefab: {fileID: 7693804788672634309, guid: f60a7a5b20a0f9140b6b802667e7e62d, type: 3}
-  consumeVfxHeightOffset: 0
-  consumeVfxScale: 1.2
-  consumeVfxLifeTime: 1.5
-  growthVfxPrefab: {fileID: 8488710360190851975, guid: 26b5126bcc5eb7941b2025ae37aefc6e, type: 3}
-  attachGrowthVfxToOwner: 1
-  growthVfxHeightOffset: -0.5
-  growthVfxScale: 1
-  growthVfxLifeTime: 0.7
 --- !u!1001 &7379676335605783866
 PrefabInstance:
   m_ObjectHideFlags: 0
