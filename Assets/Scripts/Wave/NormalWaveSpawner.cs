@@ -139,6 +139,13 @@ namespace TeamProject01.Gameplay
             new SpawnScaleStep { startStage = 12, spawnScalePercent = 130 }
         };
 
+        [Header("50+ Stage Spawn Growth")]
+        [Min(1)]
+        [SerializeField] private int endlessSpawnGrowthStartStage = 50;
+
+        [Min(0)]
+        [SerializeField] private int spawnCountGrowthPerStage = 150;
+
         [Serializable]
         public sealed class NormalSpawnCountOverride
         {
@@ -187,6 +194,19 @@ namespace TeamProject01.Gameplay
             new DifficultyScaleStep { startStage = 35, healthScalePercent = 180, moveSpeedScalePercent = 124, nexusDamageScalePercent = 120 },
             new DifficultyScaleStep { startStage = 40, healthScalePercent = 200, moveSpeedScalePercent = 127, nexusDamageScalePercent = 130 }
         };
+
+        [Header("41+ Stage Difficulty Growth")]
+        [Min(1)]
+        [SerializeField] private int endlessDifficultyGrowthStartStage = 41;
+
+        [Min(0)]
+        [SerializeField] private int healthGrowthPercentPerStage = 10;
+
+        [Min(0)]
+        [SerializeField] private int moveSpeedGrowthPercentPerStage = 3;
+
+        [Min(0)]
+        [SerializeField] private int nexusDamageGrowthPercentPerStage = 2;
 
         [Header("일반 몬스터 조합")]
         [SerializeField] private NormalComposition[] normalCompositions =
@@ -278,7 +298,9 @@ namespace TeamProject01.Gameplay
         public int CalculateTotalSpawnCount(int stage)
         {
             float scale = GetScaleForStage(stage) / 100.0f;
-            return Mathf.Max(0, Mathf.RoundToInt(baseSpawnCount * scale));
+            int spawnCount = Mathf.Max(0, Mathf.RoundToInt(baseSpawnCount * scale));
+            int endlessGrowthStageCount = Mathf.Max(0, stage - Mathf.Max(1, endlessSpawnGrowthStartStage) + 1);
+            return spawnCount + endlessGrowthStageCount * Mathf.Max(0, spawnCountGrowthPerStage);
         }
 
         public int ResolveNormalSpawnCount(int stage, int fallbackSpawnCount)
@@ -496,6 +518,11 @@ namespace TeamProject01.Gameplay
             int healthPercent = step != null ? step.healthScalePercent : 100;
             int speedPercent = step != null ? step.moveSpeedScalePercent : 100;
             int damagePercent = step != null ? step.nexusDamageScalePercent : 100;
+            int endlessGrowthStageCount = Mathf.Max(0, stage - Mathf.Max(1, endlessDifficultyGrowthStartStage) + 1);
+
+            healthPercent += endlessGrowthStageCount * Mathf.Max(0, healthGrowthPercentPerStage);
+            speedPercent += endlessGrowthStageCount * Mathf.Max(0, moveSpeedGrowthPercentPerStage);
+            damagePercent += endlessGrowthStageCount * Mathf.Max(0, nexusDamageGrowthPercentPerStage);
 
             return new WaveStageDifficulty(stage, healthPercent / 100.0f, speedPercent / 100.0f, damagePercent / 100.0f);
         }

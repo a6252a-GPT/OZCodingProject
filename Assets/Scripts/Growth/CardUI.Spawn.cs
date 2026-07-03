@@ -697,6 +697,7 @@ public partial class CardUI
         }
 
         FilterWeaponEnhancementPoolByOwnedSegments(results); // B — 보유 세그먼트 TargetSegmentId 만
+        FilterWeaponEnhancementPoolByBaseDamageAmplifyLimit(results); // 세그먼트별 공격력 증폭 2회 제한
     }
 
     private static void FilterWeaponEnhancementPoolByOwnedSegments(List<WeaponDefinition> pool) // Convoy 보유 ID 외 강화 제거
@@ -719,6 +720,31 @@ public partial class CardUI
             if (definition == null || !ownedSegmentIds.Contains(definition.NormalizedTargetSegmentId))
             {
                 pool.RemoveAt(i); // 미보유 세그먼트 강화 제외
+            }
+        }
+    }
+
+    private static void FilterWeaponEnhancementPoolByBaseDamageAmplifyLimit(List<WeaponDefinition> pool) // 공격력 증폭 제한 초과 후보 제거
+    {
+        if (pool == null || pool.Count == 0)
+        {
+            return; // 풀 없음
+        }
+
+        CoreStatProvider core = CoreStatProvider.Active; // 런타임 선택 횟수 소유자
+        if (core == null)
+        {
+            return; // 코어 없으면 표시 제한 불가
+        }
+
+        for (int i = pool.Count - 1; i >= 0; i--)
+        {
+            WeaponDefinition definition = pool[i]; // 후보 강화
+            if (definition != null
+                && definition.IsBaseDamageAmplify
+                && !core.CanOfferBaseDamageAmplifyChoice(definition.NormalizedTargetSegmentId))
+            {
+                pool.RemoveAt(i); // 해당 세그먼트 공격력 증폭 2회 완료
             }
         }
     }
@@ -839,6 +865,9 @@ public partial class CardUI
             && catalog.TryGetEnhancementsForSegment(targetSegmentId, out enhancements)
             && enhancements != null
             && enhancements.Length > 0; // 카탈로그 조회
+        List<WeaponDefinition> eligibleEnhancements = hasEnhancements
+            ? BuildEligibleSegmentEnhancements(enhancements, targetSegmentId)
+            : new List<WeaponDefinition>(); // 공격력 증폭 제한 반영
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 3장
         for (int i = 0; i < spawnCount; i++)
@@ -850,7 +879,7 @@ public partial class CardUI
             }
 
             GameObject defaultTemplate = GetSegmentCardTemplate(i); // 세그먼트 카드 프리팹 재사용
-            WeaponDefinition definition = hasEnhancements && i < enhancements.Length ? enhancements[i] : null;
+            WeaponDefinition definition = i < eligibleEnhancements.Count ? eligibleEnhancements[i] : null;
             SpawnedCardEntry entry = CreateWeaponEnhancementCard(definition, defaultTemplate, i, slot, resolvedLevelDelta, targetSegmentId); // 등급·프리팹 resolve
             if (entry == null)
             {
@@ -866,6 +895,40 @@ public partial class CardUI
         }
 
         PlaySpawnOpenTween(spawnedCards); // 등장 연출
+    }
+
+    private static List<WeaponDefinition> BuildEligibleSegmentEnhancements(WeaponDefinition[] enhancements, string targetSegmentId) // 세그먼트 2단계 강화 후보 필터
+    {
+        List<WeaponDefinition> results = new List<WeaponDefinition>(); // 표시 후보
+        if (enhancements == null || enhancements.Length == 0)
+        {
+            return results; // 후보 없음
+        }
+
+        CoreStatProvider core = CoreStatProvider.Active; // 선택 횟수 조회
+        string fallbackSegmentId = string.IsNullOrWhiteSpace(targetSegmentId) ? string.Empty : targetSegmentId.Trim(); // 선택 세그먼트
+        for (int i = 0; i < enhancements.Length; i++)
+        {
+            WeaponDefinition definition = enhancements[i]; // 카탈로그 후보
+            if (definition == null)
+            {
+                continue; // null 제외
+            }
+
+            string resolvedSegmentId = string.IsNullOrWhiteSpace(definition.NormalizedTargetSegmentId)
+                ? fallbackSegmentId
+                : definition.NormalizedTargetSegmentId; // 카드 TargetSegmentId 우선
+            if (definition.IsBaseDamageAmplify
+                && core != null
+                && !core.CanOfferBaseDamageAmplifyChoice(resolvedSegmentId))
+            {
+                continue; // 해당 세그먼트 공격력 증폭 2회 완료
+            }
+
+            results.Add(definition); // 표시 가능
+        }
+
+        return results;
     }
 
     private WeaponCatalogAsset ResolveWeaponCatalog() // CardUI 또는 CoreStatProvider 카탈로그

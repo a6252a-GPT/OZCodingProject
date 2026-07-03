@@ -11,6 +11,8 @@ namespace TeamProject01.Gameplay
     public sealed class CoreStatProvider : MonoBehaviour // 코어 성장값 보관소
     {
         public static CoreStatProvider Active { get; private set; } // 현재 코어
+        private const int MaxBaseDamageAmplifyChoicesPerSegment = 2; // 세그먼트별 공격력 증폭 선택 제한
+
         [Header("코어 레벨")]
         [Min(1)] public int CurrentLevel = 1; // 현재 레벨
         [Header("코어 공격력 보너스")]
@@ -47,6 +49,7 @@ namespace TeamProject01.Gameplay
         [Min(1)] public int ExperienceRequirementLevel21To30 = 560; // Lv21~30 다음 레벨 필요 경험치
         [Min(1)] public int ExperienceRequirementLevel31To40 = 850; // Lv31~40 다음 레벨 필요 경험치
         [Min(1)] public int ExperienceRequirementLevel41Plus = 1150; // Lv41+ 다음 레벨 필요 경험치
+        [Min(0)] public int ExperienceRequirementLevel41PlusIncreasePerLevel = 150; // Lv41+ per-level requirement increase
         public ConvoyController Convoy; // 세그먼트 추가 입구
         public SegmentCatalogAsset SegmentCatalogAsset; // 새 세그먼트 데이터에셋 목록
         // 건춘 추가 시작 =======
@@ -85,6 +88,7 @@ namespace TeamProject01.Gameplay
         private readonly List<SegmentUpgradeData> segmentUpgrades = new List<SegmentUpgradeData>(); // 세그먼트별 강화 누적
         // 건춘 추가 시작 =======
         private readonly List<WeaponStatBonusEntry> weaponStatBonuses = new List<WeaponStatBonusEntry>(); // 세그먼트 ID별 무기 강화 보너스 누적 저장
+        private readonly Dictionary<string, int> baseDamageAmplifyChoiceCountsBySegmentId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); // 세그먼트별 공격력 증폭 선택 횟수
         private int levelUpCardCycleIndex; // 레벨업 카드 선택 완료 횟수(현재 카드 종류는 레벨 구간 기준)
 
         public int LevelUpCardCycleIndex => levelUpCardCycleIndex; // CardUI 호환/디버그용 선택 카운트
@@ -244,6 +248,7 @@ namespace TeamProject01.Gameplay
             segmentUpgrades.Clear(); // 세그먼트 강화 초기화
             // 건춘 추가 시작 =======
             weaponStatBonuses.Clear(); // 무기 강화 보너스 초기화
+            baseDamageAmplifyChoiceCountsBySegmentId.Clear(); // 공격력 증폭 선택 횟수 초기화
             levelUpCardCycleIndex = 0; // 레벨업 카드 선택 카운트 초기화
             pendingLevelUpChoiceCommitted = false; // 레벨업 카드 UI 상태 초기화
             // 건춘 추가 끝 =====
@@ -600,6 +605,12 @@ namespace TeamProject01.Gameplay
                 return false; // 1단계 선택과 카드 대상 불일치
             }
 
+            if (definition.IsBaseDamageAmplify && HasReachedBaseDamageAmplifyChoiceLimit(normalizedSegmentId))
+            {
+                Debug.LogWarning($"무기 강화 실패: 공격력 증폭 선택 제한 초과 (Segment={normalizedSegmentId}, Limit={MaxBaseDamageAmplifyChoicesPerSegment}, 카드={definition.name})", definition);
+                return false; // 세그먼트별 공격력 증폭 2회 제한
+            }
+
             int index = FindWeaponStatBonusIndex(normalizedSegmentId); // 기존 누적 검색
             WeaponStatBonusData bonus = index >= 0 ? weaponStatBonuses[index].Bonus : default; // 현재 누적값
             bonus.AddDefinition(definition, tier, profileBaseDamage); // WeaponDefinition 보너스 합산 (등급별 수치)
@@ -613,9 +624,32 @@ namespace TeamProject01.Gameplay
                 weaponStatBonuses.Add(new WeaponStatBonusEntry(normalizedSegmentId, bonus)); // 신규 세그먼트 등록
             }
 
+            if (definition.IsBaseDamageAmplify)
+            {
+                IncrementBaseDamageAmplifyChoiceCount(normalizedSegmentId); // 공격력 증폭 선택 횟수 기록
+            }
+
             ApplyLevelDeltaIfNeeded(levelDelta); // 카드 선택 시 플레이어 레벨·경험치 소비
             StatsChanged?.Invoke(CurrentStats); // HUD·전투 스탯 갱신
             return true; // 적용 성공
+        }
+
+        public bool CanOfferBaseDamageAmplifyChoice(string segmentId) // 공격력 증폭 카드 표시 가능 여부
+        {
+            return GetBaseDamageAmplifyChoiceCount(segmentId) < MaxBaseDamageAmplifyChoicesPerSegment;
+        }
+
+        public int GetBaseDamageAmplifyChoiceCount(string segmentId) // 세그먼트별 공격력 증폭 선택 횟수
+        {
+            if (string.IsNullOrWhiteSpace(segmentId))
+            {
+                return 0; // 대상 없음
+            }
+
+            string normalizedId = segmentId.Trim(); // 비교용 ID
+            return baseDamageAmplifyChoiceCountsBySegmentId.TryGetValue(normalizedId, out int count)
+                ? Mathf.Max(0, count)
+                : 0;
         }
 
         public WeaponStatBonusData GetWeaponStatBonus(string segmentId) // 세그먼트별 누적 무기 강화 조회
@@ -1164,6 +1198,23 @@ namespace TeamProject01.Gameplay
             return -1; // 아직 강화 기록 없음
         }
 
+        private bool HasReachedBaseDamageAmplifyChoiceLimit(string segmentId) // 공격력 증폭 2회 제한 체크
+        {
+            return GetBaseDamageAmplifyChoiceCount(segmentId) >= MaxBaseDamageAmplifyChoicesPerSegment;
+        }
+
+        private void IncrementBaseDamageAmplifyChoiceCount(string segmentId) // 공격력 증폭 선택 횟수 증가
+        {
+            if (string.IsNullOrWhiteSpace(segmentId))
+            {
+                return; // 대상 없음
+            }
+
+            string normalizedId = segmentId.Trim(); // 저장 키
+            int nextCount = GetBaseDamageAmplifyChoiceCount(normalizedId) + 1;
+            baseDamageAmplifyChoiceCountsBySegmentId[normalizedId] = nextCount;
+        }
+
         private readonly struct WeaponStatBonusEntry // 세그먼트 ID + 누적 WeaponStatBonusData 한 쌍
         {
             public readonly string SegmentId; // 대상 세그먼트 ID (예: SG01_Cannon)
@@ -1289,7 +1340,9 @@ namespace TeamProject01.Gameplay
                 return ResolveExperienceRequirement(ExperienceRequirementLevel31To40, 850); // 후반 강화 비중 증가
             }
 
-            return ResolveExperienceRequirement(ExperienceRequirementLevel41Plus, 1150); // Lv41 이후 마무리 구간
+            int level41Requirement = ResolveExperienceRequirement(ExperienceRequirementLevel41Plus, 1150); // Lv41 기준 요구량
+            int perLevelIncrease = Mathf.Max(0, ExperienceRequirementLevel41PlusIncreasePerLevel); // Lv42부터 누적 증가
+            return level41Requirement + (safeLevel - 41) * perLevelIncrease; // Lv41=1150, Lv42=1300...
         }
 
         private static int ResolveExperienceRequirement(int configuredValue, int fallbackValue) // 경험치 구간값 보정
