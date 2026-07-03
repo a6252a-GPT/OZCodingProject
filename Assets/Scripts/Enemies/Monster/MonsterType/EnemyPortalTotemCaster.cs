@@ -23,8 +23,11 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float entryRadius = 6.0f;// 시간이 끝났을 때 실제로 순간이동되는 몬스터 판정 범위
 
         [Header("Exit Setting")]
-        [Min(5.0f)]
-        [SerializeField] private float exitDistanceFromNexus = 5.0f;// Nexus 중심에서 출구 토템을 떨어뜨릴 거리
+        [Min(0.0f)]
+        [SerializeField] private float minExitDistanceFromNexus = 10.0f;// Nexus 중심에서 출구 토템을 떨어뜨릴 최소 거리
+
+        [Min(0.0f)]
+        [SerializeField] private float maxExitDistanceFromNexus = 15.0f;// Nexus 중심에서 출구 토템을 떨어뜨릴 최대 거리
 
         [Min(0.1f)]
         [SerializeField] private float exitScatterRadius = 2.5f;// 출구 주변에 순간이동 몬스터를 흩어놓는 기본 반경
@@ -129,7 +132,10 @@ namespace TeamProject01.Gameplay
 
             outwardDirection.Normalize();// 방향 벡터의 길이를 1로 만든다.
 
-            Vector3 exitPosition = nexus.position + outwardDirection * exitDistanceFromNexus;// 입구 토템과 같은 방향의 Nexus 외곽에 출구 위치를 만든다.
+            float minDistance = Mathf.Min(minExitDistanceFromNexus, maxExitDistanceFromNexus);
+            float maxDistance = Mathf.Max(minExitDistanceFromNexus, maxExitDistanceFromNexus);
+            float exitDistance = Random.Range(minDistance, maxDistance);
+            Vector3 exitPosition = nexus.position + outwardDirection * exitDistance;// 입구 토템과 같은 방향의 Nexus 외곽에 출구 위치를 만든다.
 
             return GroundService.ProjectToGround(exitPosition, totemGroundHeight);// 출구 위치를 바닥 높이에 맞게 보정해 반환한다.
         }

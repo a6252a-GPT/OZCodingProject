@@ -278,7 +278,7 @@ MonoBehaviour:
   source: {fileID: 8249562608848698714}
   clips:
   - {fileID: 8300000, guid: cbe91bb0d92df61488fc79edb387474d, type: 3}
-  volume: 1
+  volume: 1.3
   minPitch: 1
   maxPitch: 1
   cooldown: 0

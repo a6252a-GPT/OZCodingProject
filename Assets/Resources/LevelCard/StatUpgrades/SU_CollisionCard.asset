@@ -25,6 +25,6 @@ MonoBehaviour:
   MagicDamageMultiplierBonus: 0
   AttackSpeedMultiplierBonus: 0
   TurnSpeedBonus: 0
-  CollisionForceBonus: 0.16
+  CollisionForceBonus: 0.08
   RejoinRangeBonus: 0
   NexusHealthBonus: 0

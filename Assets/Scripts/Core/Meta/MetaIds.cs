@@ -66,13 +66,14 @@ namespace TeamProject01.Gameplay
 
     public enum MetaUpgradeId // 업그레이드 종류
     {
-        GoldBonus,
-        DiamondBonus,
-        TurnBonus,
-        CollisionForce,
-        BaseAttack,
-        AttackSpeed,
-        NexusMaxHp,
-        NexusRegen
+        GoldBonus = 0,
+        DiamondBonus = 1,
+        TurnBonus = 2,
+        CollisionForce = 3,
+        BaseAttack = 4,
+        AttackSpeed = 5,
+        NexusMaxHp = 6,
+        MoveSpeed = 7,
+        PickupRange = 8
     }
 }

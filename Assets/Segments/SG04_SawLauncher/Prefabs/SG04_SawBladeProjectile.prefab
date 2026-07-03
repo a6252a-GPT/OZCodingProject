@@ -126,7 +126,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.7
+  m_Volume: 0.55
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -223,7 +223,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 443813075636435671}
-  baseVolume: 0.7
+  baseVolume: 0.55
 --- !u!114 &295178915287630078
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -240,7 +240,7 @@ MonoBehaviour:
   source: {fileID: 443813075636435671}
   clips:
   - {fileID: 8300000, guid: cf3dec9a217564c45a0851eafd8bbf46, type: 3}
-  volume: 0.7
+  volume: 0.55
   minPitch: 1
   maxPitch: 1
   cooldown: 0.08

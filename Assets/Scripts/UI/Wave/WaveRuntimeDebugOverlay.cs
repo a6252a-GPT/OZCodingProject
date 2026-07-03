@@ -7,6 +7,7 @@ namespace TeamProject01.Gameplay
     public sealed class WaveRuntimeDebugOverlay : MonoBehaviour
     {
         private const string DefaultManaOrbRemainingFormat = "남은 마력구슬 {0}/{1}개";
+        private const string DefaultBonusRewardWaitText = "넥서스 근처 보상 획득";
 
         [Header("참조")]
         [SerializeField] private WaveController waveController; // 표시할 실제 WaveController입니다.
@@ -24,7 +25,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private string stateLabel = "상태"; // 상태 줄 제목입니다.
         [SerializeField] private string nextStageTimeLabel = "다음 Stage까지"; // 일반 Stage 타이머 줄 제목입니다.
         [SerializeField] private string bossWaitText = "보스 처치 대기"; // 보스 Stage에서 타이머 대신 표시할 문구입니다.
-        [SerializeField] private string bonusRewardWaitText = "상자를 획득하세요"; // 보상 상자 대기 중 표시할 문구입니다.
+        [SerializeField] private string bonusRewardWaitText = DefaultBonusRewardWaitText; // 보상 상자 대기 중 표시할 문구입니다.
         [FormerlySerializedAs("goldCollectLabel")]
         [SerializeField] private string manaOrbCollectLabel = "마력 구슬 수집"; // 마력 구슬 수집 진행도 제목입니다.
         [SerializeField] private string manaOrbRemainingFormat = DefaultManaOrbRemainingFormat; // 수집 중 남은 마력 구슬 표시입니다.
@@ -153,7 +154,8 @@ namespace TeamProject01.Gameplay
             if (manaOrbWave.IsRewardStageActive)
             {
                 return $"{stateLabel}: 보상 선택\n" +
-                       $"{bonusRewardWaitText}\n" +
+                       $"{ResolveBonusRewardWaitText(bonusRewardWaitText)}\n" +
+                       $"{nextStageTimeLabel}: {FormatTime(manaOrbWave.RemainingRewardSeconds)}\n" +
                        $"{manaOrbCollectLabel}: {manaOrbWave.CollectedManaOrbCount}/{manaOrbWave.SpawnedManaOrbCount}";
             }
 
@@ -203,6 +205,11 @@ namespace TeamProject01.Gameplay
         private static bool IsLegacyManaOrbRemainingFormat(string format)
         {
             return format.Contains("마력구슬이") || format.Contains("개 남았습니다");
+        }
+
+        private static string ResolveBonusRewardWaitText(string text)
+        {
+            return string.IsNullOrWhiteSpace(text) ? DefaultBonusRewardWaitText : text;
         }
 
         private string GetStateText(WaveController.WaveRunState state)

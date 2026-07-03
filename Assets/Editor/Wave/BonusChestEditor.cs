@@ -13,9 +13,8 @@ namespace TeamProject01.Gameplay.EditorTools
             DrawScriptField();
             EditorGUILayout.Space(8.0f);
 
-            DrawSectionTitle("상자 감지 설정");
-            DrawHelp("컨보이 머리가 열림 거리 안에 들어오면 상자가 열리고, 보상 선택 거리 안에서 딜레이가 끝나면 보상 화면이 열립니다.");
-            DrawProperty("openDistance", "열림 거리");
+            DrawSectionTitle("상자 획득 설정");
+            DrawHelp("컨보이 머리가 보상 선택 거리 안에 들어오면 상자가 열리고, 열림 연출 딜레이가 끝난 뒤 보상 화면이 열립니다.");
             DrawProperty("collectDistance", "보상 선택 거리");
 
             DrawSectionTitle("보상 선택 설정");

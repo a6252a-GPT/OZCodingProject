@@ -132,9 +132,9 @@ namespace TeamProject01.EditorTools
                 }
             }
 
-            ApplyAllExistingNamedSlots(
+            ApplySingleSupportActivationSlot(
                 "Assets/Segments/SG50_WarDrum/Prefabs/SG50_WarDrum_Lv1.prefab",
-                Slot("SFX_Activation", GameplaySfxCue.Activation, 1f, 0.3f, false, true, "magic_light_bubble_01.wav", "metal_drum_impact_thud_03.wav"),
+                Slot("SFX_Activation", GameplaySfxCue.Activation, 1f, 0.3f, false, true, "metal_drum_impact_thud_03.wav"),
                 report,
                 ref touched);
 
@@ -185,7 +185,7 @@ namespace TeamProject01.EditorTools
         {
             return new[]
             {
-                CatalogEntry(GameplaySfxCue.Pickup, true, 1f, 0.03f, report, "Bling01.wav", "BurstingBubbles20.wav"),
+                CatalogEntry(GameplaySfxCue.Pickup, true, 1f, 0.03f, report, "Bling01.wav"),
                 CatalogEntry(GameplaySfxCue.GoodPickup, true, 1f, 0.03f, report, "Bling05.wav"),
                 CatalogEntry(GameplaySfxCue.Open, true, 1f, 0.08f, report, "GetaPoint38.wav"),
                 CatalogEntry(GameplaySfxCue.ShieldBreak, true, 1f, 0.1f, report, "BreakingGlass24.wav"),
@@ -229,13 +229,13 @@ namespace TeamProject01.EditorTools
         {
             SlotSpec cannonFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 0.9f, 0.03f, false, true, "weapon_cannon_shot_01.wav");
             SlotSpec missileFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 0.91f, 0.08f, false, true, "weapon_missile_003.wav");
-            SlotSpec missileExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 1f, 0.05f, true, true, "explosion_med_long_tail_02.wav");
+            SlotSpec missileExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 0.95f, 0.05f, true, true, "explosion_med_long_tail_02.wav");
             SlotSpec flamethrowerStart = Slot("SFX_FireStart", GameplaySfxCue.FireStart, 1f, 1f, false, true, "gas_large_flame_ignite_01.wav");
-            SlotSpec flamethrowerLoop = Slot("SFX_FireLoop", GameplaySfxCue.FireLoop, 1f, 0f, false, true, "weapon_flame_005.wav");
+            SlotSpec flamethrowerLoop = Slot("SFX_FireLoop", GameplaySfxCue.FireLoop, 1.3f, 0f, false, true, "weapon_flame_005.wav");
             SlotSpec ballistaFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 1f, 0.03f, false, true, "bow_crossbow_arrow_shoot_type1_01.wav");
             SlotSpec ballistaHit = Slot("SFX_Hit", GameplaySfxCue.Hit, 0.8f, 0.04f, true, true, "bullet_impact_body_flesh_04.wav");
             SlotSpec sawFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 1f, 0.06f, false, true, "metal_door_hatch_close_slam_04.wav");
-            SlotSpec sawHit = Slot("SFX_Hit", GameplaySfxCue.Hit, 0.7f, 0.08f, true, true, "sword_impact_body.wav");
+            SlotSpec sawHit = Slot("SFX_Hit", GameplaySfxCue.Hit, 0.55f, 0.08f, true, true, "sword_impact_body.wav");
             SlotSpec trebuchetFireStart = Slot("SFX_FireStart", GameplaySfxCue.FireStart, 1f, 0.2f, false, true, "door_A_creak_05.wav");
             SlotSpec trebuchetExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 1f, 0.08f, true, true, "rock_smashable_hit_impact_large_03.wav");
             SlotSpec trebuchetRollHit = Slot("SFX_RollHit", GameplaySfxCue.RollHit, 1f, 0.12f, true, true, "punch_general_body_impact_02.wav");
@@ -245,10 +245,10 @@ namespace TeamProject01.EditorTools
             SlotSpec iceFire = Slot("SFX_Fire", GameplaySfxCue.Fire, 1f, 0.08f, false, true, "ice_spell_forming_shards_03.wav");
             SlotSpec iceExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 1f, 0.05f, true, true, "ice_spell_impact_hit_shard_02.wav");
             SlotSpec warBannerActivation = Slot("SFX_Activation", GameplaySfxCue.Activation, 1f, 0.3f, false, true, "magic_shinny_high_tone_01.wav");
-            SlotSpec warDrumActivation = Slot("SFX_Activation", GameplaySfxCue.Activation, 1f, 0.3f, false, true, "magic_light_bubble_01.wav", "metal_drum_impact_thud_03.wav");
+            SlotSpec warDrumActivation = Slot("SFX_Activation", GameplaySfxCue.Activation, 1f, 0.3f, false, true, "metal_drum_impact_thud_03.wav");
             SlotSpec frostBellActivation = Slot("SFX_Activation", GameplaySfxCue.Activation, 1f, 0.3f, false, true, "ice_spell_forming_shards_04.wav");
             SlotSpec wormholeExplosion = Slot("SFX_Explosion", GameplaySfxCue.Explosion, 1f, 0.05f, true, true, "light_in_dark_spell_03.wav");
-            SlotSpec pickup = Slot("SFX_Pickup", GameplaySfxCue.Pickup, 1f, 0.03f, false, true, "Bling01.wav", "BurstingBubbles20.wav");
+            SlotSpec pickup = Slot("SFX_Pickup", GameplaySfxCue.Pickup, 1f, 0.03f, false, true, "Bling01.wav");
             SlotSpec goodPickup = Slot("SFX_GoodPickup", GameplaySfxCue.GoodPickup, 1f, 0.03f, false, true, "Bling05.wav");
             SlotSpec manaOrbPickup = Slot("SFX_ManaOrbPickup", GameplaySfxCue.ManaOrbPickup, 1f, 0.03f, false, true, "chimes_magic_bell_ding_1.wav");
             SlotSpec shieldBreak = Slot("SFX_ShieldBreak", GameplaySfxCue.ShieldBreak, 1f, 0.1f, false, true, "BreakingGlass24.wav");
@@ -332,7 +332,7 @@ namespace TeamProject01.EditorTools
                 Prefab("Assets/Segments/SG22_IceCrystalOrb/Prefabs/SG22_IceCrystalOrb_Lv3.prefab", Names("Muzzle"), iceFire),
                 Prefab("Assets/Segments/SG22_IceCrystalOrb/Prefabs/SG22_IceCrystalOrbProjectile.prefab", Names(string.Empty), iceExplosion),
 
-                Prefab("Assets/Segments/SG50_WarDrum/Prefabs/SG50_WarDrum_Lv1.prefab", Names("VFX_ActiveRoot", string.Empty), warDrumActivation),
+                Prefab("Assets/Segments/SG50_WarDrum/Prefabs/SG50_WarDrum_Lv1.prefab", Names("VFX_Muzzle"), warDrumActivation),
                 Prefab("Assets/Segments/SG52_FrostBell/Prefabs/SG52_FrostBell_Lv1.prefab", Names("VFX_ActiveRoot"), frostBellActivation),
                 Prefab("Assets/Segments/SG53_WarBanner/Prefabs/SG53_WarBanner_Lv1.prefab", Names("VFX_ActiveRoot"), warBannerActivation),
                 Prefab("Assets/Segments/SG56_WormholePortal/Prefabs/SG56_WormholeProjectile_BlueComet01.prefab", Names(string.Empty), wormholeExplosion),
@@ -512,6 +512,58 @@ namespace TeamProject01.EditorTools
                 {
                     PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
                     report.Add("Updated existing named slots: " + prefabPath + " / " + slot.ChildName);
+                    touched++;
+                }
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static void ApplySingleSupportActivationSlot(string prefabPath, SlotSpec slot, List<string> report, ref int touched)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefab == null)
+            {
+                report.Add("Missing prefab: " + prefabPath);
+                return;
+            }
+
+            GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+            bool changed = false;
+            try
+            {
+                SupportSegmentAbility ability = root.GetComponentInChildren<SupportSegmentAbility>(true);
+                Transform anchor = ability != null && ability.MuzzleVfxRoot != null
+                    ? ability.MuzzleVfxRoot
+                    : root.transform;
+
+                if (EnsureSlot(prefabPath, anchor, slot, report))
+                {
+                    changed = true;
+                }
+
+                Transform keeper = anchor.Find(slot.ChildName);
+                Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+                for (int i = transforms.Length - 1; i >= 0; i--)
+                {
+                    Transform candidate = transforms[i];
+                    if (candidate == null
+                        || candidate == keeper
+                        || !string.Equals(candidate.name, slot.ChildName, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    UnityEngine.Object.DestroyImmediate(candidate.gameObject);
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                    report.Add("Updated single support activation slot: " + prefabPath + " / " + slot.ChildName);
                     touched++;
                 }
             }

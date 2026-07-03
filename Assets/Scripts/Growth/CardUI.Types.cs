@@ -289,27 +289,6 @@ public partial class CardUI
         }
     }
 
-    // 안건준 추가 - 0622
-    private sealed class SegmentListHoverBridge : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
-    {
-        private CardUI manager;
-
-        public void Initialize(CardUI owner)
-        {
-            manager = owner;
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            manager?.NotifySegmentListHoverEnter();
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            manager?.NotifySegmentListHoverExit();
-        }
-    }
-
     private sealed class RerollButtonHoverBridge : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         private CardUI manager;

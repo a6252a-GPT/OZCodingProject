@@ -11,7 +11,7 @@ namespace TeamProject01.Gameplay
                 case MetaWormIds.Attack:
                     return "공격형 지렁이";
                 case MetaWormIds.Mobility:
-                    return "이속형 지렁이";
+                    return "이동형 지렁이";
                 case MetaWormIds.Support:
                     return "지원형 지렁이";
                 case MetaWormIds.Magic:
@@ -21,20 +21,42 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        public static string GetBonusText(string wormId) // 지렁이 효과
+        public static string GetBonusText(string wormId) // 기존 호출 호환
+        {
+            return GetStartingWeaponText(wormId);
+        }
+
+        public static string GetStartingWeaponText(string wormId) // 스타팅 무기
         {
             switch (Normalize(wormId))
             {
                 case MetaWormIds.Attack:
-                    return "시작 무기: 미사일\n기본 공격력 +1 / 공격속도 +5%";
+                    return "스타팅 무기 : 미사일";
                 case MetaWormIds.Mobility:
-                    return "시작 무기: 톱날발사기\n회전력 +10% / 충돌힘 +10%";
+                    return "스타팅 무기 : 톱날";
                 case MetaWormIds.Support:
-                    return "시작 무기: 화염구\n넥서스 체력 +15% / 회복 +5";
+                    return "스타팅 무기 : 웜홀";
                 case MetaWormIds.Magic:
-                    return "시작 무기: 전기지직\n추가 보너스 없음";
+                    return "스타팅 무기 : 전기지지";
                 default:
-                    return "시작 무기: 대포\n추가 보너스 없음";
+                    return "스타팅 무기 : 대포";
+            }
+        }
+
+        public static string GetAdditionalBonusText(string wormId) // 추가 보너스
+        {
+            switch (Normalize(wormId))
+            {
+                case MetaWormIds.Attack:
+                    return "추가 보너스 : 충돌힘 30% 증가";
+                case MetaWormIds.Mobility:
+                    return "추가 보너스 : 이동속도 10% 증가 / 회전력 10% 증가";
+                case MetaWormIds.Support:
+                    return "추가 보너스 : 지원 세그먼트 보너스 20%";
+                case MetaWormIds.Magic:
+                    return "추가 보너스 : 마법 세그먼트 공격력 15%";
+                default:
+                    return "추가 보너스 : 없음";
             }
         }
 
@@ -45,7 +67,7 @@ namespace TeamProject01.Gameplay
                 case MetaWormIds.Attack:
                     return new Color(1f, 0.48f, 0.36f, 1f); // 공격형
                 case MetaWormIds.Mobility:
-                    return new Color(1f, 0.86f, 0.28f, 1f); // 이속형
+                    return new Color(1f, 0.86f, 0.28f, 1f); // 이동형
                 case MetaWormIds.Support:
                     return new Color(0.35f, 0.75f, 1f, 1f); // 지원형
                 case MetaWormIds.Magic:

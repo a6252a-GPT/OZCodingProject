@@ -183,7 +183,7 @@ namespace TeamProject01.Gameplay
         {
             startPosition = SnapHeadToGround(startPosition); // 시작 바닥 보정
             transform.position = SnapHeadToGround(transform.position); // 현재 바닥 보정
-            currentForwardSpeed = BaseSpeed; // 초기 속도
+            currentForwardSpeed = GetAutoForwardSpeed(); // 초기 속도
             ResetPath(); // 경로 초기화
             EnsureStarterSegmentFromCurrentLoadout(); // 타이틀 선택 스타터 생성
 
@@ -238,6 +238,10 @@ namespace TeamProject01.Gameplay
 
             if (MonsterInteractionApi.TryConsumeConvoyKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 몬스터가 요청한 컨보이 넉백이 있는지 확인한다.
             {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"Convoy.KnockbackConsumed position={StartingSegmentChoiceTicketDebug.Format(currentPosition)}, direction={StartingSegmentChoiceTicketDebug.Format(apiKnockbackDirection)}, "
+                    + $"distance={apiKnockbackDistance:0.00}, duration={apiKnockbackDuration:0.00}, height={apiKnockbackHeight:0.00}",
+                    this);
                 ApplyKnockback(apiKnockbackDirection, apiKnockbackDistance, apiKnockbackDuration, apiKnockbackHeight); // 실제 이동 적용은 컨보이 컨트롤러가 책임진다.
             }
 
@@ -627,7 +631,8 @@ namespace TeamProject01.Gameplay
         private float GetEffectiveTurnSpeed() // 성장 반영 회전력
         {
             CoreStatData stats = CoreStatProvider.GetCurrentOrDefault(); // 코어 성장값
-            return Mathf.Max(1f, TurnSpeed + stats.TurnSpeedBonus); // 보너스 적용
+            float baseTurnSpeed = CoreStatProvider.ApplyRunTurnSpeedBonusOrDefault(TurnSpeed);
+            return Mathf.Max(1f, baseTurnSpeed + stats.TurnSpeedBonus); // 보너스 적용
         }
 
         private float GetEffectiveRejoinAreaRadius() // 성장 반영 재결합 반경

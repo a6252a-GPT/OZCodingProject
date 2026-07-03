@@ -94,6 +94,37 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        private readonly struct RatioAllocation
+        {
+            public readonly EnemyController Prefab;
+            public readonly int RatioPercent;
+
+            public RatioAllocation(EnemyController prefab, int ratioPercent)
+            {
+                Prefab = prefab;
+                RatioPercent = ratioPercent;
+            }
+        }
+
+        private readonly struct RatioRemainder
+        {
+            public readonly int EntryIndex;
+            public readonly float Remainder;
+
+            public RatioRemainder(int entryIndex, float remainder)
+            {
+                EntryIndex = entryIndex;
+                Remainder = remainder;
+            }
+        }
+
+        private const string MeleeNormalNameToken = "Melee_Normal";
+        private const string MeleeSkeletonDaggerNameToken = "Melee_SkeletonDagger";
+        private const string RangedNormalNameToken = "Ranged_Normal";
+        private const string RangedSkeletonCrossbowNameToken = "Ranged_SkeletonCrossbow";
+        private const int RandomNormalRatioMinPercent = 10;
+        private const int RandomNormalRatioMaxPercent = 50;
+
         [Header("참조")]
         [SerializeField] private EnemySpawner enemySpawner; // 실제 생성은 기존 EnemySpawner API에 맡깁니다.
 
@@ -160,10 +191,10 @@ namespace TeamProject01.Gameplay
         [Header("일반 몬스터 조합")]
         [SerializeField] private NormalComposition[] normalCompositions =
         {
-            CreateComposition("N01", "기본 근접", 1, 100, 100),
-            CreateComposition("N02", "근접 섞기", 3, 80, 75, 25),
-            CreateComposition("N03", "근접 + 원거리", 5, 70, 65, 20, 15),
-            CreateComposition("N04", "원거리 + 석궁", 10, 50, 50, 25, 15, 10)
+            CreateComposition("N01", "1~2 근접+단검", 1, 100, 75, 25),
+            CreateComposition("N02", "3~6 근접+원거리", 3, 100, 65, 20, 15),
+            CreateComposition("N03", "7~9 석궁 추가", 7, 100, 50, 20, 15, 15),
+            CreateComposition("N04", "10+ 랜덤 풀", 10, 100, 25, 25, 25, 25)
         };
 
         [Header("고급 설정")]
@@ -285,11 +316,18 @@ namespace TeamProject01.Gameplay
 
             if (spawnCount > 0)
             {
-                NormalComposition composition = PickComposition(stage);
-
-                if (composition != null)
+                if (TryBuildStageRangeCountEntries(stage, spawnCount, out List<CountEntry> stageRangeEntries))
                 {
-                    totalEntries.AddRange(BuildCountEntries(composition.monsters, spawnCount, stage));
+                    totalEntries.AddRange(stageRangeEntries);
+                }
+                else
+                {
+                    NormalComposition composition = PickComposition(stage);
+
+                    if (composition != null)
+                    {
+                        totalEntries.AddRange(BuildCountEntries(composition.monsters, spawnCount));
+                    }
                 }
             }
 
@@ -562,24 +600,147 @@ namespace TeamProject01.Gameplay
             return null;
         }
 
-        private static List<CountEntry> BuildCountEntries(MonsterRatioEntry[] ratios, int totalCount, int stage)
+        private bool TryBuildStageRangeCountEntries(int stage, int spawnCount, out List<CountEntry> entries)
+        {
+            entries = new List<CountEntry>();
+
+            if (spawnCount <= 0)
+            {
+                return true;
+            }
+
+            if (!TryFindNormalPrefabByNameToken(MeleeNormalNameToken, out EnemyController meleeNormal)
+                || !TryFindNormalPrefabByNameToken(MeleeSkeletonDaggerNameToken, out EnemyController meleeSkeletonDagger))
+            {
+                return false;
+            }
+
+            List<RatioAllocation> ratios = new List<RatioAllocation>();
+
+            if (stage <= 2)
+            {
+                ratios.Add(new RatioAllocation(meleeNormal, 75));
+                ratios.Add(new RatioAllocation(meleeSkeletonDagger, 25));
+            }
+            else if (stage <= 6)
+            {
+                if (!TryFindNormalPrefabByNameToken(RangedNormalNameToken, out EnemyController rangedNormal))
+                {
+                    return false;
+                }
+
+                ratios.Add(new RatioAllocation(meleeNormal, 65));
+                ratios.Add(new RatioAllocation(meleeSkeletonDagger, 20));
+                ratios.Add(new RatioAllocation(rangedNormal, 15));
+            }
+            else if (stage <= 9)
+            {
+                if (!TryFindNormalPrefabByNameToken(RangedNormalNameToken, out EnemyController rangedNormal)
+                    || !TryFindNormalPrefabByNameToken(RangedSkeletonCrossbowNameToken, out EnemyController rangedSkeletonCrossbow))
+                {
+                    return false;
+                }
+
+                ratios.Add(new RatioAllocation(meleeNormal, 50));
+                ratios.Add(new RatioAllocation(meleeSkeletonDagger, 20));
+                ratios.Add(new RatioAllocation(rangedNormal, 15));
+                ratios.Add(new RatioAllocation(rangedSkeletonCrossbow, 15));
+            }
+            else
+            {
+                if (!TryFindNormalPrefabByNameToken(RangedNormalNameToken, out EnemyController rangedNormal)
+                    || !TryFindNormalPrefabByNameToken(RangedSkeletonCrossbowNameToken, out EnemyController rangedSkeletonCrossbow))
+                {
+                    return false;
+                }
+
+                int[] randomRatios = BuildConstrainedRandomRatioPercents(4, RandomNormalRatioMinPercent, RandomNormalRatioMaxPercent);
+                ratios.Add(new RatioAllocation(meleeNormal, randomRatios[0]));
+                ratios.Add(new RatioAllocation(meleeSkeletonDagger, randomRatios[1]));
+                ratios.Add(new RatioAllocation(rangedNormal, randomRatios[2]));
+                ratios.Add(new RatioAllocation(rangedSkeletonCrossbow, randomRatios[3]));
+            }
+
+            entries = BuildCountEntries(ratios, spawnCount);
+            return entries.Count > 0;
+        }
+
+        private bool TryFindNormalPrefabByNameToken(string nameToken, out EnemyController prefab)
+        {
+            prefab = null;
+
+            if (normalCompositions == null || string.IsNullOrEmpty(nameToken))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < normalCompositions.Length; i++)
+            {
+                NormalComposition composition = normalCompositions[i];
+
+                if (composition == null || composition.monsters == null)
+                {
+                    continue;
+                }
+
+                for (int monsterIndex = 0; monsterIndex < composition.monsters.Length; monsterIndex++)
+                {
+                    MonsterRatioEntry monster = composition.monsters[monsterIndex];
+
+                    if (monster?.prefab == null)
+                    {
+                        continue;
+                    }
+
+                    if (monster.prefab.name.IndexOf(nameToken, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        prefab = monster.prefab;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static List<CountEntry> BuildCountEntries(MonsterRatioEntry[] ratios, int totalCount)
+        {
+            List<RatioAllocation> allocations = new List<RatioAllocation>();
+
+            if (ratios != null)
+            {
+                for (int i = 0; i < ratios.Length; i++)
+                {
+                    MonsterRatioEntry ratio = ratios[i];
+
+                    if (ratio != null && ratio.prefab != null && ratio.ratioPercent > 0)
+                    {
+                        allocations.Add(new RatioAllocation(ratio.prefab, ratio.ratioPercent));
+                    }
+                }
+            }
+
+            return BuildCountEntries(allocations, totalCount);
+        }
+
+        private static List<CountEntry> BuildCountEntries(List<RatioAllocation> ratios, int totalCount)
         {
             List<CountEntry> results = new List<CountEntry>();
 
-            if (ratios == null || ratios.Length == 0 || totalCount <= 0)
+            if (ratios == null || ratios.Count == 0 || totalCount <= 0)
             {
                 return results;
             }
 
             int totalRatio = 0;
 
-            for (int i = 0; i < ratios.Length; i++)
+            for (int i = 0; i < ratios.Count; i++)
             {
-                MonsterRatioEntry ratio = ratios[i];
+                RatioAllocation ratio = ratios[i];
 
-                if (ratio != null && ratio.prefab != null && ratio.ratioPercent > 0 && IsNormalMonsterUnlockedForStage(ratio.prefab, stage))
+                if (ratio.Prefab != null && ratio.RatioPercent > 0)
                 {
-                    totalRatio += ratio.ratioPercent;
+                    totalRatio += ratio.RatioPercent;
                 }
             }
 
@@ -589,33 +750,109 @@ namespace TeamProject01.Gameplay
             }
 
             int assignedCount = 0;
-            int lastValidIndex = -1;
+            List<RatioRemainder> remainders = new List<RatioRemainder>();
 
-            for (int i = 0; i < ratios.Length; i++)
+            for (int i = 0; i < ratios.Count; i++)
             {
-                MonsterRatioEntry ratio = ratios[i];
+                RatioAllocation ratio = ratios[i];
 
-                if (ratio == null || ratio.prefab == null || ratio.ratioPercent <= 0 || !IsNormalMonsterUnlockedForStage(ratio.prefab, stage))
+                if (ratio.Prefab == null || ratio.RatioPercent <= 0)
                 {
                     continue;
                 }
 
-                int count = Mathf.FloorToInt(totalCount * (ratio.ratioPercent / (float)totalRatio));
+                float exactCount = totalCount * (ratio.RatioPercent / (float)totalRatio);
+                int count = Mathf.FloorToInt(exactCount);
                 assignedCount += count;
-                lastValidIndex = results.Count;
-                results.Add(new CountEntry(ratio.prefab, count));
+                int resultIndex = results.Count;
+                results.Add(new CountEntry(ratio.Prefab, count));
+                remainders.Add(new RatioRemainder(resultIndex, exactCount - count));
             }
 
             int remainder = totalCount - assignedCount;
 
-            if (remainder > 0 && lastValidIndex >= 0)
+            if (remainder > 0 && remainders.Count > 0)
             {
-                CountEntry last = results[lastValidIndex];
-                results[lastValidIndex] = new CountEntry(last.Prefab, last.Count + remainder);
+                remainders.Sort(CompareRatioRemainderDescending);
+
+                for (int i = 0; i < remainder; i++)
+                {
+                    int resultIndex = remainders[i % remainders.Count].EntryIndex;
+                    CountEntry entry = results[resultIndex];
+                    results[resultIndex] = new CountEntry(entry.Prefab, entry.Count + 1);
+                }
             }
 
             results.RemoveAll(entry => entry.Count <= 0);
             return results;
+        }
+
+        private static int CompareRatioRemainderDescending(RatioRemainder left, RatioRemainder right)
+        {
+            int remainderCompare = right.Remainder.CompareTo(left.Remainder);
+            return remainderCompare != 0 ? remainderCompare : left.EntryIndex.CompareTo(right.EntryIndex);
+        }
+
+        private static int[] BuildConstrainedRandomRatioPercents(int count, int minPercent, int maxPercent)
+        {
+            if (count <= 0)
+            {
+                return Array.Empty<int>();
+            }
+
+            int safeMinPercent = Mathf.Clamp(minPercent, 0, 100);
+            int safeMaxPercent = Mathf.Clamp(maxPercent, safeMinPercent, 100);
+
+            if (safeMinPercent * count > 100)
+            {
+                safeMinPercent = Mathf.FloorToInt(100.0f / count);
+            }
+
+            if (safeMaxPercent * count < 100)
+            {
+                safeMaxPercent = Mathf.CeilToInt(100.0f / count);
+            }
+
+            safeMaxPercent = Mathf.Clamp(safeMaxPercent, safeMinPercent, 100);
+
+            int[] ratios = new int[count];
+            int remainingPercent = 100;
+
+            for (int i = 0; i < ratios.Length; i++)
+            {
+                ratios[i] = safeMinPercent;
+                remainingPercent -= safeMinPercent;
+            }
+
+            int guard = 0;
+
+            while (remainingPercent > 0 && guard < 1000)
+            {
+                int index = UnityEngine.Random.Range(0, ratios.Length);
+                int capacity = safeMaxPercent - ratios[index];
+
+                if (capacity <= 0)
+                {
+                    guard++;
+                    continue;
+                }
+
+                int addPercent = UnityEngine.Random.Range(1, capacity + 1);
+                addPercent = Mathf.Min(addPercent, remainingPercent);
+                ratios[index] += addPercent;
+                remainingPercent -= addPercent;
+                guard++;
+            }
+
+            for (int i = 0; i < ratios.Length && remainingPercent > 0; i++)
+            {
+                int capacity = safeMaxPercent - ratios[i];
+                int addPercent = Mathf.Min(capacity, remainingPercent);
+                ratios[i] += addPercent;
+                remainingPercent -= addPercent;
+            }
+
+            return ratios;
         }
 
         private static int GetTotalCount(List<CountEntry> entries)
@@ -660,38 +897,6 @@ namespace TeamProject01.Gameplay
             }
 
             return results;
-        }
-
-        private static bool IsNormalMonsterUnlockedForStage(EnemyController prefab, int stage)
-        {
-            return stage >= GetNormalMonsterUnlockStage(prefab);
-        }
-
-        private static int GetNormalMonsterUnlockStage(EnemyController prefab)
-        {
-            if (prefab == null)
-            {
-                return 1;
-            }
-
-            string prefabName = prefab.name;
-
-            if (prefabName.IndexOf("Ranged_SkeletonCrossbow", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return 10; // 석궁은 초반 시야 압박이 커서 10웨이브부터 해금
-            }
-
-            if (prefabName.IndexOf("Ranged_Normal", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return 5; // 일반 원거리는 5웨이브부터 해금
-            }
-
-            if (prefabName.IndexOf("Melee_SkeletonDagger", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return 3; // 빠른 단검은 3웨이브부터 해금
-            }
-
-            return 1;
         }
 
         private static void ShuffleEnemyPrefabs(List<EnemyController> prefabs)

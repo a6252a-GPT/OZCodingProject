@@ -61,6 +61,22 @@ namespace TeamProject01.Gameplay
 
         public event Action<CoreStatData> StatsChanged; // 성장값 변경 알림
 
+        private float runBaseAttackMultiplier = 1f;
+        private float runAttackSpeedMultiplier = 1f;
+        private float runMoveSpeedMultiplier = 1f;
+        private float runPickupRangeMultiplier = 1f;
+        private float runTurnSpeedMultiplier = 1f;
+        private float runGoldGainMultiplier = 1f;
+        private float runDiamondGainMultiplier = 1f;
+        private float runGoldGainRemainder;
+        private float runDiamondGainRemainder;
+
+        public float RunBaseAttackMultiplier => Mathf.Max(0f, runBaseAttackMultiplier);
+        public float RunAttackSpeedMultiplier => Mathf.Max(0.01f, runAttackSpeedMultiplier);
+        public float RunMoveSpeedMultiplier => Mathf.Max(0f, runMoveSpeedMultiplier);
+        public float RunPickupRangeMultiplier => Mathf.Max(0f, runPickupRangeMultiplier);
+        public float RunTurnSpeedMultiplier => Mathf.Max(0f, runTurnSpeedMultiplier);
+
         public int ExperienceToNextLevel => CalculateRequiredExperience(CurrentLevel); // 다음 레벨 필요량
         public float ExperienceRatio => ExperienceToNextLevel <= 0 ? 0f : Mathf.Clamp01((float)CurrentExperience / ExperienceToNextLevel); // 경험치 비율
         public bool CanLevelUp => CurrentExperience >= ExperienceToNextLevel; // 레벨시스템 판단용
@@ -153,8 +169,13 @@ namespace TeamProject01.Gameplay
         public void ApplyRunStartBonus(RunStartBonusData bonus, float baseTurnSpeed) // 다회차 시작 보너스 적용
         {
             FlatDamageBonus = Mathf.Max(0f, FlatDamageBonus + bonus.BaseAttackFlatBonus); // 기본 공격력
-            AttackSpeedMultiplier = Mathf.Max(0.01f, AttackSpeedMultiplier + bonus.AttackSpeedPercentBonus); // 공격속도
-            TurnSpeedBonus += Mathf.Max(0f, baseTurnSpeed) * bonus.TurnPercentBonus; // 회전력 비율 → 고정값
+            runBaseAttackMultiplier = Mathf.Max(0f, runBaseAttackMultiplier + bonus.BaseAttackPercentBonus);
+            runAttackSpeedMultiplier = Mathf.Max(0.01f, runAttackSpeedMultiplier + bonus.AttackSpeedPercentBonus);
+            runMoveSpeedMultiplier = Mathf.Max(0f, runMoveSpeedMultiplier + bonus.MoveSpeedPercentBonus);
+            runPickupRangeMultiplier = Mathf.Max(0f, runPickupRangeMultiplier + bonus.PickupRangePercentBonus);
+            runTurnSpeedMultiplier = Mathf.Max(0f, runTurnSpeedMultiplier + bonus.TurnPercentBonus);
+            runGoldGainMultiplier = Mathf.Max(0f, runGoldGainMultiplier + bonus.GoldGainPercentBonus);
+            runDiamondGainMultiplier = Mathf.Max(0f, runDiamondGainMultiplier + bonus.DiamondGainPercentBonus);
             CollisionForceBonus += bonus.CollisionForcePercentBonus; // 충돌힘
             RejoinRangeBonus = Mathf.Max(0f, RejoinRangeBonus + bonus.RejoinRangeBonus); // 재결합
             StatsChanged?.Invoke(CurrentStats); // 변경 알림
@@ -168,8 +189,8 @@ namespace TeamProject01.Gameplay
             }
 
             AddExperience(reward.Experience); // 경험치 코어 누적
-            CurrentGold += reward.Gold; // 골드 코어 누적
-            CurrentRunDiamond += reward.Diamond; // 런 다이아 누적
+            CurrentGold += ApplyRunGoldGainBonus(reward.Gold); // 골드 코어 누적
+            CurrentRunDiamond += ApplyRunDiamondGainBonus(reward.Diamond); // 런 다이아 누적
             StatsChanged?.Invoke(CurrentStats); // HUD 갱신
             return true; // 적용 성공
         }
@@ -207,6 +228,15 @@ namespace TeamProject01.Gameplay
             TurnSpeedBonus = 0f; // 회전력 초기화
             CollisionForceBonus = 0f; // 충돌힘 초기화
             RejoinRangeBonus = 0f; // 재결합 초기화
+            runBaseAttackMultiplier = 1f;
+            runAttackSpeedMultiplier = 1f;
+            runMoveSpeedMultiplier = 1f;
+            runPickupRangeMultiplier = 1f;
+            runTurnSpeedMultiplier = 1f;
+            runGoldGainMultiplier = 1f;
+            runDiamondGainMultiplier = 1f;
+            runGoldGainRemainder = 0f;
+            runDiamondGainRemainder = 0f;
             CurrentExperience = 0; // 현재 경험치 초기화
             TotalExperience = 0; // 누적 경험치 초기화
             CurrentGold = 0; // 골드 초기화
@@ -281,6 +311,56 @@ namespace TeamProject01.Gameplay
         {
             stats = GetCurrentOrDefault(); // 현재값 또는 기본값
             return Active != null; // 실제 코어 존재 여부
+        }
+
+        public float ApplyRunBaseAttackBonus(float baseDamage)
+        {
+            return Mathf.Max(0f, baseDamage) * RunBaseAttackMultiplier;
+        }
+
+        public static float ApplyRunBaseAttackBonusOrDefault(float baseDamage)
+        {
+            return Active != null ? Active.ApplyRunBaseAttackBonus(baseDamage) : Mathf.Max(0f, baseDamage);
+        }
+
+        public float ApplyRunAttackSpeedBonus(float baseInterval)
+        {
+            return Mathf.Max(0.05f, Mathf.Max(0.05f, baseInterval) / RunAttackSpeedMultiplier);
+        }
+
+        public static float ApplyRunAttackSpeedBonusOrDefault(float baseInterval)
+        {
+            return Active != null ? Active.ApplyRunAttackSpeedBonus(baseInterval) : Mathf.Max(0.05f, baseInterval);
+        }
+
+        public float ApplyRunMoveSpeedBonus(float baseSpeed)
+        {
+            return Mathf.Max(0f, baseSpeed) * RunMoveSpeedMultiplier;
+        }
+
+        public static float ApplyRunMoveSpeedBonusOrDefault(float baseSpeed)
+        {
+            return Active != null ? Active.ApplyRunMoveSpeedBonus(baseSpeed) : Mathf.Max(0f, baseSpeed);
+        }
+
+        public float ApplyRunPickupRangeBonus(float baseRange)
+        {
+            return Mathf.Max(0f, baseRange) * RunPickupRangeMultiplier;
+        }
+
+        public static float ApplyRunPickupRangeBonusOrDefault(float baseRange)
+        {
+            return Active != null ? Active.ApplyRunPickupRangeBonus(baseRange) : Mathf.Max(0f, baseRange);
+        }
+
+        public float ApplyRunTurnSpeedBonus(float baseTurnSpeed)
+        {
+            return Mathf.Max(0f, baseTurnSpeed) * RunTurnSpeedMultiplier;
+        }
+
+        public static float ApplyRunTurnSpeedBonusOrDefault(float baseTurnSpeed)
+        {
+            return Active != null ? Active.ApplyRunTurnSpeedBonus(baseTurnSpeed) : Mathf.Max(0f, baseTurnSpeed);
         }
 
         public static bool TrySpendCurrentGold(int amount) // 공통 골드 소비 입구
@@ -512,7 +592,7 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            float profileBaseDamage = ResolveCurrentSegmentBaseDamage(normalizedSegmentId); // 유니크 현재 피해 계산 기준
+            float profileBaseDamage = ApplyRunBaseAttackBonus(ResolveCurrentSegmentBaseDamage(normalizedSegmentId)); // 유니크 현재 피해 계산 기준
             string requestedSegmentId = string.IsNullOrWhiteSpace(segmentId) ? string.Empty : segmentId.Trim(); // UI에서 고른 세그먼트
             if (!string.Equals(requestedSegmentId, normalizedSegmentId, StringComparison.OrdinalIgnoreCase))
             {
@@ -680,6 +760,29 @@ namespace TeamProject01.Gameplay
             }
 
             return Active.ApplyReward(reward); // 코어 보상 반영
+        }
+
+        private int ApplyRunGoldGainBonus(int baseAmount)
+        {
+            return ApplyRunRewardGain(baseAmount, runGoldGainMultiplier, ref runGoldGainRemainder);
+        }
+
+        private int ApplyRunDiamondGainBonus(int baseAmount)
+        {
+            return ApplyRunRewardGain(baseAmount, runDiamondGainMultiplier, ref runDiamondGainRemainder);
+        }
+
+        private static int ApplyRunRewardGain(int baseAmount, float multiplier, ref float remainder)
+        {
+            if (baseAmount <= 0)
+            {
+                return 0;
+            }
+
+            float rawAmount = Mathf.Max(0, baseAmount) * Mathf.Max(0f, multiplier) + Mathf.Max(0f, remainder);
+            int result = Mathf.Max(0, Mathf.FloorToInt(rawAmount + 0.0001f));
+            remainder = Mathf.Max(0f, rawAmount - result);
+            return result;
         }
 
         private void AddExperience(int amount) // 경험치 처리
@@ -914,13 +1017,54 @@ namespace TeamProject01.Gameplay
                 return; // 증가 없음
             }
 
-            Vector3 position = ResolveLevelUpVfxPosition(); // 플레이어 위치
+            if (TryResolveLevelUpVfxFollowTarget(out Transform followTarget, out Vector3 localOffset))
+            {
+                LevelUpVfxPlayer.PlayFollowing(LevelUpVfxPrefab, followTarget, localOffset, LevelUpVfxScale, LevelUpVfxLifetime, this); // Looting 추적 재생
+                return;
+            }
+
+            Vector3 position = ResolveLevelUpVfxPosition(); // fallback 위치
             LevelUpVfxPlayer.Play(LevelUpVfxPrefab, position, LevelUpVfxScale, LevelUpVfxLifetime, this); // Text_Effect_36 재생
+        }
+
+        private bool TryResolveLevelUpVfxFollowTarget(out Transform followTarget, out Vector3 localOffset) // 레벨업 VFX 추적 기준
+        {
+            float yOffset = Mathf.Max(0f, LevelUpVfxYOffset); // fallback 높이
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                followTarget = lootingCenter; // 정식 루팅 소켓
+                localOffset = Vector3.zero; // Looting 높이 그대로 사용
+                return true;
+            }
+
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
+            {
+                followTarget = convoyTarget; // 등록된 플레이어 컨보이
+                localOffset = Vector3.up * yOffset; // 기존 높이 유지
+                return true;
+            }
+
+            EnsureConvoyReference(); // 씬 참조 보강
+            if (Convoy != null)
+            {
+                followTarget = Convoy.HeadVisual != null ? Convoy.HeadVisual : Convoy.transform; // 머리 우선
+                localOffset = Vector3.up * yOffset; // 기존 높이 유지
+                return true;
+            }
+
+            followTarget = null;
+            localOffset = Vector3.zero;
+            return false; // fallback 월드 재생
         }
 
         private Vector3 ResolveLevelUpVfxPosition() // 레벨업 VFX 위치
         {
             float yOffset = Mathf.Max(0f, LevelUpVfxYOffset); // 높이 보정
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                return lootingCenter.position; // Looting socket uses authored height
+            }
+
             if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
             {
                 return convoyTarget.position + Vector3.up * yOffset; // 등록된 플레이어 컨보이
@@ -1192,6 +1336,21 @@ namespace TeamProject01.Gameplay
 
         public static void Play(GameObject prefab, Vector3 position, float scale, float lifetime, UnityEngine.Object context) // 월드 위치 재생
         {
+            PlayInternal(prefab, position, null, Vector3.zero, scale, lifetime, context); // 고정 위치
+        }
+
+        public static void PlayFollowing(GameObject prefab, Transform target, Vector3 localOffset, float scale, float lifetime, UnityEngine.Object context) // 타겟 추적 재생
+        {
+            if (target == null)
+            {
+                return; // 추적 대상 없음
+            }
+
+            PlayInternal(prefab, target.TransformPoint(localOffset), target, localOffset, scale, lifetime, context); // 현재 위치에서 시작
+        }
+
+        private static void PlayInternal(GameObject prefab, Vector3 position, Transform followTarget, Vector3 localOffset, float scale, float lifetime, UnityEngine.Object context)
+        {
             GameObject resolvedPrefab = prefab != null ? prefab : ResolveDefaultPrefab(); // 인스펙터 우선
             if (resolvedPrefab == null)
             {
@@ -1202,6 +1361,12 @@ namespace TeamProject01.Gameplay
             GameObject instance = UnityEngine.Object.Instantiate(resolvedPrefab, position, Quaternion.identity); // 플레이어 위치
             instance.name = RuntimeObjectName;
             instance.transform.localScale = Vector3.one * Mathf.Max(0.01f, scale); // 크기 보정
+            if (followTarget != null)
+            {
+                RuntimeVfxFollowTarget.Attach(instance, followTarget, localOffset, Quaternion.identity); // 재생 중 Looting 추적
+                RuntimeVfxParticleUtility.ConfigureParticlesForFollow(instance); // 파티클 잔상 추적
+            }
+
             DisableRuntimeColliders(instance); // 충돌 영향 방지
             PlayParticles(instance); // 즉시 재생
             UnityEngine.Object.Destroy(instance, ResolveLifetime(instance, lifetime)); // 파티클 종료 후 정리

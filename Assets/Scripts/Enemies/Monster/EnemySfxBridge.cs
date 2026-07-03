@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace TeamProject01.Gameplay
@@ -14,6 +15,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private GameplaySfxCue segmentCutLaunchCue = GameplaySfxCue.None;
         [SerializeField] private GameplaySfxCue obstacleSummonCue = GameplaySfxCue.None;
         [SerializeField] private GameplaySfxCue meleeAttackCue = GameplaySfxCue.None;
+        [SerializeField, Min(0.0f)] private float meleeAttackDelay;
         [SerializeField] private GameplaySfxCue shieldLoopCue = GameplaySfxCue.None;
         [SerializeField] private GameplaySfxCue portalTeleportCue = GameplaySfxCue.None;
 
@@ -30,6 +32,7 @@ namespace TeamProject01.Gameplay
 
         private bool deathPlayed;
         private bool shieldLoopPlaying;
+        private Coroutine meleeAttackDelayRoutine;
 
         public void ConfigureCues(
             GameplaySfxCue death,
@@ -42,7 +45,8 @@ namespace TeamProject01.Gameplay
             GameplaySfxCue obstacleSummon,
             GameplaySfxCue melee,
             GameplaySfxCue shieldLoop,
-            GameplaySfxCue portalTeleport)
+            GameplaySfxCue portalTeleport,
+            float meleeDelay = 0.0f)
         {
             deathCue = death;
             jumpLandingCue = jumpLanding;
@@ -53,6 +57,7 @@ namespace TeamProject01.Gameplay
             segmentCutLaunchCue = segmentCutLaunch;
             obstacleSummonCue = obstacleSummon;
             meleeAttackCue = melee;
+            meleeAttackDelay = Mathf.Max(0.0f, meleeDelay);
             shieldLoopCue = shieldLoop;
             portalTeleportCue = portalTeleport;
         }
@@ -71,6 +76,7 @@ namespace TeamProject01.Gameplay
         private void OnDisable()
         {
             Unsubscribe();
+            StopDelayedMeleeAttack();
             StopShieldLoop();
         }
 
@@ -249,7 +255,14 @@ namespace TeamProject01.Gameplay
 
         private void HandleMeleeAttackPerformed()
         {
-            PlayAt(meleeAttackCue, transform.position, true);
+            if (meleeAttackDelay <= 0.0f)
+            {
+                PlayAt(meleeAttackCue, transform.position, true);
+                return;
+            }
+
+            StopDelayedMeleeAttack();
+            meleeAttackDelayRoutine = StartCoroutine(PlayMeleeAttackDelayed());
         }
 
         private void HandleShieldStateChanged(EnemyAreaShield shield, bool active)
@@ -292,6 +305,24 @@ namespace TeamProject01.Gameplay
 
             GameplaySfxEmitter.TryStopLoop(transform, shieldLoopCue);
             shieldLoopPlaying = false;
+        }
+
+        private IEnumerator PlayMeleeAttackDelayed()
+        {
+            yield return new WaitForSeconds(meleeAttackDelay);
+            meleeAttackDelayRoutine = null;
+            PlayAt(meleeAttackCue, transform.position, true);
+        }
+
+        private void StopDelayedMeleeAttack()
+        {
+            if (meleeAttackDelayRoutine == null)
+            {
+                return;
+            }
+
+            StopCoroutine(meleeAttackDelayRoutine);
+            meleeAttackDelayRoutine = null;
         }
 
         private void PlayAt(GameplaySfxCue cue, Vector3 position, bool detached)
