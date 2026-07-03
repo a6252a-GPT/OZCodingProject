@@ -1,4 +1,5 @@
 // 안건준 추가 - 0622
+using System.Collections;
 using System;
 using UnityEngine;
 
@@ -40,6 +41,7 @@ namespace TeamProject01.Gameplay
         [Min(1)] public int StartingSegmentChoiceTicketAmount = 1; // 픽업당 선택권 횟수
         [Min(0f)] public float StartingSegmentChoiceTicketMinRadius = 6.2f; // 최소 드랍 반경
         [Min(0f)] public float StartingSegmentChoiceTicketMaxRadius = 11.2f; // 최대 드랍 반경
+        [Min(0f)] public float StartingSegmentChoiceTicketSpawnDelaySeconds = 2.5f; // 1웨이브 시작 후 선택권 지연 스폰
 
         public bool IsDead { get; private set; } // 사망 여부
         public float HealthRatio => MaxHealth <= 0 ? 0f : Mathf.Clamp01((float)CurrentHealth / MaxHealth); // HUD 비율
@@ -54,6 +56,7 @@ namespace TeamProject01.Gameplay
         private float lastDamageTime = -999f; // 마지막 피해 시각
         private float shieldRegenBank; // 보호막 소수 회복 누적
         private bool shieldRegenStartSfxPlayed;
+        private bool startingSegmentChoiceTicketsSpawned;
 
         private void Awake() // 등록
         {
@@ -70,7 +73,7 @@ namespace TeamProject01.Gameplay
 
         private void Start() // 시작 보상 드랍
         {
-            SpawnStartingSegmentChoiceTickets(); // 테스트 선택권 배치
+            StartCoroutine(SpawnStartingSegmentChoiceTicketsAfterWaveStart()); // 1웨이브 안정화 후 선택권 배치
         }
 
         private void Update() // 보호막 회복
@@ -84,6 +87,30 @@ namespace TeamProject01.Gameplay
             {
                 Active = null; // 참조 제거
             }
+        }
+
+        private IEnumerator SpawnStartingSegmentChoiceTicketsAfterWaveStart() // 1웨이브 시작 후 지연 스폰
+        {
+            if (!SpawnSegmentChoiceTicketsOnStart || StartingSegmentChoiceTicketCount <= 0)
+            {
+                yield break;
+            }
+
+            WaveController wave = FindFirstObjectByType<WaveController>();
+            float waitForWaveSeconds = 0f;
+            while (wave != null && wave.CurrentStage <= 0 && waitForWaveSeconds < 5f)
+            {
+                waitForWaveSeconds += Time.deltaTime;
+                yield return null;
+            }
+
+            float delay = Mathf.Max(0f, StartingSegmentChoiceTicketSpawnDelaySeconds);
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
+            SpawnStartingSegmentChoiceTickets(); // 안정화된 기준점으로 실제 배치
         }
 
         public void ResetHealth() // 체력 초기화
@@ -238,17 +265,62 @@ namespace TeamProject01.Gameplay
 
         private void SpawnStartingSegmentChoiceTickets() // 시작 선택권 드랍
         {
-            if (!SpawnSegmentChoiceTicketsOnStart || StartingSegmentChoiceTicketCount <= 0 || Active != this)
+            if (startingSegmentChoiceTicketsSpawned || !SpawnSegmentChoiceTicketsOnStart || StartingSegmentChoiceTicketCount <= 0 || Active != this)
             {
                 return; // 처리 없음
             }
 
+            startingSegmentChoiceTicketsSpawned = true;
             int amount = Mathf.Max(1, StartingSegmentChoiceTicketAmount); // 픽업당 횟수
+            Vector3 spawnCenter = ResolveStartingSegmentChoiceTicketSpawnCenter(out string centerSource, out Transform centerTransform);
+            if (StartingSegmentChoiceTicketDebug.ShouldLog)
+            {
+                string lootingInfo = centerTransform != null
+                    ? $"{centerSource}:{StartingSegmentChoiceTicketDebug.Format(centerTransform.position)}"
+                    : centerSource;
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"Nexus.StartSpawn scene={StartingSegmentChoiceTicketDebug.SceneName}, nexus={StartingSegmentChoiceTicketDebug.Format(transform.position)}, "
+                    + $"count={StartingSegmentChoiceTicketCount}, amount={amount}, radius={StartingSegmentChoiceTicketMinRadius:0.00}-{StartingSegmentChoiceTicketMaxRadius:0.00}, "
+                    + $"rewardDropServiceActive={(RewardDropService.Active != null)}, groundServiceActive={(GroundService.Active != null)}, "
+                    + $"runLoadoutHasBonus={RunLoadoutContext.HasStartBonus}, selectedWorm={RunLoadoutContext.CurrentStartBonus.SelectedWormId}, spawnCenter={StartingSegmentChoiceTicketDebug.Format(spawnCenter)}, looting={lootingInfo}",
+                    this);
+            }
+
             for (int i = 0; i < StartingSegmentChoiceTicketCount; i++)
             {
-                Vector3 dropPosition = transform.position + CreateStartingSegmentChoiceTicketOffset(i, StartingSegmentChoiceTicketCount); // 넥서스 주변
+                Vector3 offset = CreateStartingSegmentChoiceTicketOffset(i, StartingSegmentChoiceTicketCount);
+                Vector3 dropPosition = spawnCenter + offset; // 현재 플레이어 수집 기준점 주변
+                if (StartingSegmentChoiceTicketDebug.ShouldLog)
+                {
+                    StartingSegmentChoiceTicketDebug.Log(
+                        $"Nexus.DropRequest index={i}, offset={StartingSegmentChoiceTicketDebug.Format(offset)}, "
+                        + $"offsetDistance={offset.magnitude:0.00}, requested={StartingSegmentChoiceTicketDebug.Format(dropPosition)}",
+                        this);
+                }
+
                 RewardDropService.SpawnSegmentChoiceTicket(amount, dropPosition); // 기존 월드드랍 경로
             }
+        }
+
+        private Vector3 ResolveStartingSegmentChoiceTicketSpawnCenter(out string source, out Transform sourceTransform) // 선택권 기준점
+        {
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter) && lootingCenter != null)
+            {
+                source = "Looting";
+                sourceTransform = lootingCenter;
+                return lootingCenter.position;
+            }
+
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
+            {
+                source = "Convoy";
+                sourceTransform = convoyTarget;
+                return convoyTarget.position;
+            }
+
+            source = "Nexus";
+            sourceTransform = transform;
+            return transform.position;
         }
 
         private Vector3 CreateStartingSegmentChoiceTicketOffset(int index, int count) // 시작 선택권 위치
@@ -257,8 +329,17 @@ namespace TeamProject01.Gameplay
             float minRadius = Mathf.Clamp(StartingSegmentChoiceTicketMinRadius, 0f, maxRadius); // 최소 보정
             float radius = UnityEngine.Random.Range(minRadius, maxRadius); // 무작위 거리
             float baseAngle = count > 0 ? 360f * index / count : 0f; // 균등 분산
-            float angle = baseAngle + UnityEngine.Random.Range(-42f, 42f); // 위치 흔들림
-            return Quaternion.Euler(0f, angle, 0f) * Vector3.forward * radius; // 수평 오프셋
+            float jitter = UnityEngine.Random.Range(-42f, 42f);
+            float angle = baseAngle + jitter; // 위치 흔들림
+            Vector3 offset = Quaternion.Euler(0f, angle, 0f) * Vector3.forward * radius; // 수평 오프셋
+            if (StartingSegmentChoiceTicketDebug.ShouldLog)
+            {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"Nexus.Offset index={index}, count={count}, radius={radius:0.00}, baseAngle={baseAngle:0.00}, jitter={jitter:0.00}, angle={angle:0.00}, offset={StartingSegmentChoiceTicketDebug.Format(offset)}",
+                    this);
+            }
+
+            return offset;
         }
 
         private void RegenerateShield() // 보호막 자동 회복
@@ -311,6 +392,7 @@ namespace TeamProject01.Gameplay
             StartingSegmentChoiceTicketAmount = Mathf.Max(1, StartingSegmentChoiceTicketAmount); // 선택권 횟수 보정
             StartingSegmentChoiceTicketMinRadius = Mathf.Max(0f, StartingSegmentChoiceTicketMinRadius); // 최소 반경 보정
             StartingSegmentChoiceTicketMaxRadius = Mathf.Max(StartingSegmentChoiceTicketMinRadius, StartingSegmentChoiceTicketMaxRadius); // 최대 반경 보정
+            StartingSegmentChoiceTicketSpawnDelaySeconds = Mathf.Max(0f, StartingSegmentChoiceTicketSpawnDelaySeconds); // 지연 시간 보정
         }
 
         private void NotifyHealthChanged() // 체력 변경 알림

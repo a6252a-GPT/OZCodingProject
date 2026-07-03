@@ -19,6 +19,7 @@ namespace TeamProject01.Gameplay
         [SerializeField, Min(1)] private int maxEnemiesPerFrame = 32; // 과부하 방지
         private readonly List<EnemyController> overlapEnemies = new List<EnemyController>(32); // 범위 안 몬스터
         private readonly Dictionary<int, float> nextPushTimes = new Dictionary<int, float>(128); // 몬스터별 재충돌 시간
+        private float debugNextPushLogTime; // 선택권 튐 원인 대조용 로그 스로틀
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetRuntimeHooks()
@@ -53,6 +54,9 @@ namespace TeamProject01.Gameplay
 
             GameObject runner = new GameObject(RuntimeObjectName);
             runner.AddComponent<PlayerMonsterCollisionPusher>();
+            StartingSegmentChoiceTicketDebug.Log(
+                $"PlayerMonsterCollisionPusher.Installed scene={StartingSegmentChoiceTicketDebug.SceneName}, hasInteractor={(FindFirstObjectByType<PlayerPickupInteractor>() != null)}, hasConvoy={(FindFirstObjectByType<ConvoyController>() != null)}",
+                runner);
         }
 
         private void Update()
@@ -69,6 +73,13 @@ namespace TeamProject01.Gameplay
 
             Vector3 center = pushCenter.position;
             EnemyController.CollectActiveInRange(center, collisionRadius, overlapEnemies, CanAffectEnemy);
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && overlapEnemies.Count > 0 && Time.time >= debugNextPushLogTime)
+            {
+                debugNextPushLogTime = Time.time + 0.5f;
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"PlayerMonsterCollisionPusher.Overlap center={StartingSegmentChoiceTicketDebug.Format(center)}, radius={collisionRadius:0.00}, enemyCount={overlapEnemies.Count}",
+                    this);
+            }
 
             int count = Mathf.Min(overlapEnemies.Count, Mathf.Max(1, maxEnemiesPerFrame));
             for (int i = 0; i < count; i++)

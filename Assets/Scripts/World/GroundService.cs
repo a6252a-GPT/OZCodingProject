@@ -48,6 +48,32 @@ namespace TeamProject01.Gameplay
             return position; // 대체 위치
         }
 
+        public static Vector3 ProjectToGroundForStartSegmentTicket(Vector3 position, float offset, string context, Object logContext = null) // 시작 선택권 위치 진단
+        {
+            Vector3 grounded = ProjectToGround(position, offset);
+            if (!StartingSegmentChoiceTicketDebug.ShouldLog)
+            {
+                return grounded;
+            }
+
+            GroundService service = Active;
+            string groundColliderName = service != null && service.GroundCollider != null ? service.GroundCollider.name : "null";
+            string physicsHitName = "none";
+            float raycastHeight = service != null ? service.RaycastHeight : 40f;
+            float raycastDistance = service != null ? service.RaycastDistance : 160f;
+            Ray ray = new Ray(position + Vector3.up * raycastHeight, Vector3.down);
+            if (Physics.Raycast(ray, out RaycastHit physicsHit, raycastDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            {
+                physicsHitName = physicsHit.collider != null ? physicsHit.collider.name : "unknown";
+            }
+
+            StartingSegmentChoiceTicketDebug.Log(
+                $"GroundService.Project context={context}, input={StartingSegmentChoiceTicketDebug.Format(position)}, output={StartingSegmentChoiceTicketDebug.Format(grounded)}, "
+                + $"active={(service != null)}, groundCollider={groundColliderName}, physicsFirstHit={physicsHitName}, offset={offset:0.00}",
+                logContext);
+            return grounded;
+        }
+
         public static bool RaycastGround(Ray ray, out Vector3 point) // 바닥 raycast
         {
             GroundService service = Active; // 현재 서비스

@@ -428,8 +428,24 @@ public partial class CardUI : MonoBehaviour
     public bool OpenSegmentChoiceTicket(int ticketCount) // 월드드랍/보상카드 선택권 진입점
     {
         int safeCount = Mathf.Max(0, ticketCount);
+        if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog)
+        {
+            TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                $"CardUI.OpenSegmentChoiceTicket requested={ticketCount}, safeCount={safeCount}, "
+                + $"panelOpen={IsLevelUpPanelOpen()}, processing={isProcessingSelection}, mode={activePanelMode}, "
+                + $"remainingTickets={segmentTicketChoicesRemaining}, rewardTicketPending={pendingRewardSegmentTicketCount}",
+                this);
+        }
+
         if (safeCount <= 0)
         {
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    "CardUI.OpenSegmentChoiceTicket blocked reason=InvalidTicketCount",
+                    this);
+            }
+
             return false;
         }
 
@@ -441,6 +457,13 @@ public partial class CardUI : MonoBehaviour
     {
         if (IsLevelUpPanelOpen() || isProcessingSelection)
         {
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && mode == CardPanelMode.SegmentTicketChoice)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    $"CardUI.OpenSpecialCardPanel blocked mode={mode}, reason=PanelBusy, panelOpen={IsLevelUpPanelOpen()}, processing={isProcessingSelection}",
+                    this);
+            }
+
             return false; // 이미 카드 선택 중
         }
 
@@ -448,6 +471,13 @@ public partial class CardUI : MonoBehaviour
         if (ui == null)
         {
             Debug.LogWarning("[CardUI] LevelUpUi가 없어 카드 패널을 열 수 없습니다.", this);
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && mode == CardPanelMode.SegmentTicketChoice)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    $"CardUI.OpenSpecialCardPanel blocked mode={mode}, reason=MissingLevelUpUi",
+                    this);
+            }
+
             return false;
         }
 
@@ -463,6 +493,14 @@ public partial class CardUI : MonoBehaviour
         ui.SetUseRewardTitle(mode != CardPanelMode.LevelUp); // 보상/선택권은 보상획득 타이틀
         ui.SetUseBackgroundBlur(mode != CardPanelMode.LevelUp); // 보상/선택권은 배경 블러 사용
         ui.Open();
+        if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && mode == CardPanelMode.SegmentTicketChoice)
+        {
+            TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                $"CardUI.OpenSpecialCardPanel opened mode={mode}, ticketCount={ticketCount}, ui={ui.name}, "
+                + $"uiOpen={ui.IsPanelOpen}, uiVisible={ui.IsPanelVisible}",
+                this);
+        }
+
         return true;
     }
 

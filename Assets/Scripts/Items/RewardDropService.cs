@@ -66,14 +66,23 @@ namespace TeamProject01.Gameplay
         public static void SpawnSegmentChoiceTicket(int ticketCount, Vector3 position)
         {
             int safeCount = Mathf.Max(1, ticketCount);
+            StartingSegmentChoiceTicketDebug.Log(
+                $"RewardDropService.SpawnSegmentChoiceTicket scene={StartingSegmentChoiceTicketDebug.SceneName}, requested={StartingSegmentChoiceTicketDebug.Format(position)}, "
+                + $"count={safeCount}, activeService={(Active != null)}",
+                Active);
             if (Active != null)
             {
                 Active.SpawnSegmentChoiceTicketInternal(safeCount, position);
                 return;
             }
 
-            Vector3 basePosition = GroundService.ProjectToGround(position, 0.02f);
-            SpawnPickup(GetCachedSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, safeCount, 0, basePosition, basePosition + GetDefaultDropOffset(3), null, 0.02f);
+            Vector3 basePosition = GroundService.ProjectToGroundForStartSegmentTicket(position, 0.02f, "RewardDropService.StaticBase", null);
+            Vector3 landingPosition = basePosition + GetDefaultDropOffset(3);
+            StartingSegmentChoiceTicketDebug.Log(
+                $"RewardDropService.StaticPath base={StartingSegmentChoiceTicketDebug.Format(basePosition)}, landing={StartingSegmentChoiceTicketDebug.Format(landingPosition)}, "
+                + $"landingDelta={StartingSegmentChoiceTicketDebug.Format(landingPosition - basePosition)}, groundServiceActive={(GroundService.Active != null)}",
+                null);
+            SpawnPickup(GetCachedSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, safeCount, 0, basePosition, landingPosition, null, 0.02f);
         }
 
         public static void SpawnDiamond(int amount, Vector3 position, int enemyId = 0)
@@ -115,8 +124,14 @@ namespace TeamProject01.Gameplay
 
         private void SpawnSegmentChoiceTicketInternal(int ticketCount, Vector3 position)
         {
-            Vector3 basePosition = GroundService.ProjectToGround(position, GroundHeightOffset);
-            SpawnPickupFromPool(ResolveSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, Mathf.Max(1, ticketCount), 0, basePosition, basePosition + GetDropOffset(3), DropRoot, GroundHeightOffset);
+            Vector3 basePosition = GroundService.ProjectToGroundForStartSegmentTicket(position, GroundHeightOffset, "RewardDropService.ActiveBase", this);
+            Vector3 landingPosition = basePosition + GetDropOffset(3);
+            StartingSegmentChoiceTicketDebug.Log(
+                $"RewardDropService.ActivePath base={StartingSegmentChoiceTicketDebug.Format(basePosition)}, landing={StartingSegmentChoiceTicketDebug.Format(landingPosition)}, "
+                + $"landingDelta={StartingSegmentChoiceTicketDebug.Format(landingPosition - basePosition)}, dropRoot={(DropRoot != null ? DropRoot.name : "null")}, "
+                + $"groundHeightOffset={GroundHeightOffset:0.00}, dropSpreadRadius={DropSpreadRadius:0.00}",
+                this);
+            SpawnPickupFromPool(ResolveSegmentChoiceTicketPrefab(), RewardPickupKind.SegmentChoiceTicket, Mathf.Max(1, ticketCount), 0, basePosition, landingPosition, DropRoot, GroundHeightOffset);
         }
 
         private void SpawnDiamondInternal(int amount, Vector3 position, int enemyId)
@@ -289,6 +304,15 @@ namespace TeamProject01.Gameplay
             }
 
             pickup.name = $"{kind}RewardPickup_{++dropSerial:000}";
+            if (kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"RewardDropService.SpawnPickupFromPool name={pickup.name}, prefab={(prefab != null ? prefab.name : "fallback")}, "
+                    + $"spawn={StartingSegmentChoiceTicketDebug.Format(spawnPosition)}, landing={StartingSegmentChoiceTicketDebug.Format(landingPosition)}, "
+                    + $"parent={(parent != null ? parent.name : "null")}, activeBefore={pickup.gameObject.activeSelf}",
+                    pickup);
+            }
+
             pickup.transform.SetParent(parent, true);
             pickup.AttachPoolOwner(prefab != null ? this : null, prefab);
             pickup.Configure(kind, amount, enemyId, landingPosition, spawnPosition);
@@ -377,6 +401,15 @@ namespace TeamProject01.Gameplay
                 : CreateFallbackPickup(kind, spawnPosition, parent, groundHeightOffset);
 
             pickup.name = $"{kind}RewardPickup_{++dropSerial:000}";
+            if (kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"RewardDropService.SpawnPickupStatic name={pickup.name}, prefab={(prefab != null ? prefab.name : "fallback")}, "
+                    + $"spawn={StartingSegmentChoiceTicketDebug.Format(spawnPosition)}, landing={StartingSegmentChoiceTicketDebug.Format(landingPosition)}, "
+                    + $"parent={(parent != null ? parent.name : "null")}",
+                    pickup);
+            }
+
             pickup.Configure(kind, amount, enemyId, landingPosition, spawnPosition);
         }
 

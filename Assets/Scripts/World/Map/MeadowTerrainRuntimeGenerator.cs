@@ -28,6 +28,7 @@ namespace TeamProject01.Gameplay
         private const float MaximumVisibleClusterContactShadowSize = 2.4f;
         private const float MinimumVisibleClusterContactShadowSize = 0.35f;
         private const string LoadingCanvasName = "MeadowTerrainLoadingOverlay_Runtime";
+        private const string DefaultLoadingLogoResourcePath = "UI/Loading/LoadingLogo_WormKnight";
 #if UNITY_EDITOR
         private const string ProjectTerrainTemplatePath = "Assets/Art/Map/Generated/Terrain_CoreTestMeadowNature_Copy.asset";
         private const string DemoTerrainTemplatePath = "Assets/ThirdParty/01_Core/STYLIZED Meadow Nature/Materials/Terrain/Terrain Meadow Nature.asset";
@@ -42,6 +43,7 @@ namespace TeamProject01.Gameplay
         public string LoadingTitle = "전장 진입 준비"; // 로딩 제목
         public string LoadingStatus = "초원 전장을 준비하는 중..."; // 보조 문구
         public Sprite LoadingBackgroundSprite; // 로딩 배경 이미지
+        public Sprite LoadingLogoSprite; // 로딩 로고 이미지
 
         [Header("Scene")]
         public Material TerrainMaterial; // 01/02/03 블렌드 머티리얼
@@ -372,7 +374,7 @@ namespace TeamProject01.Gameplay
             float startedAt = Time.unscaledTime;
             if (ShowLoadingOverlay)
             {
-                overlay = MeadowLoadingOverlay.Create(LoadingCanvasName, LoadingTitle, LoadingStatus, LoadingBackgroundSprite);
+                overlay = MeadowLoadingOverlay.Create(LoadingCanvasName, LoadingTitle, LoadingStatus, LoadingBackgroundSprite, LoadingLogoSprite);
                 overlay.SetProgress(0.02f, LoadingStatus);
             }
 
@@ -4588,7 +4590,7 @@ namespace TeamProject01.Gameplay
                 this.statusText = statusText;
             }
 
-            public static MeadowLoadingOverlay Create(string name, string title, string status, Sprite backgroundSprite) // UI 생성
+            public static MeadowLoadingOverlay Create(string name, string title, string status, Sprite backgroundSprite, Sprite logoSprite) // UI 생성
             {
                 GameObject old = GameObject.Find(name);
                 if (old != null)
@@ -4614,33 +4616,74 @@ namespace TeamProject01.Gameplay
                 bgRect.anchorMax = Vector2.one;
                 bgRect.offsetMin = Vector2.zero;
                 bgRect.offsetMax = Vector2.zero;
-
                 if (backgroundSprite != null)
                 {
-                    Image shade = CreateImage("ScreenShade", canvasObject.transform, new Color(0f, 0f, 0f, 0.18f));
-                    shade.raycastTarget = false;
-                    RectTransform shadeRect = shade.rectTransform;
-                    shadeRect.anchorMin = Vector2.zero;
-                    shadeRect.anchorMax = Vector2.one;
-                    shadeRect.offsetMin = Vector2.zero;
-                    shadeRect.offsetMax = Vector2.zero;
+                    AspectRatioFitter fitter = background.gameObject.AddComponent<AspectRatioFitter>();
+                    fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+                    fitter.aspectRatio = backgroundSprite.rect.width / Mathf.Max(1f, backgroundSprite.rect.height);
                 }
 
-                Text titleText = CreateText("Title", canvasObject.transform, title, 42, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.96f, 0.91f, 0.72f, 1f));
-                RectTransform titleRect = titleText.rectTransform;
-                titleRect.anchorMin = new Vector2(0.5f, 0.5f);
-                titleRect.anchorMax = new Vector2(0.5f, 0.5f);
-                titleRect.anchoredPosition = new Vector2(0f, -82f);
-                titleRect.sizeDelta = new Vector2(760f, 64f);
+                Image screenShade = CreateImage("ScreenShade", canvasObject.transform, new Color(0.02f, 0.045f, 0.065f, backgroundSprite == null ? 0.92f : 0.18f));
+                screenShade.raycastTarget = false;
+                Stretch(screenShade.rectTransform);
 
-                Image barBack = CreateImage("ProgressBack", canvasObject.transform, new Color(0.12f, 0.105f, 0.07f, 1f));
+                Image bottomShade = CreateImage("BottomShade", canvasObject.transform, new Color(0.01f, 0.025f, 0.035f, 0.48f));
+                bottomShade.raycastTarget = false;
+                RectTransform bottomShadeRect = bottomShade.rectTransform;
+                bottomShadeRect.anchorMin = new Vector2(0f, 0f);
+                bottomShadeRect.anchorMax = new Vector2(1f, 0f);
+                bottomShadeRect.pivot = new Vector2(0.5f, 0f);
+                bottomShadeRect.anchoredPosition = Vector2.zero;
+                bottomShadeRect.sizeDelta = new Vector2(0f, 360f);
+
+                logoSprite = logoSprite != null ? logoSprite : Resources.Load<Sprite>(DefaultLoadingLogoResourcePath);
+                if (logoSprite != null)
+                {
+                    Image logoShadow = CreateImage("LoadingLogoShadow", canvasObject.transform, new Color(0f, 0f, 0f, 0.36f));
+                    logoShadow.sprite = logoSprite;
+                    logoShadow.preserveAspect = true;
+                    Place(logoShadow.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -148f), new Vector2(560f, 300f));
+
+                    Image logo = CreateImage("LoadingLogo", canvasObject.transform, Color.white);
+                    logo.sprite = logoSprite;
+                    logo.preserveAspect = true;
+                    logo.raycastTarget = false;
+                    Place(logo.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -140f), new Vector2(560f, 300f));
+                }
+
+                Image panelShadow = CreateImage("LoadingPanelShadow", canvasObject.transform, new Color(0f, 0f, 0f, 0.28f));
+                Place(panelShadow.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 110f), new Vector2(910f, 150f));
+
+                Image panel = CreateImage("LoadingPanel", canvasObject.transform, new Color(0.025f, 0.085f, 0.115f, 0.74f));
+                panel.raycastTarget = false;
+                Place(panel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0f, 118f), new Vector2(900f, 142f));
+
+                Image topLine = CreateImage("LoadingPanelTopLine", panel.transform, new Color(0.92f, 0.72f, 0.32f, 0.92f));
+                topLine.raycastTarget = false;
+                RectTransform topLineRect = topLine.rectTransform;
+                topLineRect.anchorMin = new Vector2(0.03f, 1f);
+                topLineRect.anchorMax = new Vector2(0.97f, 1f);
+                topLineRect.pivot = new Vector2(0.5f, 1f);
+                topLineRect.anchoredPosition = new Vector2(0f, -8f);
+                topLineRect.sizeDelta = new Vector2(0f, 3f);
+
+                Text titleText = CreateText("Title", panel.transform, title, 34, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.93f, 0.68f, 1f));
+                Place(titleText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 42f), new Vector2(760f, 42f));
+                titleText.resizeTextForBestFit = true;
+                titleText.resizeTextMinSize = 24;
+                titleText.resizeTextMaxSize = 34;
+
+                Image barRim = CreateImage("ProgressRim", panel.transform, new Color(0.86f, 0.68f, 0.28f, 0.88f));
+                Place(barRim.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, -6f), new Vector2(772f, 24f));
+
+                Image barBack = CreateImage("ProgressBack", barRim.transform, new Color(0.02f, 0.04f, 0.052f, 0.98f));
                 RectTransform barRect = barBack.rectTransform;
-                barRect.anchorMin = new Vector2(0.5f, 0.5f);
-                barRect.anchorMax = new Vector2(0.5f, 0.5f);
-                barRect.anchoredPosition = new Vector2(0f, -146f);
-                barRect.sizeDelta = new Vector2(620f, 14f);
+                barRect.anchorMin = Vector2.zero;
+                barRect.anchorMax = Vector2.one;
+                barRect.offsetMin = new Vector2(4f, 4f);
+                barRect.offsetMax = new Vector2(-4f, -4f);
 
-                Image fill = CreateImage("ProgressFill", barBack.transform, new Color(0.92f, 0.69f, 0.24f, 1f));
+                Image fill = CreateImage("ProgressFill", barBack.transform, new Color(0.22f, 0.78f, 1f, 1f));
                 RectTransform fillRect = fill.rectTransform;
                 fillRect.anchorMin = new Vector2(0f, 0f);
                 fillRect.anchorMax = new Vector2(0f, 1f);
@@ -4648,19 +4691,29 @@ namespace TeamProject01.Gameplay
                 fillRect.offsetMax = Vector2.zero;
                 fillRect.pivot = new Vector2(0f, 0.5f);
 
-                Text percent = CreateText("Percent", canvasObject.transform, "0%", 20, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(0.92f, 0.88f, 0.74f, 1f));
-                RectTransform percentRect = percent.rectTransform;
-                percentRect.anchorMin = new Vector2(0.5f, 0.5f);
-                percentRect.anchorMax = new Vector2(0.5f, 0.5f);
-                percentRect.anchoredPosition = new Vector2(0f, -176f);
-                percentRect.sizeDelta = new Vector2(220f, 30f);
+                Image fillHighlight = CreateImage("ProgressFillHighlight", fill.transform, new Color(0.88f, 1f, 1f, 0.55f));
+                RectTransform highlightRect = fillHighlight.rectTransform;
+                highlightRect.anchorMin = new Vector2(0f, 0.55f);
+                highlightRect.anchorMax = new Vector2(1f, 1f);
+                highlightRect.offsetMin = Vector2.zero;
+                highlightRect.offsetMax = Vector2.zero;
 
-                Text statusText = CreateText("Status", canvasObject.transform, status, 22, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.78f, 0.78f, 0.82f, 1f));
-                RectTransform statusRect = statusText.rectTransform;
-                statusRect.anchorMin = new Vector2(0.5f, 0.5f);
-                statusRect.anchorMax = new Vector2(0.5f, 0.5f);
-                statusRect.anchoredPosition = new Vector2(0f, -220f);
-                statusRect.sizeDelta = new Vector2(760f, 40f);
+                Image fillCap = CreateImage("ProgressFillCap", fill.transform, new Color(1f, 0.86f, 0.34f, 1f));
+                RectTransform capRect = fillCap.rectTransform;
+                capRect.anchorMin = new Vector2(1f, 0.5f);
+                capRect.anchorMax = new Vector2(1f, 0.5f);
+                capRect.pivot = new Vector2(0.5f, 0.5f);
+                capRect.anchoredPosition = Vector2.zero;
+                capRect.sizeDelta = new Vector2(14f, 28f);
+
+                Text percent = CreateText("Percent", panel.transform, "0%", 24, FontStyle.Bold, TextAnchor.MiddleRight, new Color(0.9f, 0.98f, 1f, 1f));
+                Place(percent.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(340f, -42f), new Vector2(120f, 30f));
+
+                Text statusText = CreateText("Status", panel.transform, status, 20, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.82f, 0.94f, 1f, 0.98f));
+                Place(statusText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(-60f, -42f), new Vector2(640f, 30f));
+                statusText.resizeTextForBestFit = true;
+                statusText.resizeTextMinSize = 16;
+                statusText.resizeTextMaxSize = 20;
 
                 UnityEngine.Object.DontDestroyOnLoad(canvasObject);
                 return new MeadowLoadingOverlay(canvasObject, fillRect, percent, statusText);
@@ -4690,6 +4743,22 @@ namespace TeamProject01.Gameplay
                 image.color = color;
                 image.raycastTarget = true;
                 return image;
+            }
+
+            private static void Stretch(RectTransform rect) // 부모 전체 채우기
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            private static void Place(RectTransform rect, Vector2 anchor, Vector2 position, Vector2 size) // 고정 UI 배치
+            {
+                rect.anchorMin = anchor;
+                rect.anchorMax = anchor;
+                rect.anchoredPosition = position;
+                rect.sizeDelta = size;
             }
 
             private static Text CreateText(string name, Transform parent, string text, int size, FontStyle style, TextAnchor anchor, Color color) // Text 생성

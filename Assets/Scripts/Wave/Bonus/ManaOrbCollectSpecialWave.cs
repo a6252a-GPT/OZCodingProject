@@ -28,6 +28,8 @@ namespace TeamProject01.Gameplay
         private const float SafetyTextLetterSpacing = 0.26f;
         private const float SafetyTextTotalWidth = SafetyTextLetterWidth * 4.0f + SafetyTextLetterSpacing * 3.0f;
         private const float SafetyTextWidthScale = 1.9f;
+        private const float RewardChestYawDegrees = 180.0f;
+        private const float DefaultRewardStageAutoCollectSeconds = 60.0f;
 
         private static readonly Vector2[][] SafetyTextStrokes =
         {
@@ -118,7 +120,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float chestSpacing = 4.0f; // ?곸옄 ?ъ씠 媛꾧꺽?낅땲??
         [SerializeField] private float chestHeightOffset = 0.0f; // ?곸옄 ?앹꽦 ?믪씠 蹂댁젙媛믪엯?덈떎.
         [Min(0.0f)]
-        [SerializeField] private float rewardStageMaxWaitSeconds = 0.0f; // 0?대㈃ ?곸옄媛 紐⑤몢 ?щ씪吏??뚭퉴吏 湲곕떎由쎈땲??
+        [SerializeField] private float rewardStageMaxWaitSeconds = DefaultRewardStageAutoCollectSeconds; // 보상 상자 자동 획득까지 기다리는 시간입니다.
 
         private readonly List<ManaOrbPickup> activeManaOrbPickups = new List<ManaOrbPickup>(); // ?꾩옱 ?대깽??留덈젰 援ъ뒳 紐⑸줉?낅땲??
         private readonly List<BonusChest> activeRewardChests = new List<BonusChest>(); // ?꾩옱 蹂댁긽 ?곸옄 紐⑸줉?낅땲??
@@ -131,6 +133,8 @@ namespace TeamProject01.Gameplay
         private bool rewardStageActive; // 蹂댁긽 ?곸옄 ?湲?以묒씤吏 ?щ??낅땲??
         private bool collectStageActive; // 留덈젰 援ъ뒳??癒뱀쓣 ???덈뒗 ?섏쭛 ?쒓컙?몄? 湲곕줉?⑸땲??
         private float collectEndTime; // ?섏쭛 ?④퀎媛 ?앸굹??Time.time 湲곗? ?쒓컖?낅땲??
+        private float rewardStageEndTime; // 보상 상자 자동 획득 기준 시각입니다.
+        private bool rewardAutoCollectStarted; // 자동 획득이 시작됐는지 저장합니다.
         private ManaOrbSpawnShape currentSpawnShape = ManaOrbSpawnShape.Star; // ?대쾲 ?뱀닔?⑥씠釉뚯뿉???좏깮??諛곗튂 ?꾪삎?낅땲??
 
         public bool IsRunning => runningRoutine != null;
@@ -140,6 +144,8 @@ namespace TeamProject01.Gameplay
         public int SpawnedManaOrbCount => spawnedManaOrbCount;
         public int RemainingManaOrbCount => Mathf.Clamp(spawnedManaOrbCount - collectedManaOrbCount, 0, spawnedManaOrbCount);
         public float RemainingCollectSeconds => collectStageActive ? Mathf.Max(0.0f, collectEndTime - Time.time) : 0.0f;
+        public float RemainingRewardSeconds => rewardStageActive ? Mathf.Max(0.0f, rewardStageEndTime - Time.time) : 0.0f;
+        public float RewardStageMaxWaitSeconds => ResolveRewardStageMaxWaitSeconds();
         public float CollectedPercent => spawnedManaOrbCount > 0 ? collectedManaOrbCount / (float)spawnedManaOrbCount * 100.0f : 0.0f;
         public int CurrentChancePercent => Mathf.Clamp(baseChancePercent + failedChanceCount * chanceIncreaseOnFailPercent, baseChancePercent, maxChancePercent);
 
@@ -204,6 +210,8 @@ namespace TeamProject01.Gameplay
             ClearRewardChests();
             collectStageActive = false;
             rewardStageActive = false;
+            rewardAutoCollectStarted = false;
+            rewardStageEndTime = 0.0f;
 
             if (notifyFinished)
             {
@@ -285,13 +293,19 @@ namespace TeamProject01.Gameplay
             ClearManaOrbPickups();
             SpawnRewardChests();
             rewardStageActive = true;
+            rewardAutoCollectStarted = false;
+            rewardStageEndTime = Time.time + ResolveRewardStageMaxWaitSeconds();
 
-            float rewardStartTime = Time.time;
             while (!AreRewardChestsCleared())
             {
-                if (rewardStageMaxWaitSeconds > 0.0f && Time.time - rewardStartTime >= rewardStageMaxWaitSeconds)
+                if (!rewardAutoCollectStarted && Time.time >= rewardStageEndTime)
                 {
-                    break;
+                    rewardAutoCollectStarted = true;
+                }
+
+                if (rewardAutoCollectStarted)
+                {
+                    TryAutoCollectNextRewardChest();
                 }
 
                 yield return null;
@@ -346,6 +360,7 @@ namespace TeamProject01.Gameplay
 
             Vector3 center = ResolveRewardCenter();
             Vector3 right = ResolveRewardRight();
+            Quaternion rotation = Quaternion.Euler(0.0f, RewardChestYawDegrees, 0.0f);
             Transform root = chestRoot != null ? chestRoot : transform;
 
             for (int i = 0; i < rewardPrefabs.Count; i++)
@@ -360,7 +375,7 @@ namespace TeamProject01.Gameplay
                 Vector3 position = center + right * centeredIndex * chestSpacing;
                 position.y += chestHeightOffset;
 
-                BonusChest chest = Instantiate(prefab, position, Quaternion.identity, root);
+                BonusChest chest = Instantiate(prefab, position, rotation, root);
                 chest.ConfigureChoiceGroup(root, false, 0.0f);
                 activeRewardChests.Add(chest);
             }
@@ -403,9 +418,65 @@ namespace TeamProject01.Gameplay
             return activeRewardChests.Count <= 0;
         }
 
+        private bool TryAutoCollectNextRewardChest()
+        {
+            if (HasRewardChestInProgress())
+            {
+                return false; // 이미 열린 상자의 보상 처리를 기다림
+            }
+
+            for (int i = activeRewardChests.Count - 1; i >= 0; i--)
+            {
+                BonusChest chest = activeRewardChests[i];
+
+                if (chest == null)
+                {
+                    activeRewardChests.RemoveAt(i);
+                    continue;
+                }
+
+                if (chest.IsRewarded)
+                {
+                    continue;
+                }
+
+                return chest.TryAutoCollect();
+            }
+
+            return false;
+        }
+
+        private bool HasRewardChestInProgress()
+        {
+            for (int i = activeRewardChests.Count - 1; i >= 0; i--)
+            {
+                BonusChest chest = activeRewardChests[i];
+
+                if (chest == null)
+                {
+                    activeRewardChests.RemoveAt(i);
+                    continue;
+                }
+
+                if (chest.IsWaitingForRewardChoice || chest.IsRewarded)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private bool HasCollectedAllManaOrbs()
         {
             return spawnedManaOrbCount > 0 && RemainingManaOrbCount <= 0;
+        }
+
+        private float ResolveRewardStageMaxWaitSeconds()
+        {
+            return rewardStageMaxWaitSeconds > 0.0f
+                ? rewardStageMaxWaitSeconds
+                : DefaultRewardStageAutoCollectSeconds; // 기존 0 직렬화값은 60초 기본값으로 보정
         }
 
         private ManaOrbSpawnShape ResolveManaOrbSpawnShape()

@@ -9,6 +9,7 @@ namespace TeamProject01.Gameplay
     public sealed class WaveHudPanel : MonoBehaviour
     {
         private const string DefaultBonusCollectRemainingFormat = "남은 마력구슬 {0}/{1}개";
+        private const string DefaultBonusRewardPromptText = "넥서스 근처 보상 획득";
 
         private WaveController waveController;
         private BossWaveController bossWaveController;
@@ -29,6 +30,7 @@ namespace TeamProject01.Gameplay
         private TMP_Text bonusCollectMessageText;
         private GameObject bonusCollectMessageObject;
         private GameObject bonusRewardMessageObject;
+        private TMP_Text bonusRewardMessageText;
         private TMP_Text bonusTimeText;
 
         private GameObject bossStageBanner;
@@ -48,6 +50,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private string bossTitle = "BOSS STAGE";
         [SerializeField] private string bonusTitle = "BONUS STAGE";
         [SerializeField] private string bonusCollectRemainingFormat = DefaultBonusCollectRemainingFormat;
+        [SerializeField] private string bonusRewardPromptText = DefaultBonusRewardPromptText;
         [SerializeField] private string missingControllerText = "WaveController Missing";
 
         [Header("Stage Banner Tween")]
@@ -114,6 +117,7 @@ namespace TeamProject01.Gameplay
             bonusCollectMessageObject = bonusCollectMessageObject != null ? bonusCollectMessageObject : FindGroupObject(bonusGroup, "CollectMessageText");
             bonusCollectMessageText = bonusCollectMessageText != null ? bonusCollectMessageText : GetComponentFromObject<TMP_Text>(bonusCollectMessageObject);
             bonusRewardMessageObject = bonusRewardMessageObject != null ? bonusRewardMessageObject : FindGroupObject(bonusGroup, "RewardMessageText");
+            bonusRewardMessageText = bonusRewardMessageText != null ? bonusRewardMessageText : GetComponentFromObject<TMP_Text>(bonusRewardMessageObject);
             bonusTimeText = bonusTimeText != null ? bonusTimeText : FindGroupText(bonusGroup, "TimeText");
 
             bossStageBanner = bossStageBanner != null ? bossStageBanner : FindChildObject("BossStageBanner");
@@ -304,13 +308,20 @@ namespace TeamProject01.Gameplay
 
             SetActive(bonusCollectMessageObject, isCollectStage);
             SetActive(bonusRewardMessageObject, isRewardStage);
-            SetActive(bonusTimeText, isCollectStage);
+            SetActive(bonusTimeText, isCollectStage || isRewardStage);
 
             if (isCollectStage)
             {
                 float seconds = manaOrbWave != null ? manaOrbWave.RemainingCollectSeconds : waveController.RemainingStageSeconds;
                 SetText(bonusTimeText, FormatTime(seconds));
                 SetText(bonusCollectMessageText, FormatManaOrbRemainingText(manaOrbWave));
+                return;
+            }
+
+            if (isRewardStage)
+            {
+                SetText(bonusRewardMessageText, ResolveBonusRewardPromptText(bonusRewardPromptText));
+                SetText(bonusTimeText, FormatTime(manaOrbWave.RemainingRewardSeconds));
             }
         }
 
@@ -406,6 +417,11 @@ namespace TeamProject01.Gameplay
             }
 
             return format;
+        }
+
+        private static string ResolveBonusRewardPromptText(string text)
+        {
+            return string.IsNullOrWhiteSpace(text) ? DefaultBonusRewardPromptText : text;
         }
 
         private static bool IsLegacyManaOrbRemainingFormat(string format)

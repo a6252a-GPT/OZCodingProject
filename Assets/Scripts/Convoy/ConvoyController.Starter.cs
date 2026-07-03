@@ -25,6 +25,10 @@ namespace TeamProject01.Gameplay
 
         private void EnsureStarterSegmentFromCurrentLoadout()
         {
+            StartingSegmentChoiceTicketDebug.Log(
+                $"ConvoyStarter.Resolve scene={StartingSegmentChoiceTicketDebug.SceneName}, enableStarter={EnableStarterSegment}, "
+                + $"runLoadoutHasBonus={RunLoadoutContext.HasStartBonus}, selectedWorm={RunLoadoutContext.CurrentStartBonus.SelectedWormId}, convoy={StartingSegmentChoiceTicketDebug.Format(transform.position)}",
+                this);
             if (!EnableStarterSegment)
             {
                 ClearStarterTracking();
@@ -77,6 +81,9 @@ namespace TeamProject01.Gameplay
             activeStarterWormId = normalizedWormId;
             RegisterActiveStarterDefinition(normalizedWormId);
             SyncSegmentRuntimes(true);
+            StartingSegmentChoiceTicketDebug.Log(
+                $"ConvoyStarter.Created worm={normalizedWormId}, prefab={prefab.name}, segment={segment.name}, position={StartingSegmentChoiceTicketDebug.Format(segment.position)}, snapToPath={snapToPath}",
+                segment);
 
             if (snapToPath)
             {

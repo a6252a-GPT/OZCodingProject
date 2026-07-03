@@ -20,6 +20,8 @@ namespace TeamProject01.Gameplay
         [SerializeField] private float rewardCollectDistance = 0.6f; // 획득 거리
 
         private Transform cachedPickupCenter; // 검색 캐시
+        private Transform debugLastResolvedCenter; // 시작 선택권 원인 추적용 수집 중심
+        private float debugNextAttractLogTime; // 후보 감지 로그 스로틀
 
         public bool HasActivePickupCandidates => false; // 월드 보상은 카메라 줌 입력을 막지 않는다.
 
@@ -31,13 +33,30 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            WorldRewardPickup.AttractInRange(
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && debugLastResolvedCenter != center)
+            {
+                debugLastResolvedCenter = center;
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"PlayerPickupInteractor.CenterResolved scene={StartingSegmentChoiceTicketDebug.SceneName}, center={(center != null ? center.name : "null")}, "
+                    + $"position={StartingSegmentChoiceTicketDebug.Format(center.position)}, effectiveRadius={GetEffectiveRewardMagnetRadius():0.00}, collectDistance={rewardCollectDistance:0.00}",
+                    this);
+            }
+
+            bool attracted = WorldRewardPickup.AttractInRange(
                 center.position,
                 GetEffectiveRewardMagnetRadius(),
                 GetEffectiveRewardPullStrength(),
                 GetEffectiveRewardMaxPullSpeed(),
                 rewardCollectDistance,
                 Time.deltaTime);
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && attracted && Time.time >= debugNextAttractLogTime)
+            {
+                debugNextAttractLogTime = Time.time + 0.25f;
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"PlayerPickupInteractor.AttractTick center={center.name}, position={StartingSegmentChoiceTicketDebug.Format(center.position)}, "
+                    + $"radius={GetEffectiveRewardMagnetRadius():0.00}, pull={GetEffectiveRewardPullStrength():0.00}, maxSpeed={GetEffectiveRewardMaxPullSpeed():0.00}",
+                    this);
+            }
         }
 
         private Transform ResolvePickupCenter()

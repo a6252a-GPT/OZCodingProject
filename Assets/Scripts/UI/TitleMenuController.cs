@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
 #if UNITY_EDITOR
+using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
 
@@ -68,6 +69,7 @@ namespace TeamProject01.Gameplay
         public GameObject WormSelectPanel; // 지렁이 선택
         public GameObject UpgradePanel; // 업그레이드
         public GameObject SettingsPanel; // 설정
+        public InGameSettingsPanelOverlay SettingsOverlay; // 설정 오버레이
 
         [Header("Shared UI")]
         public GameObject TitleLogoObject; // 타이틀 로고
@@ -164,6 +166,7 @@ namespace TeamProject01.Gameplay
 
             MigrateLegacyHighestReachedWave(); // 이전 타이틀 필드 기록 보존
             ResolvePanelReferences(); // 붙여넣기로 빠진 패널 참조 복구
+            ResolveSettingsOverlayReference(); // 설정 오버레이 참조
             ResolveMapSelectReferences(); // 맵 선택 UI 참조 복구
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
@@ -180,6 +183,7 @@ namespace TeamProject01.Gameplay
             }
 
             ResolvePanelReferences();
+            ResolveSettingsOverlayReference();
             ResolveMapSelectReferences();
         }
 #endif
@@ -197,6 +201,7 @@ namespace TeamProject01.Gameplay
 
             ResolveWormSelectionObjects(); // 지렁이 선택 오브젝트 참조
             ResolvePanelReferences(); // 붙여넣기로 빠진 패널 참조 복구
+            ResolveSettingsOverlayReference(); // 설정 오버레이 참조
             ResolveMapSelectReferences(); // 맵 선택 UI 참조 복구
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
@@ -240,7 +245,6 @@ namespace TeamProject01.Gameplay
             ShowOnly(WormSelectPanel); // 지렁이 선택
             PreviewWorm(Meta != null ? Meta.SelectedWormId : MetaWormIds.Basic); // 현재 선택 프리뷰
             RefreshAll(); // 표시 갱신
-            ApplyWormSelectTextColor(); // 지렁이 선택 글자색
         }
 
         public void ShowUpgrade() // 업그레이드 표시
@@ -251,6 +255,14 @@ namespace TeamProject01.Gameplay
 
         public void ShowSettings() // 설정 표시
         {
+            ResolveSettingsOverlayReference(); // 오버레이 우선 사용
+            if (SettingsOverlay != null)
+            {
+                SettingsOverlay.Open(); // 인게임 설정 패널 방식
+                RefreshAll(); // 표시 갱신
+                return;
+            }
+
             ShowOnly(SettingsPanel); // 설정
             RefreshAll(); // 표시 갱신
         }
@@ -515,8 +527,15 @@ namespace TeamProject01.Gameplay
 
         public void QuitGame() // 종료
         {
+            PlayerPrefs.Save(); // 종료 전 저장
+#if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                EditorApplication.isPlaying = false; // 에디터 Play 종료
+                return;
+            }
+#endif
             Application.Quit(); // 빌드 종료
-            SetStatus("에디터에서는 종료 버튼이 상태만 표시됩니다."); // 에디터 안내
         }
 
         public void DebugAddDiamond() // 테스트 다이아 지급
@@ -760,6 +779,12 @@ namespace TeamProject01.Gameplay
         private void ShowOnly(GameObject target) // 패널 전환
         {
             ResolvePanelReferences(); // 패널 참조 복구
+            ResolveSettingsOverlayReference(); // 설정 오버레이 참조
+            if (SettingsOverlay != null && target != SettingsPanel)
+            {
+                SettingsOverlay.Close(); // 다른 화면 전환 시 설정 닫기
+            }
+
             ResolveTitleLogoReference(); // 로고 찾기
             SetActive(MainMenuPanel, target == MainMenuPanel); // 메인
             SetActive(MapSelectPanel, target == MapSelectPanel); // 맵
@@ -797,14 +822,13 @@ namespace TeamProject01.Gameplay
             if (WormSelectPanel != null && WormSelectPanel.activeInHierarchy)
             {
                 RefreshWormSelectPanel(displayWormId); // 지렁이 버튼 상태 갱신
-                ApplyWormSelectTextColor(); // 버튼 글자색 보정
             }
         }
 
         private void RefreshSelectedWormTexts(string wormId) // 지렁이 미리보기 텍스트
         {
             string displayName = TitleWormCatalog.GetDisplayName(wormId);
-            string startingWeapon = TitleWormCatalog.GetStartingWeaponText(wormId);
+            string startingWeapon = ResolveWormCardStartingWeaponText(wormId);
             string additionalBonus = TitleWormCatalog.GetAdditionalBonusText(wormId);
 
             SetText(SelectedWormNameText, displayName);
@@ -812,6 +836,48 @@ namespace TeamProject01.Gameplay
             SetText(SelectedWormBonusText, startingWeapon);
             SetText(SelectedWormBonusTmpText, startingWeapon);
             SetText(SelectedWormBonus2Text, additionalBonus);
+        }
+
+        private string ResolveWormCardStartingWeaponText(string wormId) // 선택 카드의 스타팅 무기 문구를 오른쪽 패널로 미러링
+        {
+            Transform buttonRoot = FindWormButtonTransform(GetWormButtonObjectName(wormId));
+            string starterText = ReadTransformText(FindChildTransform(buttonRoot, "Wp"));
+            if (!string.IsNullOrWhiteSpace(starterText))
+            {
+                return starterText.Trim();
+            }
+
+            string legacyText = ReadTransformText(FindDirectChildTransform(buttonRoot, "Text"));
+            if (!string.IsNullOrWhiteSpace(legacyText))
+            {
+                string[] lines = legacyText.Split('\n');
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(lines[i]))
+                    {
+                        return lines[i].Trim();
+                    }
+                }
+            }
+
+            return TitleWormCatalog.GetStartingWeaponText(wormId);
+        }
+
+        private static string GetWormButtonObjectName(string wormId) // 지렁이 ID별 카드 오브젝트 이름
+        {
+            switch (NormalizeWormId(wormId))
+            {
+                case MetaWormIds.Attack:
+                    return "ArmedWormButton";
+                case MetaWormIds.Mobility:
+                    return "ChargeWormButton";
+                case MetaWormIds.Support:
+                    return "DefenseWormButton";
+                case MetaWormIds.Magic:
+                    return "MagicWormButton";
+                default:
+                    return "BasicWormButton";
+            }
         }
 
         private string BuildUpgradeSummary() // 업그레이드 요약
@@ -858,7 +924,7 @@ namespace TeamProject01.Gameplay
             SetText(SelectedMapNameText, TitleMapCatalog.GetDisplayName(mapId)); // 이름
             SetText(SelectedMapStateText, TitleMapCatalog.GetStateText(mapId)); // 상태
             SetText(SelectedMapDescriptionText, TitleMapCatalog.GetDescription(mapId)); // 설명
-            SetText(SelectedMapRecommendedLevelText, TitleMapCatalog.GetRecommendedLevelText(mapId)); // 추천 레벨
+            // SelectedMapRecommendedLevelText는 씬에 배치한 문구를 유지합니다.
             SetText(SelectedMapPowerText, TitleMapCatalog.GetPowerText(mapId)); // 전투력
             SetText(SelectedMapEnemyTypeText, TitleMapCatalog.GetEnemyTypeText(mapId)); // 적 유형
             SetText(SelectedMapRuleText, TitleMapCatalog.GetRuleText(mapId)); // 특수 규칙
@@ -1144,6 +1210,7 @@ namespace TeamProject01.Gameplay
 
                 if (card.SelectionGlowImage != null)
                 {
+                    card.SelectionGlowImage.gameObject.SetActive(selected); // 비활성 글로우도 선택 시 표시
                     card.SelectionGlowImage.enabled = selected; // 선택 발광
                 }
             }
@@ -1156,6 +1223,14 @@ namespace TeamProject01.Gameplay
             WormSelectPanel = ResolveSceneGameObject(WormSelectPanel, "WormSelectPanel");
             UpgradePanel = ResolveSceneGameObject(UpgradePanel, "UpgradePanel");
             SettingsPanel = ResolveSceneGameObject(SettingsPanel, "SettingsPanel");
+        }
+
+        private void ResolveSettingsOverlayReference() // 설정 오버레이 참조 복구
+        {
+            if (SettingsOverlay == null)
+            {
+                SettingsOverlay = FindFirstObjectByType<InGameSettingsPanelOverlay>(FindObjectsInactive.Include);
+            }
         }
 
         private void ResolveMapSelectReferences() // 맵 선택 UI 참조 복구
@@ -1207,7 +1282,8 @@ namespace TeamProject01.Gameplay
                 card.EmblemImage = FindChildComponent<Image>(cardRoot, "MapCardEmblem");
                 card.PreviewImage = FindChildComponent<Image>(cardRoot, "MapCardPreview");
                 card.FrameImage = FindChildComponent<Image>(cardRoot, "MapCardFrame");
-                card.SelectionGlowImage = FindChildComponent<Image>(cardRoot, "MapCardSelectionGlow");
+                card.SelectionGlowImage = FindChildComponent<Image>(cardRoot, "MapCardSelectionGlow")
+                    ?? FindChildComponent<Image>(cardRoot, "SelectionGlow"); // 새/기존 이름 모두 지원
                 card.LockedOverlay = FindChildGameObject(cardRoot, "MapCardLockedOverlay");
                 resolvedCards.Add(card);
             }
@@ -1456,6 +1532,7 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
+            bool preserveAuthoredValues = IsInAuthoredWormListPanel(transform);
             string normalized = NormalizeWormId(wormId);
             bool selected = NormalizeWormId(Meta.SelectedWormId) == normalized;
             bool unlocked = Meta.IsWormUnlocked(normalized);
@@ -1466,12 +1543,16 @@ namespace TeamProject01.Gameplay
                 : unlocked ? "보유중"
                 : affordable ? $"구매 {price}" : string.Empty;
 
-            SetWormButtonTitleAndStarter(transform, displayName, starterName); // 카드 문구
-            ApplyWormStateBadge(transform, state, selected, unlocked, affordable); // 상태 버튼
+            if (!preserveAuthoredValues)
+            {
+                SetWormButtonTitleAndStarter(transform, displayName, starterName); // 카드 문구
+                ApplyWormStateBadge(transform, state, selected, unlocked, affordable); // 상태 버튼
+            }
+
             SetWormSelectionGlowVisible(transform, selected); // 선택 발광
 
             Image image = transform.GetComponent<Image>();
-            if (image != null)
+            if (image != null && !preserveAuthoredValues)
             {
                 image.color = Color.white; // Keep authored card art colors.
             }
@@ -1485,7 +1566,7 @@ namespace TeamProject01.Gameplay
 
         private void SetWormButtonTitleAndStarter(Transform buttonRoot, string displayName, string starterName) // 카드 이름/무기 문구
         {
-            if (buttonRoot == null)
+            if (buttonRoot == null || IsInAuthoredWormListPanel(buttonRoot))
             {
                 return;
             }
@@ -1502,6 +1583,11 @@ namespace TeamProject01.Gameplay
 
         private void ApplyWormStateBadge(Transform buttonRoot, string label, bool selected, bool unlocked, bool affordable) // 카드 상태 버튼
         {
+            if (IsInAuthoredWormListPanel(buttonRoot))
+            {
+                return;
+            }
+
             Transform stateBadge = FindChildTransform(buttonRoot, "StateBadge");
             if (stateBadge == null)
             {
@@ -1679,7 +1765,7 @@ namespace TeamProject01.Gameplay
         private void SetWormButtonLabel(string objectName, string label) // 버튼 라벨 변경
         {
             Transform button = FindWormButtonTransform(objectName); // 버튼 찾기
-            if (button == null)
+            if (button == null || IsInAuthoredWormListPanel(button))
             {
                 return; // 없음
             }
@@ -1729,6 +1815,34 @@ namespace TeamProject01.Gameplay
             {
                 tmpText.text = value;
             }
+        }
+
+        private static string ReadTransformText(Transform target) // Text/TMP 공통 읽기
+        {
+            if (target == null)
+            {
+                return string.Empty;
+            }
+
+            TMP_Text tmpText = target.GetComponent<TMP_Text>();
+            if (tmpText != null)
+            {
+                return tmpText.text;
+            }
+
+            Text legacyText = target.GetComponent<Text>();
+            return legacyText != null ? legacyText.text : string.Empty;
+        }
+
+        private bool IsInAuthoredWormListPanel(Transform target) // WormListPanel_1 내부 authored 값 보존
+        {
+            if (target == null || WormSelectPanel == null)
+            {
+                return false;
+            }
+
+            Transform authoredPanel = FindChildTransform(WormSelectPanel.transform, "WormListPanel_1");
+            return authoredPanel != null && target.IsChildOf(authoredPanel);
         }
 
         private Transform FindWormButtonTransform(string objectName) // 버튼 찾기
@@ -1794,48 +1908,6 @@ namespace TeamProject01.Gameplay
             {
                 target.color = color; // 색상 반영
             }
-        }
-
-        private void ApplyWormSelectTextColor() // 지렁이 선택 글자색 보정
-        {
-            if (WormSelectPanel == null)
-            {
-                return; // 대상 없음
-            }
-
-            Transform wormRowsRoot = FindChildTransform(WormSelectPanel.transform, "WormRowsRoot"); // 카드 아트/텍스트는 원본 색 유지
-            Text[] texts = WormSelectPanel.GetComponentsInChildren<Text>(true); // 선택 화면 텍스트
-            for (int i = 0; i < texts.Length; i++)
-            {
-                if (texts[i] != null && !ShouldSkipWormSelectRuntimeTextColor(texts[i].transform, wormRowsRoot))
-                {
-                    texts[i].color = Color.white; // 임시 흰색
-                }
-            }
-
-            TMP_Text[] tmpTexts = WormSelectPanel.GetComponentsInChildren<TMP_Text>(true); // 선택 화면 TMP
-            for (int i = 0; i < tmpTexts.Length; i++)
-            {
-                if (tmpTexts[i] != null && !ShouldSkipWormSelectRuntimeTextColor(tmpTexts[i].transform, wormRowsRoot))
-                {
-                    tmpTexts[i].color = Color.white; // TMP 흰색
-                }
-            }
-        }
-
-        private static bool ShouldSkipWormSelectRuntimeTextColor(Transform target, Transform wormRowsRoot) // 런타임 색상 보정 제외
-        {
-            if (target == null)
-            {
-                return true;
-            }
-
-            if (target.name == "UpgradeSubtitleText")
-            {
-                return true;
-            }
-
-            return wormRowsRoot != null && target.IsChildOf(wormRowsRoot);
         }
 
         private static string CompactEffectText(string effectText) // 요약용 축약

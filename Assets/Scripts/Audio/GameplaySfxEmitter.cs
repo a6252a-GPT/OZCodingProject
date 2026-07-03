@@ -166,32 +166,87 @@ namespace TeamProject01.Gameplay
 
         public static bool TryPlay(Transform root, GameplaySfxCue cue)
         {
-            GameplaySfxEmitter emitter = FindEmitter(root, cue);
-            return emitter != null && emitter.Play();
-        }
-
-        public static bool TryPlayAt(Transform root, GameplaySfxCue cue, Vector3 position, bool detached)
-        {
-            GameplaySfxEmitter emitter = FindEmitter(root, cue);
-            return emitter != null && emitter.PlayAt(position, detached);
-        }
-
-        public static bool TryStartLoop(Transform root, GameplaySfxCue cue)
-        {
-            GameplaySfxEmitter emitter = FindEmitter(root, cue);
-            return emitter != null && emitter.StartLoop();
-        }
-
-        public static bool TryStopLoop(Transform root, GameplaySfxCue cue)
-        {
-            GameplaySfxEmitter emitter = FindEmitter(root, cue);
-            if (emitter == null)
+            if (root == null || cue == GameplaySfxCue.None)
             {
                 return false;
             }
 
-            emitter.StopLoop();
-            return true;
+            bool played = false;
+            GameplaySfxEmitter[] emitters = root.GetComponentsInChildren<GameplaySfxEmitter>(true);
+            for (int i = 0; i < emitters.Length; i++)
+            {
+                GameplaySfxEmitter emitter = emitters[i];
+                if (IsMatchingEmitter(emitter, cue))
+                {
+                    played |= emitter.Play();
+                }
+            }
+
+            return played;
+        }
+
+        public static bool TryPlayAt(Transform root, GameplaySfxCue cue, Vector3 position, bool detached)
+        {
+            if (root == null || cue == GameplaySfxCue.None)
+            {
+                return false;
+            }
+
+            bool played = false;
+            GameplaySfxEmitter[] emitters = root.GetComponentsInChildren<GameplaySfxEmitter>(true);
+            for (int i = 0; i < emitters.Length; i++)
+            {
+                GameplaySfxEmitter emitter = emitters[i];
+                if (IsMatchingEmitter(emitter, cue))
+                {
+                    played |= emitter.PlayAt(position, detached);
+                }
+            }
+
+            return played;
+        }
+
+        public static bool TryStartLoop(Transform root, GameplaySfxCue cue)
+        {
+            if (root == null || cue == GameplaySfxCue.None)
+            {
+                return false;
+            }
+
+            bool started = false;
+            GameplaySfxEmitter[] emitters = root.GetComponentsInChildren<GameplaySfxEmitter>(true);
+            for (int i = 0; i < emitters.Length; i++)
+            {
+                GameplaySfxEmitter emitter = emitters[i];
+                if (IsMatchingEmitter(emitter, cue))
+                {
+                    started |= emitter.StartLoop();
+                }
+            }
+
+            return started;
+        }
+
+        public static bool TryStopLoop(Transform root, GameplaySfxCue cue)
+        {
+            if (root == null || cue == GameplaySfxCue.None)
+            {
+                return false;
+            }
+
+            bool stopped = false;
+            GameplaySfxEmitter[] emitters = root.GetComponentsInChildren<GameplaySfxEmitter>(true);
+            for (int i = 0; i < emitters.Length; i++)
+            {
+                GameplaySfxEmitter emitter = emitters[i];
+                if (IsMatchingEmitter(emitter, cue))
+                {
+                    emitter.StopLoop();
+                    stopped = true;
+                }
+            }
+
+            return stopped;
         }
 
         public static bool TryPlayCatalogAt(GameplaySfxCue cue, Vector3 position)
@@ -284,6 +339,11 @@ namespace TeamProject01.Gameplay
             }
 
             return null;
+        }
+
+        private static bool IsMatchingEmitter(GameplaySfxEmitter emitter, GameplaySfxCue cue)
+        {
+            return emitter != null && emitter.cue == cue && emitter.HasUsableClip();
         }
 
         private bool HasUsableClip()

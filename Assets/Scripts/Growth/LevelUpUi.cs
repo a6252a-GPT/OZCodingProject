@@ -180,13 +180,36 @@ public class LevelUpUi : MonoBehaviour
 
     public void Open()
     {
+        if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && useRewardTitle)
+        {
+            TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                $"LevelUpUi.Open requested name={name}, panelCanvasGroup={(panelCanvasGroup != null ? panelCanvasGroup.name : "null")}, "
+                + $"isOpen={isOpen}, visible={IsPanelVisible}, useBackgroundBlur={useBackgroundBlur}, "
+                + $"hasBlur={(backgroundBlurLayer != null)}, timeScale={Time.timeScale:0.00}, skipPause={skipPause}",
+                this);
+        }
+
         if (panelCanvasGroup == null)
         {
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && useRewardTitle)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    $"LevelUpUi.Open blocked name={name}, reason=MissingCanvasGroup",
+                    this);
+            }
+
             return;
         }
 
         if (IsPanelVisible)
         {
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && useRewardTitle)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    $"LevelUpUi.Open skipped name={name}, reason=AlreadyVisible",
+                    this);
+            }
+
             return; // 이미 열려 있음
         }
 
@@ -215,6 +238,13 @@ public class LevelUpUi : MonoBehaviour
             panelCanvasGroup.alpha = 0f;
             panelCanvasGroup.blocksRaycasts = false;
             panelCanvasGroup.interactable = false;
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && useRewardTitle)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    $"LevelUpUi.Open deferredForBlur name={name}, blur={backgroundBlurLayer.name}",
+                    this);
+            }
+
             if (openBlurRoutine != null)
             {
                 StopCoroutine(openBlurRoutine);
@@ -241,6 +271,13 @@ public class LevelUpUi : MonoBehaviour
         panelCanvasGroup.alpha = 1f;
         panelCanvasGroup.blocksRaycasts = true;
         panelCanvasGroup.interactable = true;
+        if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && useRewardTitle)
+        {
+            TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                $"LevelUpUi.ShowPanelImmediate name={name}, alpha={panelCanvasGroup.alpha:0.00}, "
+                + $"blocksRaycasts={panelCanvasGroup.blocksRaycasts}, interactable={panelCanvasGroup.interactable}",
+                this);
+        }
 
         PlayTitleTween();
     }

@@ -56,6 +56,7 @@ namespace TeamProject01.Gameplay
         private RewardDropService poolOwner;
         private WorldRewardPickup poolSourcePrefab;
         private GameObject specialDropIdleVfxInstance; // 다이아/선택권 대기 VFX 인스턴스
+        private bool debugAttractLogged; // 시작 선택권 원인 추적 로그 중복 방지
         private static GameObject cachedSpecialDropIdleVfxPrefab; // 기본 Loot_iddle 캐시
         private static bool specialDropIdleVfxLoadAttempted; // 로드 중복 방지
         private static bool specialDropIdleVfxMissingWarningLogged; // 누락 로그 1회
@@ -106,8 +107,17 @@ namespace TeamProject01.Gameplay
             enemyId = sourceEnemyId;
             collected = false;
             attractedThisFrame = false;
+            debugAttractLogged = false;
             velocity = Vector3.zero;
             hoverPhase = Random.Range(0f, Mathf.PI * 2f);
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"WorldRewardPickup.Configure name={name}, amount={Amount}, inputSpawn={StartingSegmentChoiceTicketDebug.Format(spawnPosition)}, inputLanding={StartingSegmentChoiceTicketDebug.Format(landingPosition)}, "
+                    + $"activeInHierarchy={gameObject.activeInHierarchy}, poolOwner={(poolOwner != null ? poolOwner.name : "null")}",
+                    this);
+            }
+
             BeginDropMotion(spawnPosition, landingPosition);
             SetVfxRootActive(IdleVfxRoot, true);
             SetVfxRootActive(CollectVfxRoot, false);
@@ -210,10 +220,26 @@ namespace TeamProject01.Gameplay
             }
 
             attractedThisFrame = true;
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && Kind == RewardPickupKind.SegmentChoiceTicket && !debugAttractLogged)
+            {
+                debugAttractLogged = true;
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"WorldRewardPickup.AttractStart name={name}, pickup={StartingSegmentChoiceTicketDebug.Format(transform.position)}, center={StartingSegmentChoiceTicketDebug.Format(center)}, "
+                    + $"distance={Mathf.Sqrt(distanceSqr):0.00}, radius={radius:0.00}, pullStrength={pullStrength:0.00}, maxSpeed={maxSpeed:0.00}, collectDistance={collectDistance:0.00}",
+                    this);
+            }
 
             float finalCollectDistance = Mathf.Max(CollectDistance, collectDistance);
             if (distanceSqr <= finalCollectDistance * finalCollectDistance)
             {
+                if (StartingSegmentChoiceTicketDebug.ShouldLog && Kind == RewardPickupKind.SegmentChoiceTicket)
+                {
+                    StartingSegmentChoiceTicketDebug.Log(
+                        $"WorldRewardPickup.AttractCollectRange name={name}, pickup={StartingSegmentChoiceTicketDebug.Format(transform.position)}, center={StartingSegmentChoiceTicketDebug.Format(center)}, "
+                        + $"distance={Mathf.Sqrt(distanceSqr):0.00}, finalCollectDistance={finalCollectDistance:0.00}",
+                        this);
+                }
+
                 TryCollect();
                 return true;
             }
@@ -244,8 +270,22 @@ namespace TeamProject01.Gameplay
 
             if (Kind == RewardPickupKind.SegmentChoiceTicket)
             {
+                if (StartingSegmentChoiceTicketDebug.ShouldLog)
+                {
+                    StartingSegmentChoiceTicketDebug.Log(
+                        $"WorldRewardPickup.TryCollectTicket name={name}, position={StartingSegmentChoiceTicketDebug.Format(transform.position)}, amount={Amount}",
+                        this);
+                }
+
                 if (!TryOpenSegmentChoiceTicket())
                 {
+                    if (StartingSegmentChoiceTicketDebug.ShouldLog)
+                    {
+                        StartingSegmentChoiceTicketDebug.Log(
+                            $"WorldRewardPickup.TryCollectTicketBlocked name={name}, reason=CardUIOpenFailed, position={StartingSegmentChoiceTicketDebug.Format(transform.position)}",
+                            this);
+                    }
+
                     return;
                 }
 
@@ -274,11 +314,26 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            return cardUi.OpenSegmentChoiceTicket(Mathf.Max(1, Amount));
+            bool opened = cardUi.OpenSegmentChoiceTicket(Mathf.Max(1, Amount));
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"WorldRewardPickup.CardUIOpen name={name}, cardUi={cardUi.name}, opened={opened}, amount={Mathf.Max(1, Amount)}",
+                    cardUi);
+            }
+
+            return opened;
         }
 
         private void CompleteCollect()
         {
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"WorldRewardPickup.CompleteCollect name={name}, position={StartingSegmentChoiceTicketDebug.Format(transform.position)}, poolOwner={(poolOwner != null ? poolOwner.name : "null")}",
+                    this);
+            }
+
             collected = true;
             SetVfxRootActive(IdleVfxRoot, false);
             SetSpecialDropIdleVfxActive(false); // 수집 후 idle VFX 숨김
@@ -351,11 +406,26 @@ namespace TeamProject01.Gameplay
 
         private void BeginDropMotion(Vector3 spawnPosition, Vector3 landingPosition)
         {
-            dropStartPosition = GroundService.ProjectToGround(spawnPosition, GroundHeightOffset);
-            dropLandingPosition = GroundService.ProjectToGround(landingPosition, GroundHeightOffset);
+            if (Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                dropStartPosition = GroundService.ProjectToGroundForStartSegmentTicket(spawnPosition, GroundHeightOffset, "WorldRewardPickup.DropStart", this);
+                dropLandingPosition = GroundService.ProjectToGroundForStartSegmentTicket(landingPosition, GroundHeightOffset, "WorldRewardPickup.DropLanding", this);
+            }
+            else
+            {
+                dropStartPosition = GroundService.ProjectToGround(spawnPosition, GroundHeightOffset);
+                dropLandingPosition = GroundService.ProjectToGround(landingPosition, GroundHeightOffset);
+            }
             dropTimer = 0f;
             isDropping = DropPopHeight > 0f && DropPopDuration > 0f;
             transform.position = dropStartPosition;
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && Kind == RewardPickupKind.SegmentChoiceTicket)
+            {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"WorldRewardPickup.BeginDrop name={name}, projectedSpawn={StartingSegmentChoiceTicketDebug.Format(dropStartPosition)}, projectedLanding={StartingSegmentChoiceTicketDebug.Format(dropLandingPosition)}, "
+                    + $"dropDelta={StartingSegmentChoiceTicketDebug.Format(dropLandingPosition - dropStartPosition)}, dropPopHeight={DropPopHeight:0.00}, dropDuration={DropPopDuration:0.00}, isDropping={isDropping}",
+                    this);
+            }
         }
 
         private void UpdateDropMotion()
@@ -377,6 +447,12 @@ namespace TeamProject01.Gameplay
                 isDropping = false;
                 velocity = Vector3.zero;
                 transform.position = dropLandingPosition;
+                if (StartingSegmentChoiceTicketDebug.ShouldLog && Kind == RewardPickupKind.SegmentChoiceTicket)
+                {
+                    StartingSegmentChoiceTicketDebug.Log(
+                        $"WorldRewardPickup.DropComplete name={name}, landing={StartingSegmentChoiceTicketDebug.Format(transform.position)}, elapsed={dropTimer:0.00}",
+                        this);
+                }
             }
         }
 
@@ -515,27 +591,31 @@ namespace TeamProject01.Gameplay
 
         private void PlayCollectSfx()
         {
-            GameplaySfxCue cue = ShouldUseGoodPickupSfx() ? GameplaySfxCue.GoodPickup : GameplaySfxCue.Pickup;
             Transform root = ResolvePlayerSfxRoot();
+            Vector3 fallbackPosition = root != null ? root.position : transform.position;
+            PlayCollectCue(GameplaySfxCue.Pickup, root, fallbackPosition);
+            if (ShouldUseGoodPickupSfx())
+            {
+                PlayCollectCue(GameplaySfxCue.GoodPickup, root, fallbackPosition);
+            }
+        }
+
+        private static bool PlayCollectCue(GameplaySfxCue cue, Transform root, Vector3 fallbackPosition)
+        {
             if (root != null)
             {
                 if (GameplaySfxEmitter.TryPlay(root, cue))
                 {
-                    return;
-                }
-
-                if (cue == GameplaySfxCue.GoodPickup && GameplaySfxEmitter.TryPlay(root, GameplaySfxCue.Pickup))
-                {
-                    return;
+                    return true;
                 }
 
                 if (GameplaySfxEmitter.TryPlayCatalogAt(cue, root.position))
                 {
-                    return;
+                    return true;
                 }
             }
 
-            GameplaySfxEmitter.TryPlayCatalogAt(cue, transform.position);
+            return GameplaySfxEmitter.TryPlayCatalogAt(cue, fallbackPosition);
         }
 
         private bool ShouldUseGoodPickupSfx()
@@ -696,6 +776,42 @@ namespace TeamProject01.Gameplay
 
             specialDropIdleVfxMissingWarningLogged = true;
             Debug.LogWarning("[WorldRewardPickup] RewardPickups/VFX_Loot_iddle prefab을 찾지 못했습니다.", this);
+        }
+    }
+
+    internal static class StartingSegmentChoiceTicketDebug
+    {
+        public const string Prefix = "[StartSegmentTicketDebug]";
+
+        // Player Settings > Scripting Define Symbols에 START_SEGMENT_TICKET_DEBUG 추가 시 활성화됩니다.
+        public static bool ShouldLog
+        {
+            get
+            {
+#if START_SEGMENT_TICKET_DEBUG
+                return Application.isEditor || Debug.isDebugBuild;
+#else
+                return false;
+#endif
+            }
+        }
+
+        [System.Diagnostics.Conditional("START_SEGMENT_TICKET_DEBUG")]
+        public static void Log(string message, Object context = null)
+        {
+            if (!ShouldLog)
+            {
+                return;
+            }
+
+            Debug.Log($"{Prefix} {message}", context);
+        }
+
+        public static string SceneName => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+        public static string Format(Vector3 value)
+        {
+            return $"({value.x:0.00}, {value.y:0.00}, {value.z:0.00})";
         }
     }
 }

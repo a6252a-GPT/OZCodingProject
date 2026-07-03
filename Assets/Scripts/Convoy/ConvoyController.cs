@@ -238,6 +238,10 @@ namespace TeamProject01.Gameplay
 
             if (MonsterInteractionApi.TryConsumeConvoyKnockback(currentPosition, out Vector3 apiKnockbackDirection, out float apiKnockbackDistance, out float apiKnockbackDuration, out float apiKnockbackHeight)) // 몬스터가 요청한 컨보이 넉백이 있는지 확인한다.
             {
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"Convoy.KnockbackConsumed position={StartingSegmentChoiceTicketDebug.Format(currentPosition)}, direction={StartingSegmentChoiceTicketDebug.Format(apiKnockbackDirection)}, "
+                    + $"distance={apiKnockbackDistance:0.00}, duration={apiKnockbackDuration:0.00}, height={apiKnockbackHeight:0.00}",
+                    this);
                 ApplyKnockback(apiKnockbackDirection, apiKnockbackDistance, apiKnockbackDuration, apiKnockbackHeight); // 실제 이동 적용은 컨보이 컨트롤러가 책임진다.
             }
 
