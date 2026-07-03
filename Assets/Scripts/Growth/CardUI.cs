@@ -109,6 +109,10 @@ public partial class CardUI : MonoBehaviour
     [Header("세그먼트 선택 후보")]
     [Tooltip("세그먼트 선택 3장 중 보유 Lv3 미만 세그먼트 1장을 먼저 뽑을 확률")]
     [Range(0f, 1f)][SerializeField] private float ownedSegmentChoiceGuaranteeChance = 0.5f; // 보유 Lv3 미만 확정 후보 확률
+    [Tooltip("같은 세그먼트 보유 1개당 후보 등장 가중치 감소율")]
+    [Range(0f, 1f)][SerializeField] private float ownedSegmentChoiceWeightReductionPerOwned = 0.1f; // 1개당 -10%
+    [Tooltip("보유 개수 감소 후에도 유지할 최소 등장 가중치 배율")]
+    [Range(0f, 1f)][SerializeField] private float ownedSegmentChoiceMinimumWeightMultiplier = 0.01f; // 최소 1%
 
     [Header("세그먼트 무기 강화선택 조건")]
     [Tooltip("A모드 (체크): 세그먼트 선택 → 선택한 세그먼트의 강화 카드 선택 / B모드 (해제): 보유 세그먼트 강화만 랜덤 3장 (미보유 제외)")]

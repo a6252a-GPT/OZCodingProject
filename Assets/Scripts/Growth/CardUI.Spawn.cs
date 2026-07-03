@@ -563,7 +563,8 @@ public partial class CardUI
         }
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
-        List<SegmentCatalogEntry> picked = PickSegmentChoiceEntriesWithOwnedChance(candidates, spawnCount); // 보유 50% + 지원형 0~1장 제한
+        Dictionary<string, int> ownedCountsBySegmentId = CollectOwnedSegmentCounts(); // 보유 개수별 등장 가중치 감소용
+        List<SegmentCatalogEntry> picked = PickSegmentChoiceEntriesWithOwnedChance(candidates, spawnCount, ownedCountsBySegmentId); // 보유 50% + 지원형 0~1장 제한
         for (int i = 0; i < spawnCount; i++)
         {
             GameObject prefab = GetSegmentChoiceCardTemplate(); // 후보 선택 1단계 전용 템플릿
@@ -606,12 +607,7 @@ public partial class CardUI
         }
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
-        Dictionary<string, int> ownedCountsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // ID별 보유 개수
-        ConvoyController convoy = CoreStatProvider.Active != null ? CoreStatProvider.Active.Convoy : null;
-        if (convoy != null)
-        {
-            convoy.CollectAttachedSegmentCounts(ownedCountsBySegmentId); // 캐논 5개 등 집계
-        }
+        Dictionary<string, int> ownedCountsBySegmentId = CollectOwnedSegmentCounts(); // ID별 보유 개수
 
         List<SegmentCatalogEntry> picked = PickWeightedWeaponEnhanceSegmentEntries(candidates, spawnCount, ownedCountsBySegmentId); // 보유 개수 가중치
         for (int i = 0; i < spawnCount; i++)
@@ -752,15 +748,7 @@ public partial class CardUI
     private static HashSet<string> CollectOwnedSegmentIds() // ConvoySegments 에 붙은 세그먼트 ID 집합
     {
         HashSet<string> ownedSegmentIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase); // 대소문자 무시
-        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
-        ConvoyController convoy = core != null ? core.Convoy : null; // 플레이어 컨보이
-        if (convoy == null)
-        {
-            return ownedSegmentIds; // 빈 집합
-        }
-
-        Dictionary<string, int> countsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // ID별 개수
-        convoy.CollectAttachedSegmentCounts(countsBySegmentId); // 1개 이상이면 보유
+        Dictionary<string, int> countsBySegmentId = CollectOwnedSegmentCounts(); // ID별 개수
         foreach (string segmentId in countsBySegmentId.Keys)
         {
             if (!string.IsNullOrWhiteSpace(segmentId))
@@ -770,6 +758,20 @@ public partial class CardUI
         }
 
         return ownedSegmentIds;
+    }
+
+    private static Dictionary<string, int> CollectOwnedSegmentCounts() // ConvoySegments 에 붙은 세그먼트 ID별 개수
+    {
+        Dictionary<string, int> countsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // ID별 개수
+        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
+        ConvoyController convoy = core != null ? core.Convoy : null; // 플레이어 컨보이
+        if (convoy == null)
+        {
+            return countsBySegmentId; // 빈 집합
+        }
+
+        convoy.CollectAttachedSegmentCounts(countsBySegmentId); // 1개 이상이면 보유
+        return countsBySegmentId;
     }
 
     private static List<WeaponDefinition> PickRandomWeaponDefinitions(List<WeaponDefinition> pool, int count) // 풀에서 랜덤 N장
@@ -1240,6 +1242,7 @@ public partial class CardUI
                 }
 
                 float weight = weaponEnhanceSegmentBaseWeight + ownedCount * weaponEnhanceSegmentWeightPerOwned; // 기본 + (개수 × 보너스)
+                weight *= ResolveOwnedSegmentChoiceWeightMultiplier(entry.NormalizedId, ownedCountsBySegmentId); // 보유 1개당 -10%, 최소 1%
                 remaining.Add(new WeightedSegmentCatalogEntry
                 {
                     Entry = entry,
@@ -1301,7 +1304,10 @@ public partial class CardUI
     }
 
     // 세그먼트 선택카드: 50% 확률 보유 Lv3 미만 1장 + 지원형 최대 1장
-    private List<SegmentCatalogEntry> PickSegmentChoiceEntriesWithOwnedChance(List<SegmentCatalogEntry> candidates, int count)
+    private List<SegmentCatalogEntry> PickSegmentChoiceEntriesWithOwnedChance(
+        List<SegmentCatalogEntry> candidates,
+        int count,
+        Dictionary<string, int> ownedCountsBySegmentId)
     {
         List<SegmentCatalogEntry> results = new List<SegmentCatalogEntry>(Mathf.Max(0, count)); // 최종 선택
         if (candidates == null || candidates.Count == 0 || count <= 0)
@@ -1316,7 +1322,7 @@ public partial class CardUI
         }
 
         int supportPickCount = 0; // 지원형 표시 수
-        if (TryPickOwnedSegmentChoiceCandidate(validCandidates, out SegmentCatalogEntry ownedPick))
+        if (TryPickOwnedSegmentChoiceCandidate(validCandidates, ownedCountsBySegmentId, out SegmentCatalogEntry ownedPick))
         {
             results.Add(ownedPick); // 보유 후보 확정
             if (IsSupportSegmentChoiceEntry(ownedPick))
@@ -1329,7 +1335,7 @@ public partial class CardUI
 
         while (results.Count < count && validCandidates.Count > 0)
         {
-            if (!TryTakeRandomSegmentChoiceCandidate(validCandidates, supportPickCount, out SegmentCatalogEntry randomPick))
+            if (!TryTakeRandomSegmentChoiceCandidate(validCandidates, supportPickCount, ownedCountsBySegmentId, out SegmentCatalogEntry randomPick))
             {
                 break; // 지원형 제한 등으로 더 뽑을 후보 없음
             }
@@ -1346,7 +1352,10 @@ public partial class CardUI
         return results;
     }
 
-    private bool TryPickOwnedSegmentChoiceCandidate(List<SegmentCatalogEntry> candidates, out SegmentCatalogEntry picked)
+    private bool TryPickOwnedSegmentChoiceCandidate(
+        List<SegmentCatalogEntry> candidates,
+        Dictionary<string, int> ownedCountsBySegmentId,
+        out SegmentCatalogEntry picked)
     {
         picked = default; // 기본값
         if (candidates == null || candidates.Count == 0 || Random.value >= Mathf.Clamp01(ownedSegmentChoiceGuaranteeChance))
@@ -1354,33 +1363,39 @@ public partial class CardUI
             return false; // 확정 확률 미발동
         }
 
-        HashSet<string> ownedSegmentIds = CollectOwnedSegmentIds(); // 현재 보유 세그먼트
-        if (ownedSegmentIds.Count == 0)
+        if (ownedCountsBySegmentId == null || ownedCountsBySegmentId.Count == 0)
         {
             return false; // 보유 없음
         }
 
-        List<int> ownedCandidateIndexes = new List<int>(); // 보유 후보 인덱스
+        List<WeightedSegmentCatalogEntry> ownedCandidates = new List<WeightedSegmentCatalogEntry>(); // 보유 후보+가중치
         for (int i = 0; i < candidates.Count; i++)
         {
             SegmentCatalogEntry entry = candidates[i]; // 후보
-            if (ownedSegmentIds.Contains(entry.NormalizedId) && IsOwnedSegmentChoiceGuaranteeLevelEligible(entry))
+            if (ownedCountsBySegmentId.ContainsKey(entry.NormalizedId) && IsOwnedSegmentChoiceGuaranteeLevelEligible(entry))
             {
-                ownedCandidateIndexes.Add(i); // 보유 + Lv3 미만
+                ownedCandidates.Add(new WeightedSegmentCatalogEntry
+                {
+                    Entry = entry,
+                    Weight = ResolveOwnedSegmentChoiceWeightMultiplier(entry.NormalizedId, ownedCountsBySegmentId)
+                }); // 보유 + Lv3 미만
             }
         }
 
-        if (ownedCandidateIndexes.Count == 0)
+        if (ownedCandidates.Count == 0 || !TryPickWeightedSegmentEntry(ownedCandidates, out WeightedSegmentCatalogEntry selected))
         {
             return false; // 확정 가능한 보유 후보 없음
         }
 
-        int selectedIndex = ownedCandidateIndexes[Random.Range(0, ownedCandidateIndexes.Count)]; // 보유 후보 랜덤
-        picked = candidates[selectedIndex];
+        picked = selected.Entry; // 보유 후보 가중 랜덤
         return true;
     }
 
-    private static bool TryTakeRandomSegmentChoiceCandidate(List<SegmentCatalogEntry> candidates, int supportPickCount, out SegmentCatalogEntry picked)
+    private bool TryTakeRandomSegmentChoiceCandidate(
+        List<SegmentCatalogEntry> candidates,
+        int supportPickCount,
+        Dictionary<string, int> ownedCountsBySegmentId,
+        out SegmentCatalogEntry picked)
     {
         picked = default; // 기본값
         if (candidates == null || candidates.Count == 0)
@@ -1388,7 +1403,7 @@ public partial class CardUI
             return false; // 후보 없음
         }
 
-        List<int> availableIndexes = new List<int>(candidates.Count); // 제한 통과 후보
+        List<WeightedSegmentCatalogEntry> availableCandidates = new List<WeightedSegmentCatalogEntry>(candidates.Count); // 제한 통과 후보
         for (int i = 0; i < candidates.Count; i++)
         {
             SegmentCatalogEntry entry = candidates[i]; // 후보
@@ -1397,18 +1412,35 @@ public partial class CardUI
                 continue; // 지원형은 0~1장만 허용
             }
 
-            availableIndexes.Add(i); // 선택 가능
+            availableCandidates.Add(new WeightedSegmentCatalogEntry
+            {
+                Entry = entry,
+                Weight = ResolveOwnedSegmentChoiceWeightMultiplier(entry.NormalizedId, ownedCountsBySegmentId)
+            }); // 선택 가능
         }
 
-        if (availableIndexes.Count == 0)
+        if (availableCandidates.Count == 0 || !TryPickWeightedSegmentEntry(availableCandidates, out WeightedSegmentCatalogEntry selected))
         {
             return false; // 제한으로 뽑을 후보 없음
         }
 
-        int selectedIndex = availableIndexes[Random.Range(0, availableIndexes.Count)]; // 랜덤 후보
-        picked = candidates[selectedIndex];
-        candidates.RemoveAt(selectedIndex); // 선택 후보 제거
+        picked = selected.Entry; // 가중 랜덤 후보
         return true;
+    }
+
+    private float ResolveOwnedSegmentChoiceWeightMultiplier(string segmentId, Dictionary<string, int> ownedCountsBySegmentId) // 보유 개수별 등장 가중치 배율
+    {
+        int ownedCount = 0; // 기본: 미보유
+        if (!string.IsNullOrWhiteSpace(segmentId)
+            && ownedCountsBySegmentId != null
+            && ownedCountsBySegmentId.TryGetValue(segmentId.Trim(), out int countForId))
+        {
+            ownedCount = Mathf.Max(0, countForId);
+        }
+
+        float reduction = ownedCount * Mathf.Clamp01(ownedSegmentChoiceWeightReductionPerOwned); // 1개당 -10%
+        float minimum = Mathf.Clamp01(ownedSegmentChoiceMinimumWeightMultiplier); // 최소 1%
+        return Mathf.Clamp(1f - reduction, minimum, 1f);
     }
 
     private static bool IsOwnedSegmentChoiceGuaranteeLevelEligible(SegmentCatalogEntry entry)
