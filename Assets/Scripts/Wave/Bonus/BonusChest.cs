@@ -5,15 +5,10 @@ namespace TeamProject01.Gameplay
     public sealed class BonusChest : MonoBehaviour
     {
         [Header("상자 감지 설정")]
-        [Tooltip("컨보이 머리가 이 거리 안으로 들어오면 상자가 열립니다.")]
-        [InspectorName("열림 거리")]
-        [Range(0.5f, 80.0f)]
-        [SerializeField] private float openDistance = 10.0f; // 상자가 열리기 시작하는 거리입니다.
-
-        [Tooltip("컨보이 머리가 이 거리 안으로 들어오고 보상 딜레이가 끝나면 보상 선택 화면이 열립니다.")]
+        [Tooltip("컨보이 머리가 이 거리 안으로 들어오면 상자가 열리고 보상 선택이 예약됩니다.")]
         [InspectorName("보상 선택 거리")]
         [Range(0.2f, 30.0f)]
-        [SerializeField] private float collectDistance = 3.0f; // 보상 선택 화면이 열리는 거리입니다.
+        [SerializeField] private float collectDistance = 3.0f; // 상자 획득과 보상 선택을 시작하는 거리입니다.
 
         [Header("보상 선택 설정")]
         [Tooltip("이 상자가 열 보상 선택 카드의 레어 등장 확률 추가값입니다.")]
@@ -74,6 +69,10 @@ namespace TeamProject01.Gameplay
         private global::CardUI cachedCardUi; // 보상 선택 화면 진입점 캐시입니다.
         private bool warnedMissingCardUi; // CardUI 누락 경고 반복 방지입니다.
 
+        public bool IsOpened => opened; // 자동 획득 대기 판단용입니다.
+        public bool IsRewarded => rewarded; // 보상 선택 화면 진입 여부입니다.
+        public bool IsWaitingForRewardChoice => opened && !rewarded; // 열린 뒤 보상 화면을 기다리는 상태입니다.
+
         private void Awake()
         {
             if (animator == null)
@@ -96,12 +95,17 @@ namespace TeamProject01.Gameplay
 
             float distance = Vector3.Distance(transform.position, headTarget.position);
 
-            if (!opened && distance <= openDistance)
+            if (!opened)
             {
-                OpenChest();
+                if (distance <= collectDistance)
+                {
+                    OpenChest();
+                }
+
+                return;
             }
 
-            if (opened && !rewarded && Time.time >= rewardReadyTime && distance <= collectDistance)
+            if (!rewarded && Time.time >= rewardReadyTime)
             {
                 TryOpenRewardChoicePanel();
             }
@@ -123,6 +127,22 @@ namespace TeamProject01.Gameplay
         {
             rewardChoiceRareChanceBonusPercent = Mathf.Clamp(rareChanceBonusPercent, 0.0f, 100.0f);
             rewardChoiceUniqueChanceBonusPercent = Mathf.Clamp(uniqueChanceBonusPercent, 0.0f, 100.0f);
+        }
+
+        public bool TryAutoCollect()
+        {
+            if (rewarded)
+            {
+                return true; // 이미 보상 화면 진입 완료
+            }
+
+            if (!opened && !OpenChest())
+            {
+                return false; // 다른 상자가 이미 선택된 경우 등
+            }
+
+            rewardReadyTime = Mathf.Min(rewardReadyTime, Time.time); // 자동 획득은 열림 딜레이 생략
+            return TryOpenRewardChoicePanel();
         }
 
         public void RemoveWithoutReward(float delay)
@@ -155,14 +175,12 @@ namespace TeamProject01.Gameplay
             return convoyTarget; // 테스트 환경에서 HeadVisual이 없을 때만 사용하는 안전장치입니다.
         }
 
-        private void OpenChest()
+        private bool OpenChest()
         {
-            if (ownerSpawner != null && !ownerSpawner.TrySelectChest(this))
+            if (!TrySelectChestForReward())
             {
-                return;
+                return false;
             }
-
-            RemoveOtherChoiceChests();
 
             opened = true;
             rewardReadyTime = Time.time + Mathf.Max(0.0f, rewardDropDelay);
@@ -170,7 +188,7 @@ namespace TeamProject01.Gameplay
 
             if (animator == null)
             {
-                return;
+                return true; // 애니메이터가 없어도 보상 처리는 계속 진행
             }
 
             animator.enabled = true;
@@ -181,6 +199,19 @@ namespace TeamProject01.Gameplay
             {
                 animator.SetTrigger(openTriggerName);
             }
+
+            return true;
+        }
+
+        private bool TrySelectChestForReward()
+        {
+            if (ownerSpawner != null)
+            {
+                return ownerSpawner.TrySelectChest(this);
+            }
+
+            RemoveOtherChoiceChests();
+            return true;
         }
 
         private bool HasAnimatorTrigger(string triggerName)
@@ -281,9 +312,6 @@ namespace TeamProject01.Gameplay
 
         private void OnDrawGizmosSelected()
         {
-            Gizmos.color = new Color(0.2f, 0.8f, 1.0f, 0.85f);
-            Gizmos.DrawWireSphere(transform.position, openDistance);
-
             Gizmos.color = new Color(1.0f, 0.8f, 0.1f, 0.85f);
             Gizmos.DrawWireSphere(transform.position, collectDistance);
         }

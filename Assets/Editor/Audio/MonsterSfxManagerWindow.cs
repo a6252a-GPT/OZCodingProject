@@ -87,21 +87,23 @@ namespace TeamProject01.EditorTools
             SlotSpec bossJumpImpact = Slot("SFX_BossJumpImpact", GameplaySfxCue.BossJumpImpact, BossVolume, 0.12f, true, true, "SFX_Vefects_Explosion_Big_01.wav");
             SlotSpec bossDeath = Slot("SFX_BossDeath", GameplaySfxCue.BossDeath, BossVolume, 0.2f, true, true, "troll_monster_death_slow_04.wav");
 
-            SlotSpec skeletonJumpLanding = Slot("SFX_MonsterJumpLanding", GameplaySfxCue.MonsterJumpLanding, MonsterVolume, 0.08f, true, true, "impact_rocks_011.wav");
-            SlotSpec skeletonDeath = Slot("SFX_MonsterDeath", GameplaySfxCue.MonsterDeath, MonsterVolume, 0.12f, true, true, "impact_rocks_008.wav");
-            SlotSpec suicideExplosion = Slot("SFX_MonsterSuicideExplosion", GameplaySfxCue.MonsterSuicideExplosion, MonsterVolume, 0.08f, true, true, "explosion_small_no_tail_03.wav");
+            SlotSpec skeletonJumpLanding = Slot("SFX_MonsterJumpLanding", GameplaySfxCue.MonsterJumpLanding, 1.0f, 0.08f, true, true, "impact_rocks_011.wav");
+            SlotSpec skeletonDeath = Slot("SFX_MonsterDeath", GameplaySfxCue.MonsterDeath, 1.0f, 0.12f, true, true, "impact_rocks_008.wav");
+            SlotSpec skeletonMelee = Slot("SFX_MonsterMeleeImpact", GameplaySfxCue.MonsterMeleeImpact, MonsterVolume, 0.08f, true, true, "punch_low_deep_impact_03.wav");
+            SlotSpec suicideExplosion = Slot("SFX_MonsterSuicideExplosion", GameplaySfxCue.MonsterSuicideExplosion, 1.0f, 0.08f, true, true, "explosion_small_no_tail_03.wav");
             SlotSpec slowZoneCast = Slot("SFX_MonsterSlowZoneCast", GameplaySfxCue.MonsterSlowZoneCast, MonsterVolume, 0.2f, true, true, "ice_spell_freeze_ground_02.wav");
-            SlotSpec slowThrowerRanged = Slot("SFX_MonsterRangedFire", GameplaySfxCue.MonsterRangedFire, MonsterVolume, 0.08f, true, true, "retro_laser_gun_shoot_05.wav");
+            SlotSpec slowZoneImpact = Slot("SFX_MonsterSlowZoneImpact", GameplaySfxCue.MonsterSlowZoneImpact, MonsterVolume, 0.08f, true, true, "retro_laser_gun_shoot_05.wav");
             SlotSpec segmentCutCast = Slot("SFX_MonsterSegmentCutCast", GameplaySfxCue.MonsterSegmentCutCast, MonsterVolume, 0.2f, true, true, "whoosh_magic_spell_02.wav");
-            SlotSpec segmentCutLaunch = Slot("SFX_MonsterSegmentCutLaunch", GameplaySfxCue.MonsterSegmentCutLaunch, MonsterVolume, 0.12f, true, true, "retro_magic_spell_cast_sparkle_03.wav");
-            SlotSpec obstacleSummon = Slot("SFX_MonsterObstacleSummon", GameplaySfxCue.MonsterObstacleSummon, MonsterVolume, 0.2f, true, true, "casting_charge_matter_grow_01.wav");
+            SlotSpec segmentCutLaunch = Slot("SFX_MonsterSegmentCutLaunch", GameplaySfxCue.MonsterSegmentCutLaunch, 1.0f, 0.12f, true, true, "retro_magic_spell_cast_sparkle_03.wav");
+            SlotSpec obstacleSummon = Slot("SFX_MonsterObstacleSummon", GameplaySfxCue.MonsterObstacleSummon, 0.6f, 0.2f, true, true, "casting_charge_matter_grow_01.wav");
             SlotSpec obstacleMelee = Slot("SFX_MonsterMeleeImpact", GameplaySfxCue.MonsterMeleeImpact, MonsterVolume, 0.08f, true, true, "punch_general_body_impact_03.wav");
             SlotSpec hatchlingMelee = Slot("SFX_MonsterMeleeImpact", GameplaySfxCue.MonsterMeleeImpact, MonsterVolume, 0.08f, true, true, "snake_2_attack_hiss_fast_03.wav");
-            SlotSpec buffCasterRanged = Slot("SFX_MonsterRangedFire", GameplaySfxCue.MonsterRangedFire, MonsterVolume, 0.08f, true, true, "retro_laser_gun_shoot_08.wav");
+            SlotSpec hatchlingConsume = Slot("SFX_MonsterHatchlingConsume", GameplaySfxCue.MonsterHatchlingConsume, MonsterVolume, 0.08f, true, true, "comedy_bite_creature_eating_03.wav", "zombie_voice_eating_chewing_02.wav", "comedy_bite_chew_03.wav");
+            SlotSpec buffCasterRanged = Slot("SFX_MonsterRangedFire", GameplaySfxCue.MonsterRangedFire, 1.0f, 0.08f, true, true, "retro_laser_gun_shoot_08.wav");
             SlotSpec areaShieldLoop = Slot("SFX_MonsterShieldLoop", GameplaySfxCue.MonsterShieldLoop, MonsterVolume, 0.0f, false, true, "sci-fi_shield_power_on_impact_01.wav");
-            SlotSpec areaShieldRanged = Slot("SFX_MonsterRangedFire", GameplaySfxCue.MonsterRangedFire, MonsterVolume, 0.08f, true, true, "retro_laser_gun_shoot_06.wav");
+            SlotSpec areaShieldRanged = Slot("SFX_MonsterRangedFire", GameplaySfxCue.MonsterRangedFire, 1.0f, 0.08f, true, true, "retro_laser_gun_shoot_06.wav");
             SlotSpec portalTeleport = Slot("SFX_MonsterPortalTeleport", GameplaySfxCue.MonsterPortalTeleport, MonsterVolume, 0.2f, true, true, "dark_portal_wind_effect_02.wav");
-            SlotSpec portalMelee = Slot("SFX_MonsterMeleeImpact", GameplaySfxCue.MonsterMeleeImpact, MonsterVolume, 0.08f, true, true, "retro_impact_hit_10.wav");
+            SlotSpec portalMelee = Slot("SFX_MonsterMeleeImpact", GameplaySfxCue.MonsterMeleeImpact, 1.0f, 0.08f, true, true, "metal_hit_small_02.wav");
 
             return new[]
             {
@@ -127,9 +129,10 @@ namespace TeamProject01.EditorTools
 
                 Prefab(
                     "Assets/Prefabs/Monster/EnemyPrefab/Enemy_Elite_SkeletonGolemJumper.prefab",
-                    Bridge(death: GameplaySfxCue.MonsterDeath, jumpLanding: GameplaySfxCue.MonsterJumpLanding),
+                    Bridge(death: GameplaySfxCue.MonsterDeath, jumpLanding: GameplaySfxCue.MonsterJumpLanding, melee: GameplaySfxCue.MonsterMeleeImpact),
                     skeletonJumpLanding,
-                    skeletonDeath),
+                    skeletonDeath,
+                    skeletonMelee),
 
                 Prefab(
                     "Assets/Prefabs/Monster/EnemyPrefab/Enemy_Elite_SuicideCharger.prefab",
@@ -138,9 +141,14 @@ namespace TeamProject01.EditorTools
 
                 Prefab(
                     "Assets/Prefabs/Monster/EnemyPrefab/Enemy_Elite_SlowThrower.prefab",
-                    Bridge(slowZoneCast: GameplaySfxCue.MonsterSlowZoneCast, ranged: GameplaySfxCue.MonsterRangedFire),
-                    slowZoneCast,
-                    slowThrowerRanged),
+                    Bridge(slowZoneCast: GameplaySfxCue.MonsterSlowZoneCast),
+                    Remove("SFX_MonsterRangedFire"),
+                    slowZoneCast),
+
+                Prefab(
+                    "Assets/Prefabs/Monster/ObstaclePrefab/EnemySlowZoneProjectile_M.prefab",
+                    BridgeSpec.None,
+                    slowZoneImpact),
 
                 Prefab(
                     "Assets/Prefabs/Monster/EnemyPrefab/Enemy_Elite_SegmentCutCaster.prefab",
@@ -150,14 +158,15 @@ namespace TeamProject01.EditorTools
 
                 Prefab(
                     "Assets/Prefabs/Monster/EnemyPrefab/Enemy_Elite_ObstacleSingle.prefab",
-                    Bridge(obstacleSummon: GameplaySfxCue.MonsterObstacleSummon, melee: GameplaySfxCue.MonsterMeleeImpact),
+                    Bridge(obstacleSummon: GameplaySfxCue.MonsterObstacleSummon, melee: GameplaySfxCue.MonsterMeleeImpact, meleeDelay: 0.4f),
                     obstacleSummon,
                     obstacleMelee),
 
                 Prefab(
                     "Assets/Prefabs/Monster/EnemyPrefab/Enemy_Elite_DragonHatchling.prefab",
                     Bridge(melee: GameplaySfxCue.MonsterMeleeImpact),
-                    hatchlingMelee),
+                    hatchlingMelee,
+                    hatchlingConsume),
 
                 Prefab(
                     "Assets/Prefabs/Monster/EnemyPrefab/Enemy_Elite_BuffCaster.prefab",
@@ -199,6 +208,14 @@ namespace TeamProject01.EditorTools
                 if (RemoveChildIfExists(root.transform, "SFX_MonsterHit"))
                 {
                     changed = true;
+                }
+
+                for (int i = 0; i < spec.RemoveChildren.Length; i++)
+                {
+                    if (RemoveChildIfExists(root.transform, spec.RemoveChildren[i]))
+                    {
+                        changed = true;
+                    }
                 }
 
                 if (spec.Bridge.Enabled && ConfigureBridge(root, spec.Bridge))
@@ -249,7 +266,8 @@ namespace TeamProject01.EditorTools
                 spec.ObstacleSummon,
                 spec.Melee,
                 spec.ShieldLoop,
-                spec.PortalTeleport);
+                spec.PortalTeleport,
+                spec.MeleeDelay);
             EditorUtility.SetDirty(bridge);
             return changed || spec.Enabled;
         }
@@ -391,7 +409,12 @@ namespace TeamProject01.EditorTools
 
         private static PrefabSpec Prefab(string path, BridgeSpec bridge, params SlotSpec[] slots)
         {
-            return new PrefabSpec(path, bridge, slots);
+            return new PrefabSpec(path, bridge, Array.Empty<string>(), slots);
+        }
+
+        private static PrefabSpec Prefab(string path, BridgeSpec bridge, RemoveSpec remove, params SlotSpec[] slots)
+        {
+            return new PrefabSpec(path, bridge, remove.ChildNames, slots);
         }
 
         private static BridgeSpec Bridge(
@@ -405,7 +428,8 @@ namespace TeamProject01.EditorTools
             GameplaySfxCue obstacleSummon = GameplaySfxCue.None,
             GameplaySfxCue melee = GameplaySfxCue.None,
             GameplaySfxCue shieldLoop = GameplaySfxCue.None,
-            GameplaySfxCue portalTeleport = GameplaySfxCue.None)
+            GameplaySfxCue portalTeleport = GameplaySfxCue.None,
+            float meleeDelay = 0.0f)
         {
             return new BridgeSpec(
                 true,
@@ -419,7 +443,13 @@ namespace TeamProject01.EditorTools
                 obstacleSummon,
                 melee,
                 shieldLoop,
-                portalTeleport);
+                portalTeleport,
+                meleeDelay);
+        }
+
+        private static RemoveSpec Remove(params string[] childNames)
+        {
+            return new RemoveSpec(childNames);
         }
 
         private static SlotSpec Slot(
@@ -438,13 +468,25 @@ namespace TeamProject01.EditorTools
         {
             public readonly string Path;
             public readonly BridgeSpec Bridge;
+            public readonly string[] RemoveChildren;
             public readonly SlotSpec[] Slots;
 
-            public PrefabSpec(string path, BridgeSpec bridge, SlotSpec[] slots)
+            public PrefabSpec(string path, BridgeSpec bridge, string[] removeChildren, SlotSpec[] slots)
             {
                 Path = path;
                 Bridge = bridge;
+                RemoveChildren = removeChildren ?? Array.Empty<string>();
                 Slots = slots ?? Array.Empty<SlotSpec>();
+            }
+        }
+
+        private readonly struct RemoveSpec
+        {
+            public readonly string[] ChildNames;
+
+            public RemoveSpec(string[] childNames)
+            {
+                ChildNames = childNames ?? Array.Empty<string>();
             }
         }
 
@@ -464,6 +506,7 @@ namespace TeamProject01.EditorTools
             public readonly GameplaySfxCue Melee;
             public readonly GameplaySfxCue ShieldLoop;
             public readonly GameplaySfxCue PortalTeleport;
+            public readonly float MeleeDelay;
 
             public BridgeSpec(
                 bool enabled,
@@ -477,7 +520,8 @@ namespace TeamProject01.EditorTools
                 GameplaySfxCue obstacleSummon = GameplaySfxCue.None,
                 GameplaySfxCue melee = GameplaySfxCue.None,
                 GameplaySfxCue shieldLoop = GameplaySfxCue.None,
-                GameplaySfxCue portalTeleport = GameplaySfxCue.None)
+                GameplaySfxCue portalTeleport = GameplaySfxCue.None,
+                float meleeDelay = 0.0f)
             {
                 Enabled = enabled;
                 Death = death;
@@ -491,6 +535,7 @@ namespace TeamProject01.EditorTools
                 Melee = melee;
                 ShieldLoop = shieldLoop;
                 PortalTeleport = portalTeleport;
+                MeleeDelay = Mathf.Max(0.0f, meleeDelay);
             }
         }
 

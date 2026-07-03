@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace TeamProject01.Gameplay
@@ -53,8 +54,39 @@ namespace TeamProject01.Gameplay
         private Texture2D bottomTexture;
         private Texture2D leftTexture;
         private Texture2D rightTexture;
+        private static bool sceneLoadHookRegistered;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRuntimeState()
+        {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            sceneLoadHookRegistered = false;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void InitializeRuntimeOverlay()
+        {
+            RegisterSceneLoadHook();
+            EnsureRuntimeOverlay();
+        }
+
+        private static void RegisterSceneLoadHook()
+        {
+            if (sceneLoadHookRegistered)
+            {
+                return;
+            }
+
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            sceneLoadHookRegistered = true;
+        }
+
+        private static void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            EnsureRuntimeOverlay();
+        }
+
         private static void EnsureRuntimeOverlay()
         {
             if (FindFirstObjectByType<NexusScreenVignetteController>(FindObjectsInactive.Include) != null)

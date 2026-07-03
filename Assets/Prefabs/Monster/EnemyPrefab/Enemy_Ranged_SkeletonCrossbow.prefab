@@ -717,6 +717,7 @@ MonoBehaviour:
   segmentCutLaunchCue: 0
   obstacleSummonCue: 0
   meleeAttackCue: 0
+  meleeAttackDelay: 0
   shieldLoopCue: 0
   portalTeleportCue: 0
 --- !u!114 &5777310221188850952
@@ -737,6 +738,12 @@ MonoBehaviour:
   centerOffset: {x: 0, y: 0, z: 0}
   pushStrength: 1
   maxCorrectionPerFrame: 0.25
+  sideSpreadStrength: 0.65
+  blockedSidePushPerFrame: 0.08
+  pressureTransferRatio: 0.7
+  maxPendingPushPerFrame: 0.24
+  pushSmoothingSpeed: 10
+  pushDecaySpeed: 6
   drawGizmo: 1
 --- !u!1001 &514377774032128770
 PrefabInstance:

@@ -41,6 +41,8 @@ namespace TeamProject01.Gameplay
         MonsterObstacleSummon = 37,
         MonsterMeleeImpact = 38,
         MonsterShieldLoop = 39,
-        MonsterPortalTeleport = 40
+        MonsterPortalTeleport = 40,
+        MonsterHatchlingConsume = 41,
+        MonsterSlowZoneImpact = 42
     }
 }

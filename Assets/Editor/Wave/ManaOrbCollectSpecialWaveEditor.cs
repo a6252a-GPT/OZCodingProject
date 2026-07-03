@@ -46,13 +46,13 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "uniqueChestPrefab", "유니크 상자");
             WaveInspectorUtility.DrawProperty(serializedObject, "chestRoot", "상자 생성 부모");
 
-            WaveInspectorUtility.DrawSection("보상 배치", "Reward Center를 기준으로 상자 1개는 중앙, 2개는 좌우, 3개는 중앙 정렬로 배치합니다.");
+            WaveInspectorUtility.DrawSection("보상 배치", "Reward Center를 기준으로 상자를 중앙 정렬로 배치하고, 제한 시간이 지나면 남은 상자를 자동 획득합니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "rewardCenter", "상자 중앙 위치");
             WaveInspectorUtility.DrawProperty(serializedObject, "fallbackRewardDirection", "기본 배치 방향");
             WaveInspectorUtility.DrawProperty(serializedObject, "fallbackRewardDistance", "Nexus에서 떨어진 거리");
             WaveInspectorUtility.DrawProperty(serializedObject, "chestSpacing", "상자 간격");
             WaveInspectorUtility.DrawProperty(serializedObject, "chestHeightOffset", "상자 높이 보정");
-            WaveInspectorUtility.DrawProperty(serializedObject, "rewardStageMaxWaitSeconds", "상자 대기 제한 시간 (초)");
+            WaveInspectorUtility.DrawProperty(serializedObject, "rewardStageMaxWaitSeconds", "상자 자동 획득 대기 (초)");
 
             serializedObject.ApplyModifiedProperties();
 

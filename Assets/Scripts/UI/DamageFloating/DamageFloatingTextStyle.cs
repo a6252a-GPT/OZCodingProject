@@ -5,7 +5,7 @@ namespace TeamProject01.Gameplay
 {
     public static class DamageFloatingTextStyle // 데미지 숫자 TMP 스타일
     {
-        private static readonly Color ShadowColor = new Color(0f, 0f, 0f, 0.72f); // 그림자 색
+        private static readonly Color ShadowColor = new Color(0f, 0f, 0f, 0.97f); // 그림자 색
 
         public static void Apply(TMP_Text text, ref Material runtimeMaterial) // 외곽/그림자 적용
         {
@@ -43,8 +43,9 @@ namespace TeamProject01.Gameplay
             SetFloat(material, ShaderUtilities.ID_OutlineWidth, 0f); // 외곽선 제거
             SetColor(material, ShaderUtilities.ID_OutlineColor, Color.clear); // 외곽선 투명
             SetColor(material, ShaderUtilities.ID_UnderlayColor, ShadowColor); // 그림자 색
-            SetFloat(material, ShaderUtilities.ID_UnderlayOffsetX, 0.18f); // 그림자 X
-            SetFloat(material, ShaderUtilities.ID_UnderlayOffsetY, -0.18f); // 그림자 Y
+            SetFloat(material, ShaderUtilities.ID_UnderlayOffsetX, 0.44f); // 그림자 X
+            SetFloat(material, ShaderUtilities.ID_UnderlayOffsetY, -0.44f); // 그림자 Y
+            SetFloat(material, ShaderUtilities.ID_UnderlayDilate, 0.14f); // 그림자 두께
             SetFloat(material, ShaderUtilities.ID_UnderlaySoftness, 0.2f); // 그림자 부드러움
         }
 

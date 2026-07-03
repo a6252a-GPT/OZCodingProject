@@ -198,6 +198,9 @@ namespace TeamProject01.Gameplay
             request.ExpireTime = Time.time + 0.25f;
 
             knockbackRequests.Add(request);
+            StartingSegmentChoiceTicketDebug.Log(
+                $"MonsterInteractionApi.RequestConvoyKnockback center={StartingSegmentChoiceTicketDebug.Format(center)}, radius={request.Radius:0.00}, "
+                + $"distance={request.Distance:0.00}, duration={request.Duration:0.00}, height={request.Height:0.00}, pending={knockbackRequests.Count}");
         }
 
         public static bool TryConsumeConvoyKnockback(Vector3 targetPosition, out Vector3 direction, out float distance, out float duration)

@@ -21,9 +21,9 @@ public partial class CardUI
 
     private void TryStartAutoSelect()
     {
-        if (!CanAutoSelectCurrentLevelUpPanel())
+        if (!CanAutoSelectCurrentPanel())
         {
-            return; // 보상/선택권·수동모드·패널 닫힘은 직접 선택 유지
+            return; // 수동모드·패널 닫힘은 직접 선택 유지
         }
 
         StopAutoSelect();
@@ -32,7 +32,7 @@ public partial class CardUI
 
     private void TryStartAutoSelectSegmentAction(bool canAdd, bool canLevelUp)
     {
-        if (!CanAutoSelectCurrentLevelUpPanel())
+        if (!CanAutoSelectCurrentPanel())
         {
             return;
         }
@@ -51,12 +51,19 @@ public partial class CardUI
         TryStartAutoSelect(); // 현재 열린 카드 묶음 기준 재시작
     }
 
-    private bool CanAutoSelectCurrentLevelUpPanel()
+    private bool CanAutoSelectCurrentPanel()
     {
-        return activePanelMode == CardPanelMode.LevelUp
+        return IsAutoSelectSupportedPanelMode(activePanelMode)
             && autoSelectInAutoOrbit
             && IsAutoOrbitActive()
-            && IsLevelUpPanelOpen(); // 보상/선택권과 수동 선택은 제외
+            && IsLevelUpPanelOpen(); // 레벨업/보상/선택권 패널 공통 자동선택 조건
+    }
+
+    private static bool IsAutoSelectSupportedPanelMode(CardPanelMode mode)
+    {
+        return mode == CardPanelMode.LevelUp
+            || mode == CardPanelMode.RewardChoice
+            || mode == CardPanelMode.SegmentTicketChoice;
     }
 
     private void StopAutoSelect()
@@ -70,12 +77,7 @@ public partial class CardUI
 
     private void TryStartAutoSelectAfterSpawn()
     {
-        if (activePanelMode != CardPanelMode.LevelUp)
-        {
-            return;
-        }
-
-        if (!autoSelectInAutoOrbit || !IsAutoOrbitActive())
+        if (!CanAutoSelectCurrentPanel())
         {
             return;
         }
@@ -103,7 +105,7 @@ public partial class CardUI
 
         NotifySpawnedCardPointerEnter(picked);
         yield return new WaitForSecondsRealtime(0.2f);
-        if (!CanAutoSelectCurrentLevelUpPanel() || isProcessingSelection)
+        if (!CanAutoSelectCurrentPanel() || isProcessingSelection)
         {
             autoSelectRoutine = null;
             yield break;
@@ -129,7 +131,7 @@ public partial class CardUI
 
         NotifySpawnedCardPointerEnter(picked);
         yield return new WaitForSecondsRealtime(0.2f);
-        if (!CanAutoSelectCurrentLevelUpPanel() || isProcessingSelection)
+        if (!CanAutoSelectCurrentPanel() || isProcessingSelection)
         {
             autoSelectRoutine = null;
             yield break;
@@ -204,7 +206,7 @@ public partial class CardUI
             return false;
         }
 
-        picked = PickHighestTierCard(selectable); // 최고 등급 우선 선택
+        picked = PickAutoSelectCardForCurrentPanel(selectable); // 최고 등급 우선 선택
         return picked != null;
     }
 
@@ -309,7 +311,33 @@ public partial class CardUI
         return StatUpgrade.StatCardTier.Normal;
     }
 
+    private SpawnedCardEntry PickAutoSelectCardForCurrentPanel(List<SpawnedCardEntry> candidates)
+    {
+        return activePanelMode == CardPanelMode.RewardChoice
+            ? PickRewardChoiceAutoSelectCard(candidates)
+            : PickHighestTierCard(candidates);
+    }
+
+    private SpawnedCardEntry PickRewardChoiceAutoSelectCard(List<SpawnedCardEntry> candidates)
+    {
+        List<SpawnedCardEntry> topTier = CollectHighestTierCards(candidates);
+        for (int i = 0; i < topTier.Count; i++)
+        {
+            if (topTier[i]?.RewardChoice == RewardChoiceKind.SegmentChoiceTicket)
+            {
+                return topTier[i];
+            }
+        }
+
+        return PickRandomCard(topTier);
+    }
+
     private SpawnedCardEntry PickHighestTierCard(List<SpawnedCardEntry> candidates)
+    {
+        return PickRandomCard(CollectHighestTierCards(candidates));
+    }
+
+    private List<SpawnedCardEntry> CollectHighestTierCards(List<SpawnedCardEntry> candidates)
     {
         StatUpgrade.StatCardTier best = StatUpgrade.StatCardTier.Normal;
         for (int i = 0; i < candidates.Count; i++)
@@ -330,6 +358,16 @@ public partial class CardUI
             }
         }
 
-        return topTier[UnityEngine.Random.Range(0, topTier.Count)];
+        return topTier;
+    }
+
+    private static SpawnedCardEntry PickRandomCard(List<SpawnedCardEntry> candidates)
+    {
+        if (candidates == null || candidates.Count == 0)
+        {
+            return null;
+        }
+
+        return candidates[UnityEngine.Random.Range(0, candidates.Count)];
     }
 }

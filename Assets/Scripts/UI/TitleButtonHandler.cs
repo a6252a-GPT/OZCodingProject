@@ -7,13 +7,19 @@ using UnityEngine.UI;
 namespace TeamProject01.Gameplay
 {
     public sealed class TitleButtonHandler : MonoBehaviour // 타이틀 버튼 호버·클릭 연출 //안건준 추가 - 0628
-    {
+    {   [Header("버튼 루트")]
         [SerializeField] private Transform buttonRoot; // 비어 있으면 이 오브젝트 하위 버튼 전부 대상
+        [Header("호버 배율")]
         [SerializeField] private float hoverScale = 1.09f; // CardUI와 동일한 호버 배율
+        [Header("클릭 배율")]
         [SerializeField] private float clickScale = 1.2f; // CardUI 리롤 버튼 클릭 배율
+        [Header("호버 스케일 전환 시간")]
         [SerializeField] private float hoverDuration = 0.15f; // 호버 스케일 전환 시간
+        [Header("클릭 시 커지는 시간")]
         [SerializeField] private float clickUpSeconds = 0.15f; // 클릭 시 커지는 시간
+        [Header("클릭 후 원래 크기로 돌아오는 시간")]
         [SerializeField] private float clickDownSeconds = 0.1f; // 클릭 후 원래 크기로 돌아오는 시간
+        [Header("AudioManager SFX 실패 시 직접 재생용 (선택)")]
         [SerializeField] private AudioClip fallbackClickClip; // AudioManager SFX 실패 시 직접 재생용 (선택) //안건준 추가 - 0629
 
         private readonly HashSet<Button> registeredButtons = new HashSet<Button>();

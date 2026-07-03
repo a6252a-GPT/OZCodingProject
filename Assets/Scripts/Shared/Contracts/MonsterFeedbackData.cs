@@ -19,6 +19,7 @@ namespace TeamProject01.Gameplay
         public Vector3 HitPosition;
         public float KnockbackDistance;
         public float KnockbackDuration;
+        public float VisualLiftHeight;
         public float StaggerDuration;
         public int SourceSegmentIndex;
         public DamageType SourceDamageType;
@@ -72,6 +73,7 @@ namespace TeamProject01.Gameplay
                 HitPosition = hitPosition,
                 KnockbackDistance = knockbackDistance,
                 KnockbackDuration = knockbackDuration,
+                VisualLiftHeight = 0.0f,
                 StaggerDuration = staggerDuration,
                 SourceSegmentIndex = sourceSegmentIndex,
                 SourceDamageType = sourceDamageType,

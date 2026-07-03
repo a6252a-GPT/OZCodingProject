@@ -117,14 +117,14 @@ namespace TeamProject01.Gameplay
             DamageFloatingPopup popup = GetPopup(); // 풀에서 확보
             Vector3 position = ResolvePlayerRewardPosition(fallbackPosition); // 플레이어 머리 위
             string displayText = FormatReward(kind, amount); // 한글 보상 문구
-            popup.Initialize(displayText, ResolveRewardColor(kind), position, 2.55f, GetActiveFontForText(displayText), ReleasePopup); // 팝업 시작
+            popup.Initialize(displayText, ResolveRewardColor(kind), position, 2.8f, GetActiveFontForText(displayText), ReleasePopup); // 팝업 시작
         }
 
         private void SpawnStatus(string displayText, Color color, Vector3 fallbackPosition)
         {
             DamageFloatingPopup popup = GetPopup();
             Vector3 position = fallbackPosition + Vector3.up * 1.45f;
-            popup.Initialize(displayText, color, position, 2.35f, GetActiveFontForText(displayText), ReleasePopup);
+            popup.Initialize(displayText, color, position, 3f, GetActiveFontForText(displayText), ReleasePopup);
         }
 
         private void SpawnSample() // 폰트 확인용 샘플
@@ -408,13 +408,7 @@ namespace TeamProject01.Gameplay
 
         private static string FormatDamage(float damage) // 데미지 문자열
         {
-            float rounded = Mathf.Round(damage); // 정수 후보
-            if (damage < 10f && !Mathf.Approximately(damage, rounded))
-            {
-                return damage.ToString("0.#"); // 소수 피해 표시
-            }
-
-            return Mathf.Max(1, Mathf.RoundToInt(damage)).ToString(); // 정수 표시
+            return Mathf.Max(1, Mathf.RoundToInt(damage)).ToString(); // 소수점 반올림 정수 표시
         }
 
         private static string FormatReward(RewardPickupKind kind, int amount) // 보상 문자열
@@ -462,7 +456,7 @@ namespace TeamProject01.Gameplay
 
         private static float ResolveFontSize(DamageType type) // 타입별 크기
         {
-            return type == DamageType.Explosion ? 2.95f : 2.6f; // 폭발 강조
+            return type == DamageType.Explosion ? 3.2f : 2.8f; // 폭발 강조
         }
 
         private static int CompareFontNames(UnityEngine.Object left, UnityEngine.Object right) // 테스트 폰트 순서
@@ -483,7 +477,7 @@ namespace TeamProject01.Gameplay
         {
             if (fontName.Contains("Pretendard"))
             {
-                return 0; // Pretendard
+                return 0; // Pretendard Medium
             }
 
             if (fontName.Contains("Gwangyang"))

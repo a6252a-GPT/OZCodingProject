@@ -9,6 +9,19 @@ namespace TeamProject01.Gameplay
         public const int MaxUpgradeLevel = 5; // 최대 강화 단계
         private const int SaveVersion = 1; // 저장 버전
         private const int DefaultStartingDiamond = 1000; // 기본 시작 다이아
+        public const int WormPurchaseCost = 300; // 지렁이 공통 구매 비용
+        public static readonly MetaUpgradeId[] ActiveUpgradeIds =
+        {
+            MetaUpgradeId.GoldBonus,
+            MetaUpgradeId.DiamondBonus,
+            MetaUpgradeId.TurnBonus,
+            MetaUpgradeId.CollisionForce,
+            MetaUpgradeId.BaseAttack,
+            MetaUpgradeId.AttackSpeed,
+            MetaUpgradeId.NexusMaxHp,
+            MetaUpgradeId.MoveSpeed,
+            MetaUpgradeId.PickupRange
+        }; // 타이틀 화면에서 사용하는 실제 강화 목록
 
         [Header("Defaults")]
         [Min(0)] public int StartingDiamond = DefaultStartingDiamond; // 신규 저장 기본 다이아
@@ -37,10 +50,10 @@ namespace TeamProject01.Gameplay
         public bool ChargeWormUnlocked; // 이전 이속형
 
         [Header("Worm Prices")]
-        [Min(0)] public int AttackWormPrice = 200; // 공격형 가격
-        [Min(0)] public int MobilityWormPrice = 200; // 이속형 가격
-        [Min(0)] public int SupportWormPrice = 150; // 지원형 가격
-        [Min(0)] public int MagicWormPrice = 250; // 마법형 가격
+        [Min(0)] public int AttackWormPrice = WormPurchaseCost; // 공격형 가격
+        [Min(0)] public int MobilityWormPrice = WormPurchaseCost; // 이속형 가격
+        [Min(0)] public int SupportWormPrice = WormPurchaseCost; // 지원형 가격
+        [Min(0)] public int MagicWormPrice = WormPurchaseCost; // 마법형 가격
 
         [Header("Upgrade Levels")]
         [Range(0, MaxUpgradeLevel)] public int GoldBonusLevel; // 골드 보너스
@@ -50,7 +63,8 @@ namespace TeamProject01.Gameplay
         [Range(0, MaxUpgradeLevel)] public int BaseAttackLevel; // 기본 공격력
         [Range(0, MaxUpgradeLevel)] public int AttackSpeedLevel; // 공격속도
         [Range(0, MaxUpgradeLevel)] public int NexusMaxHpLevel; // 넥서스 체력
-        [Range(0, MaxUpgradeLevel)] public int NexusRegenLevel; // 넥서스 회복
+        [Range(0, MaxUpgradeLevel)] public int MoveSpeedLevel; // 이동속도
+        [Range(0, MaxUpgradeLevel)] public int PickupRangeLevel; // 픽업 범위
 
         [Header("Temporary Reward Rules")]
         [Min(1)] public int WaveStepSize = 5; // 웨이브 단계 크기
@@ -70,6 +84,7 @@ namespace TeamProject01.Gameplay
 
         private void Awake() // 등록
         {
+            NormalizeWormPrices(); // 지렁이 가격 통일
             Active = this; // 현재 인스턴스
             bool loaded = false; // 저장 로드 여부
             if (LoadOnAwake)
@@ -83,6 +98,11 @@ namespace TeamProject01.Gameplay
             }
 
             NormalizeState(); // 값 보정
+        }
+
+        private void OnValidate() // 에디터 값 보정
+        {
+            NormalizeWormPrices(); // 지렁이 가격 통일
         }
 
         private void OnDestroy() // 해제
@@ -237,7 +257,7 @@ namespace TeamProject01.Gameplay
                 + $"선택 지렁이 {SelectedWormId}\n"
                 + $"선택 맵 {SelectedMapId}\n"
                 + $"보유 지렁이 {BuildUnlockedWormSummary()}\n"
-                + $"업그레이드 {TotalUpgradeLevel}/{MaxUpgradeLevel * 8}\n"
+                + $"업그레이드 {TotalUpgradeLevel}/{MaxUpgradeLevel * ActiveUpgradeIds.Length}\n"
                 + $"다음 최저 비용 {nextCost}"; // 요약
         }
 
@@ -386,8 +406,10 @@ namespace TeamProject01.Gameplay
                     return "공격속도";
                 case MetaUpgradeId.NexusMaxHp:
                     return "넥서스 체력";
-                case MetaUpgradeId.NexusRegen:
-                    return "넥서스 회복";
+                case MetaUpgradeId.MoveSpeed:
+                    return "이동속도";
+                case MetaUpgradeId.PickupRange:
+                    return "픽업 범위";
                 default:
                     return "업그레이드";
             }
@@ -408,14 +430,16 @@ namespace TeamProject01.Gameplay
                 case MetaUpgradeId.AttackSpeed:
                 case MetaUpgradeId.NexusMaxHp:
                     return $"+{clamped * 5}%";
+                case MetaUpgradeId.MoveSpeed:
+                    return $"+{GetMoveSpeedBonusPercent(clamped)}%";
+                case MetaUpgradeId.PickupRange:
+                    return $"+{GetPickupRangeBonusPercent(clamped)}%";
                 case MetaUpgradeId.TurnBonus:
                     return $"+{GetTurnBonusPercent(clamped)}%";
                 case MetaUpgradeId.CollisionForce:
                     return $"+{GetCollisionForceBonusPercent(clamped)}%";
                 case MetaUpgradeId.BaseAttack:
-                    return $"+{clamped}";
-                case MetaUpgradeId.NexusRegen:
-                    return $"+{clamped * 5}/분";
+                    return $"+{GetFiveStepPercentValue(clamped)}%";
                 default:
                     return "효과 없음";
             }
@@ -447,13 +471,10 @@ namespace TeamProject01.Gameplay
                 case MetaWormIds.Basic:
                     return 0; // 기본
                 case MetaWormIds.Attack:
-                    return Mathf.Max(0, AttackWormPrice); // 공격형
                 case MetaWormIds.Mobility:
-                    return Mathf.Max(0, MobilityWormPrice); // 이속형
                 case MetaWormIds.Support:
-                    return Mathf.Max(0, SupportWormPrice); // 지원형
                 case MetaWormIds.Magic:
-                    return Mathf.Max(0, MagicWormPrice); // 마법형
+                    return WormPurchaseCost; // 공통 가격
                 default:
                     return -1; // 구매 불가
             }
@@ -512,7 +533,8 @@ namespace TeamProject01.Gameplay
                 BaseAttackLevel = BaseAttackLevel,
                 AttackSpeedLevel = AttackSpeedLevel,
                 NexusMaxHpLevel = NexusMaxHpLevel,
-                NexusRegenLevel = NexusRegenLevel
+                MoveSpeedLevel = MoveSpeedLevel,
+                PickupRangeLevel = PickupRangeLevel
             }; // 저장값
         }
 
@@ -536,11 +558,13 @@ namespace TeamProject01.Gameplay
             BaseAttackLevel = data.BaseAttackLevel; // 공격력
             AttackSpeedLevel = data.AttackSpeedLevel; // 공속
             NexusMaxHpLevel = data.NexusMaxHpLevel; // 체력
-            NexusRegenLevel = data.NexusRegenLevel; // 회복
+            MoveSpeedLevel = data.MoveSpeedLevel; // 이동속도
+            PickupRangeLevel = data.PickupRangeLevel; // 픽업 범위
         }
 
         private void NormalizeState() // 전체 값 보정
         {
+            NormalizeWormPrices(); // 지렁이 가격 통일
             StartingDiamond = Mathf.Max(0, StartingDiamond); // 기본 다이아 보정
             Diamond = OwnedDiamond; // 재화 보정
             HighestReachedWave = BestReachedWave; // 기록 보정
@@ -559,7 +583,16 @@ namespace TeamProject01.Gameplay
             BaseAttackLevel = Mathf.Clamp(BaseAttackLevel, 0, MaxUpgradeLevel); // 공격력
             AttackSpeedLevel = Mathf.Clamp(AttackSpeedLevel, 0, MaxUpgradeLevel); // 공속
             NexusMaxHpLevel = Mathf.Clamp(NexusMaxHpLevel, 0, MaxUpgradeLevel); // 체력
-            NexusRegenLevel = Mathf.Clamp(NexusRegenLevel, 0, MaxUpgradeLevel); // 회복
+            MoveSpeedLevel = Mathf.Clamp(MoveSpeedLevel, 0, MaxUpgradeLevel); // 이동속도
+            PickupRangeLevel = Mathf.Clamp(PickupRangeLevel, 0, MaxUpgradeLevel); // 픽업 범위
+        }
+
+        private void NormalizeWormPrices() // 지렁이 가격 통일
+        {
+            AttackWormPrice = WormPurchaseCost; // 공격형
+            MobilityWormPrice = WormPurchaseCost; // 이속형
+            SupportWormPrice = WormPurchaseCost; // 지원형
+            MagicWormPrice = WormPurchaseCost; // 마법형
         }
 
         private void ApplyDefaultProgress() // 신규/초기화 기본 메타 상태
@@ -593,7 +626,8 @@ namespace TeamProject01.Gameplay
             BaseAttackLevel = 0; // 공격력
             AttackSpeedLevel = 0; // 공속
             NexusMaxHpLevel = 0; // 체력
-            NexusRegenLevel = 0; // 회복
+            MoveSpeedLevel = 0; // 이동속도
+            PickupRangeLevel = 0; // 픽업 범위
         }
 
         private bool TrySpendOwnedDiamond(int amount) // 영구 다이아 지출
@@ -652,7 +686,8 @@ namespace TeamProject01.Gameplay
             UpgradeLevelChanged?.Invoke(MetaUpgradeId.BaseAttack, BaseAttackLevel); // 공격력
             UpgradeLevelChanged?.Invoke(MetaUpgradeId.AttackSpeed, AttackSpeedLevel); // 공속
             UpgradeLevelChanged?.Invoke(MetaUpgradeId.NexusMaxHp, NexusMaxHpLevel); // 체력
-            UpgradeLevelChanged?.Invoke(MetaUpgradeId.NexusRegen, NexusRegenLevel); // 회복
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.MoveSpeed, MoveSpeedLevel); // 이동속도
+            UpgradeLevelChanged?.Invoke(MetaUpgradeId.PickupRange, PickupRangeLevel); // 픽업 범위
         }
 
         private string BuildUnlockedWormSummary() // 보유 지렁이 요약
@@ -683,22 +718,21 @@ namespace TeamProject01.Gameplay
 
         private int GetTotalUpgradeLevel() // 업그레이드 합계
         {
-            return GoldBonusLevel
-                + DiamondBonusLevel
-                + TurnBonusLevel
-                + CollisionForceLevel
-                + BaseAttackLevel
-                + AttackSpeedLevel
-                + NexusMaxHpLevel
-                + NexusRegenLevel; // 합계
+            int total = 0; // 합계
+            for (int i = 0; i < ActiveUpgradeIds.Length; i++)
+            {
+                total += GetUpgradeLevel(ActiveUpgradeIds[i]); // 실제 사용 강화만 합산
+            }
+
+            return total; // 합계
         }
 
         private string GetLowestNextUpgradeCost(int upgradeBaseCost) // 다음 최저 비용
         {
             int lowest = int.MaxValue; // 후보
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < ActiveUpgradeIds.Length; i++)
             {
-                MetaUpgradeId upgradeId = (MetaUpgradeId)i; // ID
+                MetaUpgradeId upgradeId = ActiveUpgradeIds[i]; // ID
                 if (IsUpgradeMaxed(upgradeId))
                 {
                     continue; // 최대 제외
@@ -717,7 +751,6 @@ namespace TeamProject01.Gameplay
             {
                 case MetaWormIds.Support:
                     bonus.NexusMaxHealthPercentBonus = 0.15f; // 체력 +15%
-                    bonus.NexusRegenPerMinuteBonus = 5f; // 분당 회복 +5
                     break;
                 case MetaWormIds.Attack:
                     bonus.BaseAttackFlatBonus = 1; // 공격력 +1
@@ -739,10 +772,11 @@ namespace TeamProject01.Gameplay
             bonus.DiamondGainPercentBonus = GetDiamondBonus(DiamondBonusLevel); // 다이아
             bonus.TurnPercentBonus = GetTurnBonus(TurnBonusLevel); // 회전
             bonus.CollisionForcePercentBonus = GetCollisionForceBonus(CollisionForceLevel); // 충돌
-            bonus.BaseAttackFlatBonus = Mathf.Clamp(BaseAttackLevel, 0, MaxUpgradeLevel); // 공격력
+            bonus.BaseAttackPercentBonus = GetFiveStepPercent(BaseAttackLevel); // 공격력
             bonus.AttackSpeedPercentBonus = GetFiveStepPercent(AttackSpeedLevel); // 공속
             bonus.NexusMaxHealthPercentBonus = GetFiveStepPercent(NexusMaxHpLevel); // 넥서스 체력
-            bonus.NexusRegenPerMinuteBonus = Mathf.Clamp(NexusRegenLevel, 0, MaxUpgradeLevel) * 5f; // 분당 회복
+            bonus.MoveSpeedPercentBonus = GetMoveSpeedBonus(MoveSpeedLevel); // 이동속도
+            bonus.PickupRangePercentBonus = GetPickupRangeBonus(PickupRangeLevel); // 픽업 범위
             return bonus; // 결과 반환
         }
 
@@ -764,8 +798,10 @@ namespace TeamProject01.Gameplay
                     return AttackSpeedLevel;
                 case MetaUpgradeId.NexusMaxHp:
                     return NexusMaxHpLevel;
-                case MetaUpgradeId.NexusRegen:
-                    return NexusRegenLevel;
+                case MetaUpgradeId.MoveSpeed:
+                    return MoveSpeedLevel;
+                case MetaUpgradeId.PickupRange:
+                    return PickupRangeLevel;
                 default:
                     return 0;
             }
@@ -797,8 +833,11 @@ namespace TeamProject01.Gameplay
                 case MetaUpgradeId.NexusMaxHp:
                     NexusMaxHpLevel = clamped;
                     break;
-                case MetaUpgradeId.NexusRegen:
-                    NexusRegenLevel = clamped;
+                case MetaUpgradeId.MoveSpeed:
+                    MoveSpeedLevel = clamped;
+                    break;
+                case MetaUpgradeId.PickupRange:
+                    PickupRangeLevel = clamped;
                     break;
             }
         }
@@ -837,6 +876,11 @@ namespace TeamProject01.Gameplay
             return Mathf.Clamp(level, 0, MaxUpgradeLevel) * 0.05f; // 단계당 5%
         }
 
+        private static int GetFiveStepPercentValue(int level) // 5/10/15/20/25
+        {
+            return Mathf.Clamp(level, 0, MaxUpgradeLevel) * 5; // 표시용 퍼센트
+        }
+
         private static float GetGoldBonus(int level) // 골드 보너스
         {
             return GetFiveStepPercent(level); // 5단계
@@ -857,6 +901,16 @@ namespace TeamProject01.Gameplay
             return GetCollisionForceBonusPercent(level) * 0.01f; // 퍼센트 변환
         }
 
+        private static float GetMoveSpeedBonus(int level) // 이동속도 보너스
+        {
+            return GetMoveSpeedBonusPercent(level) * 0.01f; // 퍼센트 변환
+        }
+
+        private static float GetPickupRangeBonus(int level) // 픽업 범위 보너스
+        {
+            return GetPickupRangeBonusPercent(level) * 0.01f; // 퍼센트 변환
+        }
+
         private static int GetTurnBonusPercent(int level) // 회전력 표시값
         {
             int[] values = { 0, 1, 3, 5, 7, 10 }; // 기획값
@@ -867,6 +921,16 @@ namespace TeamProject01.Gameplay
         {
             int[] values = { 0, 3, 5, 7, 10, 15 }; // 기획값
             return values[Mathf.Clamp(level, 0, MaxUpgradeLevel)]; // 결과
+        }
+
+        private static int GetMoveSpeedBonusPercent(int level) // 이동속도 표시값
+        {
+            return Mathf.Clamp(level, 0, MaxUpgradeLevel) * 3; // 1레벨당 3%
+        }
+
+        private static int GetPickupRangeBonusPercent(int level) // 픽업 범위 표시값
+        {
+            return Mathf.Clamp(level, 0, MaxUpgradeLevel) * 6; // 1레벨당 6%
         }
 
         [Serializable]
@@ -891,7 +955,8 @@ namespace TeamProject01.Gameplay
             public int BaseAttackLevel; // 공격력
             public int AttackSpeedLevel; // 공속
             public int NexusMaxHpLevel; // 체력
-            public int NexusRegenLevel; // 회복
+            public int MoveSpeedLevel; // 이동속도
+            public int PickupRangeLevel; // 픽업 범위
         }
     }
 }

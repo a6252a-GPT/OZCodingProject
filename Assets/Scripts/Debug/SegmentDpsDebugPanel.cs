@@ -79,6 +79,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private bool syncScrollPosition = true; // TOTAL/WAVE 스크롤 동기화
         [SerializeField] private bool autoFitToCurrentRect = true; // 현재 패널 크기에 내부 내용 맞춤
         [SerializeField] private bool onlyShowInAutoOrbit = true; // 자동궤도 중에만 표시
+        [SerializeField] private bool userVisible = true;
         [SerializeField] private TMP_FontAsset debugFont; // DPS 미터 전용 폰트
 
         private readonly List<AttachedSegmentDebugEntry> segmentEntries = new List<AttachedSegmentDebugEntry>(64); // 현재 세그먼트 순서
@@ -178,6 +179,31 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        public bool UserVisible => userVisible;
+
+        public void ToggleUserVisible()
+        {
+            SetUserVisible(!userVisible);
+        }
+
+        public void SetUserVisible(bool visible)
+        {
+            if (userVisible == visible)
+            {
+                ApplyPanelVisibility(ShouldShowPanel());
+                return;
+            }
+
+            userVisible = visible;
+            bool shouldShow = ShouldShowPanel();
+            ApplyPanelVisibility(shouldShow);
+            if (shouldShow)
+            {
+                nextRefreshTime = 0f;
+                Refresh(true);
+            }
+        }
+
         private void Refresh(bool force)
         {
             if (!ShouldShowPanel())
@@ -218,6 +244,11 @@ namespace TeamProject01.Gameplay
 
         private bool ShouldShowPanel()
         {
+            if (!userVisible)
+            {
+                return false;
+            }
+
             if (!onlyShowInAutoOrbit)
             {
                 return true; // 항상 표시 모드

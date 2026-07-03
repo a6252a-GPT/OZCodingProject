@@ -139,8 +139,9 @@ namespace TeamProject01.Gameplay
         {
             CoreStatData coreStats = CoreStatProvider.GetCurrentOrDefault(); // 코어 스탯
             WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화
-            float baseDamage = weaponBonus.ResolveBaseDamage(AttackProfile.BaseDamage); // 프로필 + 무기 강화
-            float commonDamage = CoreStatProvider.GetCommonBaseDamageBonusOrDefault(GetEffectiveSegmentId(), AttackProfile.BaseDamage); // 공통카드 기초 피해 보너스
+            float runBaseDamage = CoreStatProvider.ApplyRunBaseAttackBonusOrDefault(AttackProfile.BaseDamage);
+            float baseDamage = weaponBonus.ResolveBaseDamage(runBaseDamage); // 프로필 + 무기 강화
+            float commonDamage = CoreStatProvider.GetCommonBaseDamageBonusOrDefault(GetEffectiveSegmentId(), runBaseDamage); // 공통카드 기초 피해 보너스
             float damage = GetUpgrade().ApplyDamage(baseDamage + commonDamage + coreStats.FlatDamageBonus); // 최종 피해
             damage *= SupportSegmentRuntimeBuffs.GetFinalDamageMultiplier(Segment.ChainIndex); // 지원형 최종 피해 버프
             return DamageData.Create(damage, GetDamageType(), Segment.ChainIndex, position, gameObject); // 전달값
@@ -170,7 +171,8 @@ namespace TeamProject01.Gameplay
         {
             //전찬우 수정-0622
             WeaponStatBonusData weaponBonus = CoreStatProvider.GetWeaponStatBonusOrDefault(GetEffectiveSegmentId()); // 무기 강화 쿨감
-            float cooldown = weaponBonus.ResolveCooldown(AttackProfile.Cooldown); // 기준 쿨타임
+            float runBaseCooldown = CoreStatProvider.ApplyRunAttackSpeedBonusOrDefault(AttackProfile.Cooldown);
+            float cooldown = weaponBonus.ResolveCooldown(runBaseCooldown); // 기준 쿨타임
             float baseInterval = Mathf.Max(0.05f, GetRandomizedCooldown(cooldown)); // 기준 쿨타임 ±10%
             float coreInterval = CoreStatProvider.GetCurrentOrDefault().ApplyFireInterval(baseInterval); // 코어 공속
             fireTimer = GetUpgrade().ApplyFireInterval(coreInterval); // 세그먼트 공속

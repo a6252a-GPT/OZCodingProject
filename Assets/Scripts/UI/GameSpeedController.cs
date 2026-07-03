@@ -11,6 +11,13 @@ namespace TeamProject01.Gameplay
             return PlayerPrefs.GetInt(SpeedPrefKey, 0) == 1;
         }
 
+        public static void SetDoubleSpeedPreferred(bool enabled)
+        {
+            PlayerPrefs.SetInt(SpeedPrefKey, enabled ? 1 : 0);
+            PlayerPrefs.Save();
+            ApplyDesiredTimeScale();
+        }
+
         public static float GetDesiredTimeScale()
         {
             if (!IsDoubleSpeedPreferred())

@@ -7,7 +7,8 @@ namespace TeamProject01.Gameplay
     [RequireComponent(typeof(TextMeshPro))]
     public sealed class DamageFloatingPopup : MonoBehaviour // 월드 데미지 숫자
     {
-        [SerializeField] private float lifetime = 1.15f; // 표시 시간
+        [SerializeField] private float lifetime = 1.75f; // 표시 시간
+        [SerializeField] private float fadeStartDelay = 1f; // 페이드 시작 지연
         [SerializeField] private float riseSpeed = 1.25f; // 상승 속도
         [SerializeField] private Vector3 randomOffsetRange = new Vector3(0.25f, 0.08f, 0.25f); // 겹침 방지
         [SerializeField] private float minCameraScaleMultiplier = 0.75f; // 최소 보정
@@ -40,7 +41,8 @@ namespace TeamProject01.Gameplay
         private void Update() // 이동/페이드
         {
             float age = Time.time - spawnTime; // 경과 시간
-            float normalized = lifetime > 0f ? Mathf.Clamp01(age / lifetime) : 1f; // 진행률
+            float fadeDuration = Mathf.Max(0.0001f, lifetime - fadeStartDelay); // 페이드 시간
+            float fadeProgress = age > fadeStartDelay ? Mathf.Clamp01((age - fadeStartDelay) / fadeDuration) : 0f; // 페이드 진행률
 
             transform.position += Vector3.up * riseSpeed * Time.deltaTime; // 위로 이동
             FaceCamera(); // 카메라 바라보기
@@ -49,7 +51,7 @@ namespace TeamProject01.Gameplay
             if (text != null)
             {
                 Color color = startColor; // 색 복사
-                color.a = Mathf.Lerp(startColor.a, 0f, normalized); // 알파 감소
+                color.a = Mathf.Lerp(startColor.a, 0f, fadeProgress); // 알파 감소
                 text.color = color; // 표시 반영
             }
 

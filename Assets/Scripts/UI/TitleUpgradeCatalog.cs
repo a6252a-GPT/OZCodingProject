@@ -22,8 +22,10 @@ namespace TeamProject01.Gameplay
                     return "기본 공격속도 증가";
                 case MetaUpgradeId.NexusMaxHp:
                     return "알 최대체력 증가";
-                case MetaUpgradeId.NexusRegen:
-                    return "알 분당회복";
+                case MetaUpgradeId.MoveSpeed:
+                    return "이동속도 증가";
+                case MetaUpgradeId.PickupRange:
+                    return "픽업 범위 증가";
                 default:
                     return MetaProgressionManager.GetUpgradeDisplayName(upgradeId); // 기본값
             }
@@ -66,8 +68,10 @@ namespace TeamProject01.Gameplay
                     return new Color(0.96f, 0.80f, 0.30f, 1f);
                 case MetaUpgradeId.NexusMaxHp:
                     return new Color(0.86f, 0.94f, 1f, 1f);
-                case MetaUpgradeId.NexusRegen:
-                    return new Color(0.46f, 0.95f, 0.32f, 1f);
+                case MetaUpgradeId.MoveSpeed:
+                    return new Color(0.95f, 0.78f, 0.28f, 1f);
+                case MetaUpgradeId.PickupRange:
+                    return new Color(0.86f, 0.22f, 0.18f, 1f);
                 default:
                     return Color.white;
             }

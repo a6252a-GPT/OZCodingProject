@@ -66,6 +66,7 @@ namespace TeamProject01.Gameplay
         private Quaternion activeHeadBaseLocalRotation;
         private bool hasActiveHeadBaseRotation;
         private bool isActive;
+        private float debugNextPickupMagnetLogTime; // 시작 선택권 원인 추적용 로그 스로틀
         private readonly List<EnemyController> activeEnemyBuffer = new List<EnemyController>(32);
 
         public bool IsAbilityActive => isActive;
@@ -265,13 +266,21 @@ namespace TeamProject01.Gameplay
 
         private void ApplyPickupMagnet(float deltaTime)
         {
-            WorldRewardPickup.AttractInRange(
+            bool attracted = WorldRewardPickup.AttractInRange(
                 transform.position,
                 Profile.Range,
                 GetEffectivePickupMagnetPullStrength(),
                 GetEffectivePickupMagnetMaxPullSpeed(),
                 PickupMagnetCollectDistance,
                 deltaTime);
+            if (StartingSegmentChoiceTicketDebug.ShouldLog && attracted && Time.time >= debugNextPickupMagnetLogTime)
+            {
+                debugNextPickupMagnetLogTime = Time.time + 0.25f;
+                StartingSegmentChoiceTicketDebug.Log(
+                    $"SupportSegmentAbility.PickupMagnetAttract source={name}, position={StartingSegmentChoiceTicketDebug.Format(transform.position)}, "
+                    + $"range={Profile.Range:0.00}, pull={GetEffectivePickupMagnetPullStrength():0.00}, maxSpeed={GetEffectivePickupMagnetMaxPullSpeed():0.00}",
+                    this);
+            }
         }
 
         private void ApplyFreezeArea()

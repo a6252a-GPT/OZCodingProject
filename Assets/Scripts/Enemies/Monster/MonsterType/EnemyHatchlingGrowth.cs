@@ -6,584 +6,586 @@ using UnityEngine.Serialization;
 namespace TeamProject01.Gameplay
 {
     [RequireComponent(typeof(EnemyHatchlingConsumePresentationBridge))]
-    public sealed class EnemyHatchlingGrowth : MonoBehaviour // ÀÏ¹İ ¸ó½ºÅÍ¸¦ Àâ¾Æ¸Ô°í ¼ºÀåÇÏ´Â ÇØÃú¸µ ¸ó½ºÅÍ
+    public sealed class EnemyHatchlingGrowth : MonoBehaviour // ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ì¡ì•„ë¨¹ê³  ì„±ì¥í•˜ëŠ” í•´ì¸¨ë§ ëª¬ìŠ¤í„°
     {
-        private static readonly HashSet<EnemyController> reservedConsumeTargets = new HashSet<EnemyController>(); // ´Ù¸¥ ÇØÃú¸µÀÌ ÀÌ¹Ì ¸ÔÀ¸·Á´Â ¸ó½ºÅÍ ¸ñ·Ï
+        private static readonly HashSet<EnemyController> reservedConsumeTargets = new HashSet<EnemyController>(); // ë‹¤ë¥¸ í•´ì¸¨ë§ì´ ì´ë¯¸ ë¨¹ìœ¼ë ¤ëŠ” ëª¬ìŠ¤í„° ëª©ë¡
 
         [Header("Consume Setting")]
         [FormerlySerializedAs("absorbRange")]
         [Min(0.1f)]
-        [SerializeField] private float consumeRange = 10.0f; // ÁÖº¯ ÀÏ¹İ ¸ó½ºÅÍ¸¦ Àâ¾Æ¸ÔÀ» ¼ö ÀÖ´Â ¹üÀ§
+        [SerializeField] private float consumeRange = 10.0f; // ì£¼ë³€ ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ì¡ì•„ë¨¹ì„ ìˆ˜ ìˆëŠ” ë²”ìœ„
 
         [Min(0.1f)]
-        [SerializeField] private float scanInterval = 0.75f; // ¸î ÃÊ¸¶´Ù ÁÖº¯ ÀÏ¹İ ¸ó½ºÅÍ¸¦ Ã£À»Áö
+        [SerializeField] private float scanInterval = 0.75f; // ëª‡ ì´ˆë§ˆë‹¤ ì£¼ë³€ ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ì°¾ì„ì§€
 
         [Range(0.0f, 1.0f)]
-        [SerializeField] private float consumeChance = 0.35f; // ÈÄº¸ ¸ó½ºÅÍ¸¦ Ã£¾ÒÀ» ¶§ ½ÇÁ¦·Î Àâ¾Æ¸ÔÀ» È®·ü
+        [SerializeField] private float consumeChance = 0.35f; // í›„ë³´ ëª¬ìŠ¤í„°ë¥¼ ì°¾ì•˜ì„ ë•Œ ì‹¤ì œë¡œ ì¡ì•„ë¨¹ì„ í™•ë¥ 
 
         [Min(0.0f)]
-        [SerializeField] private float consumeDelayBeforeKill = 0.25f; // ¸Ô±â VFX°¡ ³ª¿Â µÚ ´ë»ó ¸ó½ºÅÍ¸¦ Á¦°ÅÇÏ±â±îÁöÀÇ ½Ã°£
+        [SerializeField] private float consumeDelayBeforeKill = 0.25f; // ë¨¹ê¸° VFXê°€ ë‚˜ì˜¨ ë’¤ ëŒ€ìƒ ëª¬ìŠ¤í„°ë¥¼ ì œê±°í•˜ê¸°ê¹Œì§€ì˜ ì‹œê°„
 
         [Min(0.0f)]
-        [SerializeField] private float consumeRecoveryDuration = 0.35f; // ¸ÔÀº µÚ ÇØÃú¸µÀÌ ´Ù½Ã ÀÌµ¿ÇÏ±â Àü±îÁöÀÇ ÂªÀº È¸º¹ ½Ã°£
+        [SerializeField] private float consumeRecoveryDuration = 0.35f; // ë¨¹ì€ ë’¤ í•´ì¸¨ë§ì´ ë‹¤ì‹œ ì´ë™í•˜ê¸° ì „ê¹Œì§€ì˜ ì§§ì€ íšŒë³µ ì‹œê°„
 
         [Header("Consume Teleport")]
         [Min(0.1f)]
-        [SerializeField] private float spawnDistanceFromTarget = 1.6f; // ¶¥¼Ó ÀÌµ¿ ÈÄ ´ë»ó ¸ó½ºÅÍ·ÎºÎÅÍ ¾î´À °Å¸®¿¡¼­ ³ªÅ¸³¯Áö
+        [SerializeField] private float spawnDistanceFromTarget = 1.6f; // ë•…ì† ì´ë™ í›„ ëŒ€ìƒ ëª¬ìŠ¤í„°ë¡œë¶€í„° ì–´ëŠ ê±°ë¦¬ì—ì„œ ë‚˜íƒ€ë‚ ì§€
 
         [Min(0.0f)]
-        [SerializeField] private float consumeTeleportGroundHeight = 0.72f; // ¶¥¼Ó ÀÌµ¿ ÈÄ ³ªÅ¸³¯ À§Ä¡ÀÇ ¹Ù´Ú º¸Á¤ ³ôÀÌ
+        [SerializeField] private float consumeTeleportGroundHeight = 0.72f; // ë•…ì† ì´ë™ í›„ ë‚˜íƒ€ë‚  ìœ„ì¹˜ì˜ ë°”ë‹¥ ë³´ì • ë†’ì´
 
-        [SerializeField] private bool stopTargetMovementWhileConsuming = true; // ¸ÔÈú ´ë»ó ¸ó½ºÅÍÀÇ ÀÌµ¿À» ¸ØÃâÁö
+        [SerializeField] private bool stopTargetMovementWhileConsuming = true; // ë¨¹í ëŒ€ìƒ ëª¬ìŠ¤í„°ì˜ ì´ë™ì„ ë©ˆì¶œì§€
 
         [Header("Growth Setting")]
         [Min(1)]
-        [SerializeField] private int maxGrowthStack = 100; // ÃÖ´ë ¼ºÀå ½ºÅÃ
+        [SerializeField] private int maxGrowthStack = 100; // ìµœëŒ€ ì„±ì¥ ìŠ¤íƒ
 
         [FormerlySerializedAs("maxHpIncreasePercentPerOrb")]
         [Min(0.0f)]
-        [SerializeField] private float maxHpIncreasePercentPerConsume = 0.05f; // Æ÷½Ä 1È¸´ç ÃÖ´ë HP Áõ°¡À²
+        [SerializeField] private float maxHpIncreasePercentPerConsume = 0.05f; // í¬ì‹ 1íšŒë‹¹ ìµœëŒ€ HP ì¦ê°€ìœ¨
 
         [FormerlySerializedAs("attackPowerIncreasePercentPerOrb")]
         [Min(0.0f)]
-        [SerializeField] private float attackPowerIncreasePercentPerConsume = 0.05f; // Æ÷½Ä 1È¸´ç °ø°İ·Â Áõ°¡À²
+        [SerializeField] private float attackPowerIncreasePercentPerConsume = 0.05f; // í¬ì‹ 1íšŒë‹¹ ê³µê²©ë ¥ ì¦ê°€ìœ¨
 
         [FormerlySerializedAs("attackSpeedIncreasePercentPerOrb")]
         [Min(0.0f)]
-        [SerializeField] private float attackSpeedIncreasePercentPerConsume = 0.05f; // Æ÷½Ä 1È¸´ç °ø°İ¼Óµµ Áõ°¡À²
+        [SerializeField] private float attackSpeedIncreasePercentPerConsume = 0.05f; // í¬ì‹ 1íšŒë‹¹ ê³µê²©ì†ë„ ì¦ê°€ìœ¨
 
         [FormerlySerializedAs("scaleIncreasePercentPerOrb")]
         [Min(0.0f)]
-        [SerializeField] private float scaleIncreasePercentPerConsume = 0.05f; // Æ÷½Ä 1È¸´ç Å©±â Áõ°¡À²
+        [SerializeField] private float scaleIncreasePercentPerConsume = 0.05f; // í¬ì‹ 1íšŒë‹¹ í¬ê¸° ì¦ê°€ìœ¨
 
         [Min(0.0f)]
-        [SerializeField] private float attackRangeIncreasePercentPerConsume = 0.03f; // Æ÷½Ä 1È¸´ç °ø°İ »ç°Å¸® Áõ°¡À²
+        [SerializeField] private float attackRangeIncreasePercentPerConsume = 0.03f; // í¬ì‹ 1íšŒë‹¹ ê³µê²© ì‚¬ê±°ë¦¬ ì¦ê°€ìœ¨
 
         [Min(1.0f)]
-        [SerializeField] private float maxAttackRangeMultiplier = 1.3f; // °ø°İ »ç°Å¸® ÃÖ´ë ¹èÀ²
+        [SerializeField] private float maxAttackRangeMultiplier = 1.3f; // ê³µê²© ì‚¬ê±°ë¦¬ ìµœëŒ€ ë°°ìœ¨
 
         [Header("Runtime")]
-        [SerializeField] private int growthStack; // ÇöÀç ¸ÔÀº ¸ó½ºÅÍ ¼ö, Inspector È®ÀÎ¿ë ·±Å¸ÀÓ °ª
+        [SerializeField] private int growthStack; // í˜„ì¬ ë¨¹ì€ ëª¬ìŠ¤í„° ìˆ˜, Inspector í™•ì¸ìš© ëŸ°íƒ€ì„ ê°’
 
-        private readonly List<EnemyController> consumeCandidates = new List<EnemyController>(16); // Æ÷½Ä ÈÄº¸ ÀÏ¹İ ¸ó½ºÅÍ ¸ñ·Ï
+        private readonly List<EnemyController> consumeCandidates = new List<EnemyController>(16); // í¬ì‹ í›„ë³´ ì¼ë°˜ ëª¬ìŠ¤í„° ëª©ë¡
 
-        private Vector3 baseScale; // ¼ºÀåÇÏ±â Àü ¿ø·¡ Å©±â
-        private EnemyController enemyController; // °°Àº GameObject¿¡ ºÙÀº EnemyController Script Component ÂüÁ¶
-        private EnemyController reservedConsumeTarget; // ÀÌ ÇØÃú¸µÀÌ ÇöÀç ¸Ô±â·Î ¿¹¾àÇÑ ¸ó½ºÅÍ
-        private EnemyHealth health; // °°Àº GameObject¿¡ ºÙÀº EnemyHealth Script Component ÂüÁ¶
-        private EnemyMovement enemyMovement; // ¸Ô±â ¿¬Ãâ Áß ÀÌµ¿À» Àá½Ã ¸ØÃß±â À§ÇÑ EnemyMovement ÂüÁ¶
-        private EnemyMovement lockedTargetMovement; // Æ÷½Ä ´ë»ó ¸ó½ºÅÍÀÇ ÀÌµ¿ Script ÂüÁ¶
-        private EnemyHatchlingConsumePresentationBridge consumePresentationBridge; // Æ÷½Ä ¾Ö´Ï¸ŞÀÌ¼Ç°ú VFX¸¦ ´ã´çÇÏ´Â Bridge ÂüÁ¶
-        private Coroutine consumeRoutine; // ÇöÀç ½ÇÇà ÁßÀÎ ¸Ô±â Coroutine
-        private float scanTimer; // ´ÙÀ½ ÀÏ¹İ ¸ó½ºÅÍ Å½»ö±îÁö ³²Àº ½Ã°£
-        private bool isConsuming; // ¸Ô±â ¿¬Ãâ ÁßÀÎÁö È®ÀÎÇÏ´Â °ª
-        private bool lockedTargetMovementWasEnabled; // Æ÷½Ä Àü ´ë»ó ¸ó½ºÅÍ ÀÌµ¿ Script È°¼º »óÅÂ
+        private Vector3 baseScale; // ì„±ì¥í•˜ê¸° ì „ ì›ë˜ í¬ê¸°
+        private EnemyController enemyController; // ê°™ì€ GameObjectì— ë¶™ì€ EnemyController Script Component ì°¸ì¡°
+        private EnemyController reservedConsumeTarget; // ì´ í•´ì¸¨ë§ì´ í˜„ì¬ ë¨¹ê¸°ë¡œ ì˜ˆì•½í•œ ëª¬ìŠ¤í„°
+        private EnemyHealth health; // ê°™ì€ GameObjectì— ë¶™ì€ EnemyHealth Script Component ì°¸ì¡°
+        private EnemyMovement enemyMovement; // ë¨¹ê¸° ì—°ì¶œ ì¤‘ ì´ë™ì„ ì ì‹œ ë©ˆì¶”ê¸° ìœ„í•œ EnemyMovement ì°¸ì¡°
+        private EnemyMovement lockedTargetMovement; // í¬ì‹ ëŒ€ìƒ ëª¬ìŠ¤í„°ì˜ ì´ë™ Script ì°¸ì¡°
+        private EnemyHatchlingConsumePresentationBridge consumePresentationBridge; // í¬ì‹ ì• ë‹ˆë©”ì´ì…˜ê³¼ VFXë¥¼ ë‹´ë‹¹í•˜ëŠ” Bridge ì°¸ì¡°
+        private Coroutine consumeRoutine; // í˜„ì¬ ì‹¤í–‰ ì¤‘ì¸ ë¨¹ê¸° Coroutine
+        private float scanTimer; // ë‹¤ìŒ ì¼ë°˜ ëª¬ìŠ¤í„° íƒìƒ‰ê¹Œì§€ ë‚¨ì€ ì‹œê°„
+        private bool isConsuming; // ë¨¹ê¸° ì—°ì¶œ ì¤‘ì¸ì§€ í™•ì¸í•˜ëŠ” ê°’
+        private bool lockedTargetMovementWasEnabled; // í¬ì‹ ì „ ëŒ€ìƒ ëª¬ìŠ¤í„° ì´ë™ Script í™œì„± ìƒíƒœ
 
-        public int GrowthStack // ¿ÜºÎ¿¡¼­ ÇöÀç ¼ºÀå ½ºÅÃÀ» ÀĞ±â À§ÇÑ property
+        public int GrowthStack // ì™¸ë¶€ì—ì„œ í˜„ì¬ ì„±ì¥ ìŠ¤íƒì„ ì½ê¸° ìœ„í•œ property
         {
             get
             {
-                return growthStack; // ÇöÀç ¼ºÀå ½ºÅÃÀ» ¹İÈ¯ÇÑ´Ù.
+                return growthStack; // í˜„ì¬ ì„±ì¥ ìŠ¤íƒì„ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public bool CanGrow // ¾ÆÁ÷ ´õ ¼ºÀåÇÒ ¼ö ÀÖ´ÂÁö È®ÀÎÇÏ´Â property
+        public bool CanGrow // ì•„ì§ ë” ì„±ì¥í•  ìˆ˜ ìˆëŠ”ì§€ í™•ì¸í•˜ëŠ” property
         {
             get
             {
-                return growthStack < maxGrowthStack; // ¼ºÀå ½ºÅÃÀÌ ÃÖ´ëÄ¡º¸´Ù ÀÛÀ¸¸é true¸¦ ¹İÈ¯ÇÑ´Ù.
+                return growthStack < maxGrowthStack; // ì„±ì¥ ìŠ¤íƒì´ ìµœëŒ€ì¹˜ë³´ë‹¤ ì‘ìœ¼ë©´ trueë¥¼ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public bool IsConsuming // ÇöÀç Æ÷½Ä ¿¬Ãâ ÁßÀÎÁö ¿ÜºÎ¿¡¼­ ÀĞ±â À§ÇÑ property
+        public bool IsConsuming // í˜„ì¬ í¬ì‹ ì—°ì¶œ ì¤‘ì¸ì§€ ì™¸ë¶€ì—ì„œ ì½ê¸° ìœ„í•œ property
         {
             get
             {
-                return isConsuming; // ÇöÀç Æ÷½Ä »óÅÂ¸¦ ¹İÈ¯ÇÑ´Ù.
+                return isConsuming; // í˜„ì¬ í¬ì‹ ìƒíƒœë¥¼ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public float MaxHpIncreasePercentPerConsume // Æ÷½Ä 1È¸´ç ÃÖ´ë HP Áõ°¡À² property
+        public float MaxHpIncreasePercentPerConsume // í¬ì‹ 1íšŒë‹¹ ìµœëŒ€ HP ì¦ê°€ìœ¨ property
         {
             get
             {
-                return maxHpIncreasePercentPerConsume; // Æ÷½Ä 1È¸´ç ÃÖ´ë HP Áõ°¡À²À» ¹İÈ¯ÇÑ´Ù.
+                return maxHpIncreasePercentPerConsume; // í¬ì‹ 1íšŒë‹¹ ìµœëŒ€ HP ì¦ê°€ìœ¨ì„ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public float MaxHpIncreasePercentPerOrb // ±âÁ¸ ´Ù¸¥ Script°¡ ÀÌ ÀÌ¸§À» ÀĞ°í ÀÖÀ» °æ¿ì¸¦ À§ÇÑ È£È¯¿ë property
+        public float MaxHpIncreasePercentPerOrb // ê¸°ì¡´ ë‹¤ë¥¸ Scriptê°€ ì´ ì´ë¦„ì„ ì½ê³  ìˆì„ ê²½ìš°ë¥¼ ìœ„í•œ í˜¸í™˜ìš© property
         {
             get
             {
-                return maxHpIncreasePercentPerConsume; // ±âÁ¸ ±¸½½ Áõ°¡À² ´ë½Å Æ÷½Ä Áõ°¡À²À» ¹İÈ¯ÇÑ´Ù.
+                return maxHpIncreasePercentPerConsume; // ê¸°ì¡´ êµ¬ìŠ¬ ì¦ê°€ìœ¨ ëŒ€ì‹  í¬ì‹ ì¦ê°€ìœ¨ì„ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public float AttackPowerMultiplier // °ø°İ Script°¡ ÀĞÀ» ¼ºÀå °ø°İ·Â ¹èÀ²
+        public float AttackPowerMultiplier // ê³µê²© Scriptê°€ ì½ì„ ì„±ì¥ ê³µê²©ë ¥ ë°°ìœ¨
         {
             get
             {
-                return 1.0f + growthStack * attackPowerIncreasePercentPerConsume; // ¼ºÀå ½ºÅÃ¿¡ µû¸¥ °ø°İ·Â ¹èÀ²À» ¹İÈ¯ÇÑ´Ù.
+                return 1.0f + growthStack * attackPowerIncreasePercentPerConsume; // ì„±ì¥ ìŠ¤íƒì— ë”°ë¥¸ ê³µê²©ë ¥ ë°°ìœ¨ì„ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public float AttackSpeedMultiplier // °ø°İ Script°¡ ÀĞÀ» ¼ºÀå °ø°İ¼Óµµ ¹èÀ²
+        public float AttackSpeedMultiplier // ê³µê²© Scriptê°€ ì½ì„ ì„±ì¥ ê³µê²©ì†ë„ ë°°ìœ¨
         {
             get
             {
-                return 1.0f + growthStack * attackSpeedIncreasePercentPerConsume; // ¼ºÀå ½ºÅÃ¿¡ µû¸¥ °ø°İ¼Óµµ ¹èÀ²À» ¹İÈ¯ÇÑ´Ù.
+                return 1.0f + growthStack * attackSpeedIncreasePercentPerConsume; // ì„±ì¥ ìŠ¤íƒì— ë”°ë¥¸ ê³µê²©ì†ë„ ë°°ìœ¨ì„ ë°˜í™˜í•œë‹¤.
             }
         }
 
-        public float AttackRangeMultiplier // °ø°İ Script¿Í ÀÌµ¿ Script°¡ ÀĞÀ» ¼ºÀå °ø°İ »ç°Å¸® ¹èÀ²
+        public float AttackRangeMultiplier // ê³µê²© Scriptì™€ ì´ë™ Scriptê°€ ì½ì„ ì„±ì¥ ê³µê²© ì‚¬ê±°ë¦¬ ë°°ìœ¨
         {
             get
             {
-                float safeIncreasePercent = Mathf.Max(0.0f, attackRangeIncreasePercentPerConsume); // À½¼ö Áõ°¡À²À» ¹æÁöÇÑ´Ù.
-                float safeMaxMultiplier = Mathf.Max(1.0f, maxAttackRangeMultiplier); // ÃÖ´ë ¹èÀ²ÀÌ 1º¸´Ù ÀÛ¾ÆÁöÁö ¾Ê°Ô ÇÑ´Ù.
-                float multiplier = 1.0f + growthStack * safeIncreasePercent; // ¼ºÀå ½ºÅÃ¿¡ µû¸¥ °ø°İ »ç°Å¸® ¹èÀ²À» °è»êÇÑ´Ù.
-                return Mathf.Min(multiplier, safeMaxMultiplier); // ÃÖ´ë ¹èÀ²À» ³ÑÁö ¾Ê°Ô Á¦ÇÑÇÑ´Ù.
+                float safeIncreasePercent = Mathf.Max(0.0f, attackRangeIncreasePercentPerConsume); // ìŒìˆ˜ ì¦ê°€ìœ¨ì„ ë°©ì§€í•œë‹¤.
+                float safeMaxMultiplier = Mathf.Max(1.0f, maxAttackRangeMultiplier); // ìµœëŒ€ ë°°ìœ¨ì´ 1ë³´ë‹¤ ì‘ì•„ì§€ì§€ ì•Šê²Œ í•œë‹¤.
+                float multiplier = 1.0f + growthStack * safeIncreasePercent; // ì„±ì¥ ìŠ¤íƒì— ë”°ë¥¸ ê³µê²© ì‚¬ê±°ë¦¬ ë°°ìœ¨ì„ ê³„ì‚°í•œë‹¤.
+                return Mathf.Min(multiplier, safeMaxMultiplier); // ìµœëŒ€ ë°°ìœ¨ì„ ë„˜ì§€ ì•Šê²Œ ì œí•œí•œë‹¤.
             }
         }
 
         private void Awake()
         {
-            baseScale = transform.localScale; // ¼ºÀå Àü ¿ø·¡ Å©±â¸¦ ÀúÀåÇÑ´Ù.
-            enemyController = GetComponent<EnemyController>(); // °°Àº GameObject¿¡ ºÙÀº EnemyController¸¦ Ã£´Â´Ù.
-            health = GetComponent<EnemyHealth>(); // °°Àº GameObject¿¡ ºÙÀº EnemyHealth Script Component¸¦ Ã£´Â´Ù.
-            enemyMovement = GetComponent<EnemyMovement>(); // °°Àº GameObject¿¡ ºÙÀº EnemyMovement Script Component¸¦ Ã£´Â´Ù.
-            consumePresentationBridge = GetComponent<EnemyHatchlingConsumePresentationBridge>(); // °°Àº GameObject¿¡ ºÙÀº Æ÷½Ä ¿¬Ãâ Bridge¸¦ Ã£´Â´Ù.
+            baseScale = transform.localScale; // ì„±ì¥ ì „ ì›ë˜ í¬ê¸°ë¥¼ ì €ì¥í•œë‹¤.
+            enemyController = GetComponent<EnemyController>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyControllerë¥¼ ì°¾ëŠ”ë‹¤.
+            health = GetComponent<EnemyHealth>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyHealth Script Componentë¥¼ ì°¾ëŠ”ë‹¤.
+            enemyMovement = GetComponent<EnemyMovement>(); // ê°™ì€ GameObjectì— ë¶™ì€ EnemyMovement Script Componentë¥¼ ì°¾ëŠ”ë‹¤.
+            consumePresentationBridge = GetComponent<EnemyHatchlingConsumePresentationBridge>(); // ê°™ì€ GameObjectì— ë¶™ì€ í¬ì‹ ì—°ì¶œ Bridgeë¥¼ ì°¾ëŠ”ë‹¤.
         }
 
         private void OnEnable()
         {
-            scanTimer = scanInterval; // Ã³À½ Æ÷½Ä Å½»ö±îÁöÀÇ ½Ã°£À» ¼³Á¤ÇÑ´Ù.
-            isConsuming = false; // È°¼ºÈ­µÉ ¶§ ¸Ô±â »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-            lockedTargetMovement = null; // ÀÌÀü ´ë»ó ÀÌµ¿ ÂüÁ¶¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-            lockedTargetMovementWasEnabled = false; // ÀÌÀü ´ë»ó ÀÌµ¿ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-            reservedConsumeTarget = null; // ÀÌÀü Æ÷½Ä ¿¹¾à ´ë»óÀ» ÃÊ±âÈ­ÇÑ´Ù.
-            ResetConsumePresentationState(); // È°¼ºÈ­µÉ ¶§ Æ÷½Ä ¿¬Ãâ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-            CleanupReservedConsumeTargets(); // ºñ¾î ÀÖ°Å³ª Á×Àº ¿¹¾à ´ë»óÀ» Á¤¸®ÇÑ´Ù.
+            scanTimer = scanInterval; // ì²˜ìŒ í¬ì‹ íƒìƒ‰ê¹Œì§€ì˜ ì‹œê°„ì„ ì„¤ì •í•œë‹¤.
+            isConsuming = false; // í™œì„±í™”ë  ë•Œ ë¨¹ê¸° ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+            lockedTargetMovement = null; // ì´ì „ ëŒ€ìƒ ì´ë™ ì°¸ì¡°ë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+            lockedTargetMovementWasEnabled = false; // ì´ì „ ëŒ€ìƒ ì´ë™ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+            reservedConsumeTarget = null; // ì´ì „ í¬ì‹ ì˜ˆì•½ ëŒ€ìƒì„ ì´ˆê¸°í™”í•œë‹¤.
+            ResetConsumePresentationState(); // í™œì„±í™”ë  ë•Œ í¬ì‹ ì—°ì¶œ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+            CleanupReservedConsumeTargets(); // ë¹„ì–´ ìˆê±°ë‚˜ ì£½ì€ ì˜ˆì•½ ëŒ€ìƒì„ ì •ë¦¬í•œë‹¤.
         }
 
         private void OnDisable()
         {
-            if (consumeRoutine != null) // ¸Ô±â CoroutineÀÌ ½ÇÇà ÁßÀÌ¾ú´Ù¸é
+            if (consumeRoutine != null) // ë¨¹ê¸° Coroutineì´ ì‹¤í–‰ ì¤‘ì´ì—ˆë‹¤ë©´
             {
-                StopCoroutine(consumeRoutine); // ºñÈ°¼ºÈ­ ½Ã ¸Ô±â CoroutineÀ» Áß´ÜÇÑ´Ù.
-                consumeRoutine = null; // Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+                StopCoroutine(consumeRoutine); // ë¹„í™œì„±í™” ì‹œ ë¨¹ê¸° Coroutineì„ ì¤‘ë‹¨í•œë‹¤.
+                consumeRoutine = null; // Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
             }
 
-            ReleaseLockedTargetMovement(); // ºñÈ°¼ºÈ­µÉ ¶§ ¸ØÃçµĞ ´ë»ó ¸ó½ºÅÍ ÀÌµ¿À» º¹±¸ÇÑ´Ù.
-            ReleaseReservedConsumeTarget(); // ºñÈ°¼ºÈ­µÉ ¶§ ¿¹¾àÇÑ Æ÷½Ä ´ë»óÀ» ÇØÁ¦ÇÑ´Ù.
-            isConsuming = false; // ºñÈ°¼ºÈ­µÉ ¶§ ¸Ô±â »óÅÂ°¡ ³²Áö ¾Ê°Ô ÇÑ´Ù.
-            ResetConsumePresentationState(); // ºñÈ°¼ºÈ­µÉ ¶§ Æ÷½Ä ¿¬Ãâ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-            SetEnemyMovementEnabled(true); // ºñÈ°¼ºÈ­ Àü¿¡ ÀÌµ¿ »óÅÂ¸¦ ¿ø·¡´ë·Î µ¹¸°´Ù.
+            ReleaseLockedTargetMovement(); // ë¹„í™œì„±í™”ë  ë•Œ ë©ˆì¶°ë‘” ëŒ€ìƒ ëª¬ìŠ¤í„° ì´ë™ì„ ë³µêµ¬í•œë‹¤.
+            ReleaseReservedConsumeTarget(); // ë¹„í™œì„±í™”ë  ë•Œ ì˜ˆì•½í•œ í¬ì‹ ëŒ€ìƒì„ í•´ì œí•œë‹¤.
+            isConsuming = false; // ë¹„í™œì„±í™”ë  ë•Œ ë¨¹ê¸° ìƒíƒœê°€ ë‚¨ì§€ ì•Šê²Œ í•œë‹¤.
+            ResetConsumePresentationState(); // ë¹„í™œì„±í™”ë  ë•Œ í¬ì‹ ì—°ì¶œ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+            SetEnemyMovementEnabled(true); // ë¹„í™œì„±í™” ì „ì— ì´ë™ ìƒíƒœë¥¼ ì›ë˜ëŒ€ë¡œ ëŒë¦°ë‹¤.
         }
 
         private void Update()
         {
-            if (!CanGrow) // ÀÌ¹Ì ÃÖ´ë ¼ºÀå »óÅÂ¶ó¸é
+            if (!CanGrow) // ì´ë¯¸ ìµœëŒ€ ì„±ì¥ ìƒíƒœë¼ë©´
             {
-                return; // ´õ ÀÌ»ó ÀÏ¹İ ¸ó½ºÅÍ¸¦ Ã£Áö ¾Ê´Â´Ù.
+                return; // ë” ì´ìƒ ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ì°¾ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (isConsuming) // ÀÌ¹Ì ¸Ô±â ¿¬Ãâ ÁßÀÌ¶ó¸é
+            if (isConsuming) // ì´ë¯¸ ë¨¹ê¸° ì—°ì¶œ ì¤‘ì´ë¼ë©´
             {
-                return; // Áßº¹ Æ÷½ÄÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return; // ì¤‘ë³µ í¬ì‹ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            scanTimer -= Time.deltaTime; // Áö³­ ½Ã°£¸¸Å­ Å½»ö ´ë±â ½Ã°£À» ÁÙÀÎ´Ù.
+            scanTimer -= Time.deltaTime; // ì§€ë‚œ ì‹œê°„ë§Œí¼ íƒìƒ‰ ëŒ€ê¸° ì‹œê°„ì„ ì¤„ì¸ë‹¤.
 
-            if (scanTimer > 0.0f) // ¾ÆÁ÷ Å½»ö ½Ã°£ÀÌ ³²¾Æ ÀÖ´Ù¸é
+            if (scanTimer > 0.0f) // ì•„ì§ íƒìƒ‰ ì‹œê°„ì´ ë‚¨ì•„ ìˆë‹¤ë©´
             {
-                return; // ÀÌ¹ø ÇÁ·¹ÀÓ¿¡´Â ÀÏ¹İ ¸ó½ºÅÍ¸¦ Ã£Áö ¾Ê´Â´Ù.
+                return; // ì´ë²ˆ í”„ë ˆì„ì—ëŠ” ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ì°¾ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            scanTimer = scanInterval; // ´ÙÀ½ Å½»ö ½Ã°£À» ´Ù½Ã ¼³Á¤ÇÑ´Ù.
+            scanTimer = scanInterval; // ë‹¤ìŒ íƒìƒ‰ ì‹œê°„ì„ ë‹¤ì‹œ ì„¤ì •í•œë‹¤.
 
-            TryBeginConsumeNearbyMonster(); // ÁÖº¯ ÀÏ¹İ ¸ó½ºÅÍ¸¦ Ã£¾Æ È®·üÀûÀ¸·Î Àâ¾Æ¸Ô´Â´Ù.
+            TryBeginConsumeNearbyMonster(); // ì£¼ë³€ ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ì°¾ì•„ í™•ë¥ ì ìœ¼ë¡œ ì¡ì•„ë¨¹ëŠ”ë‹¤.
         }
 
-        private void TryBeginConsumeNearbyMonster() // ÁÖº¯ ÀÏ¹İ ¸ó½ºÅÍ Áß ÇÏ³ª¸¦ ·£´ıÀ¸·Î °ñ¶ó ¸Ô±â ½Ãµµ¸¦ ½ÃÀÛÇÑ´Ù.
+        private void TryBeginConsumeNearbyMonster() // ì£¼ë³€ ì¼ë°˜ ëª¬ìŠ¤í„° ì¤‘ í•˜ë‚˜ë¥¼ ëœë¤ìœ¼ë¡œ ê³¨ë¼ ë¨¹ê¸° ì‹œë„ë¥¼ ì‹œì‘í•œë‹¤.
         {
-            CleanupReservedConsumeTargets(); // ÈÄº¸¸¦ Ã£±â Àü¿¡ ÀÌ¹Ì Á×¾ú°Å³ª »ç¶óÁø ¿¹¾à ´ë»óÀ» Á¤¸®ÇÑ´Ù.
+            CleanupReservedConsumeTargets(); // í›„ë³´ë¥¼ ì°¾ê¸° ì „ì— ì´ë¯¸ ì£½ì—ˆê±°ë‚˜ ì‚¬ë¼ì§„ ì˜ˆì•½ ëŒ€ìƒì„ ì •ë¦¬í•œë‹¤.
 
-            EnemyController.CollectActiveInRange(transform.position, consumeRange, consumeCandidates, IsValidConsumeTarget); // ¹üÀ§ ¾È ÀÏ¹İ ¸ó½ºÅÍ ÈÄº¸¸¦ ¼öÁıÇÑ´Ù.
+            EnemyController.CollectActiveInRange(transform.position, consumeRange, consumeCandidates, IsValidConsumeTarget); // ë²”ìœ„ ì•ˆ ì¼ë°˜ ëª¬ìŠ¤í„° í›„ë³´ë¥¼ ìˆ˜ì§‘í•œë‹¤.
 
-            if (consumeCandidates.Count == 0) // ¸ÔÀ» ¼ö ÀÖ´Â ÀÏ¹İ ¸ó½ºÅÍ°¡ ¾ø´Ù¸é
+            if (consumeCandidates.Count == 0) // ë¨¹ì„ ìˆ˜ ìˆëŠ” ì¼ë°˜ ëª¬ìŠ¤í„°ê°€ ì—†ë‹¤ë©´
             {
-                return; // Æ÷½ÄÀ» ½ÃµµÇÏÁö ¾Ê´Â´Ù.
+                return; // í¬ì‹ì„ ì‹œë„í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            EnemyController target = consumeCandidates[Random.Range(0, consumeCandidates.Count)]; // ÈÄº¸ Áß ·£´ıÀ¸·Î ÇÑ ¸¶¸®¸¦ ¼±ÅÃÇÑ´Ù.
+            EnemyController target = consumeCandidates[Random.Range(0, consumeCandidates.Count)]; // í›„ë³´ ì¤‘ ëœë¤ìœ¼ë¡œ í•œ ë§ˆë¦¬ë¥¼ ì„ íƒí•œë‹¤.
 
-            if (Random.value > Mathf.Clamp01(consumeChance)) // Æ÷½Ä È®·ü¿¡ ½ÇÆĞÇß´Ù¸é
+            if (Random.value > Mathf.Clamp01(consumeChance)) // í¬ì‹ í™•ë¥ ì— ì‹¤íŒ¨í–ˆë‹¤ë©´
             {
-                return; // ÀÌ¹ø Å½»ö¿¡¼­´Â ¸ÔÁö ¾Ê´Â´Ù.
+                return; // ì´ë²ˆ íƒìƒ‰ì—ì„œëŠ” ë¨¹ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (!TryReserveConsumeTarget(target)) // ´Ù¸¥ ÇØÃú¸µÀÌ ¸ÕÀú ¿¹¾àÇß°Å³ª ´ë»óÀÌ ¹«È¿¶ó¸é
+            if (!TryReserveConsumeTarget(target)) // ë‹¤ë¥¸ í•´ì¸¨ë§ì´ ë¨¼ì € ì˜ˆì•½í–ˆê±°ë‚˜ ëŒ€ìƒì´ ë¬´íš¨ë¼ë©´
             {
-                return; // Æ÷½ÄÀ» ½ÃÀÛÇÏÁö ¾Ê´Â´Ù.
+                return; // í¬ì‹ì„ ì‹œì‘í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            consumeRoutine = StartCoroutine(ConsumeMonsterRoutine(target)); // ¸Ô±â ¿¬Ãâ°ú ¼ºÀå Ã³¸®¸¦ ½ÃÀÛÇÑ´Ù.
+            consumeRoutine = StartCoroutine(ConsumeMonsterRoutine(target)); // ë¨¹ê¸° ì—°ì¶œê³¼ ì„±ì¥ ì²˜ë¦¬ë¥¼ ì‹œì‘í•œë‹¤.
         }
 
-        private IEnumerator ConsumeMonsterRoutine(EnemyController target) // ¼±ÅÃÇÑ ÀÏ¹İ ¸ó½ºÅÍ¸¦ Àâ¾Æ¸Ô°í ¼ºÀåÇÏ´Â Èå¸§
+        private IEnumerator ConsumeMonsterRoutine(EnemyController target) // ì„ íƒí•œ ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ì¡ì•„ë¨¹ê³  ì„±ì¥í•˜ëŠ” íë¦„
         {
-            if (!IsValidConsumeTarget(target)) // ´ë»óÀÌ À¯È¿ÇÏÁö ¾Ê´Ù¸é
+            if (!IsValidConsumeTarget(target)) // ëŒ€ìƒì´ ìœ íš¨í•˜ì§€ ì•Šë‹¤ë©´
             {
-                EndConsumeRoutine(true); // ¿¹¾à°ú ÀÌµ¿ »óÅÂ¸¦ º¹±¸ÇÑ´Ù.
-                yield break; // ¸Ô±â Ã³¸®¸¦ Áß´ÜÇÑ´Ù.
+                EndConsumeRoutine(true); // ì˜ˆì•½ê³¼ ì´ë™ ìƒíƒœë¥¼ ë³µêµ¬í•œë‹¤.
+                yield break; // ë¨¹ê¸° ì²˜ë¦¬ë¥¼ ì¤‘ë‹¨í•œë‹¤.
             }
 
-            isConsuming = true; // ¸Ô±â ¿¬Ãâ ÁßÀÌ¶ó°í Ç¥½ÃÇÑ´Ù.
-            SetConsumePresentationConsuming(true); // Bridge¿¡ Æ÷½Ä Áß »óÅÂ¸¦ Àü´ŞÇÑ´Ù.
-            LockTargetMovement(target); // ¼±ÅÃµÈ ÀÏ¹İ ¸ó½ºÅÍ°¡ µµ¸Á°¡Áö ¾Êµµ·Ï ÀÌµ¿À» ¸ØÃá´Ù.
-            SetEnemyMovementEnabled(false); // Æ÷½Ä ¿¬Ãâ µ¿¾È ±âº» Nexus ÀÌµ¿À» ¸ØÃá´Ù.
-            FaceEachOther(target); // ½ÃÀÛ Àü¿¡ ´ë»ó°ú ¼­·Î ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            isConsuming = true; // ë¨¹ê¸° ì—°ì¶œ ì¤‘ì´ë¼ê³  í‘œì‹œí•œë‹¤.
+            SetConsumePresentationConsuming(true); // Bridgeì— í¬ì‹ ì¤‘ ìƒíƒœë¥¼ ì „ë‹¬í•œë‹¤.
+            LockTargetMovement(target); // ì„ íƒëœ ì¼ë°˜ ëª¬ìŠ¤í„°ê°€ ë„ë§ê°€ì§€ ì•Šë„ë¡ ì´ë™ì„ ë©ˆì¶˜ë‹¤.
+            SetEnemyMovementEnabled(false); // í¬ì‹ ì—°ì¶œ ë™ì•ˆ ê¸°ë³¸ Nexus ì´ë™ì„ ë©ˆì¶˜ë‹¤.
+            FaceEachOther(target); // ì‹œì‘ ì „ì— ëŒ€ìƒê³¼ ì„œë¡œ ë°”ë¼ë³´ê²Œ í•œë‹¤.
 
-            if (consumePresentationBridge != null) // Æ÷½Ä ¿¬Ãâ Bridge°¡ ÀÖ´Ù¸é
+            if (consumePresentationBridge != null) // í¬ì‹ ì—°ì¶œ Bridgeê°€ ìˆë‹¤ë©´
             {
-                yield return consumePresentationBridge.PlayBurrow(transform.position); // Burrow ¾Ö´Ï¸ŞÀÌ¼Ç°ú ¸ÕÁö VFX¸¦ Bridge¿¡¼­ Àç»ıÇÑ´Ù.
+                yield return consumePresentationBridge.PlayBurrow(transform.position); // Burrow ì• ë‹ˆë©”ì´ì…˜ê³¼ ë¨¼ì§€ VFXë¥¼ Bridgeì—ì„œ ì¬ìƒí•œë‹¤.
             }
 
-            if (!IsValidConsumeTarget(target)) // Burrow Áß ´ë»óÀÌ »ç¶óÁ³´Ù¸é
+            if (!IsValidConsumeTarget(target)) // Burrow ì¤‘ ëŒ€ìƒì´ ì‚¬ë¼ì¡Œë‹¤ë©´
             {
-                EndConsumeRoutine(true); // ¿¹¾à°ú ÀÌµ¿ »óÅÂ¸¦ º¹±¸ÇÑ´Ù.
-                yield break; // ¸Ô±â Ã³¸®¸¦ Áß´ÜÇÑ´Ù.
+                EndConsumeRoutine(true); // ì˜ˆì•½ê³¼ ì´ë™ ìƒíƒœë¥¼ ë³µêµ¬í•œë‹¤.
+                yield break; // ë¨¹ê¸° ì²˜ë¦¬ë¥¼ ì¤‘ë‹¨í•œë‹¤.
             }
 
-            TeleportNearConsumeTarget(target); // ´ë»ó ±ÙÃ³ ¸ñÇ¥ ÁöÁ¡À¸·Î ¼ø°£ ÀÌµ¿ÇÑ´Ù.
-            FaceEachOther(target); // ³ªÅ¸³­ µÚ ´Ù½Ã ¼­·Î ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            TeleportNearConsumeTarget(target); // ëŒ€ìƒ ê·¼ì²˜ ëª©í‘œ ì§€ì ìœ¼ë¡œ ìˆœê°„ ì´ë™í•œë‹¤.
+            FaceEachOther(target); // ë‚˜íƒ€ë‚œ ë’¤ ë‹¤ì‹œ ì„œë¡œ ë°”ë¼ë³´ê²Œ í•œë‹¤.
 
-            if (consumePresentationBridge != null) // Æ÷½Ä ¿¬Ãâ Bridge°¡ ÀÖ´Ù¸é
+            if (consumePresentationBridge != null) // í¬ì‹ ì—°ì¶œ Bridgeê°€ ìˆë‹¤ë©´
             {
-                yield return consumePresentationBridge.PlaySpawn(transform.position); // Spawn ¾Ö´Ï¸ŞÀÌ¼Ç°ú ¸ÕÁö VFX¸¦ Bridge¿¡¼­ Àç»ıÇÑ´Ù.
+                yield return consumePresentationBridge.PlaySpawn(transform.position); // Spawn ì• ë‹ˆë©”ì´ì…˜ê³¼ ë¨¼ì§€ VFXë¥¼ Bridgeì—ì„œ ì¬ìƒí•œë‹¤.
             }
 
-            if (!IsValidConsumeTarget(target)) // Spawn Áß ´ë»óÀÌ »ç¶óÁ³´Ù¸é
+            if (!IsValidConsumeTarget(target)) // Spawn ì¤‘ ëŒ€ìƒì´ ì‚¬ë¼ì¡Œë‹¤ë©´
             {
-                EndConsumeRoutine(true); // ¿¹¾à°ú ÀÌµ¿ »óÅÂ¸¦ º¹±¸ÇÑ´Ù.
-                yield break; // ¸Ô±â Ã³¸®¸¦ Áß´ÜÇÑ´Ù.
+                EndConsumeRoutine(true); // ì˜ˆì•½ê³¼ ì´ë™ ìƒíƒœë¥¼ ë³µêµ¬í•œë‹¤.
+                yield break; // ë¨¹ê¸° ì²˜ë¦¬ë¥¼ ì¤‘ë‹¨í•œë‹¤.
             }
 
-            FaceEachOther(target); // ¹°±â Á÷Àü¿¡ ¼­·Î Á¤È®È÷ ¸¶ÁÖº¸°Ô ÇÑ´Ù.
+            FaceEachOther(target); // ë¬¼ê¸° ì§ì „ì— ì„œë¡œ ì •í™•íˆ ë§ˆì£¼ë³´ê²Œ í•œë‹¤.
 
-            if (consumePresentationBridge != null) // Æ÷½Ä ¿¬Ãâ Bridge°¡ ÀÖ´Ù¸é
+            if (consumePresentationBridge != null) // í¬ì‹ ì—°ì¶œ Bridgeê°€ ìˆë‹¤ë©´
             {
-                consumePresentationBridge.PlayBite(); // Bite ¾Ö´Ï¸ŞÀÌ¼ÇÀ» Bridge¿¡¼­ Àç»ıÇÑ´Ù.
+                consumePresentationBridge.PlayBite(); // Bite ì• ë‹ˆë©”ì´ì…˜ì„ Bridgeì—ì„œ ì¬ìƒí•œë‹¤.
             }
 
-            if (consumePresentationBridge != null && consumePresentationBridge.BiteVfxDelay > 0.0f) // Bite ½ÃÀÛ ÈÄ VFX Áö¿¬ ½Ã°£ÀÌ ÀÖ´Ù¸é
+            if (consumePresentationBridge != null && consumePresentationBridge.BiteVfxDelay > 0.0f) // Bite ì‹œì‘ í›„ VFX ì§€ì—° ì‹œê°„ì´ ìˆë‹¤ë©´
             {
-                yield return new WaitForSeconds(consumePresentationBridge.BiteVfxDelay); // ¹°±â ¸ğ¼ÇÀÌ ½ÃÀÛµÉ ½Ã°£À» ÁØ´Ù.
+                yield return new WaitForSeconds(consumePresentationBridge.BiteVfxDelay); // ë¬¼ê¸° ëª¨ì…˜ì´ ì‹œì‘ë  ì‹œê°„ì„ ì¤€ë‹¤.
             }
 
-            if (!IsValidConsumeTarget(target)) // Bite Áß ´ë»óÀÌ »ç¶óÁ³´Ù¸é
+            if (!IsValidConsumeTarget(target)) // Bite ì¤‘ ëŒ€ìƒì´ ì‚¬ë¼ì¡Œë‹¤ë©´
             {
-                EndConsumeRoutine(true); // ¿¹¾à°ú ÀÌµ¿ »óÅÂ¸¦ º¹±¸ÇÑ´Ù.
-                yield break; // ¸Ô±â Ã³¸®¸¦ Áß´ÜÇÑ´Ù.
+                EndConsumeRoutine(true); // ì˜ˆì•½ê³¼ ì´ë™ ìƒíƒœë¥¼ ë³µêµ¬í•œë‹¤.
+                yield break; // ë¨¹ê¸° ì²˜ë¦¬ë¥¼ ì¤‘ë‹¨í•œë‹¤.
             }
 
-            if (consumePresentationBridge != null) // Æ÷½Ä ¿¬Ãâ Bridge°¡ ÀÖ´Ù¸é
+            if (consumePresentationBridge != null) // í¬ì‹ ì—°ì¶œ Bridgeê°€ ìˆë‹¤ë©´
             {
-                consumePresentationBridge.SpawnConsumeVfx(transform.position, target.transform.position); // ¸Ô´Â ¼ø°£ VFX¸¦ Bridge¿¡¼­ »ı¼ºÇÑ´Ù.
+                consumePresentationBridge.SpawnConsumeVfx(transform.position, target.transform.position); // ë¨¹ëŠ” ìˆœê°„ VFXë¥¼ Bridgeì—ì„œ ìƒì„±í•œë‹¤.
             }
 
-            if (consumeDelayBeforeKill > 0.0f) // ´ë»ó Á¦°Å Àü ´ë±â ½Ã°£ÀÌ ÀÖ´Ù¸é
+            GameplaySfxEmitter.TryPlayAt(transform, GameplaySfxCue.MonsterHatchlingConsume, target.transform.position, true);
+
+            if (consumeDelayBeforeKill > 0.0f) // ëŒ€ìƒ ì œê±° ì „ ëŒ€ê¸° ì‹œê°„ì´ ìˆë‹¤ë©´
             {
-                yield return new WaitForSeconds(consumeDelayBeforeKill); // ¸Ô±â ¿¬ÃâÀÌ º¸ÀÏ ½Ã°£À» ÁØ´Ù.
+                yield return new WaitForSeconds(consumeDelayBeforeKill); // ë¨¹ê¸° ì—°ì¶œì´ ë³´ì¼ ì‹œê°„ì„ ì¤€ë‹¤.
             }
 
-            if (IsValidConsumeTarget(target)) // Æ÷½ÄÀº ÀÌ¹Ì È®·ü ¼º°øÀ¸·Î È®Á¤µÆÀ¸¹Ç·Î ´ë»ó À¯È¿¼º¸¸ È®ÀÎÇÑ´Ù.
+            if (IsValidConsumeTarget(target)) // í¬ì‹ì€ ì´ë¯¸ í™•ë¥  ì„±ê³µìœ¼ë¡œ í™•ì •ëìœ¼ë¯€ë¡œ ëŒ€ìƒ ìœ íš¨ì„±ë§Œ í™•ì¸í•œë‹¤.
             {
-                target.KillByConsumed(); // ¸ÔÈù ÀÏ¹İ ¸ó½ºÅÍ¸¦ º¸»ó ¾øÀÌ Á¦°ÅÇÑ´Ù.
-                lockedTargetMovement = null; // Á¦°ÅµÈ ´ë»ó ÀÌµ¿ Script¸¦ º¹±¸ÇÏÁö ¾Êµµ·Ï ÂüÁ¶¸¦ ºñ¿î´Ù.
-                lockedTargetMovementWasEnabled = false; // Á¦°ÅµÈ ´ë»ó ÀÌµ¿ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
-                ReleaseReservedConsumeTarget(); // ¸ÔÀº ´ë»óÀÇ ¿¹¾àÀ» ÇØÁ¦ÇÑ´Ù.
-                ConsumeOneMonster(); // ÇØÃú¸µ ¼ºÀå ½ºÅÃ°ú ´É·ÂÄ¡¸¦ Áõ°¡½ÃÅ²´Ù.
+                target.KillByConsumed(); // ë¨¹íŒ ì¼ë°˜ ëª¬ìŠ¤í„°ë¥¼ ë³´ìƒ ì—†ì´ ì œê±°í•œë‹¤.
+                lockedTargetMovement = null; // ì œê±°ëœ ëŒ€ìƒ ì´ë™ Scriptë¥¼ ë³µêµ¬í•˜ì§€ ì•Šë„ë¡ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
+                lockedTargetMovementWasEnabled = false; // ì œê±°ëœ ëŒ€ìƒ ì´ë™ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
+                ReleaseReservedConsumeTarget(); // ë¨¹ì€ ëŒ€ìƒì˜ ì˜ˆì•½ì„ í•´ì œí•œë‹¤.
+                ConsumeOneMonster(); // í•´ì¸¨ë§ ì„±ì¥ ìŠ¤íƒê³¼ ëŠ¥ë ¥ì¹˜ë¥¼ ì¦ê°€ì‹œí‚¨ë‹¤.
 
-                if (consumePresentationBridge != null) // Æ÷½Ä ¿¬Ãâ Bridge°¡ ÀÖ´Ù¸é
+                if (consumePresentationBridge != null) // í¬ì‹ ì—°ì¶œ Bridgeê°€ ìˆë‹¤ë©´
                 {
-                    consumePresentationBridge.SpawnGrowthVfx(transform); // ¼ºÀå ¼º°ø VFX¸¦ Bridge¿¡¼­ »ı¼ºÇÑ´Ù.
+                    consumePresentationBridge.SpawnGrowthVfx(transform); // ì„±ì¥ ì„±ê³µ VFXë¥¼ Bridgeì—ì„œ ìƒì„±í•œë‹¤.
                 }
             }
             else
             {
-                EndConsumeRoutine(true); // ´ë»óÀÌ ¹«È¿°¡ µÆ´Ù¸é »óÅÂ¸¦ º¹±¸ÇÑ´Ù.
-                yield break; // ¸Ô±â Ã³¸®¸¦ Áß´ÜÇÑ´Ù.
+                EndConsumeRoutine(true); // ëŒ€ìƒì´ ë¬´íš¨ê°€ ëë‹¤ë©´ ìƒíƒœë¥¼ ë³µêµ¬í•œë‹¤.
+                yield break; // ë¨¹ê¸° ì²˜ë¦¬ë¥¼ ì¤‘ë‹¨í•œë‹¤.
             }
 
-            if (consumeRecoveryDuration > 0.0f) // ¸ÔÀº µÚ È¸º¹ ½Ã°£ÀÌ ÀÖ´Ù¸é
+            if (consumeRecoveryDuration > 0.0f) // ë¨¹ì€ ë’¤ íšŒë³µ ì‹œê°„ì´ ìˆë‹¤ë©´
             {
-                yield return new WaitForSeconds(consumeRecoveryDuration); // ´Ù½Ã ¿òÁ÷ÀÌ±â Àü Âª°Ô ´ë±âÇÑ´Ù.
+                yield return new WaitForSeconds(consumeRecoveryDuration); // ë‹¤ì‹œ ì›€ì§ì´ê¸° ì „ ì§§ê²Œ ëŒ€ê¸°í•œë‹¤.
             }
 
-            EndConsumeRoutine(true); // Æ÷½ÄÀÌ ³¡³­ µÚ ÀÌµ¿°ú ¿¹¾à »óÅÂ¸¦ Á¤¸®ÇÑ´Ù.
+            EndConsumeRoutine(true); // í¬ì‹ì´ ëë‚œ ë’¤ ì´ë™ê³¼ ì˜ˆì•½ ìƒíƒœë¥¼ ì •ë¦¬í•œë‹¤.
         }
 
-        private void EndConsumeRoutine(bool restoreMovement) // Æ÷½Ä Coroutine Á¾·á ½Ã »óÅÂ¸¦ Á¤¸®ÇÑ´Ù.
+        private void EndConsumeRoutine(bool restoreMovement) // í¬ì‹ Coroutine ì¢…ë£Œ ì‹œ ìƒíƒœë¥¼ ì •ë¦¬í•œë‹¤.
         {
-            ReleaseLockedTargetMovement(); // ³²¾Æ ÀÖ´Â ´ë»ó ÀÌµ¿ Á¤Áö¸¦ º¹±¸ÇÑ´Ù.
-            ReleaseReservedConsumeTarget(); // ³²¾Æ ÀÖ´Â ¿¹¾à »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
+            ReleaseLockedTargetMovement(); // ë‚¨ì•„ ìˆëŠ” ëŒ€ìƒ ì´ë™ ì •ì§€ë¥¼ ë³µêµ¬í•œë‹¤.
+            ReleaseReservedConsumeTarget(); // ë‚¨ì•„ ìˆëŠ” ì˜ˆì•½ ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
 
-            if (restoreMovement) // ÀÌµ¿À» º¹±¸ÇØ¾ß ÇÑ´Ù¸é
+            if (restoreMovement) // ì´ë™ì„ ë³µêµ¬í•´ì•¼ í•œë‹¤ë©´
             {
-                SetEnemyMovementEnabled(true); // ÇØÃú¸µÀÇ ±âº» ÀÌµ¿À» ´Ù½Ã Çã¿ëÇÑ´Ù.
+                SetEnemyMovementEnabled(true); // í•´ì¸¨ë§ì˜ ê¸°ë³¸ ì´ë™ì„ ë‹¤ì‹œ í—ˆìš©í•œë‹¤.
             }
 
-            isConsuming = false; // ¸Ô±â »óÅÂ¸¦ ÇØÁ¦ÇÑ´Ù.
-            SetConsumePresentationConsuming(false); // Bridge¿¡ Æ÷½Ä Á¾·á »óÅÂ¸¦ Àü´ŞÇÑ´Ù.
-            ResetConsumePresentationVisualOffset(); // Æ÷½ÄÀÌ ³¡³ª°Å³ª Áß´ÜµÇ¸é ¸ğµ¨ ³ôÀÌ¸¦ ¿ø·¡´ë·Î º¹±¸ÇÑ´Ù.
-            consumeRoutine = null; // Coroutine ÂüÁ¶¸¦ ºñ¿î´Ù.
+            isConsuming = false; // ë¨¹ê¸° ìƒíƒœë¥¼ í•´ì œí•œë‹¤.
+            SetConsumePresentationConsuming(false); // Bridgeì— í¬ì‹ ì¢…ë£Œ ìƒíƒœë¥¼ ì „ë‹¬í•œë‹¤.
+            ResetConsumePresentationVisualOffset(); // í¬ì‹ì´ ëë‚˜ê±°ë‚˜ ì¤‘ë‹¨ë˜ë©´ ëª¨ë¸ ë†’ì´ë¥¼ ì›ë˜ëŒ€ë¡œ ë³µêµ¬í•œë‹¤.
+            consumeRoutine = null; // Coroutine ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
         }
 
-        private bool IsValidConsumeTarget(EnemyController target) // Æ÷½Ä ´ë»óÀ¸·Î »ç¿ëÇÒ ¼ö ÀÖ´Â ÀÏ¹İ ¸ó½ºÅÍÀÎÁö È®ÀÎÇÑ´Ù.
+        private bool IsValidConsumeTarget(EnemyController target) // í¬ì‹ ëŒ€ìƒìœ¼ë¡œ ì‚¬ìš©í•  ìˆ˜ ìˆëŠ” ì¼ë°˜ ëª¬ìŠ¤í„°ì¸ì§€ í™•ì¸í•œë‹¤.
         {
-            if (target == null) // ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return false; // Æ÷½Ä ´ë»óÀ¸·Î »ç¿ëÇÒ ¼ö ¾ø´Ù.
+                return false; // í¬ì‹ ëŒ€ìƒìœ¼ë¡œ ì‚¬ìš©í•  ìˆ˜ ì—†ë‹¤.
             }
 
-            if (target == enemyController) // ÀÚ±â ÀÚ½ÅÀÌ¶ó¸é
+            if (target == enemyController) // ìê¸° ìì‹ ì´ë¼ë©´
             {
-                return false; // ÀÚ±â ÀÚ½ÅÀº ¸ÔÁö ¾Ê´Â´Ù.
+                return false; // ìê¸° ìì‹ ì€ ë¨¹ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (target.IsDead) // ÀÌ¹Ì Á×Àº ¸ó½ºÅÍ¶ó¸é
+            if (target.IsDead) // ì´ë¯¸ ì£½ì€ ëª¬ìŠ¤í„°ë¼ë©´
             {
-                return false; // Æ÷½Ä ´ë»óÀ¸·Î »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+                return false; // í¬ì‹ ëŒ€ìƒìœ¼ë¡œ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (target.Grade != EnemyGrade.Monster) // ÀÏ¹İ ¸ó½ºÅÍ µî±ŞÀÌ ¾Æ´Ï¶ó¸é
+            if (target.Grade != EnemyGrade.Monster) // ì¼ë°˜ ëª¬ìŠ¤í„° ë“±ê¸‰ì´ ì•„ë‹ˆë¼ë©´
             {
-                return false; // ¿¤¸®Æ®¿Í º¸½º´Â ¸ÔÁö ¾Ê´Â´Ù.
+                return false; // ì—˜ë¦¬íŠ¸ì™€ ë³´ìŠ¤ëŠ” ë¨¹ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (IsReservedByOtherHatchling(target)) // ´Ù¸¥ ÇØÃú¸µÀÌ ÀÌ¹Ì ¸Ô±â·Î ¿¹¾àÇß´Ù¸é
+            if (IsReservedByOtherHatchling(target)) // ë‹¤ë¥¸ í•´ì¸¨ë§ì´ ì´ë¯¸ ë¨¹ê¸°ë¡œ ì˜ˆì•½í–ˆë‹¤ë©´
             {
-                return false; // Áßº¹ Æ÷½Ä ´ë»óÀ¸·Î »ç¿ëÇÏÁö ¾Ê´Â´Ù.
+                return false; // ì¤‘ë³µ í¬ì‹ ëŒ€ìƒìœ¼ë¡œ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            return true; // ¸ğµç Á¶°ÇÀ» Åë°úÇßÀ¸¹Ç·Î Æ÷½Ä ´ë»óÀ¸·Î »ç¿ëÇÒ ¼ö ÀÖ´Ù.
+            return true; // ëª¨ë“  ì¡°ê±´ì„ í†µê³¼í–ˆìœ¼ë¯€ë¡œ í¬ì‹ ëŒ€ìƒìœ¼ë¡œ ì‚¬ìš©í•  ìˆ˜ ìˆë‹¤.
         }
 
-        private void TeleportNearConsumeTarget(EnemyController target) // ´ë»ó ¸ó½ºÅÍ ±ÙÃ³ ¸Ô±â À§Ä¡·Î ÇØÃú¸µÀ» ÀÌµ¿½ÃÅ²´Ù.
+        private void TeleportNearConsumeTarget(EnemyController target) // ëŒ€ìƒ ëª¬ìŠ¤í„° ê·¼ì²˜ ë¨¹ê¸° ìœ„ì¹˜ë¡œ í•´ì¸¨ë§ì„ ì´ë™ì‹œí‚¨ë‹¤.
         {
-            Vector3 direction = transform.position - target.transform.position; // ÇöÀç ÇØÃú¸µ À§Ä¡ ±âÁØÀ¸·Î ´ë»ó¿¡¼­ ÇØÃú¸µ ÂÊ ¹æÇâÀ» °è»êÇÑ´Ù.
-            direction.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+            Vector3 direction = transform.position - target.transform.position; // í˜„ì¬ í•´ì¸¨ë§ ìœ„ì¹˜ ê¸°ì¤€ìœ¼ë¡œ ëŒ€ìƒì—ì„œ í•´ì¸¨ë§ ìª½ ë°©í–¥ì„ ê³„ì‚°í•œë‹¤.
+            direction.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
 
-            if (direction.sqrMagnitude < 0.0001f) // ¹æÇâÀ» °è»êÇÒ ¼ö ¾ø´Ù¸é
+            if (direction.sqrMagnitude < 0.0001f) // ë°©í–¥ì„ ê³„ì‚°í•  ìˆ˜ ì—†ë‹¤ë©´
             {
-                direction = -target.transform.forward; // ´ë»óÀÇ µÚÂÊ ¹æÇâÀ» »ç¿ëÇÑ´Ù.
-                direction.y = 0.0f; // ³ôÀÌ Â÷ÀÌ´Â Á¦°ÅÇÑ´Ù.
+                direction = -target.transform.forward; // ëŒ€ìƒì˜ ë’¤ìª½ ë°©í–¥ì„ ì‚¬ìš©í•œë‹¤.
+                direction.y = 0.0f; // ë†’ì´ ì°¨ì´ëŠ” ì œê±°í•œë‹¤.
             }
 
-            if (direction.sqrMagnitude < 0.0001f) // ±×·¡µµ ¹æÇâÀÌ ¾ø´Ù¸é
+            if (direction.sqrMagnitude < 0.0001f) // ê·¸ë˜ë„ ë°©í–¥ì´ ì—†ë‹¤ë©´
             {
-                direction = Vector3.back; // ±âº» ¹æÇâÀ» »ç¿ëÇÑ´Ù.
+                direction = Vector3.back; // ê¸°ë³¸ ë°©í–¥ì„ ì‚¬ìš©í•œë‹¤.
             }
 
-            direction.Normalize(); // ¹æÇâÀ» Á¤±ÔÈ­ÇÑ´Ù.
+            direction.Normalize(); // ë°©í–¥ì„ ì •ê·œí™”í•œë‹¤.
 
-            Vector3 spawnPosition = target.transform.position + direction * spawnDistanceFromTarget; // ´ë»ó ±ÙÃ³ ¸ñÇ¥ À§Ä¡¸¦ °è»êÇÑ´Ù.
-            spawnPosition = GroundService.ProjectToGround(spawnPosition, consumeTeleportGroundHeight); // ¹Ù´Ú ³ôÀÌ¿¡ ¸ÂÃç º¸Á¤ÇÑ´Ù.
+            Vector3 spawnPosition = target.transform.position + direction * spawnDistanceFromTarget; // ëŒ€ìƒ ê·¼ì²˜ ëª©í‘œ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œë‹¤.
+            spawnPosition = GroundService.ProjectToGround(spawnPosition, consumeTeleportGroundHeight); // ë°”ë‹¥ ë†’ì´ì— ë§ì¶° ë³´ì •í•œë‹¤.
 
-            transform.position = spawnPosition; // ÇØÃú¸µÀ» ´ë»ó ±ÙÃ³·Î ¼ø°£ ÀÌµ¿½ÃÅ²´Ù.
+            transform.position = spawnPosition; // í•´ì¸¨ë§ì„ ëŒ€ìƒ ê·¼ì²˜ë¡œ ìˆœê°„ ì´ë™ì‹œí‚¨ë‹¤.
         }
 
-        public void ConsumeGrowthOrb(EnemyGrowthOrb growthOrb) // ±âÁ¸ ¼ºÀå ±¸½½ Script ÄÄÆÄÀÏ È£È¯¿ë ÇÔ¼ö
+        public void ConsumeGrowthOrb(EnemyGrowthOrb growthOrb) // ê¸°ì¡´ ì„±ì¥ êµ¬ìŠ¬ Script ì»´íŒŒì¼ í˜¸í™˜ìš© í•¨ìˆ˜
         {
-            if (growthOrb == null) // ±¸½½ Á¤º¸°¡ ¾ø´Ù¸é
+            if (growthOrb == null) // êµ¬ìŠ¬ ì •ë³´ê°€ ì—†ë‹¤ë©´
             {
-                return; // ¾Æ¹« Ã³¸®µµ ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì•„ë¬´ ì²˜ë¦¬ë„ í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            // ¼ºÀå ¹æ½ÄÀÌ ÀÏ¹İ ¸ó½ºÅÍ Æ÷½ÄÀ¸·Î ¹Ù²î¾ú±â ¶§¹®¿¡ ±¸½½·Î´Â ¼ºÀåÇÏÁö ¾Ê´Â´Ù.
+            // ì„±ì¥ ë°©ì‹ì´ ì¼ë°˜ ëª¬ìŠ¤í„° í¬ì‹ìœ¼ë¡œ ë°”ë€Œì—ˆê¸° ë•Œë¬¸ì— êµ¬ìŠ¬ë¡œëŠ” ì„±ì¥í•˜ì§€ ì•ŠëŠ”ë‹¤.
         }
 
-        private void ConsumeOneMonster() // ÀÏ¹İ ¸ó½ºÅÍ 1¸¶¸®¸¦ ¸Ô¾úÀ» ¶§ ¼ºÀå Ã³¸®
+        private void ConsumeOneMonster() // ì¼ë°˜ ëª¬ìŠ¤í„° 1ë§ˆë¦¬ë¥¼ ë¨¹ì—ˆì„ ë•Œ ì„±ì¥ ì²˜ë¦¬
         {
-            if (!CanGrow) // ÀÌ¹Ì ÃÖ´ë ¼ºÀå »óÅÂ¶ó¸é
+            if (!CanGrow) // ì´ë¯¸ ìµœëŒ€ ì„±ì¥ ìƒíƒœë¼ë©´
             {
-                return; // ´õ ÀÌ»ó ¼ºÀåÇÏÁö ¾Ê´Â´Ù.
+                return; // ë” ì´ìƒ ì„±ì¥í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            growthStack++; // ¼ºÀå ½ºÅÃÀ» 1 Áõ°¡½ÃÅ²´Ù.
+            growthStack++; // ì„±ì¥ ìŠ¤íƒì„ 1 ì¦ê°€ì‹œí‚¨ë‹¤.
 
-            if (health != null) // Ã¼·Â Script Component°¡ ÀÖ´Ù¸é
+            if (health != null) // ì²´ë ¥ Script Componentê°€ ìˆë‹¤ë©´
             {
-                health.IncreaseMaxHpByPercentKeepingRatio(maxHpIncreasePercentPerConsume); // ÇöÀç Ã¼·Â ºñÀ²À» À¯ÁöÇÏ¸é¼­ ÃÖ´ë Ã¼·ÂÀ» Áõ°¡½ÃÅ²´Ù.
+                health.IncreaseMaxHpByPercentKeepingRatio(maxHpIncreasePercentPerConsume); // í˜„ì¬ ì²´ë ¥ ë¹„ìœ¨ì„ ìœ ì§€í•˜ë©´ì„œ ìµœëŒ€ ì²´ë ¥ì„ ì¦ê°€ì‹œí‚¨ë‹¤.
             }
 
-            ApplyScaleGrowth(); // ÇöÀç ¼ºÀå ½ºÅÃ¿¡ ¸Â°Ô Å©±â¸¦ °»½ÅÇÑ´Ù.
+            ApplyScaleGrowth(); // í˜„ì¬ ì„±ì¥ ìŠ¤íƒì— ë§ê²Œ í¬ê¸°ë¥¼ ê°±ì‹ í•œë‹¤.
         }
 
-        private void ApplyScaleGrowth() // ¼ºÀå ½ºÅÃ¿¡ µû¶ó Å©±â¸¦ °»½ÅÇÏ´Â ÇÔ¼ö
+        private void ApplyScaleGrowth() // ì„±ì¥ ìŠ¤íƒì— ë”°ë¼ í¬ê¸°ë¥¼ ê°±ì‹ í•˜ëŠ” í•¨ìˆ˜
         {
-            float scaleMultiplier = 1.0f + growthStack * scaleIncreasePercentPerConsume; // ¼ºÀå ½ºÅÃ¿¡ µû¸¥ Å©±â ¹èÀ²À» °è»êÇÑ´Ù.
+            float scaleMultiplier = 1.0f + growthStack * scaleIncreasePercentPerConsume; // ì„±ì¥ ìŠ¤íƒì— ë”°ë¥¸ í¬ê¸° ë°°ìœ¨ì„ ê³„ì‚°í•œë‹¤.
 
-            transform.localScale = baseScale * scaleMultiplier; // ¿ø·¡ Å©±â¸¦ ±âÁØÀ¸·Î ÃÖÁ¾ Å©±â¸¦ Àû¿ëÇÑ´Ù.
+            transform.localScale = baseScale * scaleMultiplier; // ì›ë˜ í¬ê¸°ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ìµœì¢… í¬ê¸°ë¥¼ ì ìš©í•œë‹¤.
         }
 
-        private void FaceEachOther(EnemyController target) // ÇØÃú¸µ°ú ´ë»ó ¸ó½ºÅÍ°¡ ¼­·Î ¸¶ÁÖº¸°Ô ÇÑ´Ù.
+        private void FaceEachOther(EnemyController target) // í•´ì¸¨ë§ê³¼ ëŒ€ìƒ ëª¬ìŠ¤í„°ê°€ ì„œë¡œ ë§ˆì£¼ë³´ê²Œ í•œë‹¤.
         {
-            FaceTransformToPosition(transform, target.transform.position); // ÇØÃú¸µÀÌ ´ë»óÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
-            FaceTransformToPosition(target.transform, transform.position); // ´ë»ó ¸ó½ºÅÍ°¡ ÇØÃú¸µÀ» ¹Ù¶óº¸°Ô ÇÑ´Ù.
+            FaceTransformToPosition(transform, target.transform.position); // í•´ì¸¨ë§ì´ ëŒ€ìƒì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
+            FaceTransformToPosition(target.transform, transform.position); // ëŒ€ìƒ ëª¬ìŠ¤í„°ê°€ í•´ì¸¨ë§ì„ ë°”ë¼ë³´ê²Œ í•œë‹¤.
         }
 
-        private void FaceTransformToPosition(Transform source, Vector3 targetPosition) // Æ¯Á¤ TransformÀÌ ¸ñÇ¥ À§Ä¡¸¦ ¹Ù¶óº¸°Ô ÇÑ´Ù.
+        private void FaceTransformToPosition(Transform source, Vector3 targetPosition) // íŠ¹ì • Transformì´ ëª©í‘œ ìœ„ì¹˜ë¥¼ ë°”ë¼ë³´ê²Œ í•œë‹¤.
         {
-            if (source == null) // È¸ÀüÇÒ TransformÀÌ ¾ø´Ù¸é
+            if (source == null) // íšŒì „í•  Transformì´ ì—†ë‹¤ë©´
             {
-                return; // È¸ÀüÇÏÁö ¾Ê´Â´Ù.
+                return; // íšŒì „í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            Vector3 direction = targetPosition - source.position; // ¹Ù¶óº¼ ¹æÇâÀ» °è»êÇÑ´Ù.
-            direction.y = 0.0f; // ¼öÆò ¹æÇâ¸¸ »ç¿ëÇÑ´Ù.
+            Vector3 direction = targetPosition - source.position; // ë°”ë¼ë³¼ ë°©í–¥ì„ ê³„ì‚°í•œë‹¤.
+            direction.y = 0.0f; // ìˆ˜í‰ ë°©í–¥ë§Œ ì‚¬ìš©í•œë‹¤.
 
-            if (direction.sqrMagnitude < 0.0001f) // ¹æÇâÀÌ ³Ê¹« Âª´Ù¸é
+            if (direction.sqrMagnitude < 0.0001f) // ë°©í–¥ì´ ë„ˆë¬´ ì§§ë‹¤ë©´
             {
-                return; // È¸ÀüÇÏÁö ¾Ê´Â´Ù.
+                return; // íšŒì „í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            source.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // ¸ñÇ¥ ¹æÇâÀ» ¹Ù¶óº¸°Ô È¸ÀüÇÑ´Ù.
+            source.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up); // ëª©í‘œ ë°©í–¥ì„ ë°”ë¼ë³´ê²Œ íšŒì „í•œë‹¤.
         }
 
-        private void LockTargetMovement(EnemyController target) // Æ÷½Ä ´ë»ó ¸ó½ºÅÍÀÇ ÀÌµ¿À» ¸ØÃá´Ù.
+        private void LockTargetMovement(EnemyController target) // í¬ì‹ ëŒ€ìƒ ëª¬ìŠ¤í„°ì˜ ì´ë™ì„ ë©ˆì¶˜ë‹¤.
         {
-            ReleaseLockedTargetMovement(); // ÀÌÀü¿¡ ¸ØÃá ´ë»óÀÌ ÀÖ´Ù¸é ¸ÕÀú º¹±¸ÇÑ´Ù.
+            ReleaseLockedTargetMovement(); // ì´ì „ì— ë©ˆì¶˜ ëŒ€ìƒì´ ìˆë‹¤ë©´ ë¨¼ì € ë³µêµ¬í•œë‹¤.
 
-            if (!stopTargetMovementWhileConsuming) // ´ë»ó ÀÌµ¿ Á¤Áö¸¦ »ç¿ëÇÏÁö ¾Ê´Â´Ù¸é
+            if (!stopTargetMovementWhileConsuming) // ëŒ€ìƒ ì´ë™ ì •ì§€ë¥¼ ì‚¬ìš©í•˜ì§€ ì•ŠëŠ”ë‹¤ë©´
             {
-                return; // ¾Æ¹«°Íµµ ¸ØÃßÁö ¾Ê´Â´Ù.
+                return; // ì•„ë¬´ê²ƒë„ ë©ˆì¶”ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            if (target == null) // ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return; // ¸ØÃâ ¼ö ¾ø´Ù.
+                return; // ë©ˆì¶œ ìˆ˜ ì—†ë‹¤.
             }
 
-            lockedTargetMovement = target.GetComponent<EnemyMovement>(); // ´ë»ó ¸ó½ºÅÍÀÇ EnemyMovement¸¦ Ã£´Â´Ù.
+            lockedTargetMovement = target.GetComponent<EnemyMovement>(); // ëŒ€ìƒ ëª¬ìŠ¤í„°ì˜ EnemyMovementë¥¼ ì°¾ëŠ”ë‹¤.
 
-            if (lockedTargetMovement == null) // ´ë»ó¿¡ ÀÌµ¿ Script°¡ ¾ø´Ù¸é
+            if (lockedTargetMovement == null) // ëŒ€ìƒì— ì´ë™ Scriptê°€ ì—†ë‹¤ë©´
             {
-                return; // ¸ØÃâ ÀÌµ¿ÀÌ ¾ø´Ù.
+                return; // ë©ˆì¶œ ì´ë™ì´ ì—†ë‹¤.
             }
 
-            lockedTargetMovementWasEnabled = lockedTargetMovement.enabled; // ¿ø·¡ È°¼º »óÅÂ¸¦ ÀúÀåÇÑ´Ù.
-            lockedTargetMovement.enabled = false; // ´ë»ó ¸ó½ºÅÍ ÀÌµ¿À» ¸ØÃá´Ù.
+            lockedTargetMovementWasEnabled = lockedTargetMovement.enabled; // ì›ë˜ í™œì„± ìƒíƒœë¥¼ ì €ì¥í•œë‹¤.
+            lockedTargetMovement.enabled = false; // ëŒ€ìƒ ëª¬ìŠ¤í„° ì´ë™ì„ ë©ˆì¶˜ë‹¤.
         }
 
-        private void ReleaseLockedTargetMovement() // ¸ØÃçµĞ ´ë»ó ¸ó½ºÅÍ ÀÌµ¿À» º¹±¸ÇÑ´Ù.
+        private void ReleaseLockedTargetMovement() // ë©ˆì¶°ë‘” ëŒ€ìƒ ëª¬ìŠ¤í„° ì´ë™ì„ ë³µêµ¬í•œë‹¤.
         {
-            if (lockedTargetMovement != null) // ¸ØÃçµĞ ´ë»ó ÀÌµ¿ Script°¡ ¾ÆÁ÷ ÀÖ´Ù¸é
+            if (lockedTargetMovement != null) // ë©ˆì¶°ë‘” ëŒ€ìƒ ì´ë™ Scriptê°€ ì•„ì§ ìˆë‹¤ë©´
             {
-                lockedTargetMovement.enabled = lockedTargetMovementWasEnabled; // ¿ø·¡ È°¼º »óÅÂ·Î µÇµ¹¸°´Ù.
+                lockedTargetMovement.enabled = lockedTargetMovementWasEnabled; // ì›ë˜ í™œì„± ìƒíƒœë¡œ ë˜ëŒë¦°ë‹¤.
             }
 
-            lockedTargetMovement = null; // ´ë»ó ÀÌµ¿ ÂüÁ¶¸¦ ºñ¿î´Ù.
-            lockedTargetMovementWasEnabled = false; // ´ë»ó ÀÌµ¿ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+            lockedTargetMovement = null; // ëŒ€ìƒ ì´ë™ ì°¸ì¡°ë¥¼ ë¹„ìš´ë‹¤.
+            lockedTargetMovementWasEnabled = false; // ëŒ€ìƒ ì´ë™ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
         }
 
-        private bool TryReserveConsumeTarget(EnemyController target) // ÀÌ ÇØÃú¸µÀÌ Æ¯Á¤ ¸ó½ºÅÍ¸¦ ¸Ô±â·Î ¿¹¾àÇÑ´Ù.
+        private bool TryReserveConsumeTarget(EnemyController target) // ì´ í•´ì¸¨ë§ì´ íŠ¹ì • ëª¬ìŠ¤í„°ë¥¼ ë¨¹ê¸°ë¡œ ì˜ˆì•½í•œë‹¤.
         {
-            if (!IsValidConsumeTarget(target)) // Æ÷½Ä ´ë»óÀ¸·Î À¯È¿ÇÏÁö ¾Ê´Ù¸é
+            if (!IsValidConsumeTarget(target)) // í¬ì‹ ëŒ€ìƒìœ¼ë¡œ ìœ íš¨í•˜ì§€ ì•Šë‹¤ë©´
             {
-                return false; // ¿¹¾àÇÏÁö ¾Ê´Â´Ù.
+                return false; // ì˜ˆì•½í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            CleanupReservedConsumeTargets(); // ¿¹¾à Àü¿¡ Á×¾ú°Å³ª »ç¶óÁø ´ë»óµéÀ» Á¤¸®ÇÑ´Ù.
+            CleanupReservedConsumeTargets(); // ì˜ˆì•½ ì „ì— ì£½ì—ˆê±°ë‚˜ ì‚¬ë¼ì§„ ëŒ€ìƒë“¤ì„ ì •ë¦¬í•œë‹¤.
 
-            if (reservedConsumeTargets.Contains(target)) // ÀÌ¹Ì ´Ù¸¥ ÇØÃú¸µÀÌ ¿¹¾àÇß´Ù¸é
+            if (reservedConsumeTargets.Contains(target)) // ì´ë¯¸ ë‹¤ë¥¸ í•´ì¸¨ë§ì´ ì˜ˆì•½í–ˆë‹¤ë©´
             {
-                return false; // Áßº¹ ¿¹¾àÇÏÁö ¾Ê´Â´Ù.
+                return false; // ì¤‘ë³µ ì˜ˆì•½í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            reservedConsumeTargets.Add(target); // ¿¹¾à ¸ñ·Ï¿¡ ´ë»óÀ» Ãß°¡ÇÑ´Ù.
-            reservedConsumeTarget = target; // ÀÌ ÇØÃú¸µÀÇ ÇöÀç ¿¹¾à ´ë»óÀ¸·Î ÀúÀåÇÑ´Ù.
+            reservedConsumeTargets.Add(target); // ì˜ˆì•½ ëª©ë¡ì— ëŒ€ìƒì„ ì¶”ê°€í•œë‹¤.
+            reservedConsumeTarget = target; // ì´ í•´ì¸¨ë§ì˜ í˜„ì¬ ì˜ˆì•½ ëŒ€ìƒìœ¼ë¡œ ì €ì¥í•œë‹¤.
 
-            return true; // ¿¹¾à ¼º°ø
+            return true; // ì˜ˆì•½ ì„±ê³µ
         }
 
-        private void ReleaseReservedConsumeTarget() // ÀÌ ÇØÃú¸µÀÌ ¿¹¾àÇÑ Æ÷½Ä ´ë»óÀ» ÇØÁ¦ÇÑ´Ù.
+        private void ReleaseReservedConsumeTarget() // ì´ í•´ì¸¨ë§ì´ ì˜ˆì•½í•œ í¬ì‹ ëŒ€ìƒì„ í•´ì œí•œë‹¤.
         {
-            if (reservedConsumeTarget != null) // ¿¹¾àÇÑ ´ë»óÀÌ ¾ÆÁ÷ À¯È¿ÇÏ´Ù¸é
+            if (reservedConsumeTarget != null) // ì˜ˆì•½í•œ ëŒ€ìƒì´ ì•„ì§ ìœ íš¨í•˜ë‹¤ë©´
             {
-                reservedConsumeTargets.Remove(reservedConsumeTarget); // ¿¹¾à ¸ñ·Ï¿¡¼­ Á¦°ÅÇÑ´Ù.
+                reservedConsumeTargets.Remove(reservedConsumeTarget); // ì˜ˆì•½ ëª©ë¡ì—ì„œ ì œê±°í•œë‹¤.
             }
             else
             {
-                CleanupReservedConsumeTargets(); // ´ë»óÀÌ ÀÌ¹Ì »ç¶óÁ³´Ù¸é ¿¹¾à ¸ñ·ÏÀ» Á¤¸®ÇÑ´Ù.
+                CleanupReservedConsumeTargets(); // ëŒ€ìƒì´ ì´ë¯¸ ì‚¬ë¼ì¡Œë‹¤ë©´ ì˜ˆì•½ ëª©ë¡ì„ ì •ë¦¬í•œë‹¤.
             }
 
-            reservedConsumeTarget = null; // ÇöÀç ¿¹¾à ´ë»óÀ» ºñ¿î´Ù.
+            reservedConsumeTarget = null; // í˜„ì¬ ì˜ˆì•½ ëŒ€ìƒì„ ë¹„ìš´ë‹¤.
         }
 
-        private bool IsReservedByOtherHatchling(EnemyController target) // ´Ù¸¥ ÇØÃú¸µÀÌ ÀÌ¹Ì ¿¹¾àÇÑ ´ë»óÀÎÁö È®ÀÎÇÑ´Ù.
+        private bool IsReservedByOtherHatchling(EnemyController target) // ë‹¤ë¥¸ í•´ì¸¨ë§ì´ ì´ë¯¸ ì˜ˆì•½í•œ ëŒ€ìƒì¸ì§€ í™•ì¸í•œë‹¤.
         {
-            if (target == null) // ´ë»óÀÌ ¾ø´Ù¸é
+            if (target == null) // ëŒ€ìƒì´ ì—†ë‹¤ë©´
             {
-                return false; // ¿¹¾à ¿©ºÎ¸¦ È®ÀÎÇÏÁö ¾Ê´Â´Ù.
+                return false; // ì˜ˆì•½ ì—¬ë¶€ë¥¼ í™•ì¸í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            CleanupReservedConsumeTargets(); // È®ÀÎ Àü¿¡ Á×¾ú°Å³ª »ç¶óÁø ¿¹¾à ´ë»óÀ» Á¤¸®ÇÑ´Ù.
+            CleanupReservedConsumeTargets(); // í™•ì¸ ì „ì— ì£½ì—ˆê±°ë‚˜ ì‚¬ë¼ì§„ ì˜ˆì•½ ëŒ€ìƒì„ ì •ë¦¬í•œë‹¤.
 
-            return reservedConsumeTargets.Contains(target) && target != reservedConsumeTarget; // ´Ù¸¥ ÇØÃú¸µÀÇ ¿¹¾àÀÌ¸é true
+            return reservedConsumeTargets.Contains(target) && target != reservedConsumeTarget; // ë‹¤ë¥¸ í•´ì¸¨ë§ì˜ ì˜ˆì•½ì´ë©´ true
         }
 
-        private static void CleanupReservedConsumeTargets() // Á×¾ú°Å³ª »ç¶óÁø ¿¹¾à ´ë»óÀ» Á¤¸®ÇÑ´Ù.
+        private static void CleanupReservedConsumeTargets() // ì£½ì—ˆê±°ë‚˜ ì‚¬ë¼ì§„ ì˜ˆì•½ ëŒ€ìƒì„ ì •ë¦¬í•œë‹¤.
         {
-            reservedConsumeTargets.RemoveWhere(target => target == null || target.IsDead); // ºñ¾î ÀÖ°Å³ª Á×Àº ´ë»ó Á¦°Å
+            reservedConsumeTargets.RemoveWhere(target => target == null || target.IsDead); // ë¹„ì–´ ìˆê±°ë‚˜ ì£½ì€ ëŒ€ìƒ ì œê±°
         }
 
-        private void SetEnemyMovementEnabled(bool enabled) // ¸Ô±â ¿¬Ãâ Áß ÀÌµ¿ Script¸¦ ÄÑ°í ²ö´Ù.
+        private void SetEnemyMovementEnabled(bool enabled) // ë¨¹ê¸° ì—°ì¶œ ì¤‘ ì´ë™ Scriptë¥¼ ì¼œê³  ëˆë‹¤.
         {
-            if (enemyMovement == null) // EnemyMovement°¡ ¾ø´Ù¸é
+            if (enemyMovement == null) // EnemyMovementê°€ ì—†ë‹¤ë©´
             {
-                return; // ÀÌµ¿ Á¦¾î¸¦ ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì´ë™ ì œì–´ë¥¼ í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            enemyMovement.enabled = enabled; // EnemyMovement È°¼º »óÅÂ¸¦ º¯°æÇÑ´Ù.
+            enemyMovement.enabled = enabled; // EnemyMovement í™œì„± ìƒíƒœë¥¼ ë³€ê²½í•œë‹¤.
         }
 
-        private void SetConsumePresentationConsuming(bool consuming) // Bridge¿¡ Æ÷½Ä Áß »óÅÂ¸¦ Àü´ŞÇÑ´Ù.
+        private void SetConsumePresentationConsuming(bool consuming) // Bridgeì— í¬ì‹ ì¤‘ ìƒíƒœë¥¼ ì „ë‹¬í•œë‹¤.
         {
-            if (consumePresentationBridge == null) // Bridge°¡ ¾ø´Ù¸é
+            if (consumePresentationBridge == null) // Bridgeê°€ ì—†ë‹¤ë©´
             {
-                return; // Ã³¸®ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì²˜ë¦¬í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            consumePresentationBridge.SetConsuming(consuming); // Animator IsConsuming BoolÀ» °»½ÅÇÑ´Ù.
+            consumePresentationBridge.SetConsuming(consuming); // Animator IsConsuming Boolì„ ê°±ì‹ í•œë‹¤.
         }
 
-        private void ResetConsumePresentationVisualOffset() // BridgeÀÇ VisualOffsetRoot¸¦ ¿ø·¡ ³ôÀÌ·Î º¹±¸ÇÑ´Ù.
+        private void ResetConsumePresentationVisualOffset() // Bridgeì˜ VisualOffsetRootë¥¼ ì›ë˜ ë†’ì´ë¡œ ë³µêµ¬í•œë‹¤.
         {
-            if (consumePresentationBridge == null) // Bridge°¡ ¾ø´Ù¸é
+            if (consumePresentationBridge == null) // Bridgeê°€ ì—†ë‹¤ë©´
             {
-                return; // Ã³¸®ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì²˜ë¦¬í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            consumePresentationBridge.ResetVisualOffset(); // ¸ğµ¨ ³ôÀÌ¸¦ ¿ø·¡´ë·Î º¹±¸ÇÑ´Ù.
+            consumePresentationBridge.ResetVisualOffset(); // ëª¨ë¸ ë†’ì´ë¥¼ ì›ë˜ëŒ€ë¡œ ë³µêµ¬í•œë‹¤.
         }
 
-        private void ResetConsumePresentationState() // BridgeÀÇ Æ÷½Ä ¿¬Ãâ »óÅÂ¸¦ ÃÊ±âÈ­ÇÑ´Ù.
+        private void ResetConsumePresentationState() // Bridgeì˜ í¬ì‹ ì—°ì¶œ ìƒíƒœë¥¼ ì´ˆê¸°í™”í•œë‹¤.
         {
-            if (consumePresentationBridge == null) // Bridge°¡ ¾ø´Ù¸é
+            if (consumePresentationBridge == null) // Bridgeê°€ ì—†ë‹¤ë©´
             {
-                return; // Ã³¸®ÇÏÁö ¾Ê´Â´Ù.
+                return; // ì²˜ë¦¬í•˜ì§€ ì•ŠëŠ”ë‹¤.
             }
 
-            consumePresentationBridge.SetConsuming(false); // Animator Æ÷½Ä »óÅÂ¸¦ false·Î ÃÊ±âÈ­ÇÑ´Ù.
-            consumePresentationBridge.ResetVisualOffset(); // ¸ğµ¨ ³ôÀÌ¸¦ ¿ø·¡´ë·Î º¹±¸ÇÑ´Ù.
+            consumePresentationBridge.SetConsuming(false); // Animator í¬ì‹ ìƒíƒœë¥¼ falseë¡œ ì´ˆê¸°í™”í•œë‹¤.
+            consumePresentationBridge.ResetVisualOffset(); // ëª¨ë¸ ë†’ì´ë¥¼ ì›ë˜ëŒ€ë¡œ ë³µêµ¬í•œë‹¤.
         }
 
         private void OnDrawGizmosSelected()
         {
-            Gizmos.DrawWireSphere(transform.position, consumeRange); // Scene¿¡¼­ ¼±ÅÃÇßÀ» ¶§ Æ÷½Ä ¹üÀ§¸¦ Ç¥½ÃÇÑ´Ù.
+            Gizmos.DrawWireSphere(transform.position, consumeRange); // Sceneì—ì„œ ì„ íƒí–ˆì„ ë•Œ í¬ì‹ ë²”ìœ„ë¥¼ í‘œì‹œí•œë‹¤.
         }
     }
 }

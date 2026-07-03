@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
@@ -40,6 +41,8 @@ namespace TeamProject01.Gameplay
         private readonly Dictionary<Button, bool> hoverStates = new Dictionary<Button, bool>();
         private readonly Dictionary<Button, Vector3> buttonBaseScales = new Dictionary<Button, Vector3>();
 
+        private Action closeRequestHandler; // 인게임 오버레이 닫기 위임
+        private Action quitGameRequestHandler; // 인게임 게임 포기 위임
         private bool suppressVolumeCallback;
 
         private void Awake()
@@ -53,6 +56,7 @@ namespace TeamProject01.Gameplay
             ConfigureRaycastTargets(); // 장식 Image Raycast 끔 — 버튼·슬라이더 클릭 통과 //안건준 추가 - 0628
             ConfigureSliders();
             WireButtons();
+            RefreshQuitGameButtonState(); // 타이틀에서는 게임 포기 비활성
             RegisterAnimatedButtons();
             SyncVolumeSlidersFromAudio(); // 씬 슬라이더 기본값(0) 덮어쓰기 //안건준 추가 - 0629
         }
@@ -76,6 +80,17 @@ namespace TeamProject01.Gameplay
         public void Close()
         {
             panelRoot.SetActive(false);
+        }
+
+        public void SetCloseRequestHandler(Action handler) // 외부 닫기 처리 연결
+        {
+            closeRequestHandler = handler;
+        }
+
+        public void SetQuitGameRequestHandler(Action handler) // 외부 게임 포기 처리 연결
+        {
+            quitGameRequestHandler = handler;
+            RefreshQuitGameButtonState();
         }
 
         private void ResolveReferences()
@@ -503,19 +518,43 @@ namespace TeamProject01.Gameplay
         private void HandleCloseClicked()
         {
             PlayClickFeedback(closeButton);
-            Close();
+            RequestClose();
         }
 
         private void HandleCloseWindowClicked()
         {
             PlayClickFeedback(closeWindowButton);
+            RequestClose();
+        }
+
+        private void RequestClose()
+        {
+            if (closeRequestHandler != null)
+            {
+                closeRequestHandler.Invoke();
+                return;
+            }
+
             Close();
         }
 
         private void HandleQuitGameClicked()
         {
+            if (quitGameRequestHandler == null)
+            {
+                return; // 타이틀 설정에서는 작동 없음
+            }
+
             PlayClickFeedback(quitGameButton);
-            // 게임 포기 기능 — 추후 연결 //안건준 추가 - 0628
+            quitGameRequestHandler.Invoke(); // 인게임 런 종료 처리
+        }
+
+        private void RefreshQuitGameButtonState() // 게임 포기 가능 여부
+        {
+            if (quitGameButton != null)
+            {
+                quitGameButton.interactable = quitGameRequestHandler != null;
+            }
         }
 
         private static void UpdateVolumePercentText(TextMeshProUGUI label, float value)
