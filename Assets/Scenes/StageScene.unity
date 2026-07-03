@@ -60431,6 +60431,7 @@ GameObject:
   - component: {fileID: 1928303246}
   - component: {fileID: 1928303245}
   - component: {fileID: 1928303244}
+  - component: {fileID: 1928303247}
   m_Layer: 0
   m_Name: GoldActionHudRoot
   m_TagString: Untagged
@@ -60618,6 +60619,38 @@ MonoBehaviour:
   UpgradeCostGrowthMultiplier: 1.5
   ShieldUpgradeCostMultiplier: 1.5
   DefaultMaxSkillLevel: 5
+--- !u!114 &1928303247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1928303242}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8f32f28151035b4a80617590989c554, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.ActionHudFeature
+  hudController: {fileID: 1928303246}
+  skillPurchaseClip: {fileID: 8300000, guid: 72f379c37ce99c94b88f7ec81cf63a1c, type: 3}
+  skillPurchaseVolume: 0.2
+  skillUpgradeClip: {fileID: 8300000, guid: 31aeeb90bed81d140866f8674081cb27, type: 3}
+  skillUpgradeVolume: 0.2
+  skillReadyVfxPrefab: {fileID: 8394998811337863150, guid: 30b428bd62df9af4e8980abd99c97f84, type: 3}
+  skillReadyVfxAnchors:
+  - {fileID: 1070681392}
+  - {fileID: 37485575}
+  - {fileID: 1891127789}
+  - {fileID: 1633176300}
+  - {fileID: 699063469}
+  readyVfxWidthScale: 1
+  readyVfxHeightScale: 1
+  readyVfxSizeOffsetPercent: 1
+  readyVfxWidthOffsetPx: -55
+  readyVfxHeightOffsetPx: -55
+  readyVfxPositionOffsetX: 0
+  readyVfxPositionOffsetY: 0
+  readyVfxParticleScale: {x: 1, y: 1, z: 1}
 --- !u!1 &1930163252
 GameObject:
   m_ObjectHideFlags: 0

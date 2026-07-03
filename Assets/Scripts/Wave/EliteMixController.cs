@@ -6,6 +6,8 @@ namespace TeamProject01.Gameplay
 {
     public sealed class EliteMixController : MonoBehaviour
     {
+        private const int MaxSuicideEliteCountPerStage = 2;
+
         [Serializable]
         public sealed class EliteRatioStep
         {
@@ -217,7 +219,7 @@ namespace TeamProject01.Gameplay
 
         private static readonly ChallengeEliteRule[] ChallengeEliteRules =
         {
-            new ChallengeEliteRule(EliteKind.Suicide, 16, 4),
+            new ChallengeEliteRule(EliteKind.Suicide, 16, MaxSuicideEliteCountPerStage),
             new ChallengeEliteRule(EliteKind.Slow, 16, 4),
             new ChallengeEliteRule(EliteKind.Obstacle, 16, 4),
             new ChallengeEliteRule(EliteKind.Buff, 10, 3),
@@ -226,6 +228,18 @@ namespace TeamProject01.Gameplay
             new ChallengeEliteRule(EliteKind.Jump, 8, 3),
             new ChallengeEliteRule(EliteKind.SegmentCut, 8, 3),
             new ChallengeEliteRule(EliteKind.Portal, 8, 3)
+        };
+
+        private static readonly EliteKind[] SuicideReplacementPriority =
+        {
+            EliteKind.Slow,
+            EliteKind.Obstacle,
+            EliteKind.Shield,
+            EliteKind.Buff,
+            EliteKind.Growth,
+            EliteKind.Jump,
+            EliteKind.SegmentCut,
+            EliteKind.Portal
         };
 
         private readonly HashSet<string> activeCombinationTypes = new HashSet<string>(); // 살아있는 엘리트 조합 성격을 임시로 모읍니다.
@@ -336,21 +350,134 @@ namespace TeamProject01.Gameplay
             }
 
             Dictionary<EliteKind, EnemyController> prefabLookup = BuildElitePrefabLookup();
-            List<CountEntry> counts = new List<CountEntry>();
+            Dictionary<EliteKind, int> pickedCounts = BuildLimitedFixedEliteCounts(fixedSpawns, prefabLookup);
+            List<CountEntry> counts = BuildFixedCountEntries(fixedSpawns, prefabLookup, pickedCounts);
+
+            return new EliteStagePlan(BuildEntries(counts), combinationType);
+        }
+
+        private static Dictionary<EliteKind, int> BuildLimitedFixedEliteCounts(FixedEliteSpawn[] fixedSpawns, Dictionary<EliteKind, EnemyController> prefabLookup)
+        {
+            Dictionary<EliteKind, int> counts = new Dictionary<EliteKind, int>();
+            int suicideCount = 0;
+            int suicideOverflow = 0;
 
             for (int i = 0; i < fixedSpawns.Length; i++)
             {
                 FixedEliteSpawn spawn = fixedSpawns[i];
 
-                if (spawn.Count <= 0 || !prefabLookup.TryGetValue(spawn.Kind, out EnemyController prefab) || prefab == null)
+                if (spawn.Count <= 0 || !prefabLookup.ContainsKey(spawn.Kind))
                 {
                     continue;
                 }
 
-                counts.Add(new CountEntry(prefab, spawn.Count));
+                if (spawn.Kind == EliteKind.Suicide)
+                {
+                    int availableCount = Mathf.Max(0, MaxSuicideEliteCountPerStage - suicideCount);
+                    int acceptedCount = Mathf.Min(spawn.Count, availableCount);
+
+                    suicideCount += acceptedCount;
+                    suicideOverflow += spawn.Count - acceptedCount;
+                    AddEliteCount(counts, spawn.Kind, acceptedCount);
+
+                    continue;
+                }
+
+                AddEliteCount(counts, spawn.Kind, spawn.Count);
             }
 
-            return new EliteStagePlan(BuildEntries(counts), combinationType);
+            if (suicideOverflow > 0 && TryPickSuicideReplacementKind(fixedSpawns, prefabLookup, out EliteKind replacementKind))
+            {
+                AddEliteCount(counts, replacementKind, suicideOverflow);
+            }
+
+            return counts;
+        }
+
+        private static void AddEliteCount(Dictionary<EliteKind, int> counts, EliteKind kind, int count)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            counts.TryGetValue(kind, out int currentCount);
+            counts[kind] = currentCount + count;
+        }
+
+        private static bool TryPickSuicideReplacementKind(FixedEliteSpawn[] fixedSpawns, Dictionary<EliteKind, EnemyController> prefabLookup, out EliteKind replacementKind)
+        {
+            for (int i = 0; i < SuicideReplacementPriority.Length; i++)
+            {
+                EliteKind candidate = SuicideReplacementPriority[i];
+
+                if (HasFixedEliteKind(fixedSpawns, candidate) && prefabLookup.ContainsKey(candidate))
+                {
+                    replacementKind = candidate;
+                    return true;
+                }
+            }
+
+            for (int i = 0; i < SuicideReplacementPriority.Length; i++)
+            {
+                EliteKind candidate = SuicideReplacementPriority[i];
+
+                if (prefabLookup.ContainsKey(candidate))
+                {
+                    replacementKind = candidate;
+                    return true;
+                }
+            }
+
+            replacementKind = default;
+            return false;
+        }
+
+        private static bool HasFixedEliteKind(FixedEliteSpawn[] fixedSpawns, EliteKind kind)
+        {
+            if (fixedSpawns == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < fixedSpawns.Length; i++)
+            {
+                if (fixedSpawns[i].Kind == kind && fixedSpawns[i].Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<CountEntry> BuildFixedCountEntries(FixedEliteSpawn[] fixedSpawns, Dictionary<EliteKind, EnemyController> prefabLookup, Dictionary<EliteKind, int> pickedCounts)
+        {
+            List<CountEntry> counts = new List<CountEntry>();
+            HashSet<EliteKind> addedKinds = new HashSet<EliteKind>();
+
+            for (int i = 0; i < fixedSpawns.Length; i++)
+            {
+                AddFixedCountEntryIfPresent(fixedSpawns[i].Kind, prefabLookup, pickedCounts, counts, addedKinds);
+            }
+
+            for (int i = 0; i < SuicideReplacementPriority.Length; i++)
+            {
+                AddFixedCountEntryIfPresent(SuicideReplacementPriority[i], prefabLookup, pickedCounts, counts, addedKinds);
+            }
+
+            return counts;
+        }
+
+        private static void AddFixedCountEntryIfPresent(EliteKind kind, Dictionary<EliteKind, EnemyController> prefabLookup, Dictionary<EliteKind, int> pickedCounts, List<CountEntry> counts, HashSet<EliteKind> addedKinds)
+        {
+            if (addedKinds.Contains(kind) || !pickedCounts.TryGetValue(kind, out int count) || count <= 0 || !prefabLookup.TryGetValue(kind, out EnemyController prefab) || prefab == null)
+            {
+                return;
+            }
+
+            counts.Add(new CountEntry(prefab, count));
+            addedKinds.Add(kind);
         }
 
         private EliteStagePlan BuildChallengeStagePlan(int stage)
