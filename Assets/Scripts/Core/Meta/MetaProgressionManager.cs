@@ -9,6 +9,7 @@ namespace TeamProject01.Gameplay
         public const int MaxUpgradeLevel = 5; // 최대 강화 단계
         private const int SaveVersion = 1; // 저장 버전
         private const int DefaultStartingDiamond = 1000; // 기본 시작 다이아
+        public const int WormPurchaseCost = 300; // 지렁이 공통 구매 비용
         public static readonly MetaUpgradeId[] ActiveUpgradeIds =
         {
             MetaUpgradeId.GoldBonus,
@@ -49,10 +50,10 @@ namespace TeamProject01.Gameplay
         public bool ChargeWormUnlocked; // 이전 이속형
 
         [Header("Worm Prices")]
-        [Min(0)] public int AttackWormPrice = 200; // 공격형 가격
-        [Min(0)] public int MobilityWormPrice = 200; // 이속형 가격
-        [Min(0)] public int SupportWormPrice = 150; // 지원형 가격
-        [Min(0)] public int MagicWormPrice = 250; // 마법형 가격
+        [Min(0)] public int AttackWormPrice = WormPurchaseCost; // 공격형 가격
+        [Min(0)] public int MobilityWormPrice = WormPurchaseCost; // 이속형 가격
+        [Min(0)] public int SupportWormPrice = WormPurchaseCost; // 지원형 가격
+        [Min(0)] public int MagicWormPrice = WormPurchaseCost; // 마법형 가격
 
         [Header("Upgrade Levels")]
         [Range(0, MaxUpgradeLevel)] public int GoldBonusLevel; // 골드 보너스
@@ -83,6 +84,7 @@ namespace TeamProject01.Gameplay
 
         private void Awake() // 등록
         {
+            NormalizeWormPrices(); // 지렁이 가격 통일
             Active = this; // 현재 인스턴스
             bool loaded = false; // 저장 로드 여부
             if (LoadOnAwake)
@@ -96,6 +98,11 @@ namespace TeamProject01.Gameplay
             }
 
             NormalizeState(); // 값 보정
+        }
+
+        private void OnValidate() // 에디터 값 보정
+        {
+            NormalizeWormPrices(); // 지렁이 가격 통일
         }
 
         private void OnDestroy() // 해제
@@ -464,13 +471,10 @@ namespace TeamProject01.Gameplay
                 case MetaWormIds.Basic:
                     return 0; // 기본
                 case MetaWormIds.Attack:
-                    return Mathf.Max(0, AttackWormPrice); // 공격형
                 case MetaWormIds.Mobility:
-                    return Mathf.Max(0, MobilityWormPrice); // 이속형
                 case MetaWormIds.Support:
-                    return Mathf.Max(0, SupportWormPrice); // 지원형
                 case MetaWormIds.Magic:
-                    return Mathf.Max(0, MagicWormPrice); // 마법형
+                    return WormPurchaseCost; // 공통 가격
                 default:
                     return -1; // 구매 불가
             }
@@ -560,6 +564,7 @@ namespace TeamProject01.Gameplay
 
         private void NormalizeState() // 전체 값 보정
         {
+            NormalizeWormPrices(); // 지렁이 가격 통일
             StartingDiamond = Mathf.Max(0, StartingDiamond); // 기본 다이아 보정
             Diamond = OwnedDiamond; // 재화 보정
             HighestReachedWave = BestReachedWave; // 기록 보정
@@ -580,6 +585,14 @@ namespace TeamProject01.Gameplay
             NexusMaxHpLevel = Mathf.Clamp(NexusMaxHpLevel, 0, MaxUpgradeLevel); // 체력
             MoveSpeedLevel = Mathf.Clamp(MoveSpeedLevel, 0, MaxUpgradeLevel); // 이동속도
             PickupRangeLevel = Mathf.Clamp(PickupRangeLevel, 0, MaxUpgradeLevel); // 픽업 범위
+        }
+
+        private void NormalizeWormPrices() // 지렁이 가격 통일
+        {
+            AttackWormPrice = WormPurchaseCost; // 공격형
+            MobilityWormPrice = WormPurchaseCost; // 이속형
+            SupportWormPrice = WormPurchaseCost; // 지원형
+            MagicWormPrice = WormPurchaseCost; // 마법형
         }
 
         private void ApplyDefaultProgress() // 신규/초기화 기본 메타 상태

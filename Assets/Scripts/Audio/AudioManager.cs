@@ -50,6 +50,7 @@ public class AudioManager : AudioSingleton<AudioManager>
     public const string SfxVolumePrefKey = "Settings.SFXVolume";
     public const string MasterVolumePrefKey = "Settings.MasterVolume"; //안건준 추가 - 0628
     public const float DefaultVolume = 1f; // 저장값 없을 때 기본 볼륨 100% //안건준 추가 - 0629
+    public const float MaxSfxLocalVolume = 2f;
 
     public float BgmVolume => bgmVolume;
     public float SfxVolume => sfxVolume;
@@ -219,7 +220,7 @@ public class AudioManager : AudioSingleton<AudioManager>
 
     public float GetEffectiveSfxVolume(float localVolume = 1f)
     {
-        return Mathf.Clamp01(localVolume * sfxVolume * masterVolume);
+        return Mathf.Clamp(localVolume * sfxVolume * masterVolume, 0f, MaxSfxLocalVolume);
     }
 
 

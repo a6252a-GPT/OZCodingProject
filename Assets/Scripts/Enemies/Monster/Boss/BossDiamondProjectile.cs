@@ -10,6 +10,8 @@ namespace TeamProject01.Gameplay
 
     public sealed class BossDiamondProjectile : MonoBehaviour
     {
+        private const int RuntimeNexusDamageIncrease = 1; // 보스 투사체 피해 +1
+
         private enum FormationHomingState
         {
             MovingToFormation = 0, // ?앹꽦 ?꾩튂?먯꽌 ????????꾩튂濡??대룞?섎뒗 ?곹깭
@@ -101,7 +103,7 @@ namespace TeamProject01.Gameplay
 
         public void SetNexusDamage(int damage)
         {
-            nexusDamage = Mathf.Max(0, damage);
+            nexusDamage = damage <= 0 ? 0 : Mathf.Max(0, damage + RuntimeNexusDamageIncrease);
         }
 
         private void Update()

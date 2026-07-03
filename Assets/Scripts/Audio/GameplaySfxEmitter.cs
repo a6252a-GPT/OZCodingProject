@@ -7,9 +7,10 @@ namespace TeamProject01.Gameplay
     [DisallowMultipleComponent]
     public sealed class GameplaySfxEmitter : MonoBehaviour
     {
-        private const float MaxLocalVolume = 2f;
+        private const float MaxLocalVolume = AudioManager.MaxSfxLocalVolume;
         private const int MaxPooledOneShotSources = 128;
         private const string OneShotPoolRootName = "SFX_OneShotPool";
+        private const string LoopBoostSourceName = "SFX_LoopBoost";
 
         private static readonly Queue<PooledOneShotSfx> oneShotPool = new Queue<PooledOneShotSfx>(MaxPooledOneShotSources);
         private static Transform oneShotPoolRoot;
@@ -63,6 +64,7 @@ namespace TeamProject01.Gameplay
         [SerializeField, Min(0.1f)] private float oneShotLifetimePadding = 0.25f;
 
         private float lastPlayTime = -999f;
+        private AudioSource loopBoostSource;
 
         public GameplaySfxCue Cue => cue;
         public AudioClip[] Clips => clips;
@@ -135,15 +137,18 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
+            float pitch = PickPitch();
             playbackSource.clip = clip;
             playbackSource.loop = true;
-            playbackSource.pitch = PickPitch();
-            playbackSource.volume = ResolveEffectiveSourceVolume(volume);
+            playbackSource.pitch = pitch;
+            playbackSource.volume = ResolveEffectiveSourceVolume(Mathf.Min(volume, 1f));
+            ApplySourceBaseVolume(playbackSource, Mathf.Min(volume, 1f));
             if (!playbackSource.isPlaying)
             {
                 playbackSource.Play();
             }
 
+            StartLoopBoostSource(clip, pitch);
             return true;
         }
 
@@ -162,6 +167,7 @@ namespace TeamProject01.Gameplay
 
             playbackSource.loop = false;
             playbackSource.clip = null;
+            StopLoopBoostSource();
         }
 
         public static bool TryPlay(Transform root, GameplaySfxCue cue)
@@ -311,12 +317,14 @@ namespace TeamProject01.Gameplay
             playbackSource.pitch = Mathf.Approximately(entry.MinPitch, entry.MaxPitch)
                 ? entry.MinPitch
                 : UnityEngine.Random.Range(Mathf.Min(entry.MinPitch, entry.MaxPitch), Mathf.Max(entry.MinPitch, entry.MaxPitch));
-            playbackSource.volume = ResolveEffectiveSourceVolume(entry.Volume);
+            float baseVolume = Mathf.Min(entry.Volume, 1f);
+            playbackSource.volume = ResolveEffectiveSourceVolume(baseVolume);
 
             SfxVolumeListener listener = loopObject.AddComponent<SfxVolumeListener>();
-            listener.SetBaseVolume(entry.Volume);
+            listener.SetBaseVolume(baseVolume);
 
             playbackSource.Play();
+            StartDetachedLoopBoostSource(loopObject.transform, playbackSource, clip, entry.Volume);
             handle.Add(loopObject);
             return handle;
         }
@@ -374,8 +382,110 @@ namespace TeamProject01.Gameplay
                 listener = source.gameObject.AddComponent<SfxVolumeListener>();
             }
 
-            listener.SetBaseVolume(volume);
+            listener.SetBaseVolume(Mathf.Min(volume, 1f));
             return source;
+        }
+
+        private void StartLoopBoostSource(AudioClip clip, float pitch)
+        {
+            float boostVolume = Mathf.Clamp(volume - 1f, 0f, MaxLocalVolume - 1f);
+            if (clip == null || boostVolume <= 0.0001f)
+            {
+                StopLoopBoostSource();
+                return;
+            }
+
+            if (loopBoostSource == null)
+            {
+                GameObject boostObject = new GameObject(LoopBoostSourceName);
+                boostObject.transform.SetParent(transform, false);
+                loopBoostSource = boostObject.AddComponent<AudioSource>();
+            }
+
+            ConfigureLoopBoostSource(loopBoostSource, source, clip, boostVolume, pitch);
+        }
+
+        private void StopLoopBoostSource()
+        {
+            if (loopBoostSource == null)
+            {
+                return;
+            }
+
+            if (loopBoostSource.isPlaying)
+            {
+                loopBoostSource.Stop();
+            }
+
+            GameObject boostObject = loopBoostSource.gameObject;
+            loopBoostSource = null;
+            if (Application.isPlaying)
+            {
+                Destroy(boostObject);
+            }
+            else
+            {
+                DestroyImmediate(boostObject);
+            }
+        }
+
+        private static void StartDetachedLoopBoostSource(Transform parent, AudioSource template, AudioClip clip, float localVolume)
+        {
+            float boostVolume = Mathf.Clamp(localVolume - 1f, 0f, MaxLocalVolume - 1f);
+            if (parent == null || clip == null || boostVolume <= 0.0001f)
+            {
+                return;
+            }
+
+            GameObject boostObject = new GameObject(LoopBoostSourceName);
+            boostObject.transform.SetParent(parent, false);
+            AudioSource boostSource = boostObject.AddComponent<AudioSource>();
+            ConfigureLoopBoostSource(boostSource, template, clip, boostVolume, template != null ? template.pitch : 1f);
+        }
+
+        private static void ConfigureLoopBoostSource(
+            AudioSource boostSource,
+            AudioSource template,
+            AudioClip clip,
+            float boostVolume,
+            float pitch)
+        {
+            if (boostSource == null)
+            {
+                return;
+            }
+
+            ResetSourceSettings(boostSource);
+            CopySourceSettings(template, boostSource);
+            boostSource.clip = clip;
+            boostSource.playOnAwake = false;
+            boostSource.loop = true;
+            boostSource.dopplerLevel = 0f;
+            boostSource.ignoreListenerPause = true;
+            boostSource.pitch = pitch;
+            boostSource.volume = ResolveEffectiveSourceVolume(boostVolume);
+            ApplySourceBaseVolume(boostSource, boostVolume);
+
+            if (!boostSource.isPlaying)
+            {
+                boostSource.Play();
+            }
+        }
+
+        private static void ApplySourceBaseVolume(AudioSource audioSource, float baseVolume)
+        {
+            if (audioSource == null)
+            {
+                return;
+            }
+
+            SfxVolumeListener listener = audioSource.GetComponent<SfxVolumeListener>();
+            if (listener == null)
+            {
+                listener = audioSource.gameObject.AddComponent<SfxVolumeListener>();
+            }
+
+            listener.SetBaseVolume(baseVolume);
         }
 
         private bool CanPlayNow()
@@ -473,7 +583,7 @@ namespace TeamProject01.Gameplay
             playbackSource.volume = ResolveEffectiveSourceVolume(localVolume);
 
             SfxVolumeListener listener = pooledOneShot != null ? pooledOneShot.Listener : oneShot.AddComponent<SfxVolumeListener>();
-            listener.SetBaseVolume(localVolume);
+            listener.SetBaseVolume(Mathf.Min(localVolume, 1f));
 
             if (pooledOneShot != null && !oneShot.activeSelf)
             {
@@ -584,9 +694,10 @@ namespace TeamProject01.Gameplay
             to.priority = from.priority;
         }
 
-        private static float ResolveEffectiveSourceVolume(float localVolume)
+        private static float ResolveEffectiveSourceVolume(float localVolume, bool allowBoost = false)
         {
-            float safeVolume = Mathf.Clamp01(localVolume);
+            float maxVolume = allowBoost ? MaxLocalVolume : 1f;
+            float safeVolume = Mathf.Clamp(localVolume, 0f, maxVolume);
             if (!Application.isPlaying)
             {
                 return safeVolume;

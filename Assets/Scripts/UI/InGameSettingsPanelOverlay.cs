@@ -148,6 +148,7 @@ namespace TeamProject01.Gameplay
             PrepareOverlayForOpen();
 
             settingsPanel.SetCloseRequestHandler(Close);
+            settingsPanel.SetQuitGameRequestHandler(ResolveRunResultController() != null ? HandleQuitGameRequested : null);
             ResolvePanelReferences();
             PreparePanelForOpen();
 
@@ -421,6 +422,37 @@ namespace TeamProject01.Gameplay
                     panelCanvasGroup.interactable = true;
                 }
             });
+        }
+
+        private void HandleQuitGameRequested() // 게임 포기 버튼
+        {
+            RunResultController resultController = ResolveRunResultController();
+            if (resultController == null)
+            {
+                Debug.LogWarning("[InGameSettingsPanelOverlay] RunResultController가 없어 게임 포기를 처리할 수 없습니다.", this);
+                return;
+            }
+
+            HideForRunExit();
+            resultController.AbandonRun();
+        }
+
+        private void HideForRunExit() // 결과창 전환 전 설정 오버레이 즉시 정리
+        {
+            if (openRoutine != null)
+            {
+                StopCoroutine(openRoutine);
+                openRoutine = null;
+            }
+
+            panelSequence?.Kill(false);
+            HideImmediate();
+            RestoreTimeScale();
+        }
+
+        private static RunResultController ResolveRunResultController() // 인게임 런 결과 처리자
+        {
+            return FindFirstObjectByType<RunResultController>(FindObjectsInactive.Include);
         }
 
         private void SetInputBlocker(bool enabled)

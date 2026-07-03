@@ -24,6 +24,11 @@ namespace TeamProject01.Gameplay
         private Button rightMapArrowButton; // 맵 선택 다음 버튼
         private bool mapCardButtonsWired; // 맵 카드 런타임 리스너 중복 방지
         private bool upgradeButtonsWired; // 강화 버튼 런타임 리스너 중복 방지
+        private const string HiddenSaveResetButtonName = "DebugHiddenSaveResetButton_Runtime";
+        private const float HiddenSaveResetConfirmSeconds = 2.5f;
+        private Button hiddenSaveResetButton;
+        private Image hiddenSaveResetButtonImage;
+        private float hiddenSaveResetConfirmUntil = -1f;
         private static readonly Color UpgradeRowEffectTextColor = new Color(0.18f, 0.58f, 0.12f, 1f); // 강화 효과값 초록
         private static readonly Color UpgradeRowPlannedStateTextColor = new Color(0.28f, 0.20f, 0.12f, 1f); // 예정 행 상태색
 
@@ -173,6 +178,7 @@ namespace TeamProject01.Gameplay
             ResolveTitleLogoReference(); // 로고 참조
             WireMapCardButtons(); // 맵 카드 클릭 연결
             WireUpgradeButtons(); // 강화 행 클릭 연결
+            EnsureHiddenSaveResetButton(); // 숨김 저장 초기화 버튼
         }
 
 #if UNITY_EDITOR
@@ -208,6 +214,7 @@ namespace TeamProject01.Gameplay
             ResolveTitleLogoReference(); // 로고 참조
             WireMapCardButtons(); // 씬 오브젝트 리스너 연결
             WireUpgradeButtons(); // 강화 리스너 연결
+            EnsureHiddenSaveResetButton(); // 숨김 저장 초기화 버튼 보장
             SaveData.TryApplyMetaSnapshot(Meta); // 진행 중 저장의 다이아·지렁이 해금 반영 //안건준 추가 - 0629
             TryConsumePendingRunResult(); // 스테이지 결과 보상 반영
             ShowMainMenu(); // 기본 화면
@@ -539,6 +546,114 @@ namespace TeamProject01.Gameplay
             Application.Quit(); // 빌드 종료
         }
 
+        private void EnsureHiddenSaveResetButton()
+        {
+            if (hiddenSaveResetButton != null)
+            {
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>(true);
+            if (canvas == null)
+            {
+                canvas = FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+            }
+
+            if (canvas == null)
+            {
+                return;
+            }
+
+            Transform existing = FindChildTransform(canvas.transform, HiddenSaveResetButtonName);
+            GameObject buttonObject = existing != null
+                ? existing.gameObject
+                : new GameObject(HiddenSaveResetButtonName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(canvas.transform, false);
+            buttonObject.transform.SetAsLastSibling();
+
+            RectTransform rect = buttonObject.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.one;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = Vector2.one;
+            rect.sizeDelta = new Vector2(18f, 18f);
+            rect.anchoredPosition = new Vector2(-6f, -6f);
+
+            hiddenSaveResetButtonImage = buttonObject.GetComponent<Image>();
+            hiddenSaveResetButtonImage.raycastTarget = true;
+            hiddenSaveResetButtonImage.color = new Color(0f, 0f, 0f, 0.08f);
+
+            hiddenSaveResetButton = buttonObject.GetComponent<Button>();
+            hiddenSaveResetButton.targetGraphic = hiddenSaveResetButtonImage;
+            hiddenSaveResetButton.transition = Selectable.Transition.ColorTint;
+            hiddenSaveResetButton.navigation = new Navigation { mode = Navigation.Mode.None };
+            ColorBlock colors = hiddenSaveResetButton.colors;
+            colors.normalColor = new Color(0f, 0f, 0f, 0.08f);
+            colors.highlightedColor = new Color(1f, 0.72f, 0.18f, 0.22f);
+            colors.pressedColor = new Color(1f, 0.35f, 0.12f, 0.42f);
+            colors.selectedColor = colors.normalColor;
+            colors.disabledColor = new Color(0f, 0f, 0f, 0.02f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.08f;
+            hiddenSaveResetButton.colors = colors;
+            hiddenSaveResetButton.onClick.RemoveListener(OnHiddenSaveResetButtonClicked);
+            hiddenSaveResetButton.onClick.AddListener(OnHiddenSaveResetButtonClicked);
+        }
+
+        private void OnHiddenSaveResetButtonClicked()
+        {
+            float now = Time.unscaledTime;
+            if (now <= hiddenSaveResetConfirmUntil)
+            {
+                hiddenSaveResetConfirmUntil = -1f;
+                CancelInvoke(nameof(CancelHiddenSaveResetConfirmation));
+                SetHiddenSaveResetButtonConfirming(false);
+                ResetGameSaveDataFromTitle();
+                return;
+            }
+
+            hiddenSaveResetConfirmUntil = now + HiddenSaveResetConfirmSeconds;
+            SetHiddenSaveResetButtonConfirming(true);
+            SetStatus("저장데이터 초기화 확인: 오른쪽 위 작은 버튼을 한 번 더 누르면 초기화됩니다.");
+            CancelInvoke(nameof(CancelHiddenSaveResetConfirmation));
+            Invoke(nameof(CancelHiddenSaveResetConfirmation), HiddenSaveResetConfirmSeconds);
+        }
+
+        private void CancelHiddenSaveResetConfirmation()
+        {
+            hiddenSaveResetConfirmUntil = -1f;
+            SetHiddenSaveResetButtonConfirming(false);
+        }
+
+        private void SetHiddenSaveResetButtonConfirming(bool confirming)
+        {
+            if (hiddenSaveResetButtonImage != null)
+            {
+                hiddenSaveResetButtonImage.color = confirming
+                    ? new Color(1f, 0.52f, 0.08f, 0.28f)
+                    : new Color(0f, 0f, 0f, 0.08f);
+            }
+        }
+
+        public void ResetGameSaveDataFromTitle()
+        {
+            SaveData saveData = SaveData.EnsureExists();
+            if (Meta != null)
+            {
+                Meta.DeleteSavedProgressAndApplyDefault();
+                HighestReachedWave = Meta.BestReachedWave;
+                previewWormId = Meta.SelectedWormId;
+            }
+
+            if (saveData != null)
+            {
+                saveData.ClearSave();
+            }
+
+            PlayerPrefs.Save();
+            SetStatus("게임 저장데이터 초기화 완료");
+            RefreshAll();
+        }
+
         public void DebugAddDiamond() // 테스트 다이아 지급
         {
             if (Meta == null)
@@ -593,15 +708,7 @@ namespace TeamProject01.Gameplay
 
         public void DebugDeleteSavedProgress() // 테스트 저장 삭제
         {
-            if (Meta == null)
-            {
-                SetStatus("메타 시스템이 없습니다."); // 누락
-                return;
-            }
-
-            Meta.DeleteSavedProgressAndApplyDefault(); // 저장 삭제 + 기본값
-            SetStatus("저장 데이터 삭제 완료. 기본 메타 상태를 적용했습니다."); // 상태
-            RefreshAll(); // 갱신
+            ResetGameSaveDataFromTitle(); // 메타 저장 + 진행 중 런 저장 전체 초기화
         }
 
         public void DebugShowMetaSummary() // 테스트 상태 요약
@@ -827,7 +934,7 @@ namespace TeamProject01.Gameplay
                 ClearWormPreviewBackground(SelectedWormPreview); // 3D 초상화 부모 배경 제거
             }
 
-            if (WormSelectPanel != null && WormSelectPanel.activeInHierarchy)
+            if (WormSelectPanel != null)
             {
                 RefreshWormSelectPanel(displayWormId); // 지렁이 버튼 상태 갱신
             }
@@ -1491,9 +1598,9 @@ namespace TeamProject01.Gameplay
             }
 
             SetWormButtonLabel("BasicWormButton", "기본형 지렁이\n시작 무기: 대포"); // 기본형
-            SetWormButtonLabel("DefenseWormButton", "지원형 지렁이\n시작 무기: 화염구 / 150 다이아"); // 기존 방어형
-            SetWormButtonLabel("ArmedWormButton", "공격형 지렁이\n시작 무기: 미사일 / 200 다이아"); // 기존 무장형
-            SetWormButtonLabel("ChargeWormButton", "이동형 지렁이\n시작 무기: 톱날 / 200 다이아"); // 기존 돌격형
+            SetWormButtonLabel("DefenseWormButton", "지원형 지렁이\n시작 무기: 화염구 / 300 다이아"); // 기존 방어형
+            SetWormButtonLabel("ArmedWormButton", "공격형 지렁이\n시작 무기: 미사일 / 300 다이아"); // 기존 무장형
+            SetWormButtonLabel("ChargeWormButton", "이동형 지렁이\n시작 무기: 톱날 / 300 다이아"); // 기존 돌격형
 
             Transform existingMagic = FindWormButtonTransform("MagicWormButton"); // 기존 버튼
             if (magicWormButton == null && existingMagic != null)
@@ -1503,7 +1610,7 @@ namespace TeamProject01.Gameplay
 
             if (magicWormButton != null)
             {
-                SetWormButtonLabel("MagicWormButton", "마법형 지렁이\n시작 무기: 전기지직 / 250 다이아"); // 라벨 유지
+                SetWormButtonLabel("MagicWormButton", "마법형 지렁이\n시작 무기: 전기지직 / 300 다이아"); // 라벨 유지
             }
 
             ResolveWormActionButtonReferences(); // 정식 하단 구매/선택 버튼 참조
@@ -1547,14 +1654,16 @@ namespace TeamProject01.Gameplay
             int price = Meta.GetWormPrice(normalized);
             bool affordable = unlocked || Meta.OwnedDiamond >= price;
             string state = selected
-                ? "선택됨"
+                ? "선택중"
                 : unlocked ? "보유중"
-                : affordable ? $"구매 {price}" : string.Empty;
+                : affordable ? "구매" : "잠금";
+
+            ApplyWormCostView(transform, price, unlocked); // 카드 비용 표시
+            ApplyWormStateBadge(transform, state, selected, unlocked, affordable); // 상태 버튼
 
             if (!preserveAuthoredValues)
             {
                 SetWormButtonTitleAndStarter(transform, displayName, starterName); // 카드 문구
-                ApplyWormStateBadge(transform, state, selected, unlocked, affordable); // 상태 버튼
             }
 
             SetWormSelectionGlowVisible(transform, selected); // 선택 발광
@@ -1591,10 +1700,12 @@ namespace TeamProject01.Gameplay
 
         private void ApplyWormStateBadge(Transform buttonRoot, string label, bool selected, bool unlocked, bool affordable) // 카드 상태 버튼
         {
-            if (IsInAuthoredWormListPanel(buttonRoot))
+            if (buttonRoot == null)
             {
                 return;
             }
+
+            SetWormLockOverlayVisible(buttonRoot, !unlocked && !affordable);
 
             Transform stateBadge = FindChildTransform(buttonRoot, "StateBadge");
             if (stateBadge == null)
@@ -1602,7 +1713,7 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            Image image = stateBadge.GetComponent<Image>();
+            Image image = ResolveWormStateBadgeImage(stateBadge);
             if (image != null)
             {
                 Sprite stateSprite = selected
@@ -1616,7 +1727,87 @@ namespace TeamProject01.Gameplay
                 }
             }
 
-            SetNamedChildText(stateBadge, "Text", label); // 상태 TMP
+            stateBadge.gameObject.SetActive(true);
+            SetWormStateBadgeText(stateBadge, label); // 상태 TMP
+        }
+
+        private static Image ResolveWormStateBadgeImage(Transform stateBadge) // 상태 뱃지 이미지 찾기
+        {
+            if (stateBadge == null)
+            {
+                return null;
+            }
+
+            Image image = stateBadge.GetComponent<Image>();
+            if (image != null)
+            {
+                return image;
+            }
+
+            return FindChildComponent<Image>(stateBadge, "Image")
+                ?? FindChildComponent<Image>(stateBadge, "BadgeImage")
+                ?? FindChildComponent<Image>(stateBadge, "Background")
+                ?? FindChildComponent<Image>(stateBadge, "Bg")
+                ?? stateBadge.GetComponentInChildren<Image>(true);
+        }
+
+        private static void SetWormStateBadgeText(Transform stateBadge, string label) // 상태 뱃지 텍스트 갱신
+        {
+            if (stateBadge == null)
+            {
+                return;
+            }
+
+            SetTransformText(stateBadge, label);
+            SetNamedChildText(stateBadge, "Text", label);
+            SetNamedChildText(stateBadge, "NameText", label);
+
+            TMP_Text tmpText = stateBadge.GetComponentInChildren<TMP_Text>(true);
+            if (tmpText != null)
+            {
+                tmpText.text = label;
+                return;
+            }
+
+            Text legacyText = stateBadge.GetComponentInChildren<Text>(true);
+            if (legacyText != null)
+            {
+                legacyText.text = label;
+            }
+        }
+
+        private static void SetWormLockOverlayVisible(Transform buttonRoot, bool visible) // 보유 상태에 따라 자물쇠 오버레이 표시
+        {
+            SetNamedChildActive(buttonRoot, "LockedOverlay_UpdateSoon", visible);
+            SetNamedChildActive(buttonRoot, "LockedOverlay", visible);
+            SetNamedChildActive(buttonRoot, "LockOverlay", visible);
+        }
+
+        private static void SetNamedChildActive(Transform root, string childName, bool visible) // 이름 기반 하위 오브젝트 표시
+        {
+            Transform child = FindChildTransform(root, childName);
+            if (child != null)
+            {
+                child.gameObject.SetActive(visible);
+            }
+        }
+
+        private void ApplyWormCostView(Transform buttonRoot, int price, bool unlocked) // 카드 비용 표시
+        {
+            if (buttonRoot == null)
+            {
+                return; // 대상 없음
+            }
+
+            bool visible = !unlocked && price > 0; // 미보유 구매 대상만 표시
+            Transform icon = FindDirectChildTransform(buttonRoot, "UpgradeIcon"); // 비용 아이콘
+            Transform costText = FindDirectChildTransform(buttonRoot, "NameText"); // 비용 숫자
+            SetActive(icon != null ? icon.gameObject : null, visible); // 보유 중 숨김
+            SetActive(costText != null ? costText.gameObject : null, visible); // 보유 중 숨김
+            if (visible)
+            {
+                SetTransformText(costText, price.ToString()); // 공통 비용 반영
+            }
         }
 
         private static void SetWormSelectionGlowVisible(Transform buttonRoot, bool visible) // 선택 발광 표시
@@ -1644,7 +1835,7 @@ namespace TeamProject01.Gameplay
 
             SetWormActionButtonState(
                 WormSelectButton,
-                selected ? "선택됨" : unlocked ? "선택" : "잠금",
+                selected ? "선택중" : unlocked ? "선택" : "잠금",
                 unlocked && !selected,
                 selected ? new Color(0.24f, 0.62f, 0.92f, 0.96f) : unlocked ? new Color(0.23f, 0.48f, 0.20f, 0.92f) : new Color(0.34f, 0.30f, 0.27f, 0.82f));
         }
