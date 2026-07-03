@@ -31165,7 +31165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.TitleMenuController
   Meta: {fileID: 1355802670}
-  TargetStageScenePath: Assets/Scenes/Dev/CoreTest_StageScene.unity
+  TargetStageScenePath: Assets/Scenes/StageScene.unity
   HighestReachedWave: 0
   TemporaryUpgradeBaseCost: 50
   MainMenuPanel: {fileID: 1894425476}
@@ -41159,8 +41159,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -225.5, y: 0.7}
-  m_SizeDelta: {x: 46, y: 46}
+  m_AnchoredPosition: {x: -227.6, y: 1.3364}
+  m_SizeDelta: {x: 41.4729, y: 41.4729}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1762837790
 MonoBehaviour:
@@ -41182,7 +41182,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 18025eb0751fd854db95715ca97a2aa1, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7ee205a02bff0f2409e57d86ba5dabc9, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -48708,8 +48708,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4280259630
-  m_fontColor: {r: 0.18, g: 0.58, b: 0.12, a: 1}
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

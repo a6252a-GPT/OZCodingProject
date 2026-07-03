@@ -14,6 +14,7 @@ namespace TeamProject01.Gameplay
     {
         private const string StageScenePath = "Assets/Scenes/StageScene.unity"; // 기본 스테이지 씬 경로 //안건준 추가 - 0628
         private const string StageSceneName = "StageScene"; // 빌드 로드용 씬 이름 //안건준 수정 - 0628
+        private const string DevScenePathPrefix = "Assets/Scenes/Dev/"; // 개발용 씬 경로 접두사
         private const string LegacyCoreTestScenePath = "Assets/Scenes/Dev/CoreTest_StageScene.unity"; // 이전 코어 테스트 씬 (경로 보정용)
         private const string LegacyCoreTestScenePathOld = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 더 이전 코어 테스트 씬 (경로 보정용)
 
@@ -58,8 +59,8 @@ namespace TeamProject01.Gameplay
         }
 
         public MetaProgressionManager Meta; // 메타 데이터
-        [Tooltip("Editor Play mode scene path. Core tests use Assets/Scenes/Dev/CoreTest_StageScene.unity; release checks use Assets/Scenes/StageScene.unity.")]
-        public string TargetStageScenePath = LegacyCoreTestScenePath; // 게임 시작 시 로드할 스테이지 씬 //안건준 수정 - 0628
+        [Tooltip("Editor Play mode scene path. Release uses Assets/Scenes/StageScene.unity.")]
+        public string TargetStageScenePath = StageScenePath; // 게임 시작 시 로드할 스테이지 씬 //안건준 수정 - 0628
         [Min(0)] public int HighestReachedWave; // 레거시 최고 웨이브 이전용
         [Min(0)] public int TemporaryUpgradeBaseCost = 50; // 임시 강화 기본 비용
 
@@ -770,9 +771,16 @@ namespace TeamProject01.Gameplay
         private void NormalizeTargetStageScenePath() // 스테이지 씬 경로 보정
         {
             if (string.IsNullOrWhiteSpace(TargetStageScenePath)
+                || TargetStageScenePath == LegacyCoreTestScenePath
                 || TargetStageScenePath == LegacyCoreTestScenePathOld)
             {
-                TargetStageScenePath = LegacyCoreTestScenePath; // 이전 테스트 씬 경로를 CoreTest 씬으로 통일 //안건준 수정 - 0628
+                TargetStageScenePath = StageScenePath; // 이전 테스트 씬 경로를 정식 StageScene으로 보정
+                return;
+            }
+
+            if (TargetStageScenePath.StartsWith(DevScenePathPrefix, System.StringComparison.OrdinalIgnoreCase))
+            {
+                TargetStageScenePath = StageScenePath; // 개발용 씬 직렬화값이 남아 있으면 정식 StageScene으로 보정
             }
         }
 
