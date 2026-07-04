@@ -52,6 +52,10 @@ namespace TeamProject01.Gameplay
         [Min(1f)] public float SegmentFollowResponse = 24f; // 추적 반응
         [Min(1f)] public float SegmentTurnResponse = 22f; // 회전 추적
         [Min(128)] public int PathSampleLimit = 2048; // 경로 보관량
+        public bool EnableSharpTurnPathSmoothing = true; // 급커브 경로 완화
+        [Range(1f, 120f)] public float SharpTurnSmoothingAngle = 42f; // 완화 시작 각도
+        [Range(1, 8)] public int SharpTurnSmoothingSamples = 3; // 급커브 중간 샘플
+        [Min(0.01f)] public float SharpTurnSmoothingHandleDistance = 0.65f; // 급커브 곡선 손잡이 거리
         public Vector3 HeadScale = new Vector3(1.25f, 0.6f, 1.45f); // 머리 크기
         public Vector3 SegmentScale = Vector3.one; // 몸통 크기
         public bool PreventSegmentVerticalSquash = true; // 새 모델 납작해짐 방지

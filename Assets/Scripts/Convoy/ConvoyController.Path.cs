@@ -37,10 +37,85 @@ namespace TeamProject01.Gameplay
             }
 
             Vector3 last = path[path.Count - 1];
-            if (HorizontalDistance(last, anchorPosition) >= MinPathSampleDistance)
+            float sampleDistance = HorizontalDistance(last, anchorPosition);
+            if (sampleDistance < MinPathSampleDistance)
             {
-                path.Add(anchorPosition);
+                return;
             }
+
+            if (ShouldSmoothSharpTurn(last, anchorPosition, out Vector3 previousDirection, out Vector3 newDirection))
+            {
+                AddSmoothedPathSamples(last, anchorPosition, previousDirection, newDirection, sampleDistance);
+                return;
+            }
+
+            path.Add(anchorPosition);
+        }
+
+        private bool ShouldSmoothSharpTurn(Vector3 last, Vector3 anchorPosition, out Vector3 previousDirection, out Vector3 newDirection)
+        {
+            previousDirection = Vector3.zero;
+            newDirection = Vector3.zero;
+            if (!EnableSharpTurnPathSmoothing || SharpTurnSmoothingSamples <= 0)
+            {
+                return false;
+            }
+
+            if (!TryGetRecentPathDirection(last, out previousDirection))
+            {
+                return false;
+            }
+
+            newDirection = FlattenSegmentForward(anchorPosition - last, previousDirection);
+            float angle = Vector3.Angle(previousDirection, newDirection);
+            return angle >= Mathf.Clamp(SharpTurnSmoothingAngle, 1f, 179f);
+        }
+
+        private bool TryGetRecentPathDirection(Vector3 fromPosition, out Vector3 direction)
+        {
+            direction = Vector3.zero;
+            float minDistanceSqr = Mathf.Max(0.01f, MinPathSampleDistance);
+            minDistanceSqr *= minDistanceSqr;
+
+            for (int i = path.Count - 2; i >= 0; i--)
+            {
+                Vector3 offset = fromPosition - path[i];
+                offset.y = 0f;
+                if (offset.sqrMagnitude < minDistanceSqr)
+                {
+                    continue;
+                }
+
+                direction = offset.normalized;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void AddSmoothedPathSamples(Vector3 start, Vector3 end, Vector3 startForward, Vector3 endForward, float sampleDistance)
+        {
+            int sampleCount = Mathf.Clamp(SharpTurnSmoothingSamples, 1, 8);
+            float handleDistance = Mathf.Min(Mathf.Max(0.01f, SharpTurnSmoothingHandleDistance), sampleDistance * 0.5f);
+            Vector3 startHandle = start + startForward * handleDistance;
+            Vector3 endHandle = end - endForward * handleDistance;
+
+            for (int i = 1; i <= sampleCount; i++)
+            {
+                float t = (float)i / (sampleCount + 1);
+                path.Add(EvaluateCubicBezier(start, startHandle, endHandle, end, t)); // 급커브 중간 경로
+            }
+
+            path.Add(end);
+        }
+
+        private static Vector3 EvaluateCubicBezier(Vector3 a, Vector3 b, Vector3 c, Vector3 d, float t)
+        {
+            float u = 1f - t;
+            return (u * u * u * a)
+                + (3f * u * u * t * b)
+                + (3f * u * t * t * c)
+                + (t * t * t * d);
         }
 
         private void UpdateHeadVisual(float deltaTime)

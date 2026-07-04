@@ -7,7 +7,8 @@ namespace TeamProject01.Gameplay
         None = 0,
         Burn = 1,
         Freeze = 2,
-        Holy = 3
+        Holy = 3,
+        Shock = 4
     }
 
     public readonly struct CombatStatusEffectDefinition
@@ -22,7 +23,9 @@ namespace TeamProject01.Gameplay
             DamageType tickDamageType,
             Color floatingColor,
             string vfxEffectName,
-            bool isEnemyDebuff)
+            bool isEnemyDebuff,
+            float bodyVfxScale = 1f,
+            bool muteBodyVfxAudio = false)
         {
             DisplayName = displayName;
             Duration = duration;
@@ -34,6 +37,8 @@ namespace TeamProject01.Gameplay
             FloatingColor = floatingColor;
             VfxEffectName = vfxEffectName;
             IsEnemyDebuff = isEnemyDebuff;
+            BodyVfxScale = Mathf.Max(0.01f, bodyVfxScale);
+            MuteBodyVfxAudio = muteBodyVfxAudio;
         }
 
         public string DisplayName { get; }
@@ -46,6 +51,8 @@ namespace TeamProject01.Gameplay
         public Color FloatingColor { get; }
         public string VfxEffectName { get; }
         public bool IsEnemyDebuff { get; }
+        public float BodyVfxScale { get; }
+        public bool MuteBodyVfxAudio { get; }
     }
 
     public static class CombatStatusEffectCatalog
@@ -93,6 +100,22 @@ namespace TeamProject01.Gameplay
                         DamageType.Direct,
                         new Color(0.86f, 0.96f, 1f, 1f),
                         "Holy",
+                        true);
+                    return true;
+
+                case CombatStatusEffectKind.Shock:
+                    definition = new CombatStatusEffectDefinition(
+                        "감전",
+                        5f,
+                        1f,
+                        1f,
+                        1f,
+                        1.2f,
+                        DamageType.Electric,
+                        new Color(0.62f, 0.92f, 1f, 1f),
+                        "Shock",
+                        true,
+                        0.315f,
                         true);
                     return true;
 

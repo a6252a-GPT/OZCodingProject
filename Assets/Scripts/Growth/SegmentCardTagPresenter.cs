@@ -19,6 +19,10 @@ public static class SegmentCardTagPresenter
     private static readonly Color MeleeColor = new Color(0.54f, 0.23f, 0.2f, 0.96f);
     private static readonly Color MagicColor = new Color(0.18f, 0.34f, 0.64f, 0.96f);
     private static readonly Color SupportColor = new Color(0.19f, 0.45f, 0.33f, 0.96f);
+    private static readonly Color BurnColor = new Color(0.72f, 0.22f, 0.12f, 0.96f);
+    private static readonly Color FreezeColor = new Color(0.16f, 0.45f, 0.7f, 0.96f);
+    private static readonly Color ShockColor = new Color(0.16f, 0.5f, 0.82f, 0.96f);
+    private static readonly Color HolyColor = new Color(0.44f, 0.56f, 0.72f, 0.96f);
     private static readonly Color SubTagColor = new Color(0.28f, 0.26f, 0.31f, 0.96f);
     private static readonly Color TagTextColor = Color.white;
     private static readonly Color TagOutlineColor = new Color(1f, 1f, 1f, 0.16f);
@@ -218,6 +222,26 @@ public static class SegmentCardTagPresenter
         if (tag == "지원")
         {
             return SupportColor;
+        }
+
+        if (tag == "화상")
+        {
+            return BurnColor;
+        }
+
+        if (tag == "빙결")
+        {
+            return FreezeColor;
+        }
+
+        if (tag == "감전")
+        {
+            return ShockColor;
+        }
+
+        if (tag == "성수")
+        {
+            return HolyColor;
         }
 
         return SubTagColor;

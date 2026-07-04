@@ -237,7 +237,12 @@ namespace TeamProject01.Gameplay
 
             if (!sameStatus && vfxPrefab != null)
             {
-                GetOrAddBodyVfx().Show(vfxPrefab, definition.VfxEffectName);
+                GetOrAddBodyVfx().Show(
+                    vfxPrefab,
+                    definition.VfxEffectName,
+                    null,
+                    definition.BodyVfxScale,
+                    definition.MuteBodyVfxAudio);
             }
         }
 
