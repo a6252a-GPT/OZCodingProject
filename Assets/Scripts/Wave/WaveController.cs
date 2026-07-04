@@ -281,8 +281,7 @@ namespace TeamProject01.Gameplay
                 ? eliteMixController.BuildStagePlan(currentStage, requestedEliteSpawnCount)
                 : default;
 
-            int normalSpawnCount = Mathf.Max(0, totalSpawnCount - elitePlan.TotalCount);
-            normalSpawnCount = normalWaveSpawner.ResolveNormalSpawnCount(currentStage, normalSpawnCount);
+            int normalSpawnCount = Mathf.Max(0, totalSpawnCount);
             normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, this);
             eliteWaveSpawner?.BeginStage(currentStage, elitePlan, normalWaveSpawner.ResolveDifficultyForStage(currentStage), normalWaveSpawner, this);
             NotifyRunStateChanged(); //?덇굔以 異붽? - 0630: ?쇰컲 ?⑥씠釉??쒖옉 ??Stage BGM

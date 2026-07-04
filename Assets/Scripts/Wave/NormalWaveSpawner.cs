@@ -135,8 +135,35 @@ namespace TeamProject01.Gameplay
         [SerializeField] private SpawnScaleStep[] spawnScaleSteps =
         {
             new SpawnScaleStep { startStage = 1, spawnScalePercent = 100 },
-            new SpawnScaleStep { startStage = 6, spawnScalePercent = 110 },
-            new SpawnScaleStep { startStage = 12, spawnScalePercent = 130 }
+            new SpawnScaleStep { startStage = 5, spawnScalePercent = 150 },
+            new SpawnScaleStep { startStage = 8, spawnScalePercent = 200 },
+            new SpawnScaleStep { startStage = 12, spawnScalePercent = 300 },
+            new SpawnScaleStep { startStage = 16, spawnScalePercent = 450 },
+            new SpawnScaleStep { startStage = 20, spawnScalePercent = 700 },
+            new SpawnScaleStep { startStage = 25, spawnScalePercent = 1000 },
+            new SpawnScaleStep { startStage = 30, spawnScalePercent = 1400 },
+            new SpawnScaleStep { startStage = 35, spawnScalePercent = 1900 },
+            new SpawnScaleStep { startStage = 40, spawnScalePercent = 2400 },
+            new SpawnScaleStep { startStage = 45, spawnScalePercent = 3000 },
+            new SpawnScaleStep { startStage = 50, spawnScalePercent = 3800 }
+        };
+
+        [Header("초중반 3라운드 스폰 배율")]
+        [SerializeField] private SpawnScaleStep[] earlyMidSpawnScaleSteps =
+        {
+            new SpawnScaleStep { startStage = 1, spawnScalePercent = 120 },
+            new SpawnScaleStep { startStage = 4, spawnScalePercent = 160 },
+            new SpawnScaleStep { startStage = 7, spawnScalePercent = 220 },
+            new SpawnScaleStep { startStage = 10, spawnScalePercent = 300 },
+            new SpawnScaleStep { startStage = 13, spawnScalePercent = 400 },
+            new SpawnScaleStep { startStage = 16, spawnScalePercent = 500 },
+            new SpawnScaleStep { startStage = 19, spawnScalePercent = 670 },
+            new SpawnScaleStep { startStage = 22, spawnScalePercent = 800 },
+            new SpawnScaleStep { startStage = 25, spawnScalePercent = 1000 },
+            new SpawnScaleStep { startStage = 28, spawnScalePercent = 1200 },
+            new SpawnScaleStep { startStage = 31, spawnScalePercent = 1500 },
+            new SpawnScaleStep { startStage = 34, spawnScalePercent = 1800 },
+            new SpawnScaleStep { startStage = 37, spawnScalePercent = 2100 }
         };
 
         [Header("50+ Stage Spawn Growth")]
@@ -145,40 +172,6 @@ namespace TeamProject01.Gameplay
 
         [Min(0)]
         [SerializeField] private int spawnCountGrowthPerStage = 150;
-
-        [Serializable]
-        public sealed class NormalSpawnCountOverride
-        {
-            [Min(1)]
-            public int stage = 1; // 정확히 이 Stage에서만 적용할 일반 몬스터 수입니다.
-
-            [Min(0)]
-            public int normalSpawnCount = 30; // 엘리트를 제외한 일반 몬스터 수입니다.
-        }
-
-        [Header("초중반 일반 수량 보정")]
-        [SerializeField] private NormalSpawnCountOverride[] normalSpawnCountOverrides =
-        {
-            new NormalSpawnCountOverride { stage = 1, normalSpawnCount = 35 },
-            new NormalSpawnCountOverride { stage = 2, normalSpawnCount = 35 },
-            new NormalSpawnCountOverride { stage = 3, normalSpawnCount = 40 },
-            new NormalSpawnCountOverride { stage = 4, normalSpawnCount = 40 },
-            new NormalSpawnCountOverride { stage = 5, normalSpawnCount = 55 },
-            new NormalSpawnCountOverride { stage = 6, normalSpawnCount = 60 },
-            new NormalSpawnCountOverride { stage = 7, normalSpawnCount = 65 },
-            new NormalSpawnCountOverride { stage = 8, normalSpawnCount = 75 },
-            new NormalSpawnCountOverride { stage = 9, normalSpawnCount = 80 },
-            new NormalSpawnCountOverride { stage = 10, normalSpawnCount = 85 },
-            new NormalSpawnCountOverride { stage = 11, normalSpawnCount = 90 },
-            new NormalSpawnCountOverride { stage = 12, normalSpawnCount = 100 },
-            new NormalSpawnCountOverride { stage = 13, normalSpawnCount = 105 },
-            new NormalSpawnCountOverride { stage = 14, normalSpawnCount = 110 },
-            new NormalSpawnCountOverride { stage = 15, normalSpawnCount = 115 },
-            new NormalSpawnCountOverride { stage = 16, normalSpawnCount = 130 },
-            new NormalSpawnCountOverride { stage = 17, normalSpawnCount = 135 },
-            new NormalSpawnCountOverride { stage = 18, normalSpawnCount = 140 },
-            new NormalSpawnCountOverride { stage = 19, normalSpawnCount = 145 }
-        };
 
         [Header("난이도 배율")]
         [SerializeField] private DifficultyScaleStep[] difficultyScaleSteps =
@@ -227,6 +220,18 @@ namespace TeamProject01.Gameplay
         [Header("일반 스폰 분할")]
         [Min(0.1f)]
         [SerializeField] private float normalSpawnWindowSeconds = 20.0f; // 일반 몬스터를 이 시간 안에 나누어 스폰합니다.
+
+        [Min(0.1f)]
+        [SerializeField] private float quickSpawnWindowSeconds = 10.0f; // 분할 횟수가 매우 적을 때는 이 시간 안에 스폰합니다.
+
+        [Min(1)]
+        [SerializeField] private int quickSpawnWindowMaxBatchCount = 5; // 이 횟수 이하로 나뉘면 가장 짧은 스폰 시간을 적용합니다.
+
+        [Min(0.1f)]
+        [SerializeField] private float shortSpawnWindowSeconds = 15.0f; // 분할 횟수가 중간이면 이 시간 안에 빠르게 스폰합니다.
+
+        [Min(1)]
+        [SerializeField] private int shortSpawnWindowMaxBatchCount = 10; // 이 횟수 이하로 나뉘면 중간 스폰 시간을 적용합니다.
 
         [Min(1)]
         [SerializeField] private int normalSpawnSplitDivisor = 5; // 일반 총량을 몇 등분 기준으로 1회 최대 수량을 잡을지입니다.
@@ -303,26 +308,6 @@ namespace TeamProject01.Gameplay
             return spawnCount + endlessGrowthStageCount * Mathf.Max(0, spawnCountGrowthPerStage);
         }
 
-        public int ResolveNormalSpawnCount(int stage, int fallbackSpawnCount)
-        {
-            if (normalSpawnCountOverrides == null)
-            {
-                return Mathf.Max(0, fallbackSpawnCount);
-            }
-
-            for (int i = 0; i < normalSpawnCountOverrides.Length; i++)
-            {
-                NormalSpawnCountOverride spawnCountOverride = normalSpawnCountOverrides[i];
-
-                if (spawnCountOverride != null && spawnCountOverride.stage == stage)
-                {
-                    return Mathf.Max(0, spawnCountOverride.normalSpawnCount);
-                }
-            }
-
-            return Mathf.Max(0, fallbackSpawnCount);
-        }
-
         public void BeginStage(int stage, float stageDurationSeconds, int spawnCount, WaveController waveTracker = null)
         {
             ResolveEnemySpawner();
@@ -370,7 +355,7 @@ namespace TeamProject01.Gameplay
             int normalSpawnCount = GetTotalCount(totalEntries);
             int normalMonstersPerTick = ResolveMonstersPerSpawnTick(normalSpawnCount);
             int safeBatchCount = ResolveSpawnTickCount(normalSpawnCount, normalMonstersPerTick);
-            float spawnWindowSeconds = ResolveSpawnWindowSeconds(stageDurationSeconds);
+            float spawnWindowSeconds = ResolveSpawnWindowSeconds(stageDurationSeconds, safeBatchCount);
             WaveStageDifficulty difficulty = ResolveDifficultyForStage(stage);
             EnemySpawner.ExternalSpawnCongestionOptions congestionOptions = BuildCongestionOptions();
             EnemySpawner.ExternalSpawnSpreadOptions spreadOptions = BuildSpreadOptions();
@@ -438,10 +423,22 @@ namespace TeamProject01.Gameplay
             return Mathf.Max(1, Mathf.CeilToInt(normalSpawnCount / (float)normalMonstersPerTick));
         }
 
-        private float ResolveSpawnWindowSeconds(float stageDurationSeconds)
+        private float ResolveSpawnWindowSeconds(float stageDurationSeconds, int spawnTickCount)
         {
             float fallbackWindowSeconds = stageDurationSeconds * (spawnWindowPercent / 100.0f);
             float configuredWindowSeconds = normalSpawnWindowSeconds > 0.0f ? normalSpawnWindowSeconds : fallbackWindowSeconds;
+            int quickWindowMaxBatchCount = Mathf.Max(1, quickSpawnWindowMaxBatchCount);
+            int shortWindowMaxBatchCount = Mathf.Max(1, shortSpawnWindowMaxBatchCount);
+
+            if (spawnTickCount > 0 && spawnTickCount <= quickWindowMaxBatchCount)
+            {
+                configuredWindowSeconds = Mathf.Min(configuredWindowSeconds, Mathf.Max(0.1f, quickSpawnWindowSeconds));
+            }
+            else if (spawnTickCount > 0 && spawnTickCount <= shortWindowMaxBatchCount)
+            {
+                configuredWindowSeconds = Mathf.Min(configuredWindowSeconds, Mathf.Max(0.1f, shortSpawnWindowSeconds));
+            }
+
             return Mathf.Max(0.1f, Mathf.Min(stageDurationSeconds, configuredWindowSeconds));
         }
 
@@ -492,24 +489,44 @@ namespace TeamProject01.Gameplay
 
         private int GetScaleForStage(int stage)
         {
-            int result = 100;
-
-            if (spawnScaleSteps == null)
+            if (stage < 40 && TryGetScaleForStage(earlyMidSpawnScaleSteps, stage, out int earlyMidScale))
             {
-                return result;
+                return earlyMidScale;
             }
 
-            for (int i = 0; i < spawnScaleSteps.Length; i++)
+            if (TryGetScaleForStage(spawnScaleSteps, stage, out int scale))
             {
-                SpawnScaleStep step = spawnScaleSteps[i];
+                return scale;
+            }
+
+            return 100;
+        }
+
+        private static bool TryGetScaleForStage(SpawnScaleStep[] scaleSteps, int stage, out int scalePercent)
+        {
+            int result = 100;
+
+            if (scaleSteps == null || scaleSteps.Length <= 0)
+            {
+                scalePercent = result;
+                return false;
+            }
+
+            bool hasStep = false;
+
+            for (int i = 0; i < scaleSteps.Length; i++)
+            {
+                SpawnScaleStep step = scaleSteps[i];
 
                 if (step != null && stage >= step.startStage)
                 {
                     result = step.spawnScalePercent;
+                    hasStep = true;
                 }
             }
 
-            return Mathf.Max(0, result);
+            scalePercent = Mathf.Max(0, result);
+            return hasStep;
         }
 
         public WaveStageDifficulty ResolveDifficultyForStage(int stage)

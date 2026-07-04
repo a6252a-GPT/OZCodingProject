@@ -286,7 +286,8 @@ namespace TeamProject01.Gameplay
             {
                 if (TryGetFixedEliteSpawns(stage, out FixedEliteSpawn[] fixedSpawns))
                 {
-                    return CalculateFixedEliteCount(fixedSpawns);
+                    int fixedEliteCount = CalculateFixedEliteCount(fixedSpawns);
+                    return fixedEliteCount > 0 ? fixedEliteCount + ResolveScriptedEliteCountBonus(stage) : 0;
                 }
 
                 if (IsChallengeStage(stage))
@@ -305,7 +306,7 @@ namespace TeamProject01.Gameplay
             {
                 if (TryGetFixedEliteSpawns(stage, out FixedEliteSpawn[] fixedSpawns))
                 {
-                    return BuildFixedStagePlan(fixedSpawns, "고정엘리트");
+                    return BuildFixedStagePlan(stage, fixedSpawns, "고정엘리트");
                 }
 
                 if (IsChallengeStage(stage))
@@ -339,10 +340,30 @@ namespace TeamProject01.Gameplay
         {
             int startStage = Mathf.Max(1, challengeStartStage);
             int increase = Mathf.Max(0, stage - startStage) * Mathf.Max(0, challengeEliteIncreaseCountPerStage);
-            return Mathf.Max(0, challengeBaseEliteCount + increase);
+            return Mathf.Max(0, challengeBaseEliteCount + increase + ResolveScriptedEliteCountBonus(stage));
         }
 
-        private EliteStagePlan BuildFixedStagePlan(FixedEliteSpawn[] fixedSpawns, string combinationType)
+        private static int ResolveScriptedEliteCountBonus(int stage)
+        {
+            if (stage >= 35)
+            {
+                return 3;
+            }
+
+            if (stage >= 21)
+            {
+                return 2;
+            }
+
+            if (stage >= 10)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+
+        private EliteStagePlan BuildFixedStagePlan(int stage, FixedEliteSpawn[] fixedSpawns, string combinationType)
         {
             if (fixedSpawns == null || fixedSpawns.Length == 0)
             {
@@ -351,9 +372,25 @@ namespace TeamProject01.Gameplay
 
             Dictionary<EliteKind, EnemyController> prefabLookup = BuildElitePrefabLookup();
             Dictionary<EliteKind, int> pickedCounts = BuildLimitedFixedEliteCounts(fixedSpawns, prefabLookup);
+            AddFixedEliteCountBonus(fixedSpawns, prefabLookup, pickedCounts, ResolveScriptedEliteCountBonus(stage));
             List<CountEntry> counts = BuildFixedCountEntries(fixedSpawns, prefabLookup, pickedCounts);
 
             return new EliteStagePlan(BuildEntries(counts), combinationType);
+        }
+
+        private static void AddFixedEliteCountBonus(FixedEliteSpawn[] fixedSpawns, Dictionary<EliteKind, EnemyController> prefabLookup, Dictionary<EliteKind, int> pickedCounts, int bonusCount)
+        {
+            if (bonusCount <= 0 || fixedSpawns == null || fixedSpawns.Length == 0 || prefabLookup == null || pickedCounts == null)
+            {
+                return;
+            }
+
+            if (!TryPickSuicideReplacementKind(fixedSpawns, prefabLookup, out EliteKind bonusKind))
+            {
+                return;
+            }
+
+            AddEliteCount(pickedCounts, bonusKind, bonusCount);
         }
 
         private static Dictionary<EliteKind, int> BuildLimitedFixedEliteCounts(FixedEliteSpawn[] fixedSpawns, Dictionary<EliteKind, EnemyController> prefabLookup)

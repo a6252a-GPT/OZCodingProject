@@ -110,7 +110,7 @@ namespace TeamProject01.Gameplay
                         1f,
                         1f,
                         1f,
-                        1.2f,
+                        1.05f,
                         DamageType.Electric,
                         new Color(0.62f, 0.92f, 1f, 1f),
                         "Shock",

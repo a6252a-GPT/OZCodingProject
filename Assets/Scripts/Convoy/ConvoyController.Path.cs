@@ -27,7 +27,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void SamplePathIfNeeded()
+        private void SamplePathIfNeeded(float deltaTime)
         {
             Vector3 anchorPosition = GetPathAnchorPosition();
             if (path.Count == 0)
@@ -43,32 +43,37 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
-            if (ShouldSmoothSharpTurn(last, anchorPosition, out Vector3 previousDirection, out Vector3 newDirection))
+            AddPathSample(last, anchorPosition, sampleDistance);
+        }
+
+        private void AddPathSample(Vector3 last, Vector3 anchorPosition, float sampleDistance)
+        {
+            if (!ShouldRepairAbnormalPathSample(sampleDistance))
             {
-                AddSmoothedPathSamples(last, anchorPosition, previousDirection, newDirection, sampleDistance);
+                path.Add(anchorPosition);
                 return;
             }
 
-            path.Add(anchorPosition);
+            AddRepairedStraightPathSamples(last, anchorPosition, sampleDistance); // 비정상 튐은 최단 직선 경로로 재구성
         }
 
-        private bool ShouldSmoothSharpTurn(Vector3 last, Vector3 anchorPosition, out Vector3 previousDirection, out Vector3 newDirection)
+        private bool ShouldRepairAbnormalPathSample(float sampleDistance)
         {
-            previousDirection = Vector3.zero;
-            newDirection = Vector3.zero;
-            if (!EnableSharpTurnPathSmoothing || SharpTurnSmoothingSamples <= 0)
-            {
-                return false;
-            }
+            return EnableAbnormalPathSampleRepair
+                && sampleDistance >= Mathf.Max(MinPathSampleDistance, AbnormalPathSampleDistance);
+        }
 
-            if (!TryGetRecentPathDirection(last, out previousDirection))
+        private void AddRepairedStraightPathSamples(Vector3 last, Vector3 anchorPosition, float sampleDistance)
+        {
+            float step = Mathf.Max(MinPathSampleDistance, RepairedPathSampleStep);
+            int sampleCount = Mathf.Clamp(Mathf.CeilToInt(sampleDistance / step), 1, Mathf.Max(1, MaxRepairedPathSamples));
+            for (int i = 1; i <= sampleCount; i++)
             {
-                return false;
+                float t = (float)i / sampleCount;
+                Vector3 sample = Vector3.Lerp(last, anchorPosition, t);
+                sample.y = Mathf.Lerp(last.y, anchorPosition.y, t);
+                path.Add(sample);
             }
-
-            newDirection = FlattenSegmentForward(anchorPosition - last, previousDirection);
-            float angle = Vector3.Angle(previousDirection, newDirection);
-            return angle >= Mathf.Clamp(SharpTurnSmoothingAngle, 1f, 179f);
         }
 
         private bool TryGetRecentPathDirection(Vector3 fromPosition, out Vector3 direction)
@@ -91,31 +96,6 @@ namespace TeamProject01.Gameplay
             }
 
             return false;
-        }
-
-        private void AddSmoothedPathSamples(Vector3 start, Vector3 end, Vector3 startForward, Vector3 endForward, float sampleDistance)
-        {
-            int sampleCount = Mathf.Clamp(SharpTurnSmoothingSamples, 1, 8);
-            float handleDistance = Mathf.Min(Mathf.Max(0.01f, SharpTurnSmoothingHandleDistance), sampleDistance * 0.5f);
-            Vector3 startHandle = start + startForward * handleDistance;
-            Vector3 endHandle = end - endForward * handleDistance;
-
-            for (int i = 1; i <= sampleCount; i++)
-            {
-                float t = (float)i / (sampleCount + 1);
-                path.Add(EvaluateCubicBezier(start, startHandle, endHandle, end, t)); // 급커브 중간 경로
-            }
-
-            path.Add(end);
-        }
-
-        private static Vector3 EvaluateCubicBezier(Vector3 a, Vector3 b, Vector3 c, Vector3 d, float t)
-        {
-            float u = 1f - t;
-            return (u * u * u * a)
-                + (3f * u * u * t * b)
-                + (3f * u * t * t * c)
-                + (t * t * t * d);
         }
 
         private void UpdateHeadVisual(float deltaTime)

@@ -130,6 +130,11 @@ namespace TeamProject01.Gameplay
 
         public static Vector3 ResolvePosition(Vector3 currentPosition, Vector3 desiredPosition, float moverRadius)
         {
+            return ResolvePosition(currentPosition, desiredPosition, moverRadius, 0f);
+        }
+
+        public static Vector3 ResolvePosition(Vector3 currentPosition, Vector3 desiredPosition, float moverRadius, float maxCorrectionDistance)
+        {
             Vector3 resolvedPosition = desiredPosition;
 
             for (int i = 0; i < ActiveObstacle.Count; i++)
@@ -166,8 +171,19 @@ namespace TeamProject01.Gameplay
                     pushDirection = fallbackDirection.sqrMagnitude > 0.0001f ? fallbackDirection.normalized : Vector3.forward;
                 }
 
-                resolvedPosition = obstacle.Position + pushDirection * minDistance;
-                resolvedPosition.y = desiredPosition.y;
+                Vector3 targetPosition = obstacle.Position + pushDirection * minDistance;
+                targetPosition.y = desiredPosition.y;
+
+                Vector3 correction = targetPosition - resolvedPosition;
+                correction.y = 0.0f;
+                float maxCorrection = Mathf.Max(0.0f, maxCorrectionDistance);
+                if (maxCorrection > 0.0f && correction.sqrMagnitude > maxCorrection * maxCorrection)
+                {
+                    targetPosition = resolvedPosition + correction.normalized * maxCorrection; // 길막 보정을 한 프레임에 몰아넣지 않음
+                    targetPosition.y = desiredPosition.y;
+                }
+
+                resolvedPosition = targetPosition;
             }
 
             return resolvedPosition;

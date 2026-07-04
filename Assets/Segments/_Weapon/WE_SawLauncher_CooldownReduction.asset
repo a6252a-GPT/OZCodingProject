@@ -53,8 +53,8 @@ MonoBehaviour:
   ProjectileCountRare: 0
   ProjectileCountUnique: 0
   CooldownReduction: 0.06
-  CooldownReductionRare: 0.1
-  CooldownReductionUnique: 0.15
+  CooldownReductionRare: 0.08
+  CooldownReductionUnique: 0.12
   SideConeAngle: 0
   SideConeAngleRare: 0
   SideConeAngleUnique: 0

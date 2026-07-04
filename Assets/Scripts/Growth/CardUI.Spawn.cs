@@ -814,7 +814,7 @@ public partial class CardUI
             int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
             Sprite icon = GetSegmentIconSprite(segId, currentLevel);
             string title = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName;
-            string desc = BuildSegmentCardDescriptionWithStatusTags(catalogEntry, currentLevel, catalogEntry.Description);
+            string desc = BuildSegmentSelectionDescription(catalogEntry);
             ApplyCardTextsDirectly(entry.Root, title, desc, icon, GetSegmentIconSizeOffset(segId));
         }
     }
@@ -1511,214 +1511,12 @@ public partial class CardUI
         }
     }
 
-    private static string BuildSegmentCardDescriptionWithStatusTags(SegmentCatalogEntry catalogEntry, int segmentLevel, string baseDescription)
+    private static string BuildSegmentSelectionDescription(SegmentCatalogEntry catalogEntry)
     {
-        string description = string.IsNullOrWhiteSpace(baseDescription)
+        string description = string.IsNullOrWhiteSpace(catalogEntry.Description)
             ? $"{catalogEntry.NormalizedId} 선택"
-            : baseDescription; // 카탈로그 설명 우선
-        return TryResolveSegmentStatusEffectTag(catalogEntry, segmentLevel, out string statusTag)
-            ? InsertLeadingSegmentTagIfMissing(description, statusTag)
-            : description; // 상태효과 없는 세그먼트는 기존 설명 유지
-    }
-
-    private static bool TryResolveSegmentStatusEffectTag(SegmentCatalogEntry catalogEntry, int segmentLevel, out string statusTag)
-    {
-        statusTag = string.Empty;
-        if (!TryResolveSegmentStatusEffectKind(catalogEntry, segmentLevel, out CombatStatusEffectKind kind)
-            || !CombatStatusEffectCatalog.TryGet(kind, out CombatStatusEffectDefinition definition)
-            || string.IsNullOrWhiteSpace(definition.DisplayName))
-        {
-            return false; // 표시할 상태효과 없음
-        }
-
-        statusTag = definition.DisplayName.Trim(); // 카드 칩 문구
-        return true;
-    }
-
-    private static bool TryResolveSegmentStatusEffectKind(SegmentCatalogEntry catalogEntry, int segmentLevel, out CombatStatusEffectKind kind)
-    {
-        kind = CombatStatusEffectKind.None;
-        string segmentId = catalogEntry.NormalizedId; // 카탈로그 ID
-        SegmentDefinition definition = null;
-        CoreStatProvider core = CoreStatProvider.Active;
-        if (core != null
-            && core.SegmentCatalogAsset != null
-            && !string.IsNullOrWhiteSpace(segmentId))
-        {
-            core.SegmentCatalogAsset.TryFind(segmentId, out definition); // 데이터에셋 정의
-        }
-
-        int safeLevel = Mathf.Max(1, segmentLevel);
-        if (definition != null)
-        {
-            if (TryResolveStatusEffectFromDefinitionLevel(definition, safeLevel, out kind))
-            {
-                return true; // 현재/표시 레벨 우선
-            }
-
-            if (definition.Levels != null)
-            {
-                for (int i = 0; i < definition.Levels.Length; i++)
-                {
-                    int level = Mathf.Max(1, definition.Levels[i].Level);
-                    if (level == safeLevel)
-                    {
-                        continue; // 이미 확인한 레벨
-                    }
-
-                    if (TryResolveStatusEffectFromDefinitionLevel(definition, level, out kind))
-                    {
-                        return true; // 다른 레벨에 상태효과가 있으면 세그먼트 속성으로 표시
-                    }
-                }
-            }
-        }
-
-        return TryResolveStatusEffectFromSegmentPrefab(catalogEntry.Prefab, out kind); // 기존 배열 카탈로그 fallback
-    }
-
-    private static bool TryResolveStatusEffectFromDefinitionLevel(SegmentDefinition definition, int level, out CombatStatusEffectKind kind)
-    {
-        kind = CombatStatusEffectKind.None;
-        if (definition == null || !definition.TryGetLevel(level, out SegmentLevelDefinition levelData))
-        {
-            return false; // 레벨 정의 없음
-        }
-
-        return TryResolveStatusEffectFromAttackProfile(levelData.AttackProfile, out kind)
-            || TryResolveStatusEffectFromSegmentPrefab(levelData.SegmentPrefab, out kind); // 공격/지원 프리팹 fallback
-    }
-
-    private static bool TryResolveStatusEffectFromSegmentPrefab(GameObject prefab, out CombatStatusEffectKind kind)
-    {
-        kind = CombatStatusEffectKind.None;
-        if (prefab == null)
-        {
-            return false; // 프리팹 없음
-        }
-
-        GenericSegmentWeapon attackWeapon = prefab.GetComponentInChildren<GenericSegmentWeapon>(true);
-        if (attackWeapon != null && TryResolveStatusEffectFromAttackProfile(attackWeapon.AttackProfile, out kind))
-        {
-            return true; // 공격 세그먼트 상태효과
-        }
-
-        SupportSegmentAbility supportAbility = prefab.GetComponentInChildren<SupportSegmentAbility>(true);
-        return supportAbility != null && TryResolveStatusEffectFromSupportProfile(supportAbility.Profile, out kind); // 지원 세그먼트 상태효과
-    }
-
-    private static bool TryResolveStatusEffectFromAttackProfile(SegmentAttackProfile profile, out CombatStatusEffectKind kind)
-    {
-        kind = profile != null ? profile.StatusEffectOnHit : CombatStatusEffectKind.None;
-        return kind != CombatStatusEffectKind.None && CombatStatusEffectCatalog.TryGet(kind, out _); // 등록된 상태효과만 표시
-    }
-
-    private static bool TryResolveStatusEffectFromSupportProfile(SegmentSupportAbilityProfile profile, out CombatStatusEffectKind kind)
-    {
-        kind = profile != null ? profile.EnemyStatusEffect : CombatStatusEffectKind.None;
-        return kind != CombatStatusEffectKind.None && CombatStatusEffectCatalog.TryGet(kind, out _); // 등록된 지원 디버프만 표시
-    }
-
-    private static string InsertLeadingSegmentTagIfMissing(string description, string tag)
-    {
-        if (string.IsNullOrWhiteSpace(description) || string.IsNullOrWhiteSpace(tag))
-        {
-            return description; // 삽입 불가
-        }
-
-        string trimmedTag = tag.Trim();
-        if (TryFindLeadingSegmentTagInsertionIndex(description, trimmedTag, out bool alreadyExists, out int insertionIndex))
-        {
-            return alreadyExists
-                ? description
-                : description.Insert(insertionIndex, $" [{trimmedTag}]"); // 기존 선행 태그 뒤에 추가
-        }
-
-        return $"[{trimmedTag}] {description.TrimStart()}"; // 태그 없는 설명 fallback
-    }
-
-    private static bool TryFindLeadingSegmentTagInsertionIndex(string description, string tag, out bool alreadyExists, out int insertionIndex)
-    {
-        alreadyExists = false;
-        insertionIndex = 0;
-        if (string.IsNullOrWhiteSpace(description))
-        {
-            return false; // 설명 없음
-        }
-
-        int cursor = 0;
-        bool foundLeadingTag = false;
-        while (cursor < description.Length)
-        {
-            SkipWhitespaceAndRichTextTags(description, ref cursor);
-            if (cursor >= description.Length || description[cursor] != '[')
-            {
-                break; // 선행 태그 종료
-            }
-
-            int closeIndex = description.IndexOf(']', cursor + 1);
-            if (closeIndex <= cursor + 1)
-            {
-                break; // 비정상 태그
-            }
-
-            string foundTag = description.Substring(cursor + 1, closeIndex - cursor - 1).Trim();
-            if (string.Equals(foundTag, tag, System.StringComparison.OrdinalIgnoreCase))
-            {
-                alreadyExists = true; // 중복 방지
-            }
-
-            cursor = closeIndex + 1;
-            SkipRichTextTags(description, ref cursor);
-            insertionIndex = cursor;
-            foundLeadingTag = true;
-        }
-
-        return foundLeadingTag;
-    }
-
-    private static void SkipWhitespaceAndRichTextTags(string text, ref int cursor)
-    {
-        bool advanced;
-        do
-        {
-            advanced = false;
-            while (cursor < text.Length && char.IsWhiteSpace(text[cursor]))
-            {
-                cursor++;
-                advanced = true;
-            }
-
-            while (TrySkipRichTextTag(text, ref cursor))
-            {
-                advanced = true;
-            }
-        }
-        while (advanced);
-    }
-
-    private static void SkipRichTextTags(string text, ref int cursor)
-    {
-        while (TrySkipRichTextTag(text, ref cursor))
-        {
-        }
-    }
-
-    private static bool TrySkipRichTextTag(string text, ref int cursor)
-    {
-        if (cursor >= text.Length || text[cursor] != '<')
-        {
-            return false; // TMP 태그 아님
-        }
-
-        int closeIndex = text.IndexOf('>', cursor + 1);
-        if (closeIndex <= cursor + 1)
-        {
-            return false; // 닫히지 않은 태그
-        }
-
-        cursor = closeIndex + 1;
-        return true;
+            : catalogEntry.Description; // 선택 카드는 카탈로그 설명 그대로
+        return description; // 상태이상 태그 자동 추가 없음
     }
 
     // 세그먼트 후보 카드 데이터 주입
@@ -1738,7 +1536,7 @@ public partial class CardUI
             int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
             Sprite icon = GetSegmentIconSprite(segId, currentLevel);
             string title = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName;
-            string desc = BuildSegmentCardDescriptionWithStatusTags(catalogEntry, currentLevel, catalogEntry.Description);
+            string desc = BuildSegmentSelectionDescription(catalogEntry);
             ApplyCardTextsDirectly(entry.Root, title, desc, icon, GetSegmentIconSizeOffset(segId));
         }
     }
@@ -1761,8 +1559,7 @@ public partial class CardUI
         // 안건준 수정 - 0623 : Card_Text = 세그먼트 이름만
         string title = displayName;
         int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
-        int statusLevel = role == SegmentCardRole.LevelUpAction ? currentLevel + 1 : currentLevel; // 레벨업 결과 기준
-        string description = BuildSegmentCardDescriptionWithStatusTags(catalogEntry, statusLevel, BuildSegmentActionDescription(segId, displayName, role, selectable)); // 액션 설명
+        string description = BuildSegmentActionDescription(segId, displayName, role, selectable); // 액션 카드에는 상태이상 태그를 붙이지 않음
         entry.SegmentRole = role; // 액션 역할
         entry.SegmentCatalogEntry = catalogEntry; // 대상 후보 저장
         entry.SegmentId = segId; // 대상 ID
