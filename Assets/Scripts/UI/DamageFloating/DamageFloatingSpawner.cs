@@ -11,7 +11,7 @@ namespace TeamProject01.Gameplay
         private const string FontResourcesPath = "UI/Fonts/DamageFloating"; // 테스트 폰트 경로
         private const string SourceFontResourcesPath = "UI/Fonts/DamageFloatingSource"; // 원본 TTF 경로
         private const string ExcludedFontNameFragment = "Tium";
-        private const string RequiredFloatingCharacters = "골드경험치0123456789+- .화상빙결성수전쟁북깃발";
+        private const string RequiredFloatingCharacters = "골드경험치0123456789+- .화상빙결성수감전전쟁북깃발";
         private const string SampleDisplayText = "골드 123";
 
         [SerializeField] private DamageFloatingPopup popupPrefab; // 선택 프리팹

@@ -263,6 +263,11 @@ namespace TeamProject01.Gameplay
             return EnemyObstacle.ResolvePosition(currentPosition, desiredPosition, moverRadius);
         }
 
+        public static Vector3 ResolveConvoyPosition(Vector3 currentPosition, Vector3 desiredPosition, float moverRadius, float maxCorrectionDistance)
+        {
+            return EnemyObstacle.ResolvePosition(currentPosition, desiredPosition, moverRadius, maxCorrectionDistance);
+        }
+
         public static Vector3 ResolveMonsterPosition(Vector3 currentPosition, Vector3 desiredPosition, float monsterRadius)
         {
             return SegmentBlocker.ResolveMonsterPosition(currentPosition, desiredPosition, monsterRadius);

@@ -27,7 +27,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void SamplePathIfNeeded()
+        private void SamplePathIfNeeded(float deltaTime)
         {
             Vector3 anchorPosition = GetPathAnchorPosition();
             if (path.Count == 0)
@@ -37,10 +37,65 @@ namespace TeamProject01.Gameplay
             }
 
             Vector3 last = path[path.Count - 1];
-            if (HorizontalDistance(last, anchorPosition) >= MinPathSampleDistance)
+            float sampleDistance = HorizontalDistance(last, anchorPosition);
+            if (sampleDistance < MinPathSampleDistance)
+            {
+                return;
+            }
+
+            AddPathSample(last, anchorPosition, sampleDistance);
+        }
+
+        private void AddPathSample(Vector3 last, Vector3 anchorPosition, float sampleDistance)
+        {
+            if (!ShouldRepairAbnormalPathSample(sampleDistance))
             {
                 path.Add(anchorPosition);
+                return;
             }
+
+            AddRepairedStraightPathSamples(last, anchorPosition, sampleDistance); // 비정상 튐은 최단 직선 경로로 재구성
+        }
+
+        private bool ShouldRepairAbnormalPathSample(float sampleDistance)
+        {
+            return EnableAbnormalPathSampleRepair
+                && sampleDistance >= Mathf.Max(MinPathSampleDistance, AbnormalPathSampleDistance);
+        }
+
+        private void AddRepairedStraightPathSamples(Vector3 last, Vector3 anchorPosition, float sampleDistance)
+        {
+            float step = Mathf.Max(MinPathSampleDistance, RepairedPathSampleStep);
+            int sampleCount = Mathf.Clamp(Mathf.CeilToInt(sampleDistance / step), 1, Mathf.Max(1, MaxRepairedPathSamples));
+            for (int i = 1; i <= sampleCount; i++)
+            {
+                float t = (float)i / sampleCount;
+                Vector3 sample = Vector3.Lerp(last, anchorPosition, t);
+                sample.y = Mathf.Lerp(last.y, anchorPosition.y, t);
+                path.Add(sample);
+            }
+        }
+
+        private bool TryGetRecentPathDirection(Vector3 fromPosition, out Vector3 direction)
+        {
+            direction = Vector3.zero;
+            float minDistanceSqr = Mathf.Max(0.01f, MinPathSampleDistance);
+            minDistanceSqr *= minDistanceSqr;
+
+            for (int i = path.Count - 2; i >= 0; i--)
+            {
+                Vector3 offset = fromPosition - path[i];
+                offset.y = 0f;
+                if (offset.sqrMagnitude < minDistanceSqr)
+                {
+                    continue;
+                }
+
+                direction = offset.normalized;
+                return true;
+            }
+
+            return false;
         }
 
         private void UpdateHeadVisual(float deltaTime)

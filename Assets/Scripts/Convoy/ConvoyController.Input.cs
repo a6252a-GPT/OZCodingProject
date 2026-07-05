@@ -111,6 +111,11 @@ namespace TeamProject01.Gameplay
             return CoreStatProvider.ApplyRunMoveSpeedBonusOrDefault(BaseSpeed);
         }
 
+        private float GetHeadObstacleCorrectionDistance(float deltaTime)
+        {
+            return Mathf.Max(0f, HeadObstacleCorrectionSpeed) * Mathf.Max(0f, deltaTime); // 한 프레임 위치 보정 상한
+        }
+
         private void ApplyTurnInput(float turnInput, float deltaTime) // 턴 입력
         {
             currentTurnInput = Mathf.Clamp(turnInput, -1f, 1f); // 입력 제한

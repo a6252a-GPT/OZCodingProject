@@ -189,6 +189,8 @@ namespace TeamProject01.Gameplay
         public bool HasTarget => !string.IsNullOrWhiteSpace(TargetSegmentId); // 대상 존재
 
         // 건춘추가 - 0621 ======
+        public bool IsBaseDamageAmplify => HasTieredFloat(BaseDamage, BaseDamageRare, BaseDamageUnique); // 공격력 증폭 카드 여부
+
         public bool HasAnyStatBonus => HasTieredFloat(BaseDamage, BaseDamageRare, BaseDamageUnique)
             || HasTieredFloat(SawPierceDamageRatio, SawPierceDamageRatioRare, SawPierceDamageRatioUnique)
             || HasTieredFloat(ProjectileSpeed, ProjectileSpeedRare, ProjectileSpeedUnique)
