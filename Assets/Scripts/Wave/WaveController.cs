@@ -1,4 +1,4 @@
-using System; //안건준 추가 - 0629 (CurrentStageChanged 이벤트용 Action<T>)
+using System; //?덇굔以 異붽? - 0629 (CurrentStageChanged ?대깽?몄슜 Action<T>)
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -14,59 +14,64 @@ namespace TeamProject01.Gameplay
             Special
         }
 
-        [Header("스테이지 진행")]
-        [SerializeField] private bool autoStart = true; // Play 시작 시 자동으로 웨이브를 시작할지입니다.
+        [Header("?ㅽ뀒?댁? 吏꾪뻾")]
+        [SerializeField] private bool autoStart = true; // Play ?쒖옉 ???먮룞?쇰줈 ?⑥씠釉뚮? ?쒖옉?좎??낅땲??
 
         [Min(1)]
-        [SerializeField] private int startStage = 1; // 처음 시작할 Stage 번호입니다.
+        [SerializeField] private int startStage = 1; // 泥섏쓬 ?쒖옉??Stage 踰덊샇?낅땲??
 
         [Min(1.0f)]
-        [SerializeField] private float stageDurationSeconds = 40.0f; // 일반 Stage 하나의 길이입니다.
+        [SerializeField] private float stageDurationSeconds = 40.0f; // ?쇰컲 Stage ?섎굹??湲몄씠?낅땲??
 
-        [Header("스테이지 클리어 조건")]
-        [SerializeField] private bool advanceWhenAllMonstersCleared = true; // 몬스터가 전부 정리되면 시간과 상관없이 다음 Stage로 넘길지입니다.
+        [Header("?ㅽ뀒?댁? ?대━??議곌굔")]
+        [SerializeField] private bool advanceWhenAllMonstersCleared = true; // 紐ъ뒪?곌? ?꾨? ?뺣━?섎㈃ ?쒓컙怨??곴??놁씠 ?ㅼ쓬 Stage濡??섍만吏?낅땲??
 
         [Min(0.0f)]
-        [SerializeField] private float clearCheckDelaySeconds = 1.0f; // Stage 시작 직후 바로 넘어가는 일을 막기 위한 대기 시간입니다.
+        [SerializeField] private float clearCheckDelaySeconds = 1.0f; // Stage ?쒖옉 吏곹썑 諛붾줈 ?섏뼱媛???쇱쓣 留됯린 ?꾪븳 ?湲??쒓컙?낅땲??
 
-        [Header("다이아 클리어 보상")]
-        [SerializeField] private bool spawnDiamondRewardOnWaveStepClear = true; // 일정 웨이브 클리어 보상
+        [Header("?ㅼ씠???대━??蹂댁긽")]
+        [SerializeField] private bool spawnDiamondRewardOnWaveStepClear = true; // ?쇱젙 ?⑥씠釉??대━??蹂댁긽
         [Min(1)]
-        [SerializeField] private int diamondRewardWaveStep = 5; // 5웨이브 단위
-        [SerializeField] private int[] diamondRewardByWaveStep = { 30, 45, 60, 75, 90, 105, 115, 125 }; // 5~40웨이브 보상표
+        [SerializeField] private int diamondRewardWaveStep = 5; // 5?⑥씠釉??⑥쐞
+        [SerializeField] private int[] diamondRewardByWaveStep = { 30, 45, 60, 75, 90, 105, 115, 125 }; // 5~40?⑥씠釉?蹂댁긽??
 
-        [Header("담당 컴포넌트 연결")]
-        [SerializeField] private EnemySpawner enemySpawner; // 기존 EnemySpawner의 외부 스폰 API만 사용합니다.
-        [SerializeField] private bool disableSpawnerStageRulesUpdate = true; // 기존 Stage Rules 자동 스폰과 중복되지 않게 막습니다.
-        [SerializeField] private NormalWaveSpawner normalWaveSpawner; // 일반 몬스터 수량/조합 담당입니다.
-        [SerializeField] private EliteMixController eliteMixController; // 엘리트 비율/조합 담당입니다.
-        [SerializeField] private EliteWaveSpawner eliteWaveSpawner; // 엘리트 몬스터 지연 스폰 담당입니다.
-        [SerializeField] private bool enableBossWave = true; // 보스 웨이브 사용 여부는 지휘자인 WaveController가 관리합니다.
-        [SerializeField] private BossWaveController bossWaveController; // 보스 등장 담당입니다.
-        [SerializeField] private BonusChestWaveSpawner bonusChestWaveSpawner; // 보스/보상 상자 담당 컴포넌트 연결용입니다.
+        [Header("?대떦 而댄룷?뚰듃 ?곌껐")]
+        [SerializeField] private EnemySpawner enemySpawner; // 湲곗〈 EnemySpawner???몃? ?ㅽ룿 API留??ъ슜?⑸땲??
+        [SerializeField] private bool disableSpawnerStageRulesUpdate = true; // 湲곗〈 Stage Rules ?먮룞 ?ㅽ룿怨?以묐났?섏? ?딄쾶 留됱뒿?덈떎.
+        [SerializeField] private NormalWaveSpawner normalWaveSpawner; // ?쇰컲 紐ъ뒪???섎웾/議고빀 ?대떦?낅땲??
+        [SerializeField] private EliteMixController eliteMixController; // ?섎━??鍮꾩쑉/議고빀 ?대떦?낅땲??
+        [SerializeField] private EliteWaveSpawner eliteWaveSpawner; // ?섎━??紐ъ뒪??吏???ㅽ룿 ?대떦?낅땲??
+        [SerializeField] private bool enableBossWave = true; // 蹂댁뒪 ?⑥씠釉??ъ슜 ?щ???吏?섏옄??WaveController媛 愿由ы빀?덈떎.
+        [SerializeField] private BossWaveController bossWaveController; // 蹂댁뒪 ?깆옣 ?대떦?낅땲??
+        [SerializeField] private BonusChestWaveSpawner bonusChestWaveSpawner; // 蹂댁뒪/蹂댁긽 ?곸옄 ?대떦 而댄룷?뚰듃 ?곌껐?⑹엯?덈떎.
 
-        [Header("확장 자리")]
-        [SerializeField] private bool enableSpecialWaveExtension; // 추후 보상/마력 구슬 특수 Stage를 붙이기 위한 스위치입니다.
-        [SerializeField] private MonoBehaviour specialWaveController; // 아직 직접 호출하지 않는 확장 자리입니다.
+        [Header("?뺤옣 ?먮━")]
+        [SerializeField] private bool enableSpecialWaveExtension; // 異뷀썑 蹂댁긽/留덈젰 援ъ뒳 ?뱀닔 Stage瑜?遺숈씠湲??꾪븳 ?ㅼ쐞移섏엯?덈떎.
+        [SerializeField] private MonoBehaviour specialWaveController; // ?꾩쭅 吏곸젒 ?몄텧?섏? ?딅뒗 ?뺤옣 ?먮━?낅땲??
         [FormerlySerializedAs("goldCollectSpecialWave")]
-        [SerializeField] private ManaOrbCollectSpecialWave manaOrbCollectSpecialWave; // 마력 구슬 수집 특수 Stage를 담당하는 컴포넌트입니다.
+        [SerializeField] private ManaOrbCollectSpecialWave manaOrbCollectSpecialWave; // 留덈젰 援ъ뒳 ?섏쭛 ?뱀닔 Stage瑜??대떦?섎뒗 而댄룷?뚰듃?낅땲??
 
-        private float elapsedStageSeconds; // 현재 Stage 안에서 흐른 시간입니다.
-        private int currentStage; // 현재 Stage 번호입니다.
-        private bool isRunning; // 웨이브 진행 여부입니다.
-        private bool specialWaveActive; // 외부 특수 웨이브가 일반 스폰을 잠글 때 사용하는 값입니다.
-        private bool waitingForBossClearStage; // 보스 처치로 종료되는 Stage인지 기록합니다.
-        private bool waitingForSpecialWaveStage; // 특수 Stage 보상 종료를 기다리는지 기록합니다.
-        private bool skipSpecialWaveCheckOnce; // 보너스 Stage가 끝난 뒤 같은 Stage를 일반 웨이브로 시작하기 위한 플래그입니다.
+        private float elapsedStageSeconds; // ?꾩옱 Stage ?덉뿉???먮Ⅸ ?쒓컙?낅땲??
+        private int currentStage; // ?꾩옱 Stage 踰덊샇?낅땲??
+        private bool isRunning; // ?⑥씠釉?吏꾪뻾 ?щ??낅땲??
+        private bool specialWaveActive; // ?몃? ?뱀닔 ?⑥씠釉뚭? ?쇰컲 ?ㅽ룿???좉? ???ъ슜?섎뒗 媛믪엯?덈떎.
+        private bool waitingForBossClearStage; // 蹂댁뒪 泥섏튂濡?醫낅즺?섎뒗 Stage?몄? 湲곕줉?⑸땲??
+        private bool waitingForSpecialWaveStage; // ?뱀닔 Stage 蹂댁긽 醫낅즺瑜?湲곕떎由щ뒗吏 湲곕줉?⑸땲??
+        private bool skipSpecialWaveCheckOnce; // 蹂대꼫??Stage媛 ?앸궃 ??媛숈? Stage瑜??쇰컲 ?⑥씠釉뚮줈 ?쒖옉?섍린 ?꾪븳 ?뚮옒洹몄엯?덈떎.
 
-        private readonly List<EnemyController> currentStageEnemies = new List<EnemyController>(256); // 이번 Stage에서 WaveSystem이 직접 생성한 몬스터 목록입니다.
-        private int currentStageTargetEnemyCount; // 이번 Stage에 나올 예정이었던 몬스터 수입니다.
-        private int currentStageDefeatedEnemyCount; // 이번 Stage 몬스터 중 이미 처치된 수입니다.
-        private int currentStageTrackingStage; // 현재 추적 중인 Stage 번호입니다.
+        private readonly List<EnemyController> currentStageEnemies = new List<EnemyController>(256); // ?대쾲 Stage?먯꽌 WaveSystem??吏곸젒 ?앹꽦??紐ъ뒪??紐⑸줉?낅땲??
+        private int currentStageTargetEnemyCount; // ?대쾲 Stage???섏삱 ?덉젙?댁뿀??紐ъ뒪???섏엯?덈떎.
+        private int currentStageDefeatedEnemyCount; // ?대쾲 Stage 紐ъ뒪??以??대? 泥섏튂???섏엯?덈떎.
+        private int currentStageTrackingStage; // ?꾩옱 異붿쟻 以묒씤 Stage 踰덊샇?낅땲??
+
+        private bool hasReservedManaOrbCollectSpecialWave;
+        private int reservedManaOrbCollectSpecialWaveStage;
+        private bool hasResolvedNoManaOrbCollectSpecialWave;
+        private int resolvedNoManaOrbCollectSpecialWaveStage;
 
         public int CurrentStage => currentStage;
-        public event Action<int> CurrentStageChanged; //안건준 추가 - 0629 (웨이브 변경 시 SaveData에 기록용 웨이브 번호 저장 알림)
-        //안건준 추가 - 0630: 일반/보스/특수 전환 시 구독자에게 알림 (AudioManager BGM 전환)
+        public event Action<int> CurrentStageChanged; //?덇굔以 異붽? - 0629 (?⑥씠釉?蹂寃???SaveData??湲곕줉???⑥씠釉?踰덊샇 ????뚮┝)
+        //?덇굔以 異붽? - 0630: ?쇰컲/蹂댁뒪/?뱀닔 ?꾪솚 ??援щ룆?먯뿉寃??뚮┝ (AudioManager BGM ?꾪솚)
         public event Action<WaveRunState> RunStateChanged;
         public float StageDurationSeconds => stageDurationSeconds;
         public float RemainingStageSeconds => Mathf.Max(0.0f, stageDurationSeconds - elapsedStageSeconds);
@@ -84,7 +89,7 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        //안건준 추가 - 0630: 현재 웨이브 종류 조회 — 특수 > 보스 > 일반 우선순위
+        //?덇굔以 異붽? - 0630: ?꾩옱 ?⑥씠釉?醫낅쪟 議고쉶 ???뱀닔 > 蹂댁뒪 > ?쇰컲 ?곗꽑?쒖쐞
         public WaveRunState CurrentState
         {
             get
@@ -158,7 +163,7 @@ namespace TeamProject01.Gameplay
             ResolveReferences();
         }
 
-        private void Start() //안건준 수정 - 0629 (SaveData 다이아·강화 복원 후 웨이브 1부터 시작)
+        private void Start() //?덇굔以 ?섏젙 - 0629 (SaveData ?ㅼ씠?꽷룰컯??蹂듭썝 ???⑥씠釉?1遺???쒖옉)
         {
             if (autoStart)
             {
@@ -191,8 +196,19 @@ namespace TeamProject01.Gameplay
 
             elapsedStageSeconds += Time.deltaTime;
 
-            if (ShouldAdvanceByClear() || elapsedStageSeconds >= stageDurationSeconds)
+            if (ShouldAdvanceByClear())
             {
+                AdvanceStage();
+                return;
+            }
+
+            if (elapsedStageSeconds >= stageDurationSeconds)
+            {
+                if (ShouldDelayNextPriorityStageUntilCurrentMonstersCleared())
+                {
+                    return;
+                }
+
                 AdvanceStage();
             }
         }
@@ -208,27 +224,29 @@ namespace TeamProject01.Gameplay
             waitingForBossClearStage = false;
             waitingForSpecialWaveStage = false;
             skipSpecialWaveCheckOnce = false;
+            ClearReservedManaOrbCollectSpecialWave();
+            ClearResolvedNoManaOrbCollectSpecialWave();
             isRunning = true;
             ResetEnemyTracking();
 
-            SegmentDpsDebugMeter.ResetRun(); // DPS 미터 전체 누적 초기화
-            CurrentStageChanged?.Invoke(currentStage); //안건준 추가 - 0629 (웨이브 시작 시 구독자에게 현재 Stage 알림)
+            SegmentDpsDebugMeter.ResetRun(); // DPS 誘명꽣 ?꾩껜 ?꾩쟻 珥덇린??
+            CurrentStageChanged?.Invoke(currentStage); //?덇굔以 異붽? - 0629 (?⑥씠釉??쒖옉 ??援щ룆?먯뿉寃??꾩옱 Stage ?뚮┝)
             StartCurrentStage();
         }
 
         private void StartCurrentStage()
         {
             ResolveReferences();
-            SegmentDpsDebugMeter.BeginWave(currentStage); // 이번 웨이브 기록 초기화
+            SegmentDpsDebugMeter.BeginWave(currentStage); // ?대쾲 ?⑥씠釉?湲곕줉 珥덇린??
 
-            eliteWaveSpawner?.StopCurrentStage(); // 이전 Stage의 지연 엘리트 루틴이 남아 있으면 정리
+            eliteWaveSpawner?.StopCurrentStage(); // ?댁쟾 Stage??吏???섎━??猷⑦떞???⑥븘 ?덉쑝硫??뺣━
             BeginCurrentStageEnemyTracking(currentStage, 0);
             specialWaveActive = false;
             waitingForSpecialWaveStage = false;
 
             if (!skipSpecialWaveCheckOnce && TryStartManaOrbCollectSpecialWave())
             {
-                NotifyRunStateChanged(); //안건준 추가 - 0630: 특수 웨이브 시작 → EventStage BGM
+                NotifyRunStateChanged(); //?덇굔以 異붽? - 0630: ?뱀닔 ?⑥씠釉??쒖옉 ??EventStage BGM
                 return;
             }
 
@@ -244,13 +262,13 @@ namespace TeamProject01.Gameplay
 
             if (bossSpawned && bossWaveController != null && bossWaveController.ShouldPauseNormalSpawn)
             {
-                NotifyRunStateChanged(); //안건준 추가 - 0630: 보스 웨이브 시작 → Boss BGM
+                NotifyRunStateChanged(); //?덇굔以 異붽? - 0630: 蹂댁뒪 ?⑥씠釉??쒖옉 ??Boss BGM
                 return;
             }
 
             if (normalWaveSpawner == null)
             {
-                NotifyRunStateChanged(); //안건준 추가 - 0630: 일반 스폰 없음 — 현재 상태만 알림
+                NotifyRunStateChanged(); //?덇굔以 異붽? - 0630: ?쇰컲 ?ㅽ룿 ?놁쓬 ???꾩옱 ?곹깭留??뚮┝
                 return;
             }
 
@@ -263,14 +281,13 @@ namespace TeamProject01.Gameplay
                 ? eliteMixController.BuildStagePlan(currentStage, requestedEliteSpawnCount)
                 : default;
 
-            int normalSpawnCount = Mathf.Max(0, totalSpawnCount - elitePlan.TotalCount);
-            normalSpawnCount = normalWaveSpawner.ResolveNormalSpawnCount(currentStage, normalSpawnCount);
+            int normalSpawnCount = Mathf.Max(0, totalSpawnCount);
             normalWaveSpawner.BeginStage(currentStage, stageDurationSeconds, normalSpawnCount, this);
             eliteWaveSpawner?.BeginStage(currentStage, elitePlan, normalWaveSpawner.ResolveDifficultyForStage(currentStage), normalWaveSpawner, this);
-            NotifyRunStateChanged(); //안건준 추가 - 0630: 일반 웨이브 시작 → Stage BGM
+            NotifyRunStateChanged(); //?덇굔以 異붽? - 0630: ?쇰컲 ?⑥씠釉??쒖옉 ??Stage BGM
         }
 
-        //안건준 추가 - 0630: RunStateChanged 구독자에게 CurrentState 전달
+        //?덇굔以 異붽? - 0630: RunStateChanged 援щ룆?먯뿉寃?CurrentState ?꾨떖
         private void NotifyRunStateChanged()
         {
             RunStateChanged?.Invoke(CurrentState);
@@ -283,16 +300,148 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            bool isBossStage = enableBossWave && bossWaveController != null && bossWaveController.IsBossStage(currentStage);
+            bool isBossStage = IsBossStage(currentStage);
 
-            if (!manaOrbCollectSpecialWave.TryBeginStage(currentStage, isBossStage, HandleManaOrbCollectSpecialWaveFinished))
+            if (TryConsumeResolvedNoManaOrbCollectSpecialWave(currentStage))
             {
                 return false;
             }
 
+            if (!TryConsumeReservedManaOrbCollectSpecialWave(currentStage)
+                && !TryReserveManaOrbCollectSpecialWave(currentStage, isBossStage))
+            {
+                return false;
+            }
+
+            ClearReservedManaOrbCollectSpecialWave();
+            manaOrbCollectSpecialWave.BeginReservedStage(HandleManaOrbCollectSpecialWaveFinished);
             specialWaveActive = true;
             waitingForSpecialWaveStage = true;
             return true;
+        }
+
+        private bool ShouldDelayNextPriorityStageUntilCurrentMonstersCleared()
+        {
+            if (!HasAnyBlockingMonsterForPriorityStage())
+            {
+                return false;
+            }
+
+            int nextStage = currentStage + 1;
+            bool nextStageIsBoss = IsBossStage(nextStage);
+
+            if (!skipSpecialWaveCheckOnce && CanCheckManaOrbCollectSpecialWave(nextStage, nextStageIsBoss))
+            {
+                if (TryReserveManaOrbCollectSpecialWave(nextStage, nextStageIsBoss))
+                {
+                    return true;
+                }
+
+                MarkResolvedNoManaOrbCollectSpecialWave(nextStage);
+            }
+
+            return nextStageIsBoss;
+        }
+
+        private bool HasAnyBlockingMonsterForPriorityStage()
+        {
+            return CurrentStageRemainingEnemyCount > 0 || EnemyController.ActiveCount > 0;
+        }
+
+        private bool IsBossStage(int stage)
+        {
+            return enableBossWave && bossWaveController != null && bossWaveController.IsBossStage(stage);
+        }
+
+        private bool CanCheckManaOrbCollectSpecialWave(int stage, bool isBossStage)
+        {
+            return enableSpecialWaveExtension
+                && manaOrbCollectSpecialWave != null
+                && manaOrbCollectSpecialWave.CanCheckStageForReservation(stage, isBossStage);
+        }
+
+        private bool TryReserveManaOrbCollectSpecialWave(int stage, bool isBossStage)
+        {
+            if (!enableSpecialWaveExtension || manaOrbCollectSpecialWave == null)
+            {
+                return false;
+            }
+
+            if (hasReservedManaOrbCollectSpecialWave)
+            {
+                if (reservedManaOrbCollectSpecialWaveStage == stage)
+                {
+                    return true;
+                }
+
+                if (stage > reservedManaOrbCollectSpecialWaveStage)
+                {
+                    ClearReservedManaOrbCollectSpecialWave();
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            if (!manaOrbCollectSpecialWave.TryReserveStage(stage, isBossStage))
+            {
+                return false;
+            }
+
+            hasReservedManaOrbCollectSpecialWave = true;
+            reservedManaOrbCollectSpecialWaveStage = stage;
+            return true;
+        }
+
+        private void MarkResolvedNoManaOrbCollectSpecialWave(int stage)
+        {
+            hasResolvedNoManaOrbCollectSpecialWave = true;
+            resolvedNoManaOrbCollectSpecialWaveStage = stage;
+        }
+
+        private bool TryConsumeReservedManaOrbCollectSpecialWave(int stage)
+        {
+            if (!hasReservedManaOrbCollectSpecialWave || reservedManaOrbCollectSpecialWaveStage != stage)
+            {
+                return false;
+            }
+
+            ClearReservedManaOrbCollectSpecialWave();
+            return true;
+        }
+
+        private bool TryConsumeResolvedNoManaOrbCollectSpecialWave(int stage)
+        {
+            if (!hasResolvedNoManaOrbCollectSpecialWave)
+            {
+                return false;
+            }
+
+            if (resolvedNoManaOrbCollectSpecialWaveStage == stage)
+            {
+                ClearResolvedNoManaOrbCollectSpecialWave();
+                return true;
+            }
+
+            if (stage > resolvedNoManaOrbCollectSpecialWaveStage)
+            {
+                ClearResolvedNoManaOrbCollectSpecialWave();
+            }
+
+            return false;
+        }
+
+        private void ClearReservedManaOrbCollectSpecialWave()
+        {
+            hasReservedManaOrbCollectSpecialWave = false;
+            reservedManaOrbCollectSpecialWaveStage = 0;
+        }
+
+        private void ClearResolvedNoManaOrbCollectSpecialWave()
+        {
+            hasResolvedNoManaOrbCollectSpecialWave = false;
+            resolvedNoManaOrbCollectSpecialWaveStage = 0;
         }
 
         private void HandleManaOrbCollectSpecialWaveFinished()
@@ -350,52 +499,52 @@ namespace TeamProject01.Gameplay
 
         private void AdvanceStage()
         {
-            int completedStage = currentStage; // 보상 기준 웨이브
-            TrySpawnWaveClearDiamondReward(completedStage); // 클리어 다이아 픽업
+            int completedStage = currentStage; // 蹂댁긽 湲곗? ?⑥씠釉?
+            TrySpawnWaveClearDiamondReward(completedStage); // ?대━???ㅼ씠???쎌뾽
             elapsedStageSeconds = 0.0f;
             skipSpecialWaveCheckOnce = false;
             currentStage++;
-            CurrentStageChanged?.Invoke(currentStage); //안건준 추가 - 0629 (다음 웨이브 진입 시 구독자에게 Stage 알림)
+            CurrentStageChanged?.Invoke(currentStage); //?덇굔以 異붽? - 0629 (?ㅼ쓬 ?⑥씠釉?吏꾩엯 ??援щ룆?먯뿉寃?Stage ?뚮┝)
             StartCurrentStage();
         }
 
-        private void TrySpawnWaveClearDiamondReward(int completedStage) // 웨이브 클리어 다이아
+        private void TrySpawnWaveClearDiamondReward(int completedStage) // ?⑥씠釉??대━???ㅼ씠??
         {
             if (!spawnDiamondRewardOnWaveStepClear || completedStage <= 0)
             {
-                return; // 보상 비활성
+                return; // 蹂댁긽 鍮꾪솢??
             }
 
             if (completedStage % Mathf.Max(1, diamondRewardWaveStep) != 0)
             {
-                return; // 보상 웨이브 아님
+                return; // 蹂댁긽 ?⑥씠釉??꾨떂
             }
 
             int reward = ResolveWaveClearDiamondReward(completedStage);
             if (reward <= 0)
             {
-                return; // 지급 없음
+                return; // 吏湲??놁쓬
             }
 
-            RewardDropService.SpawnDiamond(reward, ResolveWaveRewardDropPosition()); // 월드 픽업 생성
+            RewardDropService.SpawnDiamond(reward, ResolveWaveRewardDropPosition()); // ?붾뱶 ?쎌뾽 ?앹꽦
         }
 
-        private int ResolveWaveClearDiamondReward(int completedStage) // 보상표 조회
+        private int ResolveWaveClearDiamondReward(int completedStage) // 蹂댁긽??議고쉶
         {
             if (diamondRewardByWaveStep == null || diamondRewardByWaveStep.Length == 0)
             {
-                return 0; // 테이블 없음
+                return 0; // ?뚯씠釉??놁쓬
             }
 
             int stepIndex = Mathf.Max(0, completedStage / Mathf.Max(1, diamondRewardWaveStep) - 1);
-            int clampedIndex = Mathf.Min(stepIndex, diamondRewardByWaveStep.Length - 1); // 40 이후는 마지막 값 반복
-            return Mathf.Max(0, diamondRewardByWaveStep[clampedIndex]); // 안전 보정
+            int clampedIndex = Mathf.Min(stepIndex, diamondRewardByWaveStep.Length - 1); // 40 ?댄썑??留덉?留?媛?諛섎났
+            return Mathf.Max(0, diamondRewardByWaveStep[clampedIndex]); // ?덉쟾 蹂댁젙
         }
 
-        private Vector3 ResolveWaveRewardDropPosition() // 웨이브 보상 위치
+        private Vector3 ResolveWaveRewardDropPosition() // ?⑥씠釉?蹂댁긽 ?꾩튂
         {
             NexusController nexus = NexusController.Active;
-            return nexus != null ? nexus.transform.position : transform.position; // 넥서스 근처 우선
+            return nexus != null ? nexus.transform.position : transform.position; // ?μ꽌??洹쇱쿂 ?곗꽑
         }
 
         private void ResolveReferences()
@@ -422,7 +571,7 @@ namespace TeamProject01.Gameplay
 
             if (eliteWaveSpawner == null)
             {
-                eliteWaveSpawner = gameObject.AddComponent<EliteWaveSpawner>(); // 기존 씬 수정 없이 런타임에서 분리 스포너를 보강
+                eliteWaveSpawner = gameObject.AddComponent<EliteWaveSpawner>(); // 湲곗〈 ???섏젙 ?놁씠 ?고??꾩뿉??遺꾨━ ?ㅽ룷?덈? 蹂닿컯
             }
 
             if (bossWaveController == null)

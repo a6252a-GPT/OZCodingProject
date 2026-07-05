@@ -74,6 +74,16 @@ namespace TeamProject01.Gameplay
 
         public void FinalizeRunResult()
         {
+            FinalizeRunResult(false); // 넥서스 사망/정상 종료
+        }
+
+        public void AbandonRun() // 설정창 게임 포기
+        {
+            FinalizeRunResult(true); // 포기는 클리어 판정 금지
+        }
+
+        private void FinalizeRunResult(bool forceGameOver)
+        {
             if (resultFinalized)
             {
                 return; // 중복 방지
@@ -83,7 +93,7 @@ namespace TeamProject01.Gameplay
             ResolveReferences();
 
             int reachedWave = Mathf.Max(0, waveController != null ? waveController.CurrentStage : 0);
-            bool isClear = reachedWave >= clearStageThreshold; // 40 이상이면 클리어
+            bool isClear = !forceGameOver && reachedWave >= clearStageThreshold; // 포기는 항상 게임오버
             float surviveTime = Mathf.Max(0f, Time.unscaledTime - runStartRealtime);
             int collectedDiamond = coreStats != null ? Mathf.Max(0, coreStats.CurrentRunDiamond) : 0; // 먹은 다이아
             int clearDiamondBonus = CalculateClearDiamondBonus(collectedDiamond, isClear); // 클리어 추가

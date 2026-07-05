@@ -75,6 +75,11 @@ namespace TeamProject01.Gameplay
 
         private Transform ResolvePickupTarget()
         {
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                return lootingCenter; // 루팅 소켓 우선
+            }
+
             if (!MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget))
             {
                 return null;
@@ -145,7 +150,16 @@ namespace TeamProject01.Gameplay
 
             collected = true;
             Vector3 collectPosition = ResolveCollectVfxPosition();
-            RewardPickupCollectVfxPlayer.Play(collectPosition); // 획득 VFX
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                collectPosition = lootingCenter.position; // SFX 위치도 루팅 기준
+                RewardPickupCollectVfxPlayer.PlayFollowing(lootingCenter, Vector3.zero); // 획득 VFX
+            }
+            else
+            {
+                RewardPickupCollectVfxPlayer.Play(collectPosition); // 획득 VFX
+            }
+
             PlayCollectSfx(collectPosition);
 
             if (owner != null)

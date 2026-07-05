@@ -91,7 +91,7 @@ namespace TeamProject01.Gameplay
                     ApplyDirectionSteer(GetMouseDirection(input), deltaTime); // 마우스 방향
                     break;
                 case ConvoyControlMode.WasdManualForward:
-                    currentForwardSpeed = HasMoveInput(input.Move) ? BaseSpeed : 0f; // 입력 시 전진
+                    currentForwardSpeed = HasMoveInput(input.Move) ? GetEffectiveBaseSpeed() : 0f; // 입력 시 전진
                     ApplyDirectionSteer(GetCameraRelativeDirection(input.Move), deltaTime); // WASD 방향
                     break;
                 default:
@@ -103,7 +103,17 @@ namespace TeamProject01.Gameplay
 
         private float GetAutoForwardSpeed() // 자동 속도
         {
-            return Mathf.Max(0f, BaseSpeed); // 음수 방지
+            return GetEffectiveBaseSpeed(); // 음수 방지
+        }
+
+        private float GetEffectiveBaseSpeed()
+        {
+            return CoreStatProvider.ApplyRunMoveSpeedBonusOrDefault(BaseSpeed);
+        }
+
+        private float GetHeadObstacleCorrectionDistance(float deltaTime)
+        {
+            return Mathf.Max(0f, HeadObstacleCorrectionSpeed) * Mathf.Max(0f, deltaTime); // 한 프레임 위치 보정 상한
         }
 
         private void ApplyTurnInput(float turnInput, float deltaTime) // 턴 입력

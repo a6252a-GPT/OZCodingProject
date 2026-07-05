@@ -261,10 +261,10 @@ namespace TeamProject01.Gameplay
                     if (TryResolveActiveStarterLevelPrefab(targetId, nextLevel, out GameObject starterLevelPrefab)
                         && ReplaceAttachedSegment(i, starterLevelPrefab, nextLevel))
                     {
-                        changed++; // 스타터 헤드/무기만 교체
+                        changed++; // 스타터 레벨 프리팹 교체
                     }
 
-                    continue; // 스타터 바디 고정
+                    continue; // 스타터 전용 프리팹 사용
                 }
 
                 if (ReplaceAttachedSegment(i, levelData.SegmentPrefab, nextLevel))

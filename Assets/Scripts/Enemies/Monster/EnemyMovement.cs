@@ -24,6 +24,12 @@ namespace TeamProject01.Gameplay
         private float knockbackDuration = ContactKnockbackDuration; // 전찬우수정-6019(몬스터피드백관련) - 현재 넉백 시간
         private Vector3 knockbackDirection; //현재 몬스터가 밀려나는 방향
         private float knockbackTimer; //밀리 상태 시간
+        private Transform knockbackVisualRoot; // 넉백 때 살짝 띄울 비주얼 루트
+        private Vector3 knockbackVisualBaseLocalPosition; // 비주얼 기본 위치
+        private bool hasKnockbackVisualBasePosition; // 기본 위치 캐시 여부
+        private float knockbackVisualLiftHeight; // 비주얼 상승 높이
+        private float knockbackVisualLiftDuration; // 비주얼 상승 전체 시간
+        private float knockbackVisualLiftElapsed; // 비주얼 상승 진행 시간
         private float staggerTimer; // 전찬우추가-6019(몬스터피드백관련) - 경직 남은 시간
 
         private EnemyPortalTotem assignedPortalTotem; // 현재 몬스터가 이동할 입구 토템
@@ -43,10 +49,12 @@ namespace TeamProject01.Gameplay
         private EnemySupportDebuffState supportDebuff; // 전찬우추가-0621 - 지원형 디버프 상태
 
         private EnemyPortalTotemCaster portalTotemCaster; // 같은 GameObject에 붙은 포탈 토템 소환 Script Component 참조
+        private EnemyCrowdBlocker crowdBlocker; // 몬스터끼리 한 점에 겹치지 않도록 보정하는 Script Component 참조
 
         private void Awake()
         {
             enemyController = GetComponent<EnemyController>(); // 같은 GameObject에 붙은 EnemyController Script Component를 찾는다.
+            crowdBlocker = GetComponent<EnemyCrowdBlocker>(); // 같은 GameObject에 붙은 EnemyCrowdBlocker Script Component를 찾는다.
 
             meleeAttack = GetComponent<EnemyMeleeAttack>(); // 같은 GameObject에 붙은 EnemyMeleeAttack Script Component를 찾는다.
             rangedAttack = GetComponent<EnemyRangedAttack>(); // 같은 GameObject에 붙은 EnemyRangedAttack Script Component를 찾는다.
@@ -58,6 +66,7 @@ namespace TeamProject01.Gameplay
             supportDebuff = GetComponent<EnemySupportDebuffState>(); // 전찬우추가-0621 - 지원형 디버프 상태를 찾는다.
 
             portalTotemCaster = GetComponent<EnemyPortalTotemCaster>(); // 같은 GameObject에 붙은 포탈 토템 소환 Script Component를 찾는다.
+            CacheKnockbackVisualRoot(); // 비주얼만 살짝 띄울 루트를 찾는다.
 
             if (nexus == null) //Nexus가 연결되지 않았다면
             {
@@ -68,9 +77,12 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
+            SetCrowdMoving(false); // 실제 이동 분기에서만 켜서 정지 몬스터가 밀림을 받을 수 있게 한다.
+            UpdateKnockbackVisualLift(Time.deltaTime); // 루트 대신 비주얼만 살짝 뜨게 한다.
+
             if (IsFrozenBySupport()) // 전찬우추가-0621 - 얼음종 동결 중 이동 정지
             {
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 정지 중 위치 보정
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 정지 중 위치 보정
                 transform.position = resolvedPosition; // 보정 위치 적용
 
                 return;
@@ -84,6 +96,7 @@ namespace TeamProject01.Gameplay
                 knockbackPosition = GroundService.ProjectToGround(knockbackPosition, groundHeight); //바닥 높이에 맞춘다.
 
                 Vector3 resolvedKnockbackPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, knockbackPosition, bodyRadius); //밀리는 중에 컨보이와 겹치지 않게 한다.
+                resolvedKnockbackPosition = ResolveCrowdPosition(transform.position, resolvedKnockbackPosition); // 몬스터끼리 겹치지 않게 한다.
                 transform.position = resolvedKnockbackPosition; //보정 위치를 적용한다.
 
                 return;
@@ -93,7 +106,7 @@ namespace TeamProject01.Gameplay
             {
                 staggerTimer -= Time.deltaTime; // 전찬우추가-6019(몬스터피드백관련) - 경직 시간 감소
 
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-6019(몬스터피드백관련) - 정지 중 위치 보정
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 전찬우추가-6019(몬스터피드백관련) - 정지 중 위치 보정
                 transform.position = resolvedPosition; // 전찬우추가-6019(몬스터피드백관련) - 보정 위치 적용
 
                 return;
@@ -110,7 +123,7 @@ namespace TeamProject01.Gameplay
                 {
                     IsInStopRange = false;
 
-                    Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius);
+                    Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position);
                     transform.position = resolvedPosition;
 
                     return;
@@ -125,7 +138,7 @@ namespace TeamProject01.Gameplay
             {
                 IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
 
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 채널링 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 채널링 중에도 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 토템을 유지하는 동안 이동하지 않는다.
@@ -171,7 +184,7 @@ namespace TeamProject01.Gameplay
             {
                 IsInStopRange = false; // Nexus 공격 사거리 안에 있는 상태는 아니라고 저장한다.
 
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 토템 주변에서 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 토템 주변에서 정지 중에도 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 순간이동할 때까지 입구 토템 주변에서 정지한다.
@@ -190,7 +203,7 @@ namespace TeamProject01.Gameplay
                 }
 
                 ////// 전찬우추가-0619 - 몬스터 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
-                Vector3 resolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, transform.position, bodyRadius); // 전찬우추가-0619 - 정지 중에도 세그먼트와 겹치지 않도록 위치를 보정한다.
+                Vector3 resolvedPosition = ResolveMonsterPosition(transform.position, transform.position); // 전찬우추가-0619 - 정지 중에도 겹치지 않도록 위치를 보정한다.
                 transform.position = resolvedPosition; // 보정된 위치를 적용한다.
 
                 return; // 공격, 투척, 소환 중이면 Nexus 쪽으로 더 이동하지 않는다.
@@ -212,9 +225,9 @@ namespace TeamProject01.Gameplay
             desiredPosition = GroundService.ProjectToGround(desiredPosition, groundHeight); // 목표 위치를 바닥 기준 높이에 맞게 보정한다.
 
             ////// 전찬우추가-0619 - 몬스터 이동 위치 보정은 공용 상호작용 API를 통해서만 조회한다.
-            Vector3 position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가-0619 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
+            Vector3 segmentResolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(transform.position, desiredPosition, bodyRadius); // 전찬우추가-0619 - 세그먼트와 겹치지 않도록 이동 위치를 보정한다.
 
-            Vector3 pushOffset = position - desiredPosition; // 원래 이동하려던 위치에서 얼마나 밀려났는지 계산한다.
+            Vector3 pushOffset = segmentResolvedPosition - desiredPosition; // 원래 이동하려던 위치에서 얼마나 밀려났는지 계산한다.
 
             if (pushOffset.sqrMagnitude > 0.0001f) // 세그먼트 때문에 위치가 보정되었다면
             {
@@ -224,8 +237,14 @@ namespace TeamProject01.Gameplay
                 knockbackTimer = knockbackDuration; // 짧은 시간 동안 밀림 상태로 만든다.
             }
 
+            Vector3 position = ResolveCrowdPosition(transform.position, segmentResolvedPosition, true); // 몬스터끼리 겹치지 않도록 최종 위치를 보정한다.
             transform.position = position; // 최종 보정된 위치를 몬스터 Transform에 적용한다.
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up); // 몬스터가 이동 방향을 바라보게 회전시킨다.
+        }
+
+        private void OnDisable()
+        {
+            ResetKnockbackVisualLift();
         }
 
         private void UpdateAssignedPortalTotem() // 몬스터가 이동할 입구 토템을 확인하는 함수
@@ -313,6 +332,7 @@ namespace TeamProject01.Gameplay
             knockbackDuration = duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 시간 갱신
             knockbackSpeed = feedback.KnockbackDistance / duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 속도 계산
             knockbackTimer = duration; // 전찬우수정-6019(몬스터피드백관련) - 넉백 타이머 시작
+            BeginKnockbackVisualLift(feedback.VisualLiftHeight, duration); // 비주얼만 살짝 띄워 충돌감을 준다.
         }
 
         public void ForceTeleport(Vector3 worldPosition) // 지원형 웜홀 강제 위치 이동
@@ -321,10 +341,17 @@ namespace TeamProject01.Gameplay
             knockbackTimer = 0f; // 밀림 중단
             staggerTimer = 0f; // 경직 중단
             knockbackDirection = Vector3.zero; // 방향 초기화
+            ResetKnockbackVisualLift(); // 순간이동 전 비주얼 위치 복구
             IsInStopRange = false; // 넥서스 정지 상태 해제
+            SetCrowdMoving(false); // 강제 이동 직전 몬스터 군집 이동 상태를 정리한다.
+
+            if (crowdBlocker != null)
+            {
+                crowdBlocker.ClearPendingPush(); // 이전 프레임에 예약된 밀림이 순간이동 위치를 흔들지 않게 한다.
+            }
 
             Vector3 groundedPosition = GroundService.ProjectToGround(worldPosition, groundHeight); // 바닥 높이 보정
-            transform.position = MonsterInteractionApi.ResolveMonsterPosition(transform.position, groundedPosition, bodyRadius); // 겹침 보정
+            transform.position = ResolveMonsterPosition(transform.position, groundedPosition); // 겹침 보정
         }
 
         public void Configure(Transform nexus, float moveSpeed, float groundHeight)// Spawner나 Controller가 이동 초기값을 넣어주는 함수
@@ -344,8 +371,6 @@ namespace TeamProject01.Gameplay
             moveSpeed = Mathf.Max(0.01f, moveSpeed * multiplier); // 기본 이동속도 배율
         }
 
-
-
         private bool IsFrozenBySupport() // 전찬우추가-0621 - 지원형 동결 여부
         {
             if (supportDebuff == null)
@@ -364,6 +389,157 @@ namespace TeamProject01.Gameplay
             }
 
             return supportDebuff != null ? supportDebuff.MoveSpeedMultiplier : 1f;
+        }
+
+        private Vector3 ResolveMonsterPosition(Vector3 currentPosition, Vector3 desiredPosition)
+        {
+            Vector3 segmentResolvedPosition = MonsterInteractionApi.ResolveMonsterPosition(currentPosition, desiredPosition, bodyRadius);
+            return ResolveCrowdPosition(currentPosition, segmentResolvedPosition);
+        }
+
+        private Vector3 ResolveCrowdPosition(Vector3 currentPosition, Vector3 desiredPosition, bool isMoving = false)
+        {
+            if (crowdBlocker == null)
+            {
+                crowdBlocker = GetComponent<EnemyCrowdBlocker>();
+            }
+
+            SetCrowdMoving(isMoving);
+            return MonsterInteractionApi.ResolveMonsterCrowdPosition(crowdBlocker, currentPosition, desiredPosition, bodyRadius);
+        }
+
+        private void SetCrowdMoving(bool isMoving)
+        {
+            if (crowdBlocker == null)
+            {
+                crowdBlocker = GetComponent<EnemyCrowdBlocker>();
+            }
+
+            if (crowdBlocker != null)
+            {
+                crowdBlocker.SetCrowdMoving(isMoving);
+            }
+        }
+
+        private void BeginKnockbackVisualLift(float height, float duration)
+        {
+            if (height <= 0.0f)
+            {
+                return;
+            }
+
+            if (knockbackVisualRoot == null)
+            {
+                CacheKnockbackVisualRoot();
+            }
+
+            if (knockbackVisualRoot == null)
+            {
+                return;
+            }
+
+            CacheKnockbackVisualBasePosition();
+            knockbackVisualLiftHeight = Mathf.Max(knockbackVisualLiftHeight, height);
+            knockbackVisualLiftDuration = Mathf.Max(0.01f, duration);
+            knockbackVisualLiftElapsed = 0.0f;
+        }
+
+        private void UpdateKnockbackVisualLift(float deltaTime)
+        {
+            if (knockbackVisualLiftDuration <= 0.0f || knockbackVisualRoot == null)
+            {
+                return;
+            }
+
+            CacheKnockbackVisualBasePosition();
+            knockbackVisualLiftElapsed += Mathf.Max(0.0f, deltaTime);
+
+            float progress = Mathf.Clamp01(knockbackVisualLiftElapsed / knockbackVisualLiftDuration);
+            float height = Mathf.Sin(progress * Mathf.PI) * knockbackVisualLiftHeight;
+            Vector3 localPosition = knockbackVisualBaseLocalPosition;
+            localPosition.y += height;
+            knockbackVisualRoot.localPosition = localPosition;
+
+            if (progress >= 1.0f)
+            {
+                ResetKnockbackVisualLift();
+            }
+        }
+
+        private void ResetKnockbackVisualLift()
+        {
+            if (knockbackVisualRoot != null && hasKnockbackVisualBasePosition)
+            {
+                knockbackVisualRoot.localPosition = knockbackVisualBaseLocalPosition;
+            }
+
+            knockbackVisualLiftHeight = 0.0f;
+            knockbackVisualLiftDuration = 0.0f;
+            knockbackVisualLiftElapsed = 0.0f;
+        }
+
+        private void CacheKnockbackVisualRoot()
+        {
+            if (knockbackVisualRoot != null)
+            {
+                CacheKnockbackVisualBasePosition();
+                return;
+            }
+
+            Transform visualRoot = FindChildRecursive(transform, "VisualRoot");
+            if (visualRoot == null)
+            {
+                visualRoot = FindChildRecursive(transform, "VisualOffsetRoot");
+            }
+
+            if (visualRoot == null)
+            {
+                Animator animator = GetComponentInChildren<Animator>(true);
+                visualRoot = animator != null ? animator.transform : null;
+            }
+
+            if (visualRoot == null || visualRoot == transform)
+            {
+                return;
+            }
+
+            knockbackVisualRoot = visualRoot;
+            CacheKnockbackVisualBasePosition();
+        }
+
+        private void CacheKnockbackVisualBasePosition()
+        {
+            if (knockbackVisualRoot == null || hasKnockbackVisualBasePosition)
+            {
+                return;
+            }
+
+            knockbackVisualBaseLocalPosition = knockbackVisualRoot.localPosition;
+            hasKnockbackVisualBasePosition = true;
+        }
+
+        private static Transform FindChildRecursive(Transform root, string childName)
+        {
+            if (root == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null;
+            }
+
+            if (root.name == childName)
+            {
+                return root;
+            }
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindChildRecursive(root.GetChild(i), childName);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
     }
 }

@@ -5,6 +5,8 @@ namespace TeamProject01.Gameplay
 {
     public sealed partial class SegmentProjectileRuntime
     {
+        private const float ExplosionEdgeDamageMultiplier = 0.5f; // 메테오와 동일: 외곽 50%
+
         private Vector3 GetEnemyHitPosition(EnemyController enemy) // 몬스터 중심 위치
         {
             float targetAimHeight = profile != null ? profile.TargetAimHeight : 0.45f; // 조준 높이
@@ -130,7 +132,6 @@ namespace TeamProject01.Gameplay
                 PlayProjectileExplosionSfx(position);
             }
 
-            DamageData explosionDamage = DamageData.Create(damage.Amount, DamageType.Explosion, damage.SourceSegmentIndex, position, damage.SourceObject); // 폭발 피해
             Collider[] hits = Physics.OverlapSphere(position, damageRadius); // 범위 검색
             for (int i = 0; i < hits.Length; i++)
             {
@@ -142,9 +143,22 @@ namespace TeamProject01.Gameplay
 
                 hitIds.Add(enemy.EnemyId); // 중복 방지
                 Vector3 hitPosition = GetEnemyHitPosition(enemy); // 명중 위치
+                float finalDamage = CalculateExplosionFalloffDamage(damage.Amount, position, enemy.transform.position, damageRadius); // 거리 감쇠
+                DamageData explosionDamage = DamageData.Create(finalDamage, DamageType.Explosion, damage.SourceSegmentIndex, position, damage.SourceObject); // 개별 폭발 피해
                 SegmentHitResolver.ApplyDamageAndFeedback(enemy, explosionDamage, profile, hitPosition, position, SegmentMonsterFeedbackKind.Explosion); // 범위 피해 + 피드백
                 ApplyExplosionDebuff(enemy); // 감속 등 폭발 부가 효과
             }
+        }
+
+        private static float CalculateExplosionFalloffDamage(float baseDamage, Vector3 explosionCenter, Vector3 targetPosition, float explosionRadius) // 중심 100%, 외곽 50%
+        {
+            Vector3 offset = targetPosition - explosionCenter;
+            offset.y = 0f; // 평면 거리 기준
+
+            float radius = Mathf.Max(0.01f, explosionRadius); // 0 나눗셈 방지
+            float distance01 = Mathf.Clamp01(offset.magnitude / radius); // 중심 0, 외곽 1
+            float multiplier = Mathf.Lerp(1f, ExplosionEdgeDamageMultiplier, distance01); // 선형 그라데이션
+            return Mathf.Max(0f, baseDamage) * multiplier; // 최종 피해
         }
 
         private void ApplyExplosionDebuff(EnemyController enemy) // 폭발 부가 디버프

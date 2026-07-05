@@ -379,7 +379,7 @@ MonoBehaviour:
   horizontalSizeMultiplier: 1
   barHeight: 9
   showSegments: 1
-  hpPerSegment: 10
-  maxVisibleSegmentCount: 10
+  hpPerSegment: 50
+  maxVisibleSegmentCount: 30
   fillHorizontalPadding: 0
   fillVerticalPadding: 0

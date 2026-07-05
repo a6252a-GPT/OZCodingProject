@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.TextCore.LowLevel;
 using UnityEngine.UI;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -79,6 +80,7 @@ namespace TeamProject01.Gameplay
         [SerializeField] private bool syncScrollPosition = true; // TOTAL/WAVE 스크롤 동기화
         [SerializeField] private bool autoFitToCurrentRect = true; // 현재 패널 크기에 내부 내용 맞춤
         [SerializeField] private bool onlyShowInAutoOrbit = true; // 자동궤도 중에만 표시
+        [SerializeField] private bool userVisible = true;
         [SerializeField] private TMP_FontAsset debugFont; // DPS 미터 전용 폰트
 
         private readonly List<AttachedSegmentDebugEntry> segmentEntries = new List<AttachedSegmentDebugEntry>(64); // 현재 세그먼트 순서
@@ -100,6 +102,14 @@ namespace TeamProject01.Gameplay
         private bool lastVisibleState = true; // 직전 표시 상태
 
         private const string GwangyangFontAssetPath = "Assets/UI/Fonts/Title/GwangyangSunshine_Bold SDF.asset";
+        private const string GwangyangFontResourcePath = "UI/Fonts/DamageFloatingSource/GwangyangSunshine_Bold";
+        private const string KoreanFallbackFontResourcePath = "UI/Fonts/DamageFloatingSource/Pretendard_Medium";
+        private const string DpsMeterRequiredCharacters = "TOTALWAVEDPSNOSEGMENTDAMAGELv/sSegment 0123456789.,:+-_%()[] 딜미터세그먼트기본캐논기관총화염방사기전기충격미사일톱날워프홀성수대포투석기화염구탑산탄레이저지원공격마법방어소환";
+        private const float DpsScrollSensitivity = 32f;
+        private static TMP_FontAsset runtimeDebugFont;
+        private static TMP_FontAsset runtimeFallbackDebugFont;
+        private static readonly HashSet<string> warmedFontTextKeys = new HashSet<string>();
+        private static readonly HashSet<string> warnedMissingFontTextKeys = new HashSet<string>();
         private static readonly Vector2 DefaultGeneratedRootSize = new Vector2(520f, 560f);
         private static readonly Color TotalFillColor = new Color(0.95f, 0.72f, 0.28f, 0.95f);
         private static readonly Color WaveFillColor = new Color(0.32f, 0.78f, 1f, 0.95f);
@@ -172,9 +182,35 @@ namespace TeamProject01.Gameplay
         {
             EnsureRootRect();
             CacheLayoutReferences();
+            EnsureScrollInfrastructure();
             if (totalContent == null || waveContent == null)
             {
                 WarnMissingLayoutOnce(); // 런타임에서 사용자 배치를 갈아엎지 않음
+            }
+        }
+
+        public bool UserVisible => userVisible;
+
+        public void ToggleUserVisible()
+        {
+            SetUserVisible(!userVisible);
+        }
+
+        public void SetUserVisible(bool visible)
+        {
+            if (userVisible == visible)
+            {
+                ApplyPanelVisibility(ShouldShowPanel());
+                return;
+            }
+
+            userVisible = visible;
+            bool shouldShow = ShouldShowPanel();
+            ApplyPanelVisibility(shouldShow);
+            if (shouldShow)
+            {
+                nextRefreshTime = 0f;
+                Refresh(true);
             }
         }
 
@@ -194,6 +230,8 @@ namespace TeamProject01.Gameplay
             }
 
             WireScrollSync(); // 숨김 상태로 시작한 뒤 켜질 때도 보장
+            float totalScrollPosition = CaptureScrollPosition(totalScrollRect);
+            float waveScrollPosition = CaptureScrollPosition(waveScrollRect);
             ApplyResponsiveLayout(); // 현재 RectTransform 크기 기준 재배치
             if (!force)
             {
@@ -214,10 +252,16 @@ namespace TeamProject01.Gameplay
             float maxWaveDamage = CalculateMaxDamage(MetricKind.Wave);
             RefreshRows(totalRows, MetricKind.Total, maxTotalDamage, TotalFillColor);
             RefreshRows(waveRows, MetricKind.Wave, maxWaveDamage, WaveFillColor);
+            RestoreScrollPositions(totalScrollPosition, waveScrollPosition);
         }
 
         private bool ShouldShowPanel()
         {
+            if (!userVisible)
+            {
+                return false;
+            }
+
             if (!onlyShowInAutoOrbit)
             {
                 return true; // 항상 표시 모드
@@ -410,7 +454,7 @@ namespace TeamProject01.Gameplay
 
             Image viewportImage = viewport.gameObject.AddComponent<Image>();
             viewportImage.color = new Color(0f, 0f, 0f, 0.12f);
-            viewportImage.raycastTarget = false;
+            viewportImage.raycastTarget = true;
             viewport.gameObject.AddComponent<RectMask2D>();
 
             RectTransform content = CreateRect(viewport, "Content", new Vector2(452f, 210f));
@@ -439,7 +483,8 @@ namespace TeamProject01.Gameplay
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            scrollRect.scrollSensitivity = 26f;
+            scrollRect.inertia = true;
+            scrollRect.scrollSensitivity = DpsScrollSensitivity;
             return panel;
         }
 
@@ -469,6 +514,90 @@ namespace TeamProject01.Gameplay
             view.Content = panelRoot != null ? FindChildRect(panelRoot, "Content") : null;
             view.TitleText = view.Title != null ? view.Title.GetComponent<TextMeshProUGUI>() : null;
             view.HeaderText = view.Header != null ? view.Header.GetComponent<TextMeshProUGUI>() : null;
+        }
+
+        private void EnsureScrollInfrastructure()
+        {
+            EnsurePanelScroll(totalPanelView, ref totalScrollRect);
+            EnsurePanelScroll(wavePanelView, ref waveScrollRect);
+        }
+
+        private static void EnsurePanelScroll(PanelView view, ref ScrollRect scrollRect)
+        {
+            if (view == null || view.Root == null || view.Viewport == null || view.Content == null)
+            {
+                return;
+            }
+
+            scrollRect = view.Root.GetComponent<ScrollRect>();
+            if (scrollRect == null)
+            {
+                scrollRect = view.Root.gameObject.AddComponent<ScrollRect>();
+            }
+
+            scrollRect.viewport = view.Viewport;
+            scrollRect.content = view.Content;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.inertia = true;
+            scrollRect.scrollSensitivity = DpsScrollSensitivity;
+
+            EnsureViewportDragTarget(view.Viewport);
+            EnsureContentLayout(view.Content);
+        }
+
+        private static void EnsureViewportDragTarget(RectTransform viewport)
+        {
+            if (viewport == null)
+            {
+                return;
+            }
+
+            Image image = viewport.GetComponent<Image>();
+            if (image == null)
+            {
+                image = viewport.gameObject.AddComponent<Image>();
+                image.color = new Color(0f, 0f, 0f, 0.12f);
+            }
+
+            image.raycastTarget = true;
+
+            if (viewport.GetComponent<RectMask2D>() == null)
+            {
+                viewport.gameObject.AddComponent<RectMask2D>();
+            }
+        }
+
+        private static void EnsureContentLayout(RectTransform content)
+        {
+            if (content == null)
+            {
+                return;
+            }
+
+            VerticalLayoutGroup layoutGroup = content.GetComponent<VerticalLayoutGroup>();
+            if (layoutGroup == null)
+            {
+                layoutGroup = content.gameObject.AddComponent<VerticalLayoutGroup>();
+            }
+
+            layoutGroup.childAlignment = TextAnchor.UpperCenter;
+            layoutGroup.childControlWidth = true;
+            layoutGroup.childControlHeight = true;
+            layoutGroup.childForceExpandWidth = true;
+            layoutGroup.childForceExpandHeight = false;
+            layoutGroup.spacing = 3f;
+            layoutGroup.padding = new RectOffset(0, 0, 2, 2);
+
+            ContentSizeFitter fitter = content.GetComponent<ContentSizeFitter>();
+            if (fitter == null)
+            {
+                fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+            }
+
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
         private void ApplyResponsiveLayout()
@@ -540,7 +669,7 @@ namespace TeamProject01.Gameplay
                 view.Content.anchorMin = new Vector2(0f, 1f);
                 view.Content.anchorMax = new Vector2(1f, 1f);
                 view.Content.pivot = new Vector2(0.5f, 1f);
-                view.Content.anchoredPosition = Vector2.zero;
+                view.Content.anchoredPosition = new Vector2(0f, view.Content.anchoredPosition.y);
                 view.Content.offsetMin = new Vector2(0f, view.Content.offsetMin.y);
                 view.Content.offsetMax = new Vector2(0f, view.Content.offsetMax.y);
             }
@@ -695,29 +824,160 @@ namespace TeamProject01.Gameplay
             TextMeshProUGUI[] texts = GetComponentsInChildren<TextMeshProUGUI>(true);
             for (int i = 0; i < texts.Length; i++)
             {
-                if (texts[i] != null && texts[i].font != font)
+                if (texts[i] == null)
                 {
-                    texts[i].font = font; // 광양선샤인 폰트 적용
+                    continue;
                 }
+
+                if (texts[i].font != font)
+                {
+                    texts[i].font = font;
+                }
+
+                TryWarmFont(texts[i].font, texts[i].text, true);
             }
         }
 
         private TMP_FontAsset ResolveDebugFont()
         {
-            if (debugFont != null)
+            if (IsUsableDebugFont(debugFont))
             {
+                return debugFont;
+            }
+
+            TMP_FontAsset runtimeFont = ResolveRuntimeDebugFont();
+            if (runtimeFont != null)
+            {
+                debugFont = runtimeFont;
+                return debugFont;
+            }
+
+            TMP_FontAsset existingFont = FindExistingPanelFont();
+            if (existingFont != null)
+            {
+                debugFont = existingFont;
                 return debugFont;
             }
 
 #if UNITY_EDITOR
-            debugFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(GwangyangFontAssetPath);
-            if (debugFont != null)
+            TMP_FontAsset editorFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(GwangyangFontAssetPath);
+            if (IsUsableDebugFont(editorFont))
             {
+                debugFont = editorFont;
                 return debugFont;
             }
 #endif
 
-            return TMP_Settings.defaultFontAsset;
+            debugFont = TMP_Settings.defaultFontAsset;
+            return debugFont;
+        }
+
+        private TMP_FontAsset FindExistingPanelFont()
+        {
+            TextMeshProUGUI[] texts = GetComponentsInChildren<TextMeshProUGUI>(true);
+            TMP_FontAsset firstFont = null;
+            for (int i = 0; i < texts.Length; i++)
+            {
+                TMP_FontAsset font = texts[i] != null ? texts[i].font : null;
+                if (font == null)
+                {
+                    continue;
+                }
+
+                if (firstFont == null)
+                {
+                    firstFont = font; // fallback 후보
+                }
+
+                if (font.name.Contains("Gwangyang") && IsUsableDebugFont(font))
+                {
+                    return font; // Gwangyang first when it can render Korean
+                }
+            }
+
+            return IsUsableDebugFont(firstFont) ? firstFont : null;
+        }
+
+        private static TMP_FontAsset ResolveRuntimeDebugFont()
+        {
+            if (runtimeDebugFont == null)
+            {
+                runtimeDebugFont = CreateRuntimeFont(GwangyangFontResourcePath, "GwangyangSunshine_Bold Runtime SDF");
+            }
+
+            if (IsUsableDebugFont(runtimeDebugFont))
+            {
+                return runtimeDebugFont;
+            }
+
+            if (runtimeFallbackDebugFont == null)
+            {
+                runtimeFallbackDebugFont = CreateRuntimeFont(KoreanFallbackFontResourcePath, "Pretendard_Medium Runtime SDF");
+            }
+
+            return IsUsableDebugFont(runtimeFallbackDebugFont) ? runtimeFallbackDebugFont : null;
+        }
+
+        private static TMP_FontAsset CreateRuntimeFont(string resourcePath, string displayName)
+        {
+            Font sourceFont = Resources.Load<Font>(resourcePath);
+            if (sourceFont == null)
+            {
+                return null;
+            }
+
+            TMP_FontAsset generated = TMP_FontAsset.CreateFontAsset(sourceFont);
+            if (generated == null)
+            {
+                return null;
+            }
+
+            generated.name = displayName;
+            generated.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+            generated.isMultiAtlasTexturesEnabled = true;
+            return generated;
+        }
+
+        private static bool IsUsableDebugFont(TMP_FontAsset font)
+        {
+            return TryWarmFont(font, DpsMeterRequiredCharacters, false);
+        }
+
+        private static bool TryWarmFont(TMP_FontAsset font, string characters, bool logMissing)
+        {
+            if (font == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(characters))
+            {
+                return true;
+            }
+
+            string key = $"{font.GetInstanceID()}:{characters}";
+            if (warmedFontTextKeys.Contains(key))
+            {
+                return true;
+            }
+
+            bool success = font.TryAddCharacters(characters, out string missingCharacters);
+            if (success || string.IsNullOrEmpty(missingCharacters))
+            {
+                warmedFontTextKeys.Add(key);
+                return true;
+            }
+
+            if (logMissing)
+            {
+                string warningKey = $"{font.GetInstanceID()}:{missingCharacters}";
+                if (warnedMissingFontTextKeys.Add(warningKey))
+                {
+                    Debug.LogWarning($"[SegmentDpsDebugPanel] Font '{font.name}' is missing DPS meter glyphs: {missingCharacters}");
+                }
+            }
+
+            return false;
         }
 
         private void EnsureRows(List<RowView> rows, RectTransform content, int count, MetricKind metricKind)
@@ -872,6 +1132,44 @@ namespace TeamProject01.Gameplay
             }
         }
 
+        private static float CaptureScrollPosition(ScrollRect scrollRect)
+        {
+            return scrollRect != null ? Mathf.Clamp01(scrollRect.verticalNormalizedPosition) : 1f;
+        }
+
+        private void RestoreScrollPositions(float totalPosition, float wavePosition)
+        {
+            ForceRebuildContentLayout(totalContent);
+            ForceRebuildContentLayout(waveContent);
+            Canvas.ForceUpdateCanvases();
+
+            bool previousSyncing = isSyncingScroll;
+            isSyncingScroll = true;
+            RestoreScrollPosition(totalScrollRect, totalPosition);
+            RestoreScrollPosition(waveScrollRect, wavePosition);
+            isSyncingScroll = previousSyncing;
+        }
+
+        private static void RestoreScrollPosition(ScrollRect scrollRect, float normalizedPosition)
+        {
+            if (scrollRect == null)
+            {
+                return;
+            }
+
+            scrollRect.verticalNormalizedPosition = Mathf.Clamp01(normalizedPosition);
+        }
+
+        private static void ForceRebuildContentLayout(RectTransform content)
+        {
+            if (content == null)
+            {
+                return;
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+        }
+
         private void WireScrollSync()
         {
             if (scrollSyncWired || !syncScrollPosition || totalScrollRect == null || waveScrollRect == null)
@@ -951,6 +1249,7 @@ namespace TeamProject01.Gameplay
         {
             if (target != null)
             {
+                TryWarmFont(target.font, value, true);
                 target.text = value;
             }
         }

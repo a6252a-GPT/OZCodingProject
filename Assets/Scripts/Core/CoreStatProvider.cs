@@ -11,6 +11,8 @@ namespace TeamProject01.Gameplay
     public sealed class CoreStatProvider : MonoBehaviour // 코어 성장값 보관소
     {
         public static CoreStatProvider Active { get; private set; } // 현재 코어
+        private const int MaxBaseDamageAmplifyChoicesPerSegment = 2; // 세그먼트별 공격력 증폭 선택 제한
+
         [Header("코어 레벨")]
         [Min(1)] public int CurrentLevel = 1; // 현재 레벨
         [Header("코어 공격력 보너스")]
@@ -47,6 +49,7 @@ namespace TeamProject01.Gameplay
         [Min(1)] public int ExperienceRequirementLevel21To30 = 560; // Lv21~30 다음 레벨 필요 경험치
         [Min(1)] public int ExperienceRequirementLevel31To40 = 850; // Lv31~40 다음 레벨 필요 경험치
         [Min(1)] public int ExperienceRequirementLevel41Plus = 1150; // Lv41+ 다음 레벨 필요 경험치
+        [Min(0)] public int ExperienceRequirementLevel41PlusIncreasePerLevel = 150; // Lv41+ per-level requirement increase
         public ConvoyController Convoy; // 세그먼트 추가 입구
         public SegmentCatalogAsset SegmentCatalogAsset; // 새 세그먼트 데이터에셋 목록
         // 건춘 추가 시작 =======
@@ -61,6 +64,22 @@ namespace TeamProject01.Gameplay
 
         public event Action<CoreStatData> StatsChanged; // 성장값 변경 알림
 
+        private float runBaseAttackMultiplier = 1f;
+        private float runAttackSpeedMultiplier = 1f;
+        private float runMoveSpeedMultiplier = 1f;
+        private float runPickupRangeMultiplier = 1f;
+        private float runTurnSpeedMultiplier = 1f;
+        private float runGoldGainMultiplier = 1f;
+        private float runDiamondGainMultiplier = 1f;
+        private float runGoldGainRemainder;
+        private float runDiamondGainRemainder;
+
+        public float RunBaseAttackMultiplier => Mathf.Max(0f, runBaseAttackMultiplier);
+        public float RunAttackSpeedMultiplier => Mathf.Max(0.01f, runAttackSpeedMultiplier);
+        public float RunMoveSpeedMultiplier => Mathf.Max(0f, runMoveSpeedMultiplier);
+        public float RunPickupRangeMultiplier => Mathf.Max(0f, runPickupRangeMultiplier);
+        public float RunTurnSpeedMultiplier => Mathf.Max(0f, runTurnSpeedMultiplier);
+
         public int ExperienceToNextLevel => CalculateRequiredExperience(CurrentLevel); // 다음 레벨 필요량
         public float ExperienceRatio => ExperienceToNextLevel <= 0 ? 0f : Mathf.Clamp01((float)CurrentExperience / ExperienceToNextLevel); // 경험치 비율
         public bool CanLevelUp => CurrentExperience >= ExperienceToNextLevel; // 레벨시스템 판단용
@@ -69,6 +88,7 @@ namespace TeamProject01.Gameplay
         private readonly List<SegmentUpgradeData> segmentUpgrades = new List<SegmentUpgradeData>(); // 세그먼트별 강화 누적
         // 건춘 추가 시작 =======
         private readonly List<WeaponStatBonusEntry> weaponStatBonuses = new List<WeaponStatBonusEntry>(); // 세그먼트 ID별 무기 강화 보너스 누적 저장
+        private readonly Dictionary<string, int> baseDamageAmplifyChoiceCountsBySegmentId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase); // 세그먼트별 공격력 증폭 선택 횟수
         private int levelUpCardCycleIndex; // 레벨업 카드 선택 완료 횟수(현재 카드 종류는 레벨 구간 기준)
 
         public int LevelUpCardCycleIndex => levelUpCardCycleIndex; // CardUI 호환/디버그용 선택 카운트
@@ -153,8 +173,13 @@ namespace TeamProject01.Gameplay
         public void ApplyRunStartBonus(RunStartBonusData bonus, float baseTurnSpeed) // 다회차 시작 보너스 적용
         {
             FlatDamageBonus = Mathf.Max(0f, FlatDamageBonus + bonus.BaseAttackFlatBonus); // 기본 공격력
-            AttackSpeedMultiplier = Mathf.Max(0.01f, AttackSpeedMultiplier + bonus.AttackSpeedPercentBonus); // 공격속도
-            TurnSpeedBonus += Mathf.Max(0f, baseTurnSpeed) * bonus.TurnPercentBonus; // 회전력 비율 → 고정값
+            runBaseAttackMultiplier = Mathf.Max(0f, runBaseAttackMultiplier + bonus.BaseAttackPercentBonus);
+            runAttackSpeedMultiplier = Mathf.Max(0.01f, runAttackSpeedMultiplier + bonus.AttackSpeedPercentBonus);
+            runMoveSpeedMultiplier = Mathf.Max(0f, runMoveSpeedMultiplier + bonus.MoveSpeedPercentBonus);
+            runPickupRangeMultiplier = Mathf.Max(0f, runPickupRangeMultiplier + bonus.PickupRangePercentBonus);
+            runTurnSpeedMultiplier = Mathf.Max(0f, runTurnSpeedMultiplier + bonus.TurnPercentBonus);
+            runGoldGainMultiplier = Mathf.Max(0f, runGoldGainMultiplier + bonus.GoldGainPercentBonus);
+            runDiamondGainMultiplier = Mathf.Max(0f, runDiamondGainMultiplier + bonus.DiamondGainPercentBonus);
             CollisionForceBonus += bonus.CollisionForcePercentBonus; // 충돌힘
             RejoinRangeBonus = Mathf.Max(0f, RejoinRangeBonus + bonus.RejoinRangeBonus); // 재결합
             StatsChanged?.Invoke(CurrentStats); // 변경 알림
@@ -168,8 +193,8 @@ namespace TeamProject01.Gameplay
             }
 
             AddExperience(reward.Experience); // 경험치 코어 누적
-            CurrentGold += reward.Gold; // 골드 코어 누적
-            CurrentRunDiamond += reward.Diamond; // 런 다이아 누적
+            CurrentGold += ApplyRunGoldGainBonus(reward.Gold); // 골드 코어 누적
+            CurrentRunDiamond += ApplyRunDiamondGainBonus(reward.Diamond); // 런 다이아 누적
             StatsChanged?.Invoke(CurrentStats); // HUD 갱신
             return true; // 적용 성공
         }
@@ -207,6 +232,15 @@ namespace TeamProject01.Gameplay
             TurnSpeedBonus = 0f; // 회전력 초기화
             CollisionForceBonus = 0f; // 충돌힘 초기화
             RejoinRangeBonus = 0f; // 재결합 초기화
+            runBaseAttackMultiplier = 1f;
+            runAttackSpeedMultiplier = 1f;
+            runMoveSpeedMultiplier = 1f;
+            runPickupRangeMultiplier = 1f;
+            runTurnSpeedMultiplier = 1f;
+            runGoldGainMultiplier = 1f;
+            runDiamondGainMultiplier = 1f;
+            runGoldGainRemainder = 0f;
+            runDiamondGainRemainder = 0f;
             CurrentExperience = 0; // 현재 경험치 초기화
             TotalExperience = 0; // 누적 경험치 초기화
             CurrentGold = 0; // 골드 초기화
@@ -214,6 +248,7 @@ namespace TeamProject01.Gameplay
             segmentUpgrades.Clear(); // 세그먼트 강화 초기화
             // 건춘 추가 시작 =======
             weaponStatBonuses.Clear(); // 무기 강화 보너스 초기화
+            baseDamageAmplifyChoiceCountsBySegmentId.Clear(); // 공격력 증폭 선택 횟수 초기화
             levelUpCardCycleIndex = 0; // 레벨업 카드 선택 카운트 초기화
             pendingLevelUpChoiceCommitted = false; // 레벨업 카드 UI 상태 초기화
             // 건춘 추가 끝 =====
@@ -281,6 +316,56 @@ namespace TeamProject01.Gameplay
         {
             stats = GetCurrentOrDefault(); // 현재값 또는 기본값
             return Active != null; // 실제 코어 존재 여부
+        }
+
+        public float ApplyRunBaseAttackBonus(float baseDamage)
+        {
+            return Mathf.Max(0f, baseDamage) * RunBaseAttackMultiplier;
+        }
+
+        public static float ApplyRunBaseAttackBonusOrDefault(float baseDamage)
+        {
+            return Active != null ? Active.ApplyRunBaseAttackBonus(baseDamage) : Mathf.Max(0f, baseDamage);
+        }
+
+        public float ApplyRunAttackSpeedBonus(float baseInterval)
+        {
+            return Mathf.Max(0.05f, Mathf.Max(0.05f, baseInterval) / RunAttackSpeedMultiplier);
+        }
+
+        public static float ApplyRunAttackSpeedBonusOrDefault(float baseInterval)
+        {
+            return Active != null ? Active.ApplyRunAttackSpeedBonus(baseInterval) : Mathf.Max(0.05f, baseInterval);
+        }
+
+        public float ApplyRunMoveSpeedBonus(float baseSpeed)
+        {
+            return Mathf.Max(0f, baseSpeed) * RunMoveSpeedMultiplier;
+        }
+
+        public static float ApplyRunMoveSpeedBonusOrDefault(float baseSpeed)
+        {
+            return Active != null ? Active.ApplyRunMoveSpeedBonus(baseSpeed) : Mathf.Max(0f, baseSpeed);
+        }
+
+        public float ApplyRunPickupRangeBonus(float baseRange)
+        {
+            return Mathf.Max(0f, baseRange) * RunPickupRangeMultiplier;
+        }
+
+        public static float ApplyRunPickupRangeBonusOrDefault(float baseRange)
+        {
+            return Active != null ? Active.ApplyRunPickupRangeBonus(baseRange) : Mathf.Max(0f, baseRange);
+        }
+
+        public float ApplyRunTurnSpeedBonus(float baseTurnSpeed)
+        {
+            return Mathf.Max(0f, baseTurnSpeed) * RunTurnSpeedMultiplier;
+        }
+
+        public static float ApplyRunTurnSpeedBonusOrDefault(float baseTurnSpeed)
+        {
+            return Active != null ? Active.ApplyRunTurnSpeedBonus(baseTurnSpeed) : Mathf.Max(0f, baseTurnSpeed);
         }
 
         public static bool TrySpendCurrentGold(int amount) // 공통 골드 소비 입구
@@ -512,12 +597,18 @@ namespace TeamProject01.Gameplay
                 return false;
             }
 
-            float profileBaseDamage = ResolveCurrentSegmentBaseDamage(normalizedSegmentId); // 유니크 현재 피해 계산 기준
+            float profileBaseDamage = ApplyRunBaseAttackBonus(ResolveCurrentSegmentBaseDamage(normalizedSegmentId)); // 유니크 현재 피해 계산 기준
             string requestedSegmentId = string.IsNullOrWhiteSpace(segmentId) ? string.Empty : segmentId.Trim(); // UI에서 고른 세그먼트
             if (!string.Equals(requestedSegmentId, normalizedSegmentId, StringComparison.OrdinalIgnoreCase))
             {
                 Debug.LogWarning($"무기 강화 실패: 세그먼트 불일치 (선택={requestedSegmentId}, 대상={normalizedSegmentId}, 카드={definition.name})", definition);
                 return false; // 1단계 선택과 카드 대상 불일치
+            }
+
+            if (definition.IsBaseDamageAmplify && HasReachedBaseDamageAmplifyChoiceLimit(normalizedSegmentId))
+            {
+                Debug.LogWarning($"무기 강화 실패: 공격력 증폭 선택 제한 초과 (Segment={normalizedSegmentId}, Limit={MaxBaseDamageAmplifyChoicesPerSegment}, 카드={definition.name})", definition);
+                return false; // 세그먼트별 공격력 증폭 2회 제한
             }
 
             int index = FindWeaponStatBonusIndex(normalizedSegmentId); // 기존 누적 검색
@@ -533,9 +624,32 @@ namespace TeamProject01.Gameplay
                 weaponStatBonuses.Add(new WeaponStatBonusEntry(normalizedSegmentId, bonus)); // 신규 세그먼트 등록
             }
 
+            if (definition.IsBaseDamageAmplify)
+            {
+                IncrementBaseDamageAmplifyChoiceCount(normalizedSegmentId); // 공격력 증폭 선택 횟수 기록
+            }
+
             ApplyLevelDeltaIfNeeded(levelDelta); // 카드 선택 시 플레이어 레벨·경험치 소비
             StatsChanged?.Invoke(CurrentStats); // HUD·전투 스탯 갱신
             return true; // 적용 성공
+        }
+
+        public bool CanOfferBaseDamageAmplifyChoice(string segmentId) // 공격력 증폭 카드 표시 가능 여부
+        {
+            return GetBaseDamageAmplifyChoiceCount(segmentId) < MaxBaseDamageAmplifyChoicesPerSegment;
+        }
+
+        public int GetBaseDamageAmplifyChoiceCount(string segmentId) // 세그먼트별 공격력 증폭 선택 횟수
+        {
+            if (string.IsNullOrWhiteSpace(segmentId))
+            {
+                return 0; // 대상 없음
+            }
+
+            string normalizedId = segmentId.Trim(); // 비교용 ID
+            return baseDamageAmplifyChoiceCountsBySegmentId.TryGetValue(normalizedId, out int count)
+                ? Mathf.Max(0, count)
+                : 0;
         }
 
         public WeaponStatBonusData GetWeaponStatBonus(string segmentId) // 세그먼트별 누적 무기 강화 조회
@@ -680,6 +794,29 @@ namespace TeamProject01.Gameplay
             }
 
             return Active.ApplyReward(reward); // 코어 보상 반영
+        }
+
+        private int ApplyRunGoldGainBonus(int baseAmount)
+        {
+            return ApplyRunRewardGain(baseAmount, runGoldGainMultiplier, ref runGoldGainRemainder);
+        }
+
+        private int ApplyRunDiamondGainBonus(int baseAmount)
+        {
+            return ApplyRunRewardGain(baseAmount, runDiamondGainMultiplier, ref runDiamondGainRemainder);
+        }
+
+        private static int ApplyRunRewardGain(int baseAmount, float multiplier, ref float remainder)
+        {
+            if (baseAmount <= 0)
+            {
+                return 0;
+            }
+
+            float rawAmount = Mathf.Max(0, baseAmount) * Mathf.Max(0f, multiplier) + Mathf.Max(0f, remainder);
+            int result = Mathf.Max(0, Mathf.FloorToInt(rawAmount + 0.0001f));
+            remainder = Mathf.Max(0f, rawAmount - result);
+            return result;
         }
 
         private void AddExperience(int amount) // 경험치 처리
@@ -914,13 +1051,54 @@ namespace TeamProject01.Gameplay
                 return; // 증가 없음
             }
 
-            Vector3 position = ResolveLevelUpVfxPosition(); // 플레이어 위치
+            if (TryResolveLevelUpVfxFollowTarget(out Transform followTarget, out Vector3 localOffset))
+            {
+                LevelUpVfxPlayer.PlayFollowing(LevelUpVfxPrefab, followTarget, localOffset, LevelUpVfxScale, LevelUpVfxLifetime, this); // Looting 추적 재생
+                return;
+            }
+
+            Vector3 position = ResolveLevelUpVfxPosition(); // fallback 위치
             LevelUpVfxPlayer.Play(LevelUpVfxPrefab, position, LevelUpVfxScale, LevelUpVfxLifetime, this); // Text_Effect_36 재생
+        }
+
+        private bool TryResolveLevelUpVfxFollowTarget(out Transform followTarget, out Vector3 localOffset) // 레벨업 VFX 추적 기준
+        {
+            float yOffset = Mathf.Max(0f, LevelUpVfxYOffset); // fallback 높이
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                followTarget = lootingCenter; // 정식 루팅 소켓
+                localOffset = Vector3.zero; // Looting 높이 그대로 사용
+                return true;
+            }
+
+            if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
+            {
+                followTarget = convoyTarget; // 등록된 플레이어 컨보이
+                localOffset = Vector3.up * yOffset; // 기존 높이 유지
+                return true;
+            }
+
+            EnsureConvoyReference(); // 씬 참조 보강
+            if (Convoy != null)
+            {
+                followTarget = Convoy.HeadVisual != null ? Convoy.HeadVisual : Convoy.transform; // 머리 우선
+                localOffset = Vector3.up * yOffset; // 기존 높이 유지
+                return true;
+            }
+
+            followTarget = null;
+            localOffset = Vector3.zero;
+            return false; // fallback 월드 재생
         }
 
         private Vector3 ResolveLevelUpVfxPosition() // 레벨업 VFX 위치
         {
             float yOffset = Mathf.Max(0f, LevelUpVfxYOffset); // 높이 보정
+            if (PlayerPickupInteractor.TryResolveLootingCenter(out Transform lootingCenter))
+            {
+                return lootingCenter.position; // Looting socket uses authored height
+            }
+
             if (MonsterInteractionApi.TryGetConvoyTarget(out Transform convoyTarget) && convoyTarget != null)
             {
                 return convoyTarget.position + Vector3.up * yOffset; // 등록된 플레이어 컨보이
@@ -1018,6 +1196,23 @@ namespace TeamProject01.Gameplay
             }
 
             return -1; // 아직 강화 기록 없음
+        }
+
+        private bool HasReachedBaseDamageAmplifyChoiceLimit(string segmentId) // 공격력 증폭 2회 제한 체크
+        {
+            return GetBaseDamageAmplifyChoiceCount(segmentId) >= MaxBaseDamageAmplifyChoicesPerSegment;
+        }
+
+        private void IncrementBaseDamageAmplifyChoiceCount(string segmentId) // 공격력 증폭 선택 횟수 증가
+        {
+            if (string.IsNullOrWhiteSpace(segmentId))
+            {
+                return; // 대상 없음
+            }
+
+            string normalizedId = segmentId.Trim(); // 저장 키
+            int nextCount = GetBaseDamageAmplifyChoiceCount(normalizedId) + 1;
+            baseDamageAmplifyChoiceCountsBySegmentId[normalizedId] = nextCount;
         }
 
         private readonly struct WeaponStatBonusEntry // 세그먼트 ID + 누적 WeaponStatBonusData 한 쌍
@@ -1145,7 +1340,9 @@ namespace TeamProject01.Gameplay
                 return ResolveExperienceRequirement(ExperienceRequirementLevel31To40, 850); // 후반 강화 비중 증가
             }
 
-            return ResolveExperienceRequirement(ExperienceRequirementLevel41Plus, 1150); // Lv41 이후 마무리 구간
+            int level41Requirement = ResolveExperienceRequirement(ExperienceRequirementLevel41Plus, 1150); // Lv41 기준 요구량
+            int perLevelIncrease = Mathf.Max(0, ExperienceRequirementLevel41PlusIncreasePerLevel); // Lv42부터 누적 증가
+            return level41Requirement + (safeLevel - 41) * perLevelIncrease; // Lv41=1150, Lv42=1300...
         }
 
         private static int ResolveExperienceRequirement(int configuredValue, int fallbackValue) // 경험치 구간값 보정
@@ -1192,6 +1389,21 @@ namespace TeamProject01.Gameplay
 
         public static void Play(GameObject prefab, Vector3 position, float scale, float lifetime, UnityEngine.Object context) // 월드 위치 재생
         {
+            PlayInternal(prefab, position, null, Vector3.zero, scale, lifetime, context); // 고정 위치
+        }
+
+        public static void PlayFollowing(GameObject prefab, Transform target, Vector3 localOffset, float scale, float lifetime, UnityEngine.Object context) // 타겟 추적 재생
+        {
+            if (target == null)
+            {
+                return; // 추적 대상 없음
+            }
+
+            PlayInternal(prefab, target.TransformPoint(localOffset), target, localOffset, scale, lifetime, context); // 현재 위치에서 시작
+        }
+
+        private static void PlayInternal(GameObject prefab, Vector3 position, Transform followTarget, Vector3 localOffset, float scale, float lifetime, UnityEngine.Object context)
+        {
             GameObject resolvedPrefab = prefab != null ? prefab : ResolveDefaultPrefab(); // 인스펙터 우선
             if (resolvedPrefab == null)
             {
@@ -1202,6 +1414,12 @@ namespace TeamProject01.Gameplay
             GameObject instance = UnityEngine.Object.Instantiate(resolvedPrefab, position, Quaternion.identity); // 플레이어 위치
             instance.name = RuntimeObjectName;
             instance.transform.localScale = Vector3.one * Mathf.Max(0.01f, scale); // 크기 보정
+            if (followTarget != null)
+            {
+                RuntimeVfxFollowTarget.Attach(instance, followTarget, localOffset, Quaternion.identity); // 재생 중 Looting 추적
+                RuntimeVfxParticleUtility.ConfigureParticlesForFollow(instance); // 파티클 잔상 추적
+            }
+
             DisableRuntimeColliders(instance); // 충돌 영향 방지
             PlayParticles(instance); // 즉시 재생
             UnityEngine.Object.Destroy(instance, ResolveLifetime(instance, lifetime)); // 파티클 종료 후 정리

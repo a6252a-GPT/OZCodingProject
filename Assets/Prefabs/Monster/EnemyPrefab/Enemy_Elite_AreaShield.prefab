@@ -32,6 +32,37 @@ Transform:
   - {fileID: 985113915485350362}
   m_Father: {fileID: 5993190977951783088}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &861252799502750662
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8240448482286935195}
+  m_Layer: 0
+  m_Name: CrowdCore
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8240448482286935195
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 861252799502750662}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5993190977951783088}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2606509775020153647
 GameObject:
   m_ObjectHideFlags: 0
@@ -53,6 +84,7 @@ GameObject:
   - component: {fileID: 2371775508279070105}
   - component: {fileID: 1662497318771566397}
   - component: {fileID: 1481728994574973640}
+  - component: {fileID: 6363691417132275997}
   m_Layer: 0
   m_Name: Enemy_Elite_AreaShield
   m_TagString: Untagged
@@ -78,6 +110,7 @@ Transform:
   - {fileID: 7030798677678002519}
   - {fileID: 5851427087540688744}
   - {fileID: 410498614137506049}
+  - {fileID: 8240448482286935195}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &3061199899561772757
@@ -299,8 +332,34 @@ MonoBehaviour:
   segmentCutLaunchCue: 0
   obstacleSummonCue: 0
   meleeAttackCue: 0
+  meleeAttackDelay: 0
   shieldLoopCue: 39
   portalTeleportCue: 0
+--- !u!114 &6363691417132275997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2606509775020153647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3f1871e4f4d4cefb5a5378e8d6c1a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyCrowdBlocker
+  enableCrowdBlock: 1
+  blockRadius: 0.2
+  centerTransform: {fileID: 8240448482286935195}
+  centerOffset: {x: 0, y: 0, z: 0}
+  pushStrength: 1
+  maxCorrectionPerFrame: 0.25
+  sideSpreadStrength: 0.65
+  blockedSidePushPerFrame: 0.08
+  pressureTransferRatio: 0.7
+  maxPendingPushPerFrame: 0.24
+  pushSmoothingSpeed: 10
+  pushDecaySpeed: 6
+  drawGizmo: 1
 --- !u!1 &4182503403825947938
 GameObject:
   m_ObjectHideFlags: 0
@@ -579,7 +638,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.8
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -676,7 +735,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 739514410506874130}
-  baseVolume: 0.8
+  baseVolume: 1
 --- !u!114 &2070276542645343475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -693,7 +752,7 @@ MonoBehaviour:
   source: {fileID: 739514410506874130}
   clips:
   - {fileID: 8300000, guid: 4eac243561c20a8419daff440808938f, type: 3}
-  volume: 0.8
+  volume: 1
   minPitch: 1
   maxPitch: 1
   cooldown: 0.08

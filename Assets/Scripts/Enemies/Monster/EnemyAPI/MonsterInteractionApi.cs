@@ -198,6 +198,9 @@ namespace TeamProject01.Gameplay
             request.ExpireTime = Time.time + 0.25f;
 
             knockbackRequests.Add(request);
+            StartingSegmentChoiceTicketDebug.Log(
+                $"MonsterInteractionApi.RequestConvoyKnockback center={StartingSegmentChoiceTicketDebug.Format(center)}, radius={request.Radius:0.00}, "
+                + $"distance={request.Distance:0.00}, duration={request.Duration:0.00}, height={request.Height:0.00}, pending={knockbackRequests.Count}");
         }
 
         public static bool TryConsumeConvoyKnockback(Vector3 targetPosition, out Vector3 direction, out float distance, out float duration)
@@ -260,9 +263,19 @@ namespace TeamProject01.Gameplay
             return EnemyObstacle.ResolvePosition(currentPosition, desiredPosition, moverRadius);
         }
 
+        public static Vector3 ResolveConvoyPosition(Vector3 currentPosition, Vector3 desiredPosition, float moverRadius, float maxCorrectionDistance)
+        {
+            return EnemyObstacle.ResolvePosition(currentPosition, desiredPosition, moverRadius, maxCorrectionDistance);
+        }
+
         public static Vector3 ResolveMonsterPosition(Vector3 currentPosition, Vector3 desiredPosition, float monsterRadius)
         {
             return SegmentBlocker.ResolveMonsterPosition(currentPosition, desiredPosition, monsterRadius);
+        }
+
+        public static Vector3 ResolveMonsterCrowdPosition(EnemyCrowdBlocker crowdBlocker, Vector3 currentPosition, Vector3 desiredPosition, float fallbackRadius)
+        {
+            return EnemyCrowdBlocker.ResolvePosition(crowdBlocker, currentPosition, desiredPosition, fallbackRadius);
         }
     }
 }

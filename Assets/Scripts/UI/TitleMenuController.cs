@@ -1,7 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 #if UNITY_EDITOR
+using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
 
@@ -11,12 +14,23 @@ namespace TeamProject01.Gameplay
     {
         private const string StageScenePath = "Assets/Scenes/StageScene.unity"; // 기본 스테이지 씬 경로 //안건준 추가 - 0628
         private const string StageSceneName = "StageScene"; // 빌드 로드용 씬 이름 //안건준 수정 - 0628
+        private const string DevScenePathPrefix = "Assets/Scenes/Dev/"; // 개발용 씬 경로 접두사
         private const string LegacyCoreTestScenePath = "Assets/Scenes/Dev/CoreTest_StageScene.unity"; // 이전 코어 테스트 씬 (경로 보정용)
         private const string LegacyCoreTestScenePathOld = "Assets/Scenes/Dev/StageScene_CoreTest.unity"; // 더 이전 코어 테스트 씬 (경로 보정용)
 
         private Button magicWormButton; // 마법형 지렁이 버튼 참조
+        private Button mapBackButton; // 맵 선택 뒤로가기 버튼
+        private Button leftMapArrowButton; // 맵 선택 이전 버튼
+        private Button rightMapArrowButton; // 맵 선택 다음 버튼
         private bool mapCardButtonsWired; // 맵 카드 런타임 리스너 중복 방지
         private bool upgradeButtonsWired; // 강화 버튼 런타임 리스너 중복 방지
+        private const string HiddenSaveResetButtonName = "DebugHiddenSaveResetButton_Runtime";
+        private const float HiddenSaveResetConfirmSeconds = 2.5f;
+        private Button hiddenSaveResetButton;
+        private Image hiddenSaveResetButtonImage;
+        private float hiddenSaveResetConfirmUntil = -1f;
+        private static readonly Color UpgradeRowEffectTextColor = new Color(0.18f, 0.58f, 0.12f, 1f); // 강화 효과값 초록
+        private static readonly Color UpgradeRowPlannedStateTextColor = new Color(0.28f, 0.20f, 0.12f, 1f); // 예정 행 상태색
 
         [System.Serializable]
         public sealed class TitleMapCardView // 맵 카드 표시 묶음
@@ -44,14 +58,14 @@ namespace TeamProject01.Gameplay
             public Image IconImage; // 아이콘 슬롯
             public Image SelectionGlowImage; // 선택 발광
             public GameObject PlannedOverlay; // 예정 딤
-            public Text NameText; // 행 이름
-            public Text StateText; // 상태
+            public TMP_Text NameText; // 행 이름
+            public TMP_Text StateText; // 상태
             public Image[] LevelPipImages = System.Array.Empty<Image>(); // 5단계 표시
         }
 
         public MetaProgressionManager Meta; // 메타 데이터
-        [Tooltip("Editor Play mode scene path. Core tests use Assets/Scenes/Dev/CoreTest_StageScene.unity; release checks use Assets/Scenes/StageScene.unity.")]
-        public string TargetStageScenePath = LegacyCoreTestScenePath; // 게임 시작 시 로드할 스테이지 씬 //안건준 수정 - 0628
+        [Tooltip("Editor Play mode scene path. Release uses Assets/Scenes/StageScene.unity.")]
+        public string TargetStageScenePath = StageScenePath; // 게임 시작 시 로드할 스테이지 씬 //안건준 수정 - 0628
         [Min(0)] public int HighestReachedWave; // 레거시 최고 웨이브 이전용
         [Min(0)] public int TemporaryUpgradeBaseCost = 50; // 임시 강화 기본 비용
 
@@ -61,6 +75,7 @@ namespace TeamProject01.Gameplay
         public GameObject WormSelectPanel; // 지렁이 선택
         public GameObject UpgradePanel; // 업그레이드
         public GameObject SettingsPanel; // 설정
+        public InGameSettingsPanelOverlay SettingsOverlay; // 설정 오버레이
 
         [Header("Shared UI")]
         public GameObject TitleLogoObject; // 타이틀 로고
@@ -70,8 +85,17 @@ namespace TeamProject01.Gameplay
         public TitleWormPortraitPreview WormPortraitPreview; // 3D 초상화
         public Text SelectedWormNameText; // 지렁이 이름
         public Text SelectedWormBonusText; // 지렁이 보너스
+        public TMP_Text SelectedWormNameTmpText; // TMP 지렁이 이름
+        public TMP_Text SelectedWormBonusTmpText; // TMP 스타팅 무기
+        public TMP_Text SelectedWormBonus2Text; // TMP 추가 보너스
         public Button WormPurchaseButton; // 미리보기 지렁이 구매
         public Button WormSelectButton; // 미리보기 지렁이 선택
+
+        [Header("Worm Select Art")]
+        public Sprite WormStateSelectedSprite; // 선택됨 상태 버튼
+        public Sprite WormStateOwnedSprite; // 보유중 상태 버튼
+        public Sprite WormStatePurchaseSprite; // 구매 가능 상태 버튼
+        public Sprite WormStateLockedSprite; // 잠금 상태 버튼
 
         [Header("Status")]
         public Text DiamondText; // 다이아
@@ -105,15 +129,31 @@ namespace TeamProject01.Gameplay
         public Text UpgradeHighestWaveText; // 강화 화면 최고 웨이브
         public TitleUpgradeRowView[] UpgradeRows = System.Array.Empty<TitleUpgradeRowView>(); // 강화 행들
         public Image UpgradeDetailIconImage; // 상세 아이콘 슬롯
-        public Text UpgradeDetailNameText; // 상세 이름
-        public Text UpgradeDetailCurrentLevelText; // 현재 레벨
-        public Text UpgradeDetailCurrentEffectText; // 현재 효과
-        public Text UpgradeDetailNextLevelText; // 다음 레벨
-        public Text UpgradeDetailNextEffectText; // 다음 효과
-        public Text UpgradeDetailCostText; // 필요 다이아
-        public Text UpgradeDetailStatusText; // 상세 상태
+        public TMP_Text UpgradeDetailNameText; // 상세 이름
+        public TMP_Text UpgradeDetailCurrentLevelText; // 현재 레벨
+        public TMP_Text UpgradeDetailCurrentEffectText; // 현재 효과
+        public TMP_Text UpgradeDetailNextLevelText; // 다음 레벨
+        public TMP_Text UpgradeDetailNextEffectText; // 다음 효과
+        public TMP_Text UpgradeDetailCostText; // 필요 다이아
+        public TMP_Text UpgradeDetailStatusText; // 상세 상태
         public Button UpgradeConfirmButton; // 강화 버튼
-        public Text UpgradeConfirmButtonText; // 강화 버튼 텍스트
+        public TMP_Text UpgradeConfirmButtonText; // 강화 버튼 텍스트
+
+        [Header("Upgrade Skin")]
+        public Sprite UpgradeRowBackgroundSprite; // 강화 행 배경
+        public Sprite UpgradeRowSelectedFrameSprite; // 선택 행 테두리
+        public Sprite UpgradePipFilledSprite; // 채운 단계 보석
+        public Sprite UpgradePipEmptySprite; // 빈 단계 보석
+        public Sprite UpgradeGoldIconSprite; // 골드
+        public Sprite UpgradeDiamondIconSprite; // 다이아
+        public Sprite UpgradeTurnIconSprite; // 회전
+        public Sprite UpgradeCollisionIconSprite; // 충돌
+        public Sprite UpgradeBaseAttackIconSprite; // 공격력
+        public Sprite UpgradeAttackSpeedIconSprite; // 공격속도
+        public Sprite UpgradeNexusMaxHpIconSprite; // 알 체력
+        public Sprite UpgradeRejoinRangeIconSprite; // 재결합
+        public Sprite UpgradeMoveSpeedIconSprite; // 이동속도
+        public Sprite UpgradePickupRangeIconSprite; // 픽업 범위
 
         [Header("Debug")]
         [Min(0)] public int DebugDiamondAmount = 1000; // 테스트 지급 다이아
@@ -131,11 +171,29 @@ namespace TeamProject01.Gameplay
             }
 
             MigrateLegacyHighestReachedWave(); // 이전 타이틀 필드 기록 보존
+            ResolvePanelReferences(); // 붙여넣기로 빠진 패널 참조 복구
+            ResolveSettingsOverlayReference(); // 설정 오버레이 참조
+            ResolveMapSelectReferences(); // 맵 선택 UI 참조 복구
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
             WireMapCardButtons(); // 맵 카드 클릭 연결
             WireUpgradeButtons(); // 강화 행 클릭 연결
+            EnsureHiddenSaveResetButton(); // 숨김 저장 초기화 버튼
         }
+
+#if UNITY_EDITOR
+        private void OnValidate() // 에디터 참조 복구
+        {
+            if (Application.isPlaying)
+            {
+                return;
+            }
+
+            ResolvePanelReferences();
+            ResolveSettingsOverlayReference();
+            ResolveMapSelectReferences();
+        }
+#endif
 
         private void OnEnable() // 표시 시작
         {
@@ -149,10 +207,14 @@ namespace TeamProject01.Gameplay
             }
 
             ResolveWormSelectionObjects(); // 지렁이 선택 오브젝트 참조
+            ResolvePanelReferences(); // 붙여넣기로 빠진 패널 참조 복구
+            ResolveSettingsOverlayReference(); // 설정 오버레이 참조
+            ResolveMapSelectReferences(); // 맵 선택 UI 참조 복구
             ResolvePreviewReferences(); // 프리뷰 참조
             ResolveTitleLogoReference(); // 로고 참조
             WireMapCardButtons(); // 씬 오브젝트 리스너 연결
             WireUpgradeButtons(); // 강화 리스너 연결
+            EnsureHiddenSaveResetButton(); // 숨김 저장 초기화 버튼 보장
             SaveData.TryApplyMetaSnapshot(Meta); // 진행 중 저장의 다이아·지렁이 해금 반영 //안건준 추가 - 0629
             TryConsumePendingRunResult(); // 스테이지 결과 보상 반영
             ShowMainMenu(); // 기본 화면
@@ -179,6 +241,8 @@ namespace TeamProject01.Gameplay
 
         public void ShowMapSelect() // 맵 선택 표시
         {
+            ResolveMapSelectReferences(); // 맵 선택 UI 참조 복구
+            WireMapCardButtons(); // 맵 버튼 연결 보강
             ShowOnly(MapSelectPanel); // 맵 선택
             SelectMap(Meta != null ? Meta.SelectedMapId : SelectedMapId); // 현재 선택 맵 표시
             RefreshAll(); // 표시 갱신
@@ -189,7 +253,6 @@ namespace TeamProject01.Gameplay
             ShowOnly(WormSelectPanel); // 지렁이 선택
             PreviewWorm(Meta != null ? Meta.SelectedWormId : MetaWormIds.Basic); // 현재 선택 프리뷰
             RefreshAll(); // 표시 갱신
-            ApplyWormSelectTextColor(); // 지렁이 선택 글자색
         }
 
         public void ShowUpgrade() // 업그레이드 표시
@@ -200,6 +263,14 @@ namespace TeamProject01.Gameplay
 
         public void ShowSettings() // 설정 표시
         {
+            ResolveSettingsOverlayReference(); // 오버레이 우선 사용
+            if (SettingsOverlay != null)
+            {
+                SettingsOverlay.Open(); // 인게임 설정 패널 방식
+                RefreshAll(); // 표시 갱신
+                return;
+            }
+
             ShowOnly(SettingsPanel); // 설정
             RefreshAll(); // 표시 갱신
         }
@@ -365,6 +436,16 @@ namespace TeamProject01.Gameplay
             SelectMap(mapId); // ID 기반 선택
         }
 
+        public void SelectPreviousMap() // 이전 맵 선택
+        {
+            SelectAdjacentMap(-1); // 왼쪽 이동
+        }
+
+        public void SelectNextMap() // 다음 맵 선택
+        {
+            SelectAdjacentMap(1); // 오른쪽 이동
+        }
+
         public void StartSelectedMap() // 선택 맵 시작
         {
             SelectAndStartMap(SelectedMapId); // 현재 선택값
@@ -405,11 +486,6 @@ namespace TeamProject01.Gameplay
             Upgrade(MetaUpgradeId.NexusMaxHp); // 체력
         }
 
-        public void UpgradeNexusRegen() // 넥서스 회복 강화
-        {
-            Upgrade(MetaUpgradeId.NexusRegen); // 회복
-        }
-
         public void SelectGoldBonusUpgrade() // 골드 선택
         {
             SelectUpgrade(MetaUpgradeId.GoldBonus); // 골드
@@ -445,16 +521,11 @@ namespace TeamProject01.Gameplay
             SelectUpgrade(MetaUpgradeId.NexusMaxHp); // 체력
         }
 
-        public void SelectNexusRegenUpgrade() // 회복 선택
-        {
-            SelectUpgrade(MetaUpgradeId.NexusRegen); // 회복
-        }
-
         public void ConfirmSelectedUpgrade() // 선택 강화 실행
         {
             if (!string.IsNullOrWhiteSpace(SelectedPlannedUpgradeKey))
             {
-                SetStatus($"{TitleUpgradeCatalog.ResolvePlannedName(SelectedPlannedUpgradeKey)}는 추후 적용 예정입니다."); // 예정
+                SetStatus($"{TitleUpgradeCatalog.ResolvePlannedName(SelectedPlannedUpgradeKey)}는 준비중입니다."); // 준비중
                 RefreshUpgradePanel(); // 표시 유지
                 return;
             }
@@ -464,8 +535,123 @@ namespace TeamProject01.Gameplay
 
         public void QuitGame() // 종료
         {
+            PlayerPrefs.Save(); // 종료 전 저장
+#if UNITY_EDITOR
+            if (Application.isEditor)
+            {
+                EditorApplication.isPlaying = false; // 에디터 Play 종료
+                return;
+            }
+#endif
             Application.Quit(); // 빌드 종료
-            SetStatus("에디터에서는 종료 버튼이 상태만 표시됩니다."); // 에디터 안내
+        }
+
+        private void EnsureHiddenSaveResetButton()
+        {
+            if (hiddenSaveResetButton != null)
+            {
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>(true);
+            if (canvas == null)
+            {
+                canvas = FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+            }
+
+            if (canvas == null)
+            {
+                return;
+            }
+
+            Transform existing = FindChildTransform(canvas.transform, HiddenSaveResetButtonName);
+            GameObject buttonObject = existing != null
+                ? existing.gameObject
+                : new GameObject(HiddenSaveResetButtonName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(canvas.transform, false);
+            buttonObject.transform.SetAsLastSibling();
+
+            RectTransform rect = buttonObject.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.one;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = Vector2.one;
+            rect.sizeDelta = new Vector2(18f, 18f);
+            rect.anchoredPosition = new Vector2(-6f, -6f);
+
+            hiddenSaveResetButtonImage = buttonObject.GetComponent<Image>();
+            hiddenSaveResetButtonImage.raycastTarget = true;
+            hiddenSaveResetButtonImage.color = new Color(0f, 0f, 0f, 0.08f);
+
+            hiddenSaveResetButton = buttonObject.GetComponent<Button>();
+            hiddenSaveResetButton.targetGraphic = hiddenSaveResetButtonImage;
+            hiddenSaveResetButton.transition = Selectable.Transition.ColorTint;
+            hiddenSaveResetButton.navigation = new Navigation { mode = Navigation.Mode.None };
+            ColorBlock colors = hiddenSaveResetButton.colors;
+            colors.normalColor = new Color(0f, 0f, 0f, 0.08f);
+            colors.highlightedColor = new Color(1f, 0.72f, 0.18f, 0.22f);
+            colors.pressedColor = new Color(1f, 0.35f, 0.12f, 0.42f);
+            colors.selectedColor = colors.normalColor;
+            colors.disabledColor = new Color(0f, 0f, 0f, 0.02f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.08f;
+            hiddenSaveResetButton.colors = colors;
+            hiddenSaveResetButton.onClick.RemoveListener(OnHiddenSaveResetButtonClicked);
+            hiddenSaveResetButton.onClick.AddListener(OnHiddenSaveResetButtonClicked);
+        }
+
+        private void OnHiddenSaveResetButtonClicked()
+        {
+            float now = Time.unscaledTime;
+            if (now <= hiddenSaveResetConfirmUntil)
+            {
+                hiddenSaveResetConfirmUntil = -1f;
+                CancelInvoke(nameof(CancelHiddenSaveResetConfirmation));
+                SetHiddenSaveResetButtonConfirming(false);
+                ResetGameSaveDataFromTitle();
+                return;
+            }
+
+            hiddenSaveResetConfirmUntil = now + HiddenSaveResetConfirmSeconds;
+            SetHiddenSaveResetButtonConfirming(true);
+            SetStatus("저장데이터 초기화 확인: 오른쪽 위 작은 버튼을 한 번 더 누르면 초기화됩니다.");
+            CancelInvoke(nameof(CancelHiddenSaveResetConfirmation));
+            Invoke(nameof(CancelHiddenSaveResetConfirmation), HiddenSaveResetConfirmSeconds);
+        }
+
+        private void CancelHiddenSaveResetConfirmation()
+        {
+            hiddenSaveResetConfirmUntil = -1f;
+            SetHiddenSaveResetButtonConfirming(false);
+        }
+
+        private void SetHiddenSaveResetButtonConfirming(bool confirming)
+        {
+            if (hiddenSaveResetButtonImage != null)
+            {
+                hiddenSaveResetButtonImage.color = confirming
+                    ? new Color(1f, 0.52f, 0.08f, 0.28f)
+                    : new Color(0f, 0f, 0f, 0.08f);
+            }
+        }
+
+        public void ResetGameSaveDataFromTitle()
+        {
+            SaveData saveData = SaveData.EnsureExists();
+            if (Meta != null)
+            {
+                Meta.DeleteSavedProgressAndApplyDefault();
+                HighestReachedWave = Meta.BestReachedWave;
+                previewWormId = Meta.SelectedWormId;
+            }
+
+            if (saveData != null)
+            {
+                saveData.ClearSave();
+            }
+
+            PlayerPrefs.Save();
+            SetStatus("게임 저장데이터 초기화 완료");
+            RefreshAll();
         }
 
         public void DebugAddDiamond() // 테스트 다이아 지급
@@ -522,15 +708,7 @@ namespace TeamProject01.Gameplay
 
         public void DebugDeleteSavedProgress() // 테스트 저장 삭제
         {
-            if (Meta == null)
-            {
-                SetStatus("메타 시스템이 없습니다."); // 누락
-                return;
-            }
-
-            Meta.DeleteSavedProgressAndApplyDefault(); // 저장 삭제 + 기본값
-            SetStatus("저장 데이터 삭제 완료. 기본 메타 상태를 적용했습니다."); // 상태
-            RefreshAll(); // 갱신
+            ResetGameSaveDataFromTitle(); // 메타 저장 + 진행 중 런 저장 전체 초기화
         }
 
         public void DebugShowMetaSummary() // 테스트 상태 요약
@@ -593,6 +771,22 @@ namespace TeamProject01.Gameplay
 
             SetStatus(TitleMapCatalog.IsPlayable(SelectedMapId) ? $"{TitleMapCatalog.GetDisplayName(SelectedMapId)} 선택됨" : $"{TitleMapCatalog.GetDisplayName(SelectedMapId)}는 업데이트 예정입니다."); // 상태
             RefreshAll(); // 갱신
+        }
+
+        private void SelectAdjacentMap(int direction) // 맵 좌우 이동
+        {
+            int currentIndex = GetMapIndex(SelectedMapId); // 현재 맵 번호
+            int nextIndex = currentIndex + direction; // 이동 결과
+            if (nextIndex < 1)
+            {
+                nextIndex = 5; // 왼쪽 순환
+            }
+            else if (nextIndex > 5)
+            {
+                nextIndex = 1; // 오른쪽 순환
+            }
+
+            SelectMap(GetMapIdByIndex(nextIndex)); // 선택 반영
         }
 
         private void SelectAndStartMap(string mapId) // 맵 선택 후 시작
@@ -667,7 +861,7 @@ namespace TeamProject01.Gameplay
         private void SelectPlannedUpgrade(string plannedKey) // 예약 강화 선택
         {
             SelectedPlannedUpgradeKey = string.IsNullOrWhiteSpace(plannedKey) ? "planned_upgrade" : plannedKey; // 키 보정
-            SetStatus($"{TitleUpgradeCatalog.ResolvePlannedName(SelectedPlannedUpgradeKey)}는 추후 적용 예정입니다."); // 상태
+            SetStatus($"{TitleUpgradeCatalog.ResolvePlannedName(SelectedPlannedUpgradeKey)}는 준비중입니다."); // 상태
             RefreshAll(); // 갱신
         }
 
@@ -684,14 +878,28 @@ namespace TeamProject01.Gameplay
         private void NormalizeTargetStageScenePath() // 스테이지 씬 경로 보정
         {
             if (string.IsNullOrWhiteSpace(TargetStageScenePath)
+                || TargetStageScenePath == LegacyCoreTestScenePath
                 || TargetStageScenePath == LegacyCoreTestScenePathOld)
             {
-                TargetStageScenePath = LegacyCoreTestScenePath; // 이전 테스트 씬 경로를 CoreTest 씬으로 통일 //안건준 수정 - 0628
+                TargetStageScenePath = StageScenePath; // 이전 테스트 씬 경로를 정식 StageScene으로 보정
+                return;
+            }
+
+            if (TargetStageScenePath.StartsWith(DevScenePathPrefix, System.StringComparison.OrdinalIgnoreCase))
+            {
+                TargetStageScenePath = StageScenePath; // 개발용 씬 직렬화값이 남아 있으면 정식 StageScene으로 보정
             }
         }
 
         private void ShowOnly(GameObject target) // 패널 전환
         {
+            ResolvePanelReferences(); // 패널 참조 복구
+            ResolveSettingsOverlayReference(); // 설정 오버레이 참조
+            if (SettingsOverlay != null && target != SettingsPanel)
+            {
+                SettingsOverlay.Close(); // 다른 화면 전환 시 설정 닫기
+            }
+
             ResolveTitleLogoReference(); // 로고 찾기
             SetActive(MainMenuPanel, target == MainMenuPanel); // 메인
             SetActive(MapSelectPanel, target == MapSelectPanel); // 맵
@@ -712,8 +920,7 @@ namespace TeamProject01.Gameplay
             ResolvePreviewReferences(); // 프리뷰 참조
             string displayWormId = string.IsNullOrWhiteSpace(previewWormId) ? Meta.SelectedWormId : previewWormId; // 표시 대상
             RefreshProgressTexts(); // 보유 정보
-            SetText(SelectedWormNameText, TitleWormCatalog.GetDisplayName(displayWormId)); // 이름
-            SetText(SelectedWormBonusText, TitleWormCatalog.GetBonusText(displayWormId)); // 효과
+            RefreshSelectedWormTexts(displayWormId); // 이름/스타팅 무기/추가 보너스
             SetText(UpgradeSummaryText, BuildUpgradeSummary()); // 강화 요약
             RefreshUpgradePanel(); // 강화 화면
             RefreshMapPreview(); // 맵 표시
@@ -724,13 +931,67 @@ namespace TeamProject01.Gameplay
 
             if (SelectedWormPreview != null)
             {
-                SelectedWormPreview.color = TitleWormCatalog.GetPreviewColor(displayWormId); // 프리뷰 색
+                ClearWormPreviewBackground(SelectedWormPreview); // 3D 초상화 부모 배경 제거
             }
 
-            if (WormSelectPanel != null && WormSelectPanel.activeInHierarchy)
+            if (WormSelectPanel != null)
             {
                 RefreshWormSelectPanel(displayWormId); // 지렁이 버튼 상태 갱신
-                ApplyWormSelectTextColor(); // 버튼 글자색 보정
+            }
+        }
+
+        private void RefreshSelectedWormTexts(string wormId) // 지렁이 미리보기 텍스트
+        {
+            string displayName = TitleWormCatalog.GetDisplayName(wormId);
+            string startingWeapon = ResolveWormCardStartingWeaponText(wormId);
+            string additionalBonus = TitleWormCatalog.GetAdditionalBonusText(wormId);
+
+            SetText(SelectedWormNameText, displayName);
+            SetText(SelectedWormNameTmpText, displayName);
+            SetText(SelectedWormBonusText, startingWeapon);
+            SetText(SelectedWormBonusTmpText, startingWeapon);
+            SetText(SelectedWormBonus2Text, additionalBonus);
+        }
+
+        private string ResolveWormCardStartingWeaponText(string wormId) // 선택 카드의 스타팅 무기 문구를 오른쪽 패널로 미러링
+        {
+            Transform buttonRoot = FindWormButtonTransform(GetWormButtonObjectName(wormId));
+            string starterText = ReadTransformText(FindChildTransform(buttonRoot, "Wp"));
+            if (!string.IsNullOrWhiteSpace(starterText))
+            {
+                return starterText.Trim();
+            }
+
+            string legacyText = ReadTransformText(FindDirectChildTransform(buttonRoot, "Text"));
+            if (!string.IsNullOrWhiteSpace(legacyText))
+            {
+                string[] lines = legacyText.Split('\n');
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(lines[i]))
+                    {
+                        return lines[i].Trim();
+                    }
+                }
+            }
+
+            return TitleWormCatalog.GetStartingWeaponText(wormId);
+        }
+
+        private static string GetWormButtonObjectName(string wormId) // 지렁이 ID별 카드 오브젝트 이름
+        {
+            switch (NormalizeWormId(wormId))
+            {
+                case MetaWormIds.Attack:
+                    return "ArmedWormButton";
+                case MetaWormIds.Mobility:
+                    return "ChargeWormButton";
+                case MetaWormIds.Support:
+                    return "DefenseWormButton";
+                case MetaWormIds.Magic:
+                    return "MagicWormButton";
+                default:
+                    return "BasicWormButton";
             }
         }
 
@@ -748,7 +1009,8 @@ namespace TeamProject01.Gameplay
                 + BuildUpgradeLine(MetaUpgradeId.BaseAttack) + "\n"
                 + BuildUpgradeLine(MetaUpgradeId.AttackSpeed) + "\n"
                 + BuildUpgradeLine(MetaUpgradeId.NexusMaxHp) + "\n"
-                + BuildUpgradeLine(MetaUpgradeId.NexusRegen); // 요약
+                + BuildUpgradeLine(MetaUpgradeId.MoveSpeed) + "\n"
+                + BuildUpgradeLine(MetaUpgradeId.PickupRange); // 요약
         }
 
         private string BuildUpgradeLine(MetaUpgradeId upgradeId) // 강화 한 줄 요약
@@ -769,12 +1031,15 @@ namespace TeamProject01.Gameplay
 
         private void RefreshMapPreview() // 맵 표시 갱신
         {
+            ResolveMapSelectReferences(); // 맵 선택 UI 참조 복구
             string mapId = Meta != null ? NormalizeMapId(Meta.SelectedMapId) : NormalizeMapId(SelectedMapId); // 보정
             SelectedMapId = mapId; // 로드값 동기화
+            ApplySelectedMapHeroFrame(mapId); // 선택 프레임 전환
+            ResolveMapSelectReferences(); // 활성 프레임 기준 참조 재확인
             SetText(SelectedMapNameText, TitleMapCatalog.GetDisplayName(mapId)); // 이름
             SetText(SelectedMapStateText, TitleMapCatalog.GetStateText(mapId)); // 상태
             SetText(SelectedMapDescriptionText, TitleMapCatalog.GetDescription(mapId)); // 설명
-            SetText(SelectedMapRecommendedLevelText, TitleMapCatalog.GetRecommendedLevelText(mapId)); // 추천 레벨
+            // SelectedMapRecommendedLevelText는 씬에 배치한 문구를 유지합니다.
             SetText(SelectedMapPowerText, TitleMapCatalog.GetPowerText(mapId)); // 전투력
             SetText(SelectedMapEnemyTypeText, TitleMapCatalog.GetEnemyTypeText(mapId)); // 적 유형
             SetText(SelectedMapRuleText, TitleMapCatalog.GetRuleText(mapId)); // 특수 규칙
@@ -835,16 +1100,40 @@ namespace TeamProject01.Gameplay
 
         private void WireMapCardButtons() // 하단 카드 클릭 리스너 연결
         {
+            ResolveMapSelectReferences(); // 빠진 맵 선택 참조 보강
             if (mapCardButtonsWired)
             {
                 return; // 중복 연결 방지
             }
 
-            mapCardButtonsWired = true; // 1회만
-            if (StartSelectedMapButton != null && StartSelectedMapButton.onClick.GetPersistentEventCount() == 0)
+            bool hasResolvedButton = false; // 연결 대상 확인
+            if (StartSelectedMapButton != null)
             {
+                StartSelectedMapButton.onClick.RemoveListener(StartSelectedMap); // 런타임 중복 방지
                 StartSelectedMapButton.onClick.AddListener(StartSelectedMap); // 선택 버튼
             }
+            hasResolvedButton |= StartSelectedMapButton != null;
+
+            if (mapBackButton != null)
+            {
+                mapBackButton.onClick.RemoveListener(ShowMainMenu); // 런타임 중복 방지
+                mapBackButton.onClick.AddListener(ShowMainMenu); // 뒤로가기
+            }
+            hasResolvedButton |= mapBackButton != null;
+
+            if (leftMapArrowButton != null)
+            {
+                leftMapArrowButton.onClick.RemoveListener(SelectPreviousMap); // 런타임 중복 방지
+                leftMapArrowButton.onClick.AddListener(SelectPreviousMap); // 이전 맵
+            }
+            hasResolvedButton |= leftMapArrowButton != null;
+
+            if (rightMapArrowButton != null)
+            {
+                rightMapArrowButton.onClick.RemoveListener(SelectNextMap); // 런타임 중복 방지
+                rightMapArrowButton.onClick.AddListener(SelectNextMap); // 다음 맵
+            }
+            hasResolvedButton |= rightMapArrowButton != null;
 
             for (int i = 0; MapCards != null && i < MapCards.Length; i++)
             {
@@ -856,7 +1145,10 @@ namespace TeamProject01.Gameplay
 
                 string capturedMapId = NormalizeMapId(card.MapId); // 클로저용 복사
                 card.Button.onClick.AddListener(() => SelectMapById(capturedMapId)); // 카드 선택
+                hasResolvedButton = true;
             }
+
+            mapCardButtonsWired = hasResolvedButton; // 참조를 찾은 뒤에만 완료 처리
         }
 
         private void RefreshProgressTexts() // 보유 정보 표시
@@ -934,12 +1226,13 @@ namespace TeamProject01.Gameplay
                     ? !string.IsNullOrWhiteSpace(SelectedPlannedUpgradeKey) && SelectedPlannedUpgradeKey == plannedKey
                     : string.IsNullOrWhiteSpace(SelectedPlannedUpgradeKey) && row.UpgradeId == SelectedUpgradeId; // 선택
                 int level = row.Planned || Meta == null ? 0 : Meta.GetUpgradeLevel(row.UpgradeId); // 현재 단계
-                bool maxed = !row.Planned && Meta != null && Meta.IsUpgradeMaxed(row.UpgradeId); // 최대
+                string stateText = row.Planned ? "준비중" : BuildUpgradeStateEffectText(row.UpgradeId, level); // 현재 효과
 
                 SetText(row.NameText, row.Planned ? TitleUpgradeCatalog.ResolvePlannedName(plannedKey, row.PlannedName) : TitleUpgradeCatalog.GetDisplayName(row.UpgradeId)); // 이름
-                SetText(row.StateText, row.Planned ? "예정" : maxed ? "MAX" : $"{level}/{MetaProgressionManager.MaxUpgradeLevel}"); // 상태
+                SetText(row.StateText, stateText); // 상태
+                SetTextColor(row.StateText, row.Planned ? UpgradeRowPlannedStateTextColor : UpgradeRowEffectTextColor); // 효과값 색
                 SetActive(row.PlannedOverlay, row.Planned); // 예약 딤
-                ApplyUpgradeRowVisual(row, selected, row.Planned, level); // 비주얼
+                ApplyUpgradeRowVisual(row, selected, row.Planned, level, plannedKey); // 비주얼
             }
         }
 
@@ -969,11 +1262,11 @@ namespace TeamProject01.Gameplay
             SetText(UpgradeConfirmButtonText, maxed ? "최대" : affordable ? "강화" : "부족"); // 버튼
             if (UpgradeConfirmButton != null)
             {
-                UpgradeConfirmButton.interactable = affordable; // 상호작용
+                UpgradeConfirmButton.interactable = !maxed; // 부족 상태도 클릭해 안내 표시
                 ApplyButtonColor(UpgradeConfirmButton.image, affordable, maxed); // 버튼 색
             }
 
-            ApplyUpgradeIconVisual(UpgradeDetailIconImage, upgradeId, false); // 아이콘
+            ApplyUpgradeIconVisual(UpgradeDetailIconImage, upgradeId, false, string.Empty); // 아이콘
         }
 
         private void RefreshPlannedUpgradeDetail() // 예약 상세
@@ -981,19 +1274,19 @@ namespace TeamProject01.Gameplay
             string name = TitleUpgradeCatalog.ResolvePlannedName(SelectedPlannedUpgradeKey); // 이름
             SetText(UpgradeDetailNameText, name); // 이름
             SetText(UpgradeDetailCurrentLevelText, "-"); // 현재
-            SetText(UpgradeDetailCurrentEffectText, "추후 적용"); // 현재 효과
-            SetText(UpgradeDetailNextLevelText, "예정"); // 다음
-            SetText(UpgradeDetailNextEffectText, "강화값 적용 구조 협의 후 연결"); // 다음 효과
+            SetText(UpgradeDetailCurrentEffectText, "능력치 적용 대기"); // 현재 효과
+            SetText(UpgradeDetailNextLevelText, "준비중"); // 다음
+            SetText(UpgradeDetailNextEffectText, "능력치 적용 방식 협의 후 연결"); // 다음 효과
             SetText(UpgradeDetailCostText, "-"); // 비용
-            SetText(UpgradeDetailStatusText, "기능 연결 예정"); // 상태
-            SetText(UpgradeConfirmButtonText, "예정"); // 버튼
+            SetText(UpgradeDetailStatusText, "기능 연결 준비중"); // 상태
+            SetText(UpgradeConfirmButtonText, "준비중"); // 버튼
             if (UpgradeConfirmButton != null)
             {
                 UpgradeConfirmButton.interactable = false; // 잠금
                 ApplyButtonColor(UpgradeConfirmButton.image, false, false); // 비활성 색
             }
 
-            ApplyUpgradeIconVisual(UpgradeDetailIconImage, MetaUpgradeId.GoldBonus, true); // 예약 아이콘
+            ApplyUpgradeIconVisual(UpgradeDetailIconImage, MetaUpgradeId.GoldBonus, true, SelectedPlannedUpgradeKey); // 예약 아이콘
         }
 
         private void RefreshMapCardViews(string selectedMapId) // 하단 맵 카드 표시
@@ -1032,9 +1325,269 @@ namespace TeamProject01.Gameplay
 
                 if (card.SelectionGlowImage != null)
                 {
+                    card.SelectionGlowImage.gameObject.SetActive(selected); // 비활성 글로우도 선택 시 표시
                     card.SelectionGlowImage.enabled = selected; // 선택 발광
                 }
             }
+        }
+
+        private void ResolvePanelReferences() // 붙여넣기로 빠진 패널 참조 복구
+        {
+            MainMenuPanel = ResolveSceneGameObject(MainMenuPanel, "MainMenuPanel");
+            MapSelectPanel = ResolveSceneGameObject(MapSelectPanel, "MapSelectPanel");
+            WormSelectPanel = ResolveSceneGameObject(WormSelectPanel, "WormSelectPanel");
+            UpgradePanel = ResolveSceneGameObject(UpgradePanel, "UpgradePanel");
+            SettingsPanel = ResolveSceneGameObject(SettingsPanel, "SettingsPanel");
+        }
+
+        private void ResolveSettingsOverlayReference() // 설정 오버레이 참조 복구
+        {
+            if (SettingsOverlay == null)
+            {
+                SettingsOverlay = FindFirstObjectByType<InGameSettingsPanelOverlay>(FindObjectsInactive.Include);
+            }
+        }
+
+        private void ResolveMapSelectReferences() // 맵 선택 UI 참조 복구
+        {
+            ResolvePanelReferences();
+            if (MapSelectPanel == null)
+            {
+                return;
+            }
+
+            Transform root = MapSelectPanel.transform;
+            MapDiamondText = ResolveChildComponent(root, "DiamondRow_Value", MapDiamondText);
+            MapHighestWaveText = ResolveChildComponent(root, "HighestWaveRow_Value", MapHighestWaveText);
+            SelectedMapNameText = ResolveChildComponent(root, "SelectedMapNameText", SelectedMapNameText);
+            SelectedMapStateText = ResolveChildComponent(root, "SelectedMapStateText", SelectedMapStateText);
+            SelectedMapDescriptionText = ResolveChildComponent(root, "SelectedMapDescriptionText", SelectedMapDescriptionText);
+            SelectedMapPreview = ResolveChildComponent(root, "SelectedMapPreview_BackgroundImageSlot", SelectedMapPreview);
+            SelectedMapRecommendedLevelText = ResolveChildComponent(root, "SelectedMapRecommendedLevelText", SelectedMapRecommendedLevelText);
+            SelectedMapRecordText = ResolveChildComponent(root, "SelectedMapRecordText", SelectedMapRecordText);
+            StartSelectedMapButton = ResolveChildComponent(root, "MapSelectConfirmButton", StartSelectedMapButton);
+            StartSelectedMapButtonText = ResolveChildComponent(root, "MapSelectConfirmButton_Text", StartSelectedMapButtonText);
+            if (StartSelectedMapButtonText == null && StartSelectedMapButton != null)
+            {
+                StartSelectedMapButtonText = StartSelectedMapButton.GetComponentInChildren<Text>(true);
+            }
+
+            mapBackButton = ResolveChildComponent(root, "MapBackButton", mapBackButton);
+            leftMapArrowButton = ResolveChildComponent(root, "LeftMapArrowButton", leftMapArrowButton);
+            rightMapArrowButton = ResolveChildComponent(root, "RightMapArrowButton", rightMapArrowButton);
+            ResolveMapCardReferences(root);
+        }
+
+        private void ResolveMapCardReferences(Transform root) // 맵 카드 묶음 복구
+        {
+            List<TitleMapCardView> resolvedCards = new List<TitleMapCardView>();
+            for (int mapIndex = 1; mapIndex <= 5; mapIndex++)
+            {
+                Transform cardRoot = FindMapCardRoot(root, mapIndex);
+                if (cardRoot == null)
+                {
+                    continue;
+                }
+
+                TitleMapCardView card = FindExistingMapCardView(mapIndex) ?? new TitleMapCardView();
+                card.MapId = GetMapIdByIndex(mapIndex);
+                card.Button = cardRoot.GetComponent<Button>();
+                card.NameText = FindChildComponent<Text>(cardRoot, "MapCardNameText");
+                card.StateText = FindChildComponent<Text>(cardRoot, "MapCardStateText");
+                card.EmblemImage = FindChildComponent<Image>(cardRoot, "MapCardEmblem");
+                card.PreviewImage = FindChildComponent<Image>(cardRoot, "MapCardPreview");
+                card.FrameImage = FindChildComponent<Image>(cardRoot, "MapCardFrame");
+                card.SelectionGlowImage = FindChildComponent<Image>(cardRoot, "MapCardSelectionGlow")
+                    ?? FindChildComponent<Image>(cardRoot, "SelectionGlow"); // 새/기존 이름 모두 지원
+                card.LockedOverlay = FindChildGameObject(cardRoot, "MapCardLockedOverlay");
+                resolvedCards.Add(card);
+            }
+
+            if (resolvedCards.Count > 0)
+            {
+                MapCards = resolvedCards.ToArray();
+            }
+        }
+
+        private TitleMapCardView FindExistingMapCardView(int mapIndex) // 기존 카드 데이터 재사용
+        {
+            string mapId = GetMapIdByIndex(mapIndex);
+            for (int i = 0; MapCards != null && i < MapCards.Length; i++)
+            {
+                TitleMapCardView card = MapCards[i];
+                if (card != null && NormalizeMapId(card.MapId) == mapId)
+                {
+                    return card;
+                }
+            }
+
+            return null;
+        }
+
+        private static Transform FindMapCardRoot(Transform root, int mapIndex) // 맵 카드 루트 검색
+        {
+            string prefix = "MapCard_" + mapIndex.ToString("00");
+            Transform[] children = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < children.Length; i++)
+            {
+                Transform child = children[i];
+                if (child != null && child.name.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        private void ApplySelectedMapHeroFrame(string mapId) // 선택 맵 상세 프레임 전환
+        {
+            if (MapSelectPanel == null)
+            {
+                return;
+            }
+
+            Transform root = MapSelectPanel.transform;
+            int selectedIndex = GetMapIndex(mapId);
+            for (int mapIndex = 1; mapIndex <= 5; mapIndex++)
+            {
+                Transform frame = FindChildTransform(root, "SelectedMapHeroFrame_" + mapIndex.ToString("00"));
+                if (frame != null)
+                {
+                    frame.gameObject.SetActive(mapIndex == selectedIndex);
+                }
+            }
+        }
+
+        private static GameObject ResolveSceneGameObject(GameObject current, string objectName) // 씬 오브젝트 검색
+        {
+            if (current != null)
+            {
+                return current;
+            }
+
+            Transform found = FindSceneTransform(objectName);
+            return found != null ? found.gameObject : null;
+        }
+
+        private static Transform FindSceneTransform(string objectName) // 비활성 씬 오브젝트 포함 검색
+        {
+            if (string.IsNullOrWhiteSpace(objectName))
+            {
+                return null;
+            }
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            Transform fallback = null;
+            Transform[] transforms = Resources.FindObjectsOfTypeAll<Transform>();
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform candidate = transforms[i];
+                if (candidate == null || candidate.name != objectName || !candidate.gameObject.scene.IsValid() || !candidate.gameObject.scene.isLoaded)
+                {
+                    continue;
+                }
+
+                if (candidate.gameObject.scene == activeScene)
+                {
+                    return candidate;
+                }
+
+                fallback ??= candidate;
+            }
+
+            return fallback;
+        }
+
+        private static T ResolveChildComponent<T>(Transform root, string objectName, T current) where T : Component // 하위 컴포넌트 참조 복구
+        {
+            if (root == null)
+            {
+                return current;
+            }
+
+            if (current != null && current.transform.IsChildOf(root) && IsActiveSelfPath(current.transform, root))
+            {
+                return current;
+            }
+
+            T found = FindChildComponent<T>(root, objectName);
+            return found != null ? found : current;
+        }
+
+        private static T FindChildComponent<T>(Transform root, string objectName) where T : Component // 이름 기반 하위 컴포넌트 검색
+        {
+            Transform found = FindChildTransform(root, objectName);
+            return found != null ? found.GetComponent<T>() : null;
+        }
+
+        private static GameObject FindChildGameObject(Transform root, string objectName) // 이름 기반 하위 오브젝트 검색
+        {
+            Transform found = FindChildTransform(root, objectName);
+            return found != null ? found.gameObject : null;
+        }
+
+        private static Transform FindDirectChildTransform(Transform root, string objectName) // 직접 자식 검색
+        {
+            if (root == null || string.IsNullOrWhiteSpace(objectName))
+            {
+                return null;
+            }
+
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child != null && child.name == objectName)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        private static Transform FindChildTransform(Transform root, string objectName) // 활성 경로 우선 하위 검색
+        {
+            if (root == null || string.IsNullOrWhiteSpace(objectName))
+            {
+                return null;
+            }
+
+            Transform fallback = null;
+            Transform[] children = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < children.Length; i++)
+            {
+                Transform child = children[i];
+                if (child == null || child.name != objectName)
+                {
+                    continue;
+                }
+
+                if (IsActiveSelfPath(child, root))
+                {
+                    return child;
+                }
+
+                fallback ??= child;
+            }
+
+            return fallback;
+        }
+
+        private static bool IsActiveSelfPath(Transform target, Transform root) // 루트 아래 활성 경로 판정
+        {
+            Transform current = target;
+            while (current != null && current != root)
+            {
+                if (!current.gameObject.activeSelf)
+                {
+                    return false;
+                }
+
+                current = current.parent;
+            }
+
+            return true;
         }
 
         private void ResolveWormSelectionObjects() // 지렁이 선택 오브젝트 참조
@@ -1045,9 +1598,9 @@ namespace TeamProject01.Gameplay
             }
 
             SetWormButtonLabel("BasicWormButton", "기본형 지렁이\n시작 무기: 대포"); // 기본형
-            SetWormButtonLabel("DefenseWormButton", "지원형 지렁이\n시작 무기: 화염구 / 150 다이아"); // 기존 방어형
-            SetWormButtonLabel("ArmedWormButton", "공격형 지렁이\n시작 무기: 미사일 / 200 다이아"); // 기존 무장형
-            SetWormButtonLabel("ChargeWormButton", "이속형 지렁이\n시작 무기: 톱날 / 200 다이아"); // 기존 돌격형
+            SetWormButtonLabel("DefenseWormButton", "지원형 지렁이\n시작 무기: 화염구 / 300 다이아"); // 기존 방어형
+            SetWormButtonLabel("ArmedWormButton", "공격형 지렁이\n시작 무기: 미사일 / 300 다이아"); // 기존 무장형
+            SetWormButtonLabel("ChargeWormButton", "이동형 지렁이\n시작 무기: 톱날 / 300 다이아"); // 기존 돌격형
 
             Transform existingMagic = FindWormButtonTransform("MagicWormButton"); // 기존 버튼
             if (magicWormButton == null && existingMagic != null)
@@ -1057,7 +1610,7 @@ namespace TeamProject01.Gameplay
 
             if (magicWormButton != null)
             {
-                SetWormButtonLabel("MagicWormButton", "마법형 지렁이\n시작 무기: 전기지직 / 250 다이아"); // 라벨 유지
+                SetWormButtonLabel("MagicWormButton", "마법형 지렁이\n시작 무기: 전기지직 / 300 다이아"); // 라벨 유지
             }
 
             ResolveWormActionButtonReferences(); // 정식 하단 구매/선택 버튼 참조
@@ -1081,7 +1634,7 @@ namespace TeamProject01.Gameplay
             UpdateWormButtonView("BasicWormButton", MetaWormIds.Basic, "기본형 지렁이", "대포");
             UpdateWormButtonView("DefenseWormButton", MetaWormIds.Support, "지원형 지렁이", "화염구");
             UpdateWormButtonView("ArmedWormButton", MetaWormIds.Attack, "공격형 지렁이", "미사일");
-            UpdateWormButtonView("ChargeWormButton", MetaWormIds.Mobility, "이속형 지렁이", "톱날");
+            UpdateWormButtonView("ChargeWormButton", MetaWormIds.Mobility, "이동형 지렁이", "톱날");
             UpdateWormButtonView("MagicWormButton", MetaWormIds.Magic, "마법형 지렁이", "전기지직");
             RefreshWormActionButtons(displayWormId);
         }
@@ -1094,32 +1647,175 @@ namespace TeamProject01.Gameplay
                 return;
             }
 
+            bool preserveAuthoredValues = IsInAuthoredWormListPanel(transform);
             string normalized = NormalizeWormId(wormId);
             bool selected = NormalizeWormId(Meta.SelectedWormId) == normalized;
             bool unlocked = Meta.IsWormUnlocked(normalized);
             int price = Meta.GetWormPrice(normalized);
             bool affordable = unlocked || Meta.OwnedDiamond >= price;
             string state = selected
-                ? "선택됨"
+                ? "선택중"
                 : unlocked ? "보유중"
-                : affordable ? $"구매 {price} 다이아" : $"부족 {price} 다이아";
+                : affordable ? "구매" : "잠금";
 
-            SetWormButtonLabel(objectName, $"{displayName}\n시작 무기: {starterName}\n{state}");
+            ApplyWormCostView(transform, price, unlocked); // 카드 비용 표시
+            ApplyWormStateBadge(transform, state, selected, unlocked, affordable); // 상태 버튼
+
+            if (!preserveAuthoredValues)
+            {
+                SetWormButtonTitleAndStarter(transform, displayName, starterName); // 카드 문구
+            }
+
+            SetWormSelectionGlowVisible(transform, selected); // 선택 발광
 
             Image image = transform.GetComponent<Image>();
-            if (image != null)
+            if (image != null && !preserveAuthoredValues)
             {
-                image.color = selected
-                    ? new Color(0.24f, 0.62f, 0.92f, 0.96f)
-                    : unlocked ? new Color(0.24f, 0.50f, 0.25f, 0.92f)
-                    : affordable ? new Color(0.58f, 0.42f, 0.20f, 0.92f)
-                    : new Color(0.30f, 0.28f, 0.26f, 0.82f);
+                image.color = Color.white; // Keep authored card art colors.
             }
 
             Button button = transform.GetComponent<Button>();
             if (button != null)
             {
                 button.interactable = true;
+            }
+        }
+
+        private void SetWormButtonTitleAndStarter(Transform buttonRoot, string displayName, string starterName) // 카드 이름/무기 문구
+        {
+            if (buttonRoot == null || IsInAuthoredWormListPanel(buttonRoot))
+            {
+                return;
+            }
+
+            SetNamedChildText(buttonRoot, "Name", displayName); // 신규 이름 TMP
+            SetNamedChildText(buttonRoot, "Wp", $"시작 무기: {starterName}"); // 신규 무기 TMP
+
+            Transform legacyText = FindDirectChildTransform(buttonRoot, "Text"); // 구형 카드 호환
+            if (legacyText != null)
+            {
+                SetTransformText(legacyText, $"{displayName}\n시작 무기: {starterName}");
+            }
+        }
+
+        private void ApplyWormStateBadge(Transform buttonRoot, string label, bool selected, bool unlocked, bool affordable) // 카드 상태 버튼
+        {
+            if (buttonRoot == null)
+            {
+                return;
+            }
+
+            SetWormLockOverlayVisible(buttonRoot, !unlocked && !affordable);
+
+            Transform stateBadge = FindChildTransform(buttonRoot, "StateBadge");
+            if (stateBadge == null)
+            {
+                return;
+            }
+
+            Image image = ResolveWormStateBadgeImage(stateBadge);
+            if (image != null)
+            {
+                Sprite stateSprite = selected
+                    ? WormStateSelectedSprite
+                    : unlocked ? WormStateOwnedSprite
+                    : affordable ? WormStatePurchaseSprite : WormStateLockedSprite;
+                if (stateSprite != null)
+                {
+                    image.sprite = stateSprite; // 상태별 버튼 이미지
+                    image.color = Color.white; // 원본 색 유지
+                }
+            }
+
+            stateBadge.gameObject.SetActive(true);
+            SetWormStateBadgeText(stateBadge, label); // 상태 TMP
+        }
+
+        private static Image ResolveWormStateBadgeImage(Transform stateBadge) // 상태 뱃지 이미지 찾기
+        {
+            if (stateBadge == null)
+            {
+                return null;
+            }
+
+            Image image = stateBadge.GetComponent<Image>();
+            if (image != null)
+            {
+                return image;
+            }
+
+            return FindChildComponent<Image>(stateBadge, "Image")
+                ?? FindChildComponent<Image>(stateBadge, "BadgeImage")
+                ?? FindChildComponent<Image>(stateBadge, "Background")
+                ?? FindChildComponent<Image>(stateBadge, "Bg")
+                ?? stateBadge.GetComponentInChildren<Image>(true);
+        }
+
+        private static void SetWormStateBadgeText(Transform stateBadge, string label) // 상태 뱃지 텍스트 갱신
+        {
+            if (stateBadge == null)
+            {
+                return;
+            }
+
+            SetTransformText(stateBadge, label);
+            SetNamedChildText(stateBadge, "Text", label);
+            SetNamedChildText(stateBadge, "NameText", label);
+
+            TMP_Text tmpText = stateBadge.GetComponentInChildren<TMP_Text>(true);
+            if (tmpText != null)
+            {
+                tmpText.text = label;
+                return;
+            }
+
+            Text legacyText = stateBadge.GetComponentInChildren<Text>(true);
+            if (legacyText != null)
+            {
+                legacyText.text = label;
+            }
+        }
+
+        private static void SetWormLockOverlayVisible(Transform buttonRoot, bool visible) // 보유 상태에 따라 자물쇠 오버레이 표시
+        {
+            SetNamedChildActive(buttonRoot, "LockedOverlay_UpdateSoon", visible);
+            SetNamedChildActive(buttonRoot, "LockedOverlay", visible);
+            SetNamedChildActive(buttonRoot, "LockOverlay", visible);
+        }
+
+        private static void SetNamedChildActive(Transform root, string childName, bool visible) // 이름 기반 하위 오브젝트 표시
+        {
+            Transform child = FindChildTransform(root, childName);
+            if (child != null)
+            {
+                child.gameObject.SetActive(visible);
+            }
+        }
+
+        private void ApplyWormCostView(Transform buttonRoot, int price, bool unlocked) // 카드 비용 표시
+        {
+            if (buttonRoot == null)
+            {
+                return; // 대상 없음
+            }
+
+            bool visible = !unlocked && price > 0; // 미보유 구매 대상만 표시
+            Transform icon = FindDirectChildTransform(buttonRoot, "UpgradeIcon"); // 비용 아이콘
+            Transform costText = FindDirectChildTransform(buttonRoot, "NameText"); // 비용 숫자
+            SetActive(icon != null ? icon.gameObject : null, visible); // 보유 중 숨김
+            SetActive(costText != null ? costText.gameObject : null, visible); // 보유 중 숨김
+            if (visible)
+            {
+                SetTransformText(costText, price.ToString()); // 공통 비용 반영
+            }
+        }
+
+        private static void SetWormSelectionGlowVisible(Transform buttonRoot, bool visible) // 선택 발광 표시
+        {
+            Transform selectionGlow = FindChildTransform(buttonRoot, "SelectionGlow");
+            if (selectionGlow != null)
+            {
+                selectionGlow.gameObject.SetActive(visible);
             }
         }
 
@@ -1139,7 +1835,7 @@ namespace TeamProject01.Gameplay
 
             SetWormActionButtonState(
                 WormSelectButton,
-                selected ? "선택됨" : unlocked ? "선택" : "잠금",
+                selected ? "선택중" : unlocked ? "선택" : "잠금",
                 unlocked && !selected,
                 selected ? new Color(0.24f, 0.62f, 0.92f, 0.96f) : unlocked ? new Color(0.23f, 0.48f, 0.20f, 0.92f) : new Color(0.34f, 0.30f, 0.27f, 0.82f));
         }
@@ -1160,7 +1856,7 @@ namespace TeamProject01.Gameplay
 
             if (image != null)
             {
-                image.color = color;
+                image.color = Color.white; // 원본 버튼 아트 색 유지
             }
 
             Text text = button.GetComponentInChildren<Text>(true);
@@ -1189,12 +1885,22 @@ namespace TeamProject01.Gameplay
                 WormPortraitPreview.PreviewWorm(previewWormId); // 3D 모델 교체
             }
 
-            SetText(SelectedWormNameText, TitleWormCatalog.GetDisplayName(previewWormId)); // 이름 즉시 표시
-            SetText(SelectedWormBonusText, TitleWormCatalog.GetBonusText(previewWormId)); // 보너스 즉시 표시
+            RefreshSelectedWormTexts(previewWormId); // 이름/스타팅 무기/추가 보너스 즉시 표시
             if (SelectedWormPreview != null)
             {
-                SelectedWormPreview.color = TitleWormCatalog.GetPreviewColor(previewWormId); // 색 프리뷰
+                ClearWormPreviewBackground(SelectedWormPreview); // 3D 초상화 부모 배경 제거
             }
+        }
+
+        private static void ClearWormPreviewBackground(Image previewImage) // 투명 3D 초상화 뒤 배경색 제거
+        {
+            if (previewImage == null)
+            {
+                return; // 대상 없음
+            }
+
+            previewImage.color = Color.clear; // 자식 RawImage 뒤로 지렁이별 색이 비치지 않게 함
+            previewImage.raycastTarget = true; // 기존 입력 영역은 유지
         }
 
         private void ResolvePreviewReferences() // 프리뷰 참조 찾기
@@ -1202,6 +1908,48 @@ namespace TeamProject01.Gameplay
             if (WormPortraitPreview == null)
             {
                 WormPortraitPreview = FindFirstObjectByType<TitleWormPortraitPreview>(); // 씬 검색
+            }
+
+            Transform previewPanel = null;
+            if (WormSelectPanel != null)
+            {
+                previewPanel = FindChildTransform(WormSelectPanel.transform, "WormPreviewPanel");
+            }
+
+            if (previewPanel == null)
+            {
+                GameObject panelObject = GameObject.Find("WormPreviewPanel");
+                previewPanel = panelObject != null ? panelObject.transform : null;
+            }
+
+            if (previewPanel == null)
+            {
+                return;
+            }
+
+            if (SelectedWormNameText == null)
+            {
+                SelectedWormNameText = FindChildComponent<Text>(previewPanel, "SelectedWormNameText");
+            }
+
+            if (SelectedWormNameTmpText == null)
+            {
+                SelectedWormNameTmpText = FindChildComponent<TMP_Text>(previewPanel, "SelectedWormNameText");
+            }
+
+            if (SelectedWormBonusText == null)
+            {
+                SelectedWormBonusText = FindChildComponent<Text>(previewPanel, "SelectedWormBonusText");
+            }
+
+            if (SelectedWormBonusTmpText == null)
+            {
+                SelectedWormBonusTmpText = FindChildComponent<TMP_Text>(previewPanel, "SelectedWormBonusText");
+            }
+
+            if (SelectedWormBonus2Text == null)
+            {
+                SelectedWormBonus2Text = FindChildComponent<TMP_Text>(previewPanel, "SelectedWormBonus2Text");
             }
         }
 
@@ -1216,16 +1964,84 @@ namespace TeamProject01.Gameplay
         private void SetWormButtonLabel(string objectName, string label) // 버튼 라벨 변경
         {
             Transform button = FindWormButtonTransform(objectName); // 버튼 찾기
-            if (button == null)
+            if (button == null || IsInAuthoredWormListPanel(button))
             {
                 return; // 없음
             }
 
-            Text text = button.GetComponentInChildren<Text>(true); // 라벨
-            if (text != null)
+            string[] lines = label.Split('\n'); // 신규 카드 분리 표기
+            if (lines.Length > 0)
             {
-                text.text = label; // 표시
+                SetNamedChildText(button, "Name", lines[0]); // 이름
             }
+
+            if (lines.Length > 1)
+            {
+                SetNamedChildText(button, "Wp", lines[1]); // 시작 무기
+            }
+
+            Transform legacyText = FindDirectChildTransform(button, "Text"); // 구형 카드 직접 텍스트
+            if (legacyText != null)
+            {
+                SetTransformText(legacyText, label); // 표시
+            }
+        }
+
+        private static void SetNamedChildText(Transform root, string childName, string value) // 이름 기반 텍스트 설정
+        {
+            Transform child = FindChildTransform(root, childName);
+            if (child != null)
+            {
+                SetTransformText(child, value);
+            }
+        }
+
+        private static void SetTransformText(Transform target, string value) // Text/TMP 공통 설정
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            Text legacyText = target.GetComponent<Text>();
+            if (legacyText != null)
+            {
+                legacyText.text = value;
+            }
+
+            TMP_Text tmpText = target.GetComponent<TMP_Text>();
+            if (tmpText != null)
+            {
+                tmpText.text = value;
+            }
+        }
+
+        private static string ReadTransformText(Transform target) // Text/TMP 공통 읽기
+        {
+            if (target == null)
+            {
+                return string.Empty;
+            }
+
+            TMP_Text tmpText = target.GetComponent<TMP_Text>();
+            if (tmpText != null)
+            {
+                return tmpText.text;
+            }
+
+            Text legacyText = target.GetComponent<Text>();
+            return legacyText != null ? legacyText.text : string.Empty;
+        }
+
+        private bool IsInAuthoredWormListPanel(Transform target) // WormListPanel_1 내부 authored 값 보존
+        {
+            if (target == null || WormSelectPanel == null)
+            {
+                return false;
+            }
+
+            Transform authoredPanel = FindChildTransform(WormSelectPanel.transform, "WormListPanel_1");
+            return authoredPanel != null && target.IsChildOf(authoredPanel);
         }
 
         private Transform FindWormButtonTransform(string objectName) // 버튼 찾기
@@ -1233,6 +2049,19 @@ namespace TeamProject01.Gameplay
             if (WormSelectPanel == null || string.IsNullOrWhiteSpace(objectName))
             {
                 return null; // 대상 없음
+            }
+
+            Transform preferredRoot = FindChildTransform(WormSelectPanel.transform, "WormListPanel_1"); // 신규 리스트 우선
+            Transform gridRoot = preferredRoot != null ? FindChildTransform(preferredRoot, "WormRowsRoot") : null; // 카드 그리드
+            if (gridRoot == null && preferredRoot != null)
+            {
+                gridRoot = FindChildTransform(preferredRoot, "UpgradeRowsRoot"); // 구형 이름 호환
+            }
+
+            Transform preferred = FindChildTransform(gridRoot != null ? gridRoot : preferredRoot, objectName);
+            if (preferred != null)
+            {
+                return preferred; // 신규 카드 우선
             }
 
             Transform[] children = WormSelectPanel.GetComponentsInChildren<Transform>(true); // 하위 검색
@@ -1264,20 +2093,19 @@ namespace TeamProject01.Gameplay
             }
         }
 
-        private void ApplyWormSelectTextColor() // 지렁이 선택 글자색 보정
+        private static void SetText(TMP_Text target, string value) // TMP 텍스트 설정
         {
-            if (WormSelectPanel == null)
+            if (target != null)
             {
-                return; // 대상 없음
+                target.text = value; // 값 반영
             }
+        }
 
-            Text[] texts = WormSelectPanel.GetComponentsInChildren<Text>(true); // 선택 화면 텍스트
-            for (int i = 0; i < texts.Length; i++)
+        private static void SetTextColor(TMP_Text target, Color color) // TMP 텍스트 색상 설정
+        {
+            if (target != null)
             {
-                if (texts[i] != null)
-                {
-                    texts[i].color = Color.white; // 임시 흰색
-                }
+                target.color = color; // 색상 반영
             }
         }
 
@@ -1286,7 +2114,26 @@ namespace TeamProject01.Gameplay
             return effectText == "효과 없음" ? "없음" : effectText; // 0단계 축약
         }
 
-        private static void ApplyUpgradeRowVisual(TitleUpgradeRowView row, bool selected, bool planned, int level) // 강화 행 비주얼
+        private static string BuildUpgradeStateEffectText(MetaUpgradeId upgradeId, int level) // 목록 현재 효과 문구
+        {
+            int clamped = Mathf.Clamp(level, 0, MetaProgressionManager.MaxUpgradeLevel); // 단계 보정
+            if (clamped > 0)
+            {
+                return MetaProgressionManager.GetUpgradeEffectText(upgradeId, clamped); // 기존 효과 문구 재사용
+            }
+
+            switch (upgradeId)
+            {
+                case MetaUpgradeId.BaseAttack:
+                    return "+0%";
+                case MetaUpgradeId.MoveSpeed:
+                    return "+0%";
+                default:
+                    return "+0%";
+            }
+        }
+
+        private void ApplyUpgradeRowVisual(TitleUpgradeRowView row, bool selected, bool planned, int level, string plannedKey) // 강화 행 비주얼
         {
             if (row == null)
             {
@@ -1295,19 +2142,22 @@ namespace TeamProject01.Gameplay
 
             if (row.BackgroundImage != null)
             {
-                row.BackgroundImage.type = Image.Type.Simple; // 사각 슬롯
-                row.BackgroundImage.color = selected
-                    ? new Color(0.78f, 0.92f, 1f, 0.96f)
+                row.BackgroundImage.sprite = UpgradeRowBackgroundSprite != null ? UpgradeRowBackgroundSprite : row.BackgroundImage.sprite; // 스킨
+                row.BackgroundImage.color = UpgradeRowBackgroundSprite != null
+                    ? planned ? new Color(0.78f, 0.72f, 0.64f, 0.96f) : Color.white
+                    : selected ? new Color(0.78f, 0.92f, 1f, 0.96f)
                     : planned ? new Color(0.54f, 0.48f, 0.40f, 0.84f) : new Color(0.84f, 0.70f, 0.50f, 0.94f); // 선택/예정/일반
             }
 
             if (row.SelectionGlowImage != null)
             {
+                row.SelectionGlowImage.gameObject.SetActive(selected); // 꺼둔 오브젝트도 선택 시 표시
                 row.SelectionGlowImage.enabled = selected; // 선택 테두리
-                row.SelectionGlowImage.color = new Color(0.18f, 0.78f, 1f, 0.86f); // 청색 강조
+                row.SelectionGlowImage.sprite = UpgradeRowSelectedFrameSprite != null ? UpgradeRowSelectedFrameSprite : row.SelectionGlowImage.sprite; // 선택 스킨
+                row.SelectionGlowImage.color = UpgradeRowSelectedFrameSprite != null ? Color.white : new Color(0.18f, 0.78f, 1f, 0.86f); // 청색 강조
             }
 
-            ApplyUpgradeIconVisual(row.IconImage, row.UpgradeId, planned); // 아이콘
+            ApplyUpgradeIconVisual(row.IconImage, row.UpgradeId, planned, plannedKey); // 아이콘
             for (int i = 0; row.LevelPipImages != null && i < row.LevelPipImages.Length; i++)
             {
                 Image pip = row.LevelPipImages[i]; // 단계 점
@@ -1316,27 +2166,29 @@ namespace TeamProject01.Gameplay
                     continue; // 누락
                 }
 
-                pip.type = Image.Type.Simple; // 다이아 슬롯
                 pip.raycastTarget = false; // 입력 통과
                 bool filled = !planned && i < Mathf.Clamp(level, 0, MetaProgressionManager.MaxUpgradeLevel); // 채움
-                pip.color = planned
-                    ? new Color(0.38f, 0.34f, 0.29f, 0.72f)
+                Sprite pipSprite = filled ? UpgradePipFilledSprite : UpgradePipEmptySprite; // 단계 스킨
+                pip.sprite = pipSprite != null ? pipSprite : pip.sprite; // 스킨 반영
+                pip.color = pipSprite != null
+                    ? planned ? new Color(0.55f, 0.55f, 0.55f, 0.72f) : Color.white
+                    : planned ? new Color(0.38f, 0.34f, 0.29f, 0.72f)
                     : filled ? new Color(1f, 0.68f, 0.16f, 1f) : new Color(0.49f, 0.43f, 0.35f, 0.98f); // 단계색
             }
         }
 
-        private static void ApplyUpgradeIconVisual(Image image, MetaUpgradeId upgradeId, bool planned) // 강화 아이콘 표시
+        private void ApplyUpgradeIconVisual(Image image, MetaUpgradeId upgradeId, bool planned, string plannedKey) // 강화 아이콘 표시
         {
             if (image == null)
             {
                 return; // 대상 없음
             }
 
+            Sprite sprite = planned ? ResolvePlannedUpgradeIconSprite(plannedKey) : ResolveUpgradeIconSprite(upgradeId); // 스킨 조회
+            image.sprite = sprite;
             image.enabled = true; // 표시
-            image.type = Image.Type.Simple; // 아이콘 슬롯
-            image.preserveAspect = true; // 실제 아이콘 비율 유지
             image.raycastTarget = false; // 행 버튼 입력 우선
-            image.color = planned ? new Color(0.55f, 0.55f, 0.55f, 0.9f) : image.sprite != null ? Color.white : TitleUpgradeCatalog.GetIconColor(upgradeId); // 스프라이트 교체 대응
+            image.color = sprite != null ? Color.white : planned ? new Color(0.55f, 0.55f, 0.55f, 0.9f) : TitleUpgradeCatalog.GetIconColor(upgradeId); // 스프라이트 교체 대응
         }
 
         private static void ApplyButtonColor(Image image, bool affordable, bool maxed) // 강화 버튼 색
@@ -1346,10 +2198,53 @@ namespace TeamProject01.Gameplay
                 return; // 대상 없음
             }
 
-            image.type = Image.Type.Simple; // 버튼 슬롯
-            image.color = maxed
-                ? new Color(0.65f, 0.56f, 0.40f, 0.96f)
-                : affordable ? new Color(0.34f, 0.62f, 0.18f, 1f) : new Color(0.38f, 0.33f, 0.27f, 0.88f); // 가능/불가
+            image.color = image.sprite != null
+                ? maxed ? new Color(0.74f, 0.68f, 0.58f, 1f)
+                : Color.white
+                : maxed
+                ? new Color(0.65f, 0.56f, 0.40f, 1f)
+                : affordable ? new Color(0.34f, 0.62f, 0.18f, 1f) : new Color(0.38f, 0.33f, 0.27f, 1f); // 가능/불가
+        }
+
+        private Sprite ResolveUpgradeIconSprite(MetaUpgradeId upgradeId) // 실제 강화 아이콘
+        {
+            switch (upgradeId)
+            {
+                case MetaUpgradeId.GoldBonus:
+                    return UpgradeGoldIconSprite;
+                case MetaUpgradeId.DiamondBonus:
+                    return UpgradeDiamondIconSprite;
+                case MetaUpgradeId.TurnBonus:
+                    return UpgradeTurnIconSprite;
+                case MetaUpgradeId.CollisionForce:
+                    return UpgradeCollisionIconSprite;
+                case MetaUpgradeId.BaseAttack:
+                    return UpgradeBaseAttackIconSprite;
+                case MetaUpgradeId.AttackSpeed:
+                    return UpgradeAttackSpeedIconSprite;
+                case MetaUpgradeId.NexusMaxHp:
+                    return UpgradeNexusMaxHpIconSprite;
+                case MetaUpgradeId.MoveSpeed:
+                    return UpgradeMoveSpeedIconSprite != null ? UpgradeMoveSpeedIconSprite : UpgradePickupRangeIconSprite;
+                case MetaUpgradeId.PickupRange:
+                    return UpgradePickupRangeIconSprite;
+                default:
+                    return null;
+            }
+        }
+
+        private Sprite ResolvePlannedUpgradeIconSprite(string plannedKey) // 예정 강화 아이콘
+        {
+            string key = string.IsNullOrWhiteSpace(plannedKey) ? string.Empty : plannedKey.Trim(); // 키 보정
+            switch (key)
+            {
+                case "planned_rejoin_range":
+                    return UpgradeRejoinRangeIconSprite;
+                case "planned_pickup_range":
+                    return UpgradePickupRangeIconSprite;
+                default:
+                    return null;
+            }
         }
 
         private static string NormalizeWormId(string wormId) // 지렁이 ID 보정
@@ -1360,6 +2255,40 @@ namespace TeamProject01.Gameplay
         private static string NormalizeMapId(string mapId) // 맵 ID 보정
         {
             return MetaMapIds.Normalize(mapId); // 공용 보정
+        }
+
+        private static int GetMapIndex(string mapId) // 맵 ID를 번호로 변환
+        {
+            switch (NormalizeMapId(mapId))
+            {
+                case MetaMapIds.Map2:
+                    return 2;
+                case MetaMapIds.Map3:
+                    return 3;
+                case MetaMapIds.Map4:
+                    return 4;
+                case MetaMapIds.Map5:
+                    return 5;
+                default:
+                    return 1;
+            }
+        }
+
+        private static string GetMapIdByIndex(int mapIndex) // 번호를 맵 ID로 변환
+        {
+            switch (mapIndex)
+            {
+                case 2:
+                    return MetaMapIds.Map2;
+                case 3:
+                    return MetaMapIds.Map3;
+                case 4:
+                    return MetaMapIds.Map4;
+                case 5:
+                    return MetaMapIds.Map5;
+                default:
+                    return MetaMapIds.Map1;
+            }
         }
 
         private static void ApplyMapImageSlotColor(Image image, string mapId) // 맵 사진 슬롯 색상

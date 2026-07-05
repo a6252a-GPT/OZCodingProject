@@ -55,6 +55,8 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float WormholeTeleportMinNexusDistance = 40f; // 넥서스 기준 최소 도착 거리
         [Min(0f)] public float WormholeTeleportMaxNexusDistance = 50f; // 넥서스 기준 최대 도착 거리
         [Min(1)] public int WormholeMaxTeleportTargets = 12; // 최대 이동 대상 수
+        [Min(0.5f)] public float WormholeTeleportSpacing = 1.4f; // 도착 몬스터 간격
+        [Min(3)] public int WormholeTeleportSlotsPerRing = 12; // 도착 원형 줄 슬롯 수
         public bool WormholeAffectBosses; // 보스 이동 허용 여부
         [Min(0f)] public float WormholeTargetAimHeight = 0.6f; // 조준 높이
         [Min(0f)] public float WormholeAimTurnSpeed = 720f; // 머리 회전 속도

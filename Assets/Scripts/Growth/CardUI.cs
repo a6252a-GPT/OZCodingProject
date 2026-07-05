@@ -84,6 +84,8 @@ public partial class CardUI : MonoBehaviour
     [Min(0)][SerializeField] private int rewardGoldBaseAmount = 100; // 일반 골드 보상
     [Min(0)][SerializeField] private int rewardExperienceBaseAmount = 200; // 일반 경험치 보상
     [Min(1)][SerializeField] private int rewardSegmentTicketBaseCount = 1; // 일반 세그먼트 선택권 수
+    [Tooltip("세그먼트선택권 x2/x3 보상 등급 확률 배율")]
+    [Range(0f, 1f)][SerializeField] private float rewardSegmentTicketHighTierChanceMultiplier = 0.5f; // 선택권 2/3회 확률 절반
     [Min(0)][SerializeField] private int segmentTicketBonusRerollCount = 5; // 선택권 진입 리롤 보너스
 
     [Header("카드 연출")]
@@ -109,6 +111,14 @@ public partial class CardUI : MonoBehaviour
     [Header("세그먼트 선택 후보")]
     [Tooltip("세그먼트 선택 3장 중 보유 Lv3 미만 세그먼트 1장을 먼저 뽑을 확률")]
     [Range(0f, 1f)][SerializeField] private float ownedSegmentChoiceGuaranteeChance = 0.5f; // 보유 Lv3 미만 확정 후보 확률
+    [Tooltip("같은 세그먼트 보유 1개당 후보 등장 가중치 감소율")]
+    [Range(0f, 1f)][SerializeField] private float ownedSegmentChoiceWeightReductionPerOwned = 0.1f; // 1개당 -10%
+    [Tooltip("보유 개수 감소 후에도 유지할 최소 등장 가중치 배율")]
+    [Range(0f, 1f)][SerializeField] private float ownedSegmentChoiceMinimumWeightMultiplier = 0.01f; // 최소 1%
+    [Tooltip("같은 지원형 세그먼트 보유 1개당 후보 등장 가중치 감소율")]
+    [Range(0f, 1f)][SerializeField] private float supportSegmentChoiceWeightReductionPerOwned = 0.2f; // 지원형 1개당 -20%
+    [Tooltip("지원형 보유 개수 감소 후에도 유지할 최소 등장 가중치 배율")]
+    [Range(0f, 1f)][SerializeField] private float supportSegmentChoiceMinimumWeightMultiplier = 0.01f; // 지원형 최소 1%
 
     [Header("세그먼트 무기 강화선택 조건")]
     [Tooltip("A모드 (체크): 세그먼트 선택 → 선택한 세그먼트의 강화 카드 선택 / B모드 (해제): 보유 세그먼트 강화만 랜덤 3장 (미보유 제외)")]
@@ -138,18 +148,6 @@ public partial class CardUI : MonoBehaviour
     private Coroutine autoSelectRoutine; // 자동선택 코루틴 참조
     // 안건준 추가 - 0622 ======
 
-    // 안건준 추가 - 0622 ======
-    [Header("세그먼트 리스트 호버 UI")]
-    [Tooltip("카드 패널이 열릴 때 함께 활성화되는 트리거 바 (Hierarchy의 Segment List Popup)")]
-    [SerializeField] private GameObject segmentListPopup; // 호버 트리거
-    [Tooltip("Popup 호버 시 표시되는 세그먼트 목록 (Hierarchy의 Segment List)")]
-    [SerializeField] private GameObject segmentList; // 호버 시 표시
-    [Tooltip("Segment List 안 Scroll View 텍스트 — 장착 세그먼트 이름 : 개수 표시")]
-    [SerializeField] private TextMeshProUGUI segmentListText; // 장착 세그먼트 이름:개수 TMP
-    [Tooltip("Segment List > Viewport > Content RectTransform — 스크롤 높이 자동 조정용")]
-    [SerializeField] private RectTransform segmentListContent; // 스크롤 Content RT
-    // 안건준 추가 - 0622 ======
-
     [Header("마법책 리롤 UI")]
     [SerializeField] private GameObject rerollUiRoot; // 씬에 배치된 리롤 UI 루트
     [SerializeField] private Button rerollButton; // 정사각형 리롤 버튼
@@ -162,6 +160,7 @@ public partial class CardUI : MonoBehaviour
     private readonly List<SpawnedCardEntry> spawnedCards = new List<SpawnedCardEntry>(); // 생성된 카드 목록
     private readonly Dictionary<string, int> rerollCountsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // 마법책 개수 집계용
     private readonly Dictionary<string, int> cardTooltipSegmentCountsById = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // 카드 툴팁용 보유 세그먼트 집계
+    private readonly List<AttachedSegmentDebugEntry> cardTooltipAttachedSegments = new List<AttachedSegmentDebugEntry>(16); // 카드 툴팁용 컨보이 순서 목록
     private const string MagicBookRerollSegmentId = "SG55_MagicBook"; // 마법책 세그먼트 ID
     private const int OwnedSegmentChoiceGuaranteeExcludedLevel = 3; // Lv3은 보유 확정 후보에서 제외
     private const int MaxSupportSegmentChoiceCount = 1; // 세그먼트 선택 3장 안 지원형 최대 수
@@ -180,7 +179,6 @@ public partial class CardUI : MonoBehaviour
     private LevelUpCardPhase currentSpawnPhase = LevelUpCardPhase.Upgrade; // 이번 레벨업 카드 종류
     private string selectedSegmentWeaponStatId; // 카드 선택으로 갱신되는 디버그 표시 대상
     private CoreStatProvider segmentWeaponStatSubscribedCore; // 스탯 변경 구독 대상
-    private Coroutine hideSegmentListCoroutine; // 안건준 추가 - 0622 — 코루틴 참조 (혹시 중복 방지용)
     private CardUiPrefabReferences cachedPrefabReferences; // Resources fallback 캐시
     private Sprite cachedTierFrameNormalSprite; // 일반 등급 카드 프레임
     private Sprite cachedTierFrameRareSprite; // 레어 등급 카드 프레임
@@ -192,11 +190,9 @@ public partial class CardUI : MonoBehaviour
     {
         LoadAutoSelectInAutoOrbitPreference(); // 자동궤도 카드자동 설정 복원
         ResolveManagerReferences(); // 참조 보강
-        SetupSegmentListHoverUi(); // 안건준 추가 - 0622 — 호버 브릿지 연결 + 기본 비활성
         SetupRerollUi(); // 마법책 리롤 버튼 연결
 
         // TMP 줄바꿈 재귀 오류 방지 — 긴 텍스트가 들어가는 TMP에 word wrap 비활성
-        if (segmentListText       != null) segmentListText.textWrappingMode         = TextWrappingModes.NoWrap;
         if (segmentWeaponStatText != null) segmentWeaponStatText.textWrappingMode   = TextWrappingModes.NoWrap;
         if (rerollCountText       != null) rerollCountText.textWrappingMode         = TextWrappingModes.NoWrap;
 
@@ -259,7 +255,6 @@ public partial class CardUI : MonoBehaviour
             BeginRerollForPanelOpen(); // 마법책 개수만큼 이번 선택창 리롤 충전
             SpawnLevelUpCards(); // 현재 레벨 구간에 맞는 카드 생성
             spawnedForCurrentOpen = true;
-            ShowSegmentListPopupOnPanelOpen(); // 안건준 추가 - 0622 — 트리거 바만 표시
             return;
         }
 
@@ -278,7 +273,6 @@ public partial class CardUI : MonoBehaviour
             remainingRerollCount = 0; // 패널 닫힘 → 리롤 소멸
             rerollAllowedForCurrentChoices = false; // 다음 오픈 전까지 비활성
             RefreshRerollUi(); // 버튼 숨김/비활성 갱신
-            HideSegmentListUi(); // 안건준 추가 - 0622 — 팝업·리스트 모두 숨김
             StopAutoSelect(); // 안건준 추가 - 0622 : 패널 닫힐 때 자동선택 코루틴 정리
             if (closingMode == CardPanelMode.LevelUp
                 && CoreStatProvider.Active != null
@@ -444,8 +438,24 @@ public partial class CardUI : MonoBehaviour
     public bool OpenSegmentChoiceTicket(int ticketCount) // 월드드랍/보상카드 선택권 진입점
     {
         int safeCount = Mathf.Max(0, ticketCount);
+        if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog)
+        {
+            TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                $"CardUI.OpenSegmentChoiceTicket requested={ticketCount}, safeCount={safeCount}, "
+                + $"panelOpen={IsLevelUpPanelOpen()}, processing={isProcessingSelection}, mode={activePanelMode}, "
+                + $"remainingTickets={segmentTicketChoicesRemaining}, rewardTicketPending={pendingRewardSegmentTicketCount}",
+                this);
+        }
+
         if (safeCount <= 0)
         {
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    "CardUI.OpenSegmentChoiceTicket blocked reason=InvalidTicketCount",
+                    this);
+            }
+
             return false;
         }
 
@@ -457,6 +467,13 @@ public partial class CardUI : MonoBehaviour
     {
         if (IsLevelUpPanelOpen() || isProcessingSelection)
         {
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && mode == CardPanelMode.SegmentTicketChoice)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    $"CardUI.OpenSpecialCardPanel blocked mode={mode}, reason=PanelBusy, panelOpen={IsLevelUpPanelOpen()}, processing={isProcessingSelection}",
+                    this);
+            }
+
             return false; // 이미 카드 선택 중
         }
 
@@ -464,6 +481,13 @@ public partial class CardUI : MonoBehaviour
         if (ui == null)
         {
             Debug.LogWarning("[CardUI] LevelUpUi가 없어 카드 패널을 열 수 없습니다.", this);
+            if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && mode == CardPanelMode.SegmentTicketChoice)
+            {
+                TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                    $"CardUI.OpenSpecialCardPanel blocked mode={mode}, reason=MissingLevelUpUi",
+                    this);
+            }
+
             return false;
         }
 
@@ -479,6 +503,14 @@ public partial class CardUI : MonoBehaviour
         ui.SetUseRewardTitle(mode != CardPanelMode.LevelUp); // 보상/선택권은 보상획득 타이틀
         ui.SetUseBackgroundBlur(mode != CardPanelMode.LevelUp); // 보상/선택권은 배경 블러 사용
         ui.Open();
+        if (TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.ShouldLog && mode == CardPanelMode.SegmentTicketChoice)
+        {
+            TeamProject01.Gameplay.StartingSegmentChoiceTicketDebug.Log(
+                $"CardUI.OpenSpecialCardPanel opened mode={mode}, ticketCount={ticketCount}, ui={ui.name}, "
+                + $"uiOpen={ui.IsPanelOpen}, uiVisible={ui.IsPanelVisible}",
+                this);
+        }
+
         return true;
     }
 
@@ -1562,7 +1594,6 @@ public partial class CardUI : MonoBehaviour
     {
         LogPlayerSegmentCountsDebug($"전체 세그먼트 : {segmentCount} / 각 세그먼트 : "); // CoreTest·카드 UI 공통
         RefreshSegmentWeaponStatUi(); // 건춘추가 - 0621 ====== 레벨업·추가 후 스탯 UI 갱신
-        RefreshSegmentListText(); // 안건준 추가 - 0622 — 세그먼트 변경 시 리스트 텍스트 갱신
     }
 
     private void LogPlayerSegmentCountsDebug(string reason) // ConvoySegments 현재 구성 출력

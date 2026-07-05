@@ -32,11 +32,16 @@ namespace TeamProject01.Gameplay
         private GameObject activeStatusSourceObject;
         private float statusFloatingCooldown;
 
-        public bool IsFrozen => freezeTimer > 0f;
+        public bool IsFrozen => !IsStatusEffectImmune() && freezeTimer > 0f;
         public float MoveSpeedMultiplier
         {
             get
             {
+                if (IsStatusEffectImmune())
+                {
+                    return 1f;
+                }
+
                 float multiplier = 1f;
                 if (moveSpeedSlowTimer > 0f)
                 {
@@ -70,6 +75,11 @@ namespace TeamProject01.Gameplay
                 return null;
             }
 
+            if (IsStatusEffectImmune(enemy))
+            {
+                return null;
+            }
+
             if (!enemy.TryGetComponent(out EnemySupportDebuffState state))
             {
                 state = enemy.gameObject.AddComponent<EnemySupportDebuffState>();
@@ -94,6 +104,12 @@ namespace TeamProject01.Gameplay
 
         public void ApplyFreeze(float duration)
         {
+            if (IsStatusEffectImmune())
+            {
+                ClearAllDebuffs(true);
+                return;
+            }
+
             if (duration <= 0f)
             {
                 return;
@@ -116,6 +132,12 @@ namespace TeamProject01.Gameplay
 
         public void ApplyIncomingDamageMultiplier(float multiplier, float duration)
         {
+            if (IsStatusEffectImmune())
+            {
+                ClearAllDebuffs(true);
+                return;
+            }
+
             if (multiplier <= 1f || duration <= 0f)
             {
                 return;
@@ -129,6 +151,12 @@ namespace TeamProject01.Gameplay
 
         public void ApplyMoveSpeedSlow(float multiplier, float duration)
         {
+            if (IsStatusEffectImmune())
+            {
+                ClearAllDebuffs(true);
+                return;
+            }
+
             if (multiplier >= 1f || duration <= 0f)
             {
                 return;
@@ -156,6 +184,12 @@ namespace TeamProject01.Gameplay
             float durationOverride = 0f,
             float incomingDamageMultiplierOverride = 0f)
         {
+            if (IsStatusEffectImmune())
+            {
+                ClearAllDebuffs(true);
+                return;
+            }
+
             if (IsOwnerDead())
             {
                 ClearAllDebuffs(true);
@@ -203,12 +237,23 @@ namespace TeamProject01.Gameplay
 
             if (!sameStatus && vfxPrefab != null)
             {
-                GetOrAddBodyVfx().Show(vfxPrefab, definition.VfxEffectName);
+                GetOrAddBodyVfx().Show(
+                    vfxPrefab,
+                    definition.VfxEffectName,
+                    null,
+                    definition.BodyVfxScale,
+                    definition.MuteBodyVfxAudio);
             }
         }
 
         public DamageData ApplyIncomingDamageBonus(DamageData damage)
         {
+            if (IsStatusEffectImmune())
+            {
+                ClearAllDebuffs(true);
+                return damage;
+            }
+
             float multiplier = 1f;
             if (incomingDamageTimer > 0f && incomingDamageMultiplier > 1f)
             {
@@ -225,6 +270,12 @@ namespace TeamProject01.Gameplay
 
         private void Update()
         {
+            if (IsStatusEffectImmune())
+            {
+                ClearAllDebuffs(true);
+                return;
+            }
+
             if (IsOwnerDead())
             {
                 ClearAllDebuffs(true);
@@ -311,6 +362,28 @@ namespace TeamProject01.Gameplay
             }
 
             return (enemyController != null && enemyController.IsDead) || (enemyHealth != null && enemyHealth.IsDead);
+        }
+
+        private bool IsStatusEffectImmune()
+        {
+            if (enemyController == null)
+            {
+                enemyController = GetComponent<EnemyController>();
+            }
+
+            return IsStatusEffectImmune(enemyController);
+        }
+
+        private static bool IsStatusEffectImmune(EnemyController enemy)
+        {
+            if (enemy == null)
+            {
+                return false;
+            }
+
+            return enemy.Grade == EnemyGrade.Boss
+                || enemy.GetComponent<BossController>() != null
+                || enemy.GetComponent<EnemyJump>() != null;
         }
 
         private void ClearAllDebuffs(bool stopVfx)

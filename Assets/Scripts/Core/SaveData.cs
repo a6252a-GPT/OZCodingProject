@@ -54,7 +54,8 @@ namespace TeamProject01.Gameplay
             public int BaseAttackLevel; // 타이틀 영구 강화 — 기본 공격력 단계
             public int AttackSpeedLevel; // 타이틀 영구 강화 — 공격속도 단계
             public int NexusMaxHpLevel; // 타이틀 영구 강화 — 넥서스 체력 단계
-            public int NexusRegenLevel; // 타이틀 영구 강화 — 넥서스 회복 단계
+            public int MoveSpeedLevel; // 타이틀 영구 강화 — 이동속도 단계
+            public int PickupRangeLevel; // 타이틀 영구 강화 — 픽업 범위 단계
             public long SavedAtUnixSeconds; // 저장 시각 (UTC Unix timestamp)
         }
 
@@ -453,7 +454,8 @@ namespace TeamProject01.Gameplay
             payload.BaseAttackLevel = meta.BaseAttackLevel;
             payload.AttackSpeedLevel = meta.AttackSpeedLevel;
             payload.NexusMaxHpLevel = meta.NexusMaxHpLevel;
-            payload.NexusRegenLevel = meta.NexusRegenLevel;
+            payload.MoveSpeedLevel = meta.MoveSpeedLevel;
+            payload.PickupRangeLevel = meta.PickupRangeLevel;
         }
 
         private static void CopyMetaFields(RunSavePayload source, RunSavePayload target) // 캐시 → 새 payload 메타 복사
@@ -478,7 +480,8 @@ namespace TeamProject01.Gameplay
             target.BaseAttackLevel = source.BaseAttackLevel;
             target.AttackSpeedLevel = source.AttackSpeedLevel;
             target.NexusMaxHpLevel = source.NexusMaxHpLevel;
-            target.NexusRegenLevel = source.NexusRegenLevel;
+            target.MoveSpeedLevel = source.MoveSpeedLevel;
+            target.PickupRangeLevel = source.PickupRangeLevel;
         }
 
         private static List<string> CaptureUnlockedWormIds(MetaProgressionManager meta) // 해금된 지렁이 ID 목록 수집
@@ -542,7 +545,8 @@ namespace TeamProject01.Gameplay
             meta.BaseAttackLevel = Mathf.Clamp(payload.BaseAttackLevel, 0, maxLevel);
             meta.AttackSpeedLevel = Mathf.Clamp(payload.AttackSpeedLevel, 0, maxLevel);
             meta.NexusMaxHpLevel = Mathf.Clamp(payload.NexusMaxHpLevel, 0, maxLevel);
-            meta.NexusRegenLevel = Mathf.Clamp(payload.NexusRegenLevel, 0, maxLevel);
+            meta.MoveSpeedLevel = Mathf.Clamp(payload.MoveSpeedLevel, 0, maxLevel);
+            meta.PickupRangeLevel = Mathf.Clamp(payload.PickupRangeLevel, 0, maxLevel);
         }
 
         private static void ApplyWormUnlockFlag(MetaProgressionManager meta, string wormId, bool unlocked) // 지렁이 ID별 해금 bool 설정
@@ -581,7 +585,7 @@ namespace TeamProject01.Gameplay
 
             return payload.GoldBonusLevel + payload.DiamondBonusLevel + payload.TurnBonusLevel
                 + payload.CollisionForceLevel + payload.BaseAttackLevel + payload.AttackSpeedLevel
-                + payload.NexusMaxHpLevel + payload.NexusRegenLevel;
+                + payload.NexusMaxHpLevel + payload.MoveSpeedLevel + payload.PickupRangeLevel;
         }
 
         private void WritePayload(RunSavePayload payload) // RunSavePayload → JSON → PlayerPrefs + 캐시 갱신

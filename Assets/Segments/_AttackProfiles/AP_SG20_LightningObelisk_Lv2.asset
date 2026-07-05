@@ -73,6 +73,10 @@ MonoBehaviour:
   ExplosionVfxPrefab: {fileID: 0}
   ExplosionVfxLifetime: 2
   ExplosionVfxAlpha: 0.28
+  SlowMoveSpeedMultiplier: 1
+  SlowDuration: 0
+  StatusEffectOnHit: 4
+  StatusEffectVfxPrefab: {fileID: 2532265521642198492, guid: 77db4cf625c8d8c4eb4bfcbbd0f6cd9e, type: 3}
   RecoilDistance: 0.025
   RecoilTiltAngle: 0.7
   RecoilKickDuration: 0.05

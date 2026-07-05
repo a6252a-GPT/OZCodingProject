@@ -4,7 +4,7 @@ using UnityEngine;
 public sealed class SfxVolumeListener : MonoBehaviour // 씬 SFX AudioSource — 설정 SFX 볼륨 연동 //안건준 추가 - 0628
 {
     [SerializeField] private AudioSource target;
-    [SerializeField] private float baseVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float baseVolume = 1f;
 
     public float BaseVolume => baseVolume;
 
@@ -71,6 +71,8 @@ public sealed class SfxVolumeListener : MonoBehaviour // 씬 SFX AudioSource —
         {
             target = GetComponent<AudioSource>();
         }
+
+        baseVolume = Mathf.Clamp01(baseVolume);
     }
 #endif
 }

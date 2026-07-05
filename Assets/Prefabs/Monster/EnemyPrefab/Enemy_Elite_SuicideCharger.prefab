@@ -47,7 +47,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.8
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -144,7 +144,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 4477170761894493246}
-  baseVolume: 0.8
+  baseVolume: 1
 --- !u!114 &3671863408991798204
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -161,7 +161,7 @@ MonoBehaviour:
   source: {fileID: 4477170761894493246}
   clips:
   - {fileID: 8300000, guid: 63811416e34938e429be8e299a7c8d6d, type: 3}
-  volume: 0.8
+  volume: 1
   minPitch: 1
   maxPitch: 1
   cooldown: 0.08
@@ -377,6 +377,7 @@ MonoBehaviour:
   segmentCutLaunchCue: 0
   obstacleSummonCue: 0
   meleeAttackCue: 0
+  meleeAttackDelay: 0
   shieldLoopCue: 0
   portalTeleportCue: 0
 --- !u!1 &2718801514984512411
@@ -871,6 +872,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5764906776127328669, guid: 75479bb356e58de428f965030d5f049b, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 61fbcd39c7b2e28418a46b72a3ea70d6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

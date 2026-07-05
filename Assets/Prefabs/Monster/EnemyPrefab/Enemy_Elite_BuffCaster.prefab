@@ -47,7 +47,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.8
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -144,7 +144,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 7755309257664554824}
-  baseVolume: 0.8
+  baseVolume: 1
 --- !u!114 &8539073114213652222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -161,12 +161,43 @@ MonoBehaviour:
   source: {fileID: 7755309257664554824}
   clips:
   - {fileID: 8300000, guid: 588c05f69753ef745b0f2e75cb900911, type: 3}
-  volume: 0.8
+  volume: 1
   minPitch: 1
   maxPitch: 1
   cooldown: 0.08
   forceDetachedPlayback: 1
   oneShotLifetimePadding: 0.25
+--- !u!1 &663548251241489614
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7537707961426869205}
+  m_Layer: 0
+  m_Name: CrowdCore
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7537707961426869205
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 663548251241489614}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 9115194565168336542}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3843640165095109477
 GameObject:
   m_ObjectHideFlags: 0
@@ -219,6 +250,7 @@ GameObject:
   - component: {fileID: 4912435825479166036}
   - component: {fileID: 8083512699582418424}
   - component: {fileID: 5553284637819444659}
+  - component: {fileID: 3442220820562164296}
   m_Layer: 0
   m_Name: Enemy_Elite_BuffCaster
   m_TagString: Untagged
@@ -243,6 +275,7 @@ Transform:
   - {fileID: 2635504383817441243}
   - {fileID: 7537560519495392198}
   - {fileID: 6826268145332033512}
+  - {fileID: 7537707961426869205}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2552914667476194342
@@ -492,8 +525,34 @@ MonoBehaviour:
   segmentCutLaunchCue: 0
   obstacleSummonCue: 0
   meleeAttackCue: 0
+  meleeAttackDelay: 0
   shieldLoopCue: 0
   portalTeleportCue: 0
+--- !u!114 &3442220820562164296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4807688745498191211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3f1871e4f4d4cefb5a5378e8d6c1a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyCrowdBlocker
+  enableCrowdBlock: 1
+  blockRadius: 0.2
+  centerTransform: {fileID: 7537707961426869205}
+  centerOffset: {x: 0, y: 0, z: 0}
+  pushStrength: 1
+  maxCorrectionPerFrame: 0.25
+  sideSpreadStrength: 0.65
+  blockedSidePushPerFrame: 0.08
+  pressureTransferRatio: 0.7
+  maxPendingPushPerFrame: 0.24
+  pushSmoothingSpeed: 10
+  pushDecaySpeed: 6
+  drawGizmo: 1
 --- !u!1001 &924185502148124055
 PrefabInstance:
   m_ObjectHideFlags: 0

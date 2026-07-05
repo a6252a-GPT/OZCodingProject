@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentSupportAbilityProfile
   AbilityKind: 6
   StartsReady: 1
-  Cooldown: 12
+  Cooldown: 20
   ActiveDurationSeconds: 1.25
   EffectDurationSeconds: 0
   Range: 22
@@ -38,6 +38,8 @@ MonoBehaviour:
   WormholeTeleportMinNexusDistance: 40
   WormholeTeleportMaxNexusDistance: 50
   WormholeMaxTeleportTargets: 12
+  WormholeTeleportSpacing: 1.4
+  WormholeTeleportSlotsPerRing: 12
   WormholeAffectBosses: 0
   WormholeTargetAimHeight: 0.6
   WormholeAimTurnSpeed: 720
@@ -45,12 +47,4 @@ MonoBehaviour:
   WormholeVfxLifetime: 3.2
   WormholeVfxAlpha: 1
   WormholeShowDebugRadius: 1
-  Memo: "\uC6DC\uD640\uD3EC\uD0C8 Lv1. \uD22C\uC0AC\uCCB4\uB294 vfx_BlueComet_01
-    \uB798\uD37C\uB97C \uC0AC\uC6A9\uD55C\uB2E4. \uBA85\uC911 \uD3ED\uBC1C
-    VFX \uADF8 \uC790\uCCB4\uAC00 \uBE14\uB799\uD640\uC774\uBA70, \uBC18\uACBD \uC548
-    \uBAAC\uC2A4\uD130\uB97C \uB125\uC11C\uC2A4 \uAE30\uC900 40~50m \uBC16 \uD55C
-    \uC9C0\uC810\uC73C\uB85C \uBAA8\uC544 \uC774\uB3D9\uC2DC\uD0A8\uB2E4. \uB3C4\uCC29
-    \uC9C0\uC810\uC5D0\uB3C4 \uAC19\uC740 \uD3ED\uBC1C \uBE14\uB799\uD640 VFX\uB97C
-    \uC2DC\uAC01 \uC694\uC18C\uB85C \uC7AC\uC0DD\uD55C\uB2E4. \uBCC4\uB3C4 \uCD9C\uBC1C/\uB3C4\uCC29
-    \uD3EC\uD138 VFX\uB294 \uC0AC\uC6A9\uD558\uC9C0 \uC54A\uB294\uB2E4. \uD53C\uD574
-    \uC5C6\uC74C."
+  Memo: "웜홀포탈 Lv1. 투사체는 vfx_BlueComet_01 래퍼를 사용한다. 명중 폭발 VFX 자체가 블랙홀이며, 반경 안 몬스터를 넥서스 기준 40~50m 밖 도착 중심 주변 슬롯으로 간격 배치해 이동시킨다. 도착 중심에도 같은 폭발 블랙홀 VFX를 시각 요소로 재생한다. 별도 출발/도착 포털 VFX는 사용하지 않는다. 피해 없음."

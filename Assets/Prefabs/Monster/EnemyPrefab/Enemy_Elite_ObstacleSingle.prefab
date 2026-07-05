@@ -311,7 +311,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.8
+  m_Volume: 0.6
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -408,7 +408,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SfxVolumeListener
   target: {fileID: 3243327150496500813}
-  baseVolume: 0.8
+  baseVolume: 0.6
 --- !u!114 &5630900320670457007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -425,7 +425,7 @@ MonoBehaviour:
   source: {fileID: 3243327150496500813}
   clips:
   - {fileID: 8300000, guid: 9d63bd3af31d0004caf7607998a04584, type: 3}
-  volume: 0.8
+  volume: 0.6
   minPitch: 1
   maxPitch: 1
   cooldown: 0.2
@@ -624,6 +624,7 @@ GameObject:
   - component: {fileID: 986103175709795012}
   - component: {fileID: 3318276275208674837}
   - component: {fileID: 4494431071355057708}
+  - component: {fileID: 3171541461752510141}
   m_Layer: 0
   m_Name: Enemy_Elite_ObstacleSingle
   m_TagString: Untagged
@@ -649,6 +650,7 @@ Transform:
   - {fileID: 6830385593868645679}
   - {fileID: 281526416583863819}
   - {fileID: 4496232610311268283}
+  - {fileID: 8529022884492814071}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1981344644582869994
@@ -962,8 +964,34 @@ MonoBehaviour:
   segmentCutLaunchCue: 0
   obstacleSummonCue: 37
   meleeAttackCue: 38
+  meleeAttackDelay: 0.4
   shieldLoopCue: 0
   portalTeleportCue: 0
+--- !u!114 &3171541461752510141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8237970592102634290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3f1871e4f4d4cefb5a5378e8d6c1a2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.EnemyCrowdBlocker
+  enableCrowdBlock: 1
+  blockRadius: 0.2
+  centerTransform: {fileID: 8529022884492814071}
+  centerOffset: {x: 0, y: 0, z: 0}
+  pushStrength: 1
+  maxCorrectionPerFrame: 0.25
+  sideSpreadStrength: 0.65
+  blockedSidePushPerFrame: 0.08
+  pressureTransferRatio: 0.7
+  maxPendingPushPerFrame: 0.24
+  pushSmoothingSpeed: 10
+  pushDecaySpeed: 6
+  drawGizmo: 1
 --- !u!1 &8925977488768230381
 GameObject:
   m_ObjectHideFlags: 0
@@ -1079,6 +1107,37 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
+--- !u!1 &8980827579050048349
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8529022884492814071}
+  m_Layer: 0
+  m_Name: CrowdCore
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8529022884492814071
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8980827579050048349}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7649766102476763407}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1097832285789769386
 PrefabInstance:
   m_ObjectHideFlags: 0

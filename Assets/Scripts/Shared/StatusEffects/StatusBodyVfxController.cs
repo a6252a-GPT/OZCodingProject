@@ -18,7 +18,12 @@ namespace TeamProject01.Gameplay
         private GameObject currentInstance;
         private Transform generatedAttachRoot;
 
-        public void Show(GameObject effectPrefab, string instanceLabel = null, Transform explicitRoot = null)
+        public void Show(
+            GameObject effectPrefab,
+            string instanceLabel = null,
+            Transform explicitRoot = null,
+            float localScale = 1f,
+            bool muteAudio = false)
         {
             if (effectPrefab == null)
             {
@@ -46,7 +51,12 @@ namespace TeamProject01.Gameplay
             Transform instanceTransform = currentInstance.transform;
             instanceTransform.localPosition = Vector3.zero;
             instanceTransform.localRotation = Quaternion.identity;
-            instanceTransform.localScale = Vector3.one;
+            instanceTransform.localScale = Vector3.one * Mathf.Max(0.01f, localScale);
+            if (muteAudio)
+            {
+                DisableAudio(currentInstance);
+            }
+
             PlayInstance(currentInstance);
         }
 
@@ -166,6 +176,20 @@ namespace TeamProject01.Gameplay
             for (int i = 0; i < particleSystems.Length; i++)
             {
                 particleSystems[i].Play(true);
+            }
+        }
+
+        private static void DisableAudio(GameObject instance)
+        {
+            AudioSource[] audioSources = instance.GetComponentsInChildren<AudioSource>(true);
+            for (int i = 0; i < audioSources.Length; i++)
+            {
+                AudioSource audioSource = audioSources[i];
+                audioSource.Stop();
+                audioSource.playOnAwake = false;
+                audioSource.mute = true;
+                audioSource.volume = 0f;
+                audioSource.enabled = false;
             }
         }
 

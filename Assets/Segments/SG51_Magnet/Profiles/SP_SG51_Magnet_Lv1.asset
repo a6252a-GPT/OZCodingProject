@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentSupportAbilityProfile
   AbilityKind: 2
   StartsReady: 1
-  Cooldown: 30
+  Cooldown: 25
   ActiveDurationSeconds: 5
   EffectDurationSeconds: 5
-  Range: 18
+  Range: 24
   FrontSegmentCount: 0
   BackSegmentCount: 0
   FinalDamageMultiplier: 1

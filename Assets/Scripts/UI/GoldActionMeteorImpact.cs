@@ -29,6 +29,9 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float ExplosionVfxRadiusScaleMultiplier = 1f;
         [Min(0f)] public float MeteorSpinSpeed = 210f;
 
+        [Header("Damage Falloff")]
+        [Range(0f, 1f)] public float EdgeDamageMultiplier = 0.5f; // 폭발 외곽 피해 배율
+
         [Header("Tail VFX Alignment")]
         public bool KeepTailVfxWorldAligned = true;
         public Vector3 TailVfxWorldOffset = new Vector3(0f, 1.35f, 0f);
@@ -134,7 +137,8 @@ namespace TeamProject01.Gameplay
                 }
 
                 Vector3 hitPosition = enemy.transform.position + Vector3.up * 0.6f;
-                DamageData meteorDamage = DamageData.Create(damage, DamageType.Explosion, -1, hitPosition, gameObject);
+                float finalDamage = CalculateDistanceFalloffDamage(damage, impactPosition, enemy.transform.position, impactRadius);
+                DamageData meteorDamage = DamageData.Create(finalDamage, DamageType.Explosion, -1, hitPosition, gameObject);
                 enemy.ApplyDamage(meteorDamage);
 
                 Vector3 direction = enemy.transform.position - impactPosition;
@@ -152,6 +156,17 @@ namespace TeamProject01.Gameplay
 
                 MonsterFeedbackApi.TryApplyFeedback(enemy, feedback);
             }
+        }
+
+        private float CalculateDistanceFalloffDamage(float damage, Vector3 impactPosition, Vector3 targetPosition, float impactRadius)
+        {
+            Vector3 offset = targetPosition - impactPosition;
+            offset.y = 0f; // 평면 거리 기준
+
+            float radius = Mathf.Max(0.01f, impactRadius);
+            float distance01 = Mathf.Clamp01(offset.magnitude / radius);
+            float multiplier = Mathf.Lerp(1f, Mathf.Clamp01(EdgeDamageMultiplier), distance01);
+            return Mathf.Max(0f, damage) * multiplier; // 중심 100%, 외곽 EdgeDamageMultiplier
         }
 
         private void EnsureSockets()
