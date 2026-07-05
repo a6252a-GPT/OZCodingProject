@@ -44,8 +44,48 @@ namespace TeamProject01.Gameplay
             EnemySupportDebuffState state = EnemySupportDebuffState.GetOrAdd(enemy);
             if (state != null)
             {
-                state.ApplyStatusEffect(profile.StatusEffectOnHit, damage.SourceSegmentIndex, damage.SourceObject, hitPosition, profile.StatusEffectVfxPrefab);
+                float incomingDamageMultiplier = ResolveStatusIncomingDamageMultiplier(profile.StatusEffectOnHit, damage.SourceObject);
+                state.ApplyStatusEffect(
+                    profile.StatusEffectOnHit,
+                    damage.SourceSegmentIndex,
+                    damage.SourceObject,
+                    hitPosition,
+                    profile.StatusEffectVfxPrefab,
+                    incomingDamageMultiplierOverride: incomingDamageMultiplier);
             }
+        }
+
+        private static float ResolveStatusIncomingDamageMultiplier(CombatStatusEffectKind kind, GameObject sourceObject)
+        {
+            if (kind != CombatStatusEffectKind.Shock)
+            {
+                return 0f; // 감전 외 상태효과는 카탈로그 기본값 사용
+            }
+
+            int level = ResolveSourceSegmentLevel(sourceObject);
+            switch (Mathf.Clamp(level, 1, 3))
+            {
+                case 1:
+                    return 1.05f; // Lv1: 받피증 5%
+                case 2:
+                    return 1.07f; // Lv2: 받피증 7%
+                default:
+                    return 1.10f; // Lv3+: 받피증 10%
+            }
+        }
+
+        private static int ResolveSourceSegmentLevel(GameObject sourceObject)
+        {
+            SegmentWeaponBehaviour weapon = sourceObject != null
+                ? sourceObject.GetComponentInParent<SegmentWeaponBehaviour>()
+                : null;
+            string segmentId = weapon != null ? weapon.EffectiveSegmentId : string.Empty;
+            CoreStatProvider core = CoreStatProvider.Active;
+            return core != null
+                && !string.IsNullOrWhiteSpace(segmentId)
+                && core.TryGetSegmentModelLevelInfo(segmentId, out int currentLevel, out _)
+                ? currentLevel
+                : 1;
         }
 
         private static MonsterFeedbackData CreateFeedback(

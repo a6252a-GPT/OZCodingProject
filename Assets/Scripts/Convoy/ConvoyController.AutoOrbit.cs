@@ -16,6 +16,7 @@ namespace TeamProject01.Gameplay
         [Min(0f)] public float AutoOrbitMinimumRadius = 9f; // 최소 궤도 반지름
         [Min(0f)] public float AutoOrbitNexusClearance = 5.5f; // 넥서스 여유 거리
         [Range(0, 8)] public int AutoOrbitExtraSegmentBuffer = 2; // 추가 세그먼트 여유
+        [Min(0f)] public float AutoOrbitComfortRadiusBonus = 1.5f; // 전체 궤도를 바깥으로 벌리는 추가 여유
         [Min(0.1f)] public float AutoOrbitApproachTolerance = 0.75f; // 궤도 도착 허용
         [Min(0.1f)] public float AutoOrbitRepathThreshold = 0.75f; // 재진입 기준
         [Min(0.1f)] public float AutoOrbitCorrectionBand = 3f; // 반지름 보정 폭
@@ -179,7 +180,8 @@ namespace TeamProject01.Gameplay
             float bufferedLength = chainLength + spacing * (1 + Mathf.Max(0, AutoOrbitExtraSegmentBuffer)); // 머리+여유
             float tailSafeRadius = bufferedLength / (Mathf.PI * 2f); // 원둘레 기준
             float nexusSafeRadius = GetNexusHorizontalRadius(center) + Mathf.Max(0f, AutoOrbitNexusClearance); // 넥서스 여유
-            return Mathf.Max(AutoOrbitMinimumRadius, tailSafeRadius, nexusSafeRadius); // 최종 반지름
+            float baseRadius = Mathf.Max(AutoOrbitMinimumRadius, tailSafeRadius, nexusSafeRadius); // 기본 안전 반지름
+            return baseRadius + Mathf.Max(0f, AutoOrbitComfortRadiusBonus); // 최종 반지름
         }
 
         private float GetNexusHorizontalRadius(Transform center) // 넥서스 반경 추정

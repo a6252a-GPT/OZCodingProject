@@ -52,6 +52,10 @@ namespace TeamProject01.Gameplay
         [Min(1f)] public float SegmentFollowResponse = 24f; // 추적 반응
         [Min(1f)] public float SegmentTurnResponse = 22f; // 회전 추적
         [Min(128)] public int PathSampleLimit = 2048; // 경로 보관량
+        public bool EnableAbnormalPathSampleRepair = true; // 비정상 path 샘플 보정
+        [Min(0.05f)] public float AbnormalPathSampleDistance = 0.75f; // 이 거리 이상 튀면 최단 경로로 재구성
+        [Min(0.05f)] public float RepairedPathSampleStep = 0.16f; // 보정 경로 샘플 간격
+        [Range(1, 32)] public int MaxRepairedPathSamples = 16; // 한 프레임 보정 샘플 상한
         public Vector3 HeadScale = new Vector3(1.25f, 0.6f, 1.45f); // 머리 크기
         public Vector3 SegmentScale = Vector3.one; // 몸통 크기
         public bool PreventSegmentVerticalSquash = true; // 새 모델 납작해짐 방지
@@ -65,6 +69,7 @@ namespace TeamProject01.Gameplay
         [Min(0.1f)] public float TailCollisionRadius = 0.82f; // 충돌 반경
         public bool EnableHeadMonsterBlocker = true; // 머리 몬스터 밀기
         [Min(0.1f)] public float HeadMonsterBlockRadius = 0.95f; // 머리 차단 반경
+        [Min(0f)] public float HeadObstacleCorrectionSpeed = 4.5f; // 길막 장애물 위치 보정 최대 속도
         [Min(0f)] public float TailCutCooldown = 0.45f; // 재절단 대기
 
         [Header("Detached Tail Physics")]
@@ -256,13 +261,13 @@ namespace TeamProject01.Gameplay
 
             desiredPosition = SnapHeadToGround(desiredPosition); // 이동하려는 위치를 먼저 바닥 높이에 맞춘다.
 
-            desiredPosition = MonsterInteractionApi.ResolveConvoyPosition(currentPosition, desiredPosition, HeadMonsterBlockRadius); // 적 장애물과 겹치지 않도록 컨보이 위치를 보정한다.
+            desiredPosition = MonsterInteractionApi.ResolveConvoyPosition(currentPosition, desiredPosition, HeadMonsterBlockRadius, GetHeadObstacleCorrectionDistance(deltaTime)); // 적 장애물과 겹치지 않도록 컨보이 위치를 보정한다.
 
             knockbackVisualHeight = knockbackVerticalOffset; // 루트 대신 비주얼만 상승
 
             transform.position = desiredPosition; // 최종 보정된 위치를 적용한다.      
 
-            SamplePathIfNeeded(); // 경로 기록
+            SamplePathIfNeeded(deltaTime); // 경로 기록
             UpdateHeadVisual(deltaTime); // 머리 표시
 
             UpdateSegments(deltaTime); // 몸통 추적

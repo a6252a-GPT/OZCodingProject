@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TeamProject01.Gameplay.SegmentDefinition
   SegmentId: SG22_IceCrystalOrb
   DisplayName: "\uC5BC\uC74C \uC218\uC815\uAD6C"
-  Description: "<color=#2F6BFF><b>[마법]</b></color> <color=#6B5B3A>[범위] [감속]</color> 밀집한 적에게 얼음 수정을 떨어뜨려 범위 피해와 감속을 줍니다."
+  Description: "<color=#2F6BFF><b>[마법]</b></color> <color=#6B5B3A>[범위]</color> 밀집한 적에게 얼음 수정을 떨어뜨려 범위 피해와 감속을 줍니다."
   StarterOnly: 0
   SharedUpgradeSegmentId: 
   UseLevels: 1

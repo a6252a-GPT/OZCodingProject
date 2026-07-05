@@ -6,6 +6,11 @@ namespace TeamProject01.Gameplay
 {
     public sealed class BossWaveController : MonoBehaviour
     {
+        private const int Stage60BossStage = 60;
+        private const float Stage60BossMaxHp = 60000.0f;
+        private const int Stage80BossStage = 80;
+        private const float Stage80BossMaxHp = 200000.0f;
+
         [Serializable]
         public sealed class BossEntry
         {
@@ -116,6 +121,11 @@ namespace TeamProject01.Gameplay
         private readonly List<EnemyController> activeBosses = new List<EnemyController>(); // 현재 살아있는 보스 목록입니다.
         private bool waitingBossClearReward; // 보스 처치 보상 상자를 한 번만 주기 위한 플래그입니다.
         private EliteMixController eliteMixController; // 보스 소환용 엘리트 Prefab을 기존 엘리트 등장표에서 재사용합니다.
+
+        private void Awake()
+        {
+            EnsureRuntimeBossStageProfiles();
+        }
 
         public bool HasActiveBoss
         {
@@ -365,12 +375,79 @@ namespace TeamProject01.Gameplay
 
         private BossStageProfile[] GetBossStageProfiles()
         {
-            if (bossStageProfiles != null && bossStageProfiles.Length > 0)
+            EnsureRuntimeBossStageProfiles();
+            return bossStageProfiles;
+        }
+
+        private void EnsureRuntimeBossStageProfiles()
+        {
+            BossStageProfile[] sourceProfiles = bossStageProfiles != null && bossStageProfiles.Length > 0
+                ? bossStageProfiles
+                : CreateDefaultBossStageProfiles();
+
+            List<BossStageProfile> profiles = new List<BossStageProfile>(sourceProfiles.Length + 1);
+            bool changed = !ReferenceEquals(sourceProfiles, bossStageProfiles);
+
+            for (int i = 0; i < sourceProfiles.Length; i++)
             {
-                return bossStageProfiles;
+                BossStageProfile profile = sourceProfiles[i];
+
+                if (profile == null)
+                {
+                    changed = true;
+                    continue;
+                }
+
+                profiles.Add(profile);
             }
 
-            return CreateDefaultBossStageProfiles();
+            BossStageProfile stage60Profile = FindBossStageProfile(profiles, Stage60BossStage);
+
+            if (stage60Profile == null)
+            {
+                stage60Profile = CreateStage60BossProfile();
+                profiles.Add(stage60Profile);
+                changed = true;
+            }
+            else if (!Mathf.Approximately(stage60Profile.maxHp, Stage60BossMaxHp))
+            {
+                stage60Profile.maxHp = Stage60BossMaxHp;
+                changed = true;
+            }
+
+            BossStageProfile stage80Profile = FindBossStageProfile(profiles, Stage80BossStage);
+
+            if (stage80Profile == null)
+            {
+                profiles.Add(CreateStage80BossProfile(stage60Profile));
+                changed = true;
+            }
+            else if (!Mathf.Approximately(stage80Profile.maxHp, Stage80BossMaxHp))
+            {
+                stage80Profile.maxHp = Stage80BossMaxHp;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                profiles.Sort((left, right) => left.stage.CompareTo(right.stage));
+                bossStageProfiles = profiles.ToArray();
+            }
+        }
+
+        private static BossStageProfile FindBossStageProfile(List<BossStageProfile> profiles, int stage)
+        {
+            for (int i = 0; i < profiles.Count; i++)
+            {
+                BossStageProfile profile = profiles[i];
+
+                if (profile != null && profile.stage == stage)
+                {
+                    return profile;
+                }
+            }
+
+            return null;
         }
 
         private void ApplyBossStageProfile(EnemyController boss, BossStageProfile profile)
@@ -468,15 +545,50 @@ namespace TeamProject01.Gameplay
                 },
                 new BossStageProfile
                 {
-                    stage = 60,
+                    stage = Stage60BossStage,
                     profileName = "60 웨이브 보스",
-                    maxHp = 40000.0f,
+                    maxHp = Stage60BossMaxHp,
                     normalProjectileDamage = 3,
                     berserkProjectileDamage = 2,
                     eliteSummonTotalCount = 10,
                     maximumActiveSummonedMonsters = 150,
                     elitePrefabNameTokens = new[] { "SlowThrower", "ObstacleSingle", "AreaShield", "SegmentCutCaster", "PortalTotemCaster" }
-                }
+                },
+                CreateStage80BossProfile(CreateStage60BossProfile())
+            };
+        }
+
+        private static BossStageProfile CreateStage60BossProfile()
+        {
+            return new BossStageProfile
+            {
+                stage = Stage60BossStage,
+                profileName = "60 웨이브 보스",
+                maxHp = Stage60BossMaxHp,
+                normalProjectileDamage = 3,
+                berserkProjectileDamage = 2,
+                eliteSummonTotalCount = 10,
+                maximumActiveSummonedMonsters = 150,
+                elitePrefabNameTokens = new[] { "SlowThrower", "ObstacleSingle", "AreaShield", "SegmentCutCaster", "PortalTotemCaster" }
+            };
+        }
+
+        private static BossStageProfile CreateStage80BossProfile(BossStageProfile sourceProfile)
+        {
+            string[] eliteTokens = sourceProfile != null && sourceProfile.elitePrefabNameTokens != null
+                ? (string[])sourceProfile.elitePrefabNameTokens.Clone()
+                : Array.Empty<string>();
+
+            return new BossStageProfile
+            {
+                stage = Stage80BossStage,
+                profileName = "80 웨이브 보스",
+                maxHp = Stage80BossMaxHp,
+                normalProjectileDamage = sourceProfile != null ? sourceProfile.normalProjectileDamage : 3,
+                berserkProjectileDamage = sourceProfile != null ? sourceProfile.berserkProjectileDamage : 2,
+                eliteSummonTotalCount = sourceProfile != null ? sourceProfile.eliteSummonTotalCount : 10,
+                maximumActiveSummonedMonsters = sourceProfile != null ? sourceProfile.maximumActiveSummonedMonsters : 150,
+                elitePrefabNameTokens = eliteTokens
             };
         }
     }

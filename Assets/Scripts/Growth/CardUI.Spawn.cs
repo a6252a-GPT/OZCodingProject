@@ -563,7 +563,8 @@ public partial class CardUI
         }
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
-        List<SegmentCatalogEntry> picked = PickSegmentChoiceEntriesWithOwnedChance(candidates, spawnCount); // 보유 50% + 지원형 0~1장 제한
+        Dictionary<string, int> ownedCountsBySegmentId = CollectOwnedSegmentCounts(); // 보유 개수별 등장 가중치 감소용
+        List<SegmentCatalogEntry> picked = PickSegmentChoiceEntriesWithOwnedChance(candidates, spawnCount, ownedCountsBySegmentId); // 보유 50% + 지원형 0~1장 제한
         for (int i = 0; i < spawnCount; i++)
         {
             GameObject prefab = GetSegmentChoiceCardTemplate(); // 후보 선택 1단계 전용 템플릿
@@ -606,12 +607,7 @@ public partial class CardUI
         }
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 표시할 카드 수
-        Dictionary<string, int> ownedCountsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // ID별 보유 개수
-        ConvoyController convoy = CoreStatProvider.Active != null ? CoreStatProvider.Active.Convoy : null;
-        if (convoy != null)
-        {
-            convoy.CollectAttachedSegmentCounts(ownedCountsBySegmentId); // 캐논 5개 등 집계
-        }
+        Dictionary<string, int> ownedCountsBySegmentId = CollectOwnedSegmentCounts(); // ID별 보유 개수
 
         List<SegmentCatalogEntry> picked = PickWeightedWeaponEnhanceSegmentEntries(candidates, spawnCount, ownedCountsBySegmentId); // 보유 개수 가중치
         for (int i = 0; i < spawnCount; i++)
@@ -697,6 +693,7 @@ public partial class CardUI
         }
 
         FilterWeaponEnhancementPoolByOwnedSegments(results); // B — 보유 세그먼트 TargetSegmentId 만
+        FilterWeaponEnhancementPoolByBaseDamageAmplifyLimit(results); // 세그먼트별 공격력 증폭 2회 제한
     }
 
     private static void FilterWeaponEnhancementPoolByOwnedSegments(List<WeaponDefinition> pool) // Convoy 보유 ID 외 강화 제거
@@ -723,18 +720,35 @@ public partial class CardUI
         }
     }
 
+    private static void FilterWeaponEnhancementPoolByBaseDamageAmplifyLimit(List<WeaponDefinition> pool) // 공격력 증폭 제한 초과 후보 제거
+    {
+        if (pool == null || pool.Count == 0)
+        {
+            return; // 풀 없음
+        }
+
+        CoreStatProvider core = CoreStatProvider.Active; // 런타임 선택 횟수 소유자
+        if (core == null)
+        {
+            return; // 코어 없으면 표시 제한 불가
+        }
+
+        for (int i = pool.Count - 1; i >= 0; i--)
+        {
+            WeaponDefinition definition = pool[i]; // 후보 강화
+            if (definition != null
+                && definition.IsBaseDamageAmplify
+                && !core.CanOfferBaseDamageAmplifyChoice(definition.NormalizedTargetSegmentId))
+            {
+                pool.RemoveAt(i); // 해당 세그먼트 공격력 증폭 2회 완료
+            }
+        }
+    }
+
     private static HashSet<string> CollectOwnedSegmentIds() // ConvoySegments 에 붙은 세그먼트 ID 집합
     {
         HashSet<string> ownedSegmentIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase); // 대소문자 무시
-        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
-        ConvoyController convoy = core != null ? core.Convoy : null; // 플레이어 컨보이
-        if (convoy == null)
-        {
-            return ownedSegmentIds; // 빈 집합
-        }
-
-        Dictionary<string, int> countsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // ID별 개수
-        convoy.CollectAttachedSegmentCounts(countsBySegmentId); // 1개 이상이면 보유
+        Dictionary<string, int> countsBySegmentId = CollectOwnedSegmentCounts(); // ID별 개수
         foreach (string segmentId in countsBySegmentId.Keys)
         {
             if (!string.IsNullOrWhiteSpace(segmentId))
@@ -744,6 +758,20 @@ public partial class CardUI
         }
 
         return ownedSegmentIds;
+    }
+
+    private static Dictionary<string, int> CollectOwnedSegmentCounts() // ConvoySegments 에 붙은 세그먼트 ID별 개수
+    {
+        Dictionary<string, int> countsBySegmentId = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase); // ID별 개수
+        CoreStatProvider core = CoreStatProvider.Active; // 현재 코어
+        ConvoyController convoy = core != null ? core.Convoy : null; // 플레이어 컨보이
+        if (convoy == null)
+        {
+            return countsBySegmentId; // 빈 집합
+        }
+
+        convoy.CollectAttachedSegmentCounts(countsBySegmentId); // 1개 이상이면 보유
+        return countsBySegmentId;
     }
 
     private static List<WeaponDefinition> PickRandomWeaponDefinitions(List<WeaponDefinition> pool, int count) // 풀에서 랜덤 N장
@@ -786,7 +814,7 @@ public partial class CardUI
             int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
             Sprite icon = GetSegmentIconSprite(segId, currentLevel);
             string title = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName;
-            string desc = string.IsNullOrWhiteSpace(catalogEntry.Description) ? $"{catalogEntry.NormalizedId} 선택" : catalogEntry.Description;
+            string desc = BuildSegmentSelectionDescription(catalogEntry);
             ApplyCardTextsDirectly(entry.Root, title, desc, icon, GetSegmentIconSizeOffset(segId));
         }
     }
@@ -839,6 +867,9 @@ public partial class CardUI
             && catalog.TryGetEnhancementsForSegment(targetSegmentId, out enhancements)
             && enhancements != null
             && enhancements.Length > 0; // 카탈로그 조회
+        List<WeaponDefinition> eligibleEnhancements = hasEnhancements
+            ? BuildEligibleSegmentEnhancements(enhancements, targetSegmentId)
+            : new List<WeaponDefinition>(); // 공격력 증폭 제한 반영
 
         int spawnCount = Mathf.Min(cardsToSpawn, cardSlots.Length); // 3장
         for (int i = 0; i < spawnCount; i++)
@@ -850,7 +881,7 @@ public partial class CardUI
             }
 
             GameObject defaultTemplate = GetSegmentCardTemplate(i); // 세그먼트 카드 프리팹 재사용
-            WeaponDefinition definition = hasEnhancements && i < enhancements.Length ? enhancements[i] : null;
+            WeaponDefinition definition = i < eligibleEnhancements.Count ? eligibleEnhancements[i] : null;
             SpawnedCardEntry entry = CreateWeaponEnhancementCard(definition, defaultTemplate, i, slot, resolvedLevelDelta, targetSegmentId); // 등급·프리팹 resolve
             if (entry == null)
             {
@@ -866,6 +897,40 @@ public partial class CardUI
         }
 
         PlaySpawnOpenTween(spawnedCards); // 등장 연출
+    }
+
+    private static List<WeaponDefinition> BuildEligibleSegmentEnhancements(WeaponDefinition[] enhancements, string targetSegmentId) // 세그먼트 2단계 강화 후보 필터
+    {
+        List<WeaponDefinition> results = new List<WeaponDefinition>(); // 표시 후보
+        if (enhancements == null || enhancements.Length == 0)
+        {
+            return results; // 후보 없음
+        }
+
+        CoreStatProvider core = CoreStatProvider.Active; // 선택 횟수 조회
+        string fallbackSegmentId = string.IsNullOrWhiteSpace(targetSegmentId) ? string.Empty : targetSegmentId.Trim(); // 선택 세그먼트
+        for (int i = 0; i < enhancements.Length; i++)
+        {
+            WeaponDefinition definition = enhancements[i]; // 카탈로그 후보
+            if (definition == null)
+            {
+                continue; // null 제외
+            }
+
+            string resolvedSegmentId = string.IsNullOrWhiteSpace(definition.NormalizedTargetSegmentId)
+                ? fallbackSegmentId
+                : definition.NormalizedTargetSegmentId; // 카드 TargetSegmentId 우선
+            if (definition.IsBaseDamageAmplify
+                && core != null
+                && !core.CanOfferBaseDamageAmplifyChoice(resolvedSegmentId))
+            {
+                continue; // 해당 세그먼트 공격력 증폭 2회 완료
+            }
+
+            results.Add(definition); // 표시 가능
+        }
+
+        return results;
     }
 
     private WeaponCatalogAsset ResolveWeaponCatalog() // CardUI 또는 CoreStatProvider 카탈로그
@@ -1177,6 +1242,7 @@ public partial class CardUI
                 }
 
                 float weight = weaponEnhanceSegmentBaseWeight + ownedCount * weaponEnhanceSegmentWeightPerOwned; // 기본 + (개수 × 보너스)
+                weight *= ResolveSegmentChoiceWeightMultiplier(entry, ownedCountsBySegmentId); // 보유 개수별 감소율 적용
                 remaining.Add(new WeightedSegmentCatalogEntry
                 {
                     Entry = entry,
@@ -1238,7 +1304,10 @@ public partial class CardUI
     }
 
     // 세그먼트 선택카드: 50% 확률 보유 Lv3 미만 1장 + 지원형 최대 1장
-    private List<SegmentCatalogEntry> PickSegmentChoiceEntriesWithOwnedChance(List<SegmentCatalogEntry> candidates, int count)
+    private List<SegmentCatalogEntry> PickSegmentChoiceEntriesWithOwnedChance(
+        List<SegmentCatalogEntry> candidates,
+        int count,
+        Dictionary<string, int> ownedCountsBySegmentId)
     {
         List<SegmentCatalogEntry> results = new List<SegmentCatalogEntry>(Mathf.Max(0, count)); // 최종 선택
         if (candidates == null || candidates.Count == 0 || count <= 0)
@@ -1253,7 +1322,7 @@ public partial class CardUI
         }
 
         int supportPickCount = 0; // 지원형 표시 수
-        if (TryPickOwnedSegmentChoiceCandidate(validCandidates, out SegmentCatalogEntry ownedPick))
+        if (TryPickOwnedSegmentChoiceCandidate(validCandidates, ownedCountsBySegmentId, out SegmentCatalogEntry ownedPick))
         {
             results.Add(ownedPick); // 보유 후보 확정
             if (IsSupportSegmentChoiceEntry(ownedPick))
@@ -1266,7 +1335,7 @@ public partial class CardUI
 
         while (results.Count < count && validCandidates.Count > 0)
         {
-            if (!TryTakeRandomSegmentChoiceCandidate(validCandidates, supportPickCount, out SegmentCatalogEntry randomPick))
+            if (!TryTakeRandomSegmentChoiceCandidate(validCandidates, supportPickCount, ownedCountsBySegmentId, out SegmentCatalogEntry randomPick))
             {
                 break; // 지원형 제한 등으로 더 뽑을 후보 없음
             }
@@ -1283,7 +1352,10 @@ public partial class CardUI
         return results;
     }
 
-    private bool TryPickOwnedSegmentChoiceCandidate(List<SegmentCatalogEntry> candidates, out SegmentCatalogEntry picked)
+    private bool TryPickOwnedSegmentChoiceCandidate(
+        List<SegmentCatalogEntry> candidates,
+        Dictionary<string, int> ownedCountsBySegmentId,
+        out SegmentCatalogEntry picked)
     {
         picked = default; // 기본값
         if (candidates == null || candidates.Count == 0 || Random.value >= Mathf.Clamp01(ownedSegmentChoiceGuaranteeChance))
@@ -1291,33 +1363,39 @@ public partial class CardUI
             return false; // 확정 확률 미발동
         }
 
-        HashSet<string> ownedSegmentIds = CollectOwnedSegmentIds(); // 현재 보유 세그먼트
-        if (ownedSegmentIds.Count == 0)
+        if (ownedCountsBySegmentId == null || ownedCountsBySegmentId.Count == 0)
         {
             return false; // 보유 없음
         }
 
-        List<int> ownedCandidateIndexes = new List<int>(); // 보유 후보 인덱스
+        List<WeightedSegmentCatalogEntry> ownedCandidates = new List<WeightedSegmentCatalogEntry>(); // 보유 후보+가중치
         for (int i = 0; i < candidates.Count; i++)
         {
             SegmentCatalogEntry entry = candidates[i]; // 후보
-            if (ownedSegmentIds.Contains(entry.NormalizedId) && IsOwnedSegmentChoiceGuaranteeLevelEligible(entry))
+            if (ownedCountsBySegmentId.ContainsKey(entry.NormalizedId) && IsOwnedSegmentChoiceGuaranteeLevelEligible(entry))
             {
-                ownedCandidateIndexes.Add(i); // 보유 + Lv3 미만
+                ownedCandidates.Add(new WeightedSegmentCatalogEntry
+                {
+                    Entry = entry,
+                    Weight = ResolveSegmentChoiceWeightMultiplier(entry, ownedCountsBySegmentId)
+                }); // 보유 + Lv3 미만
             }
         }
 
-        if (ownedCandidateIndexes.Count == 0)
+        if (ownedCandidates.Count == 0 || !TryPickWeightedSegmentEntry(ownedCandidates, out WeightedSegmentCatalogEntry selected))
         {
             return false; // 확정 가능한 보유 후보 없음
         }
 
-        int selectedIndex = ownedCandidateIndexes[Random.Range(0, ownedCandidateIndexes.Count)]; // 보유 후보 랜덤
-        picked = candidates[selectedIndex];
+        picked = selected.Entry; // 보유 후보 가중 랜덤
         return true;
     }
 
-    private static bool TryTakeRandomSegmentChoiceCandidate(List<SegmentCatalogEntry> candidates, int supportPickCount, out SegmentCatalogEntry picked)
+    private bool TryTakeRandomSegmentChoiceCandidate(
+        List<SegmentCatalogEntry> candidates,
+        int supportPickCount,
+        Dictionary<string, int> ownedCountsBySegmentId,
+        out SegmentCatalogEntry picked)
     {
         picked = default; // 기본값
         if (candidates == null || candidates.Count == 0)
@@ -1325,7 +1403,7 @@ public partial class CardUI
             return false; // 후보 없음
         }
 
-        List<int> availableIndexes = new List<int>(candidates.Count); // 제한 통과 후보
+        List<WeightedSegmentCatalogEntry> availableCandidates = new List<WeightedSegmentCatalogEntry>(candidates.Count); // 제한 통과 후보
         for (int i = 0; i < candidates.Count; i++)
         {
             SegmentCatalogEntry entry = candidates[i]; // 후보
@@ -1334,18 +1412,51 @@ public partial class CardUI
                 continue; // 지원형은 0~1장만 허용
             }
 
-            availableIndexes.Add(i); // 선택 가능
+            availableCandidates.Add(new WeightedSegmentCatalogEntry
+            {
+                Entry = entry,
+                Weight = ResolveSegmentChoiceWeightMultiplier(entry, ownedCountsBySegmentId)
+            }); // 선택 가능
         }
 
-        if (availableIndexes.Count == 0)
+        if (availableCandidates.Count == 0 || !TryPickWeightedSegmentEntry(availableCandidates, out WeightedSegmentCatalogEntry selected))
         {
             return false; // 제한으로 뽑을 후보 없음
         }
 
-        int selectedIndex = availableIndexes[Random.Range(0, availableIndexes.Count)]; // 랜덤 후보
-        picked = candidates[selectedIndex];
-        candidates.RemoveAt(selectedIndex); // 선택 후보 제거
+        picked = selected.Entry; // 가중 랜덤 후보
         return true;
+    }
+
+    private float ResolveSegmentChoiceWeightMultiplier(SegmentCatalogEntry entry, Dictionary<string, int> ownedCountsBySegmentId) // 후보별 등장 가중치 배율
+    {
+        bool isSupport = IsSupportSegmentChoiceEntry(entry); // 지원형 태그 기준
+        float reductionPerOwned = isSupport
+            ? supportSegmentChoiceWeightReductionPerOwned
+            : ownedSegmentChoiceWeightReductionPerOwned; // 지원형만 별도 감소율
+        float minimumMultiplier = isSupport
+            ? supportSegmentChoiceMinimumWeightMultiplier
+            : ownedSegmentChoiceMinimumWeightMultiplier; // 지원형만 별도 최소값
+        return ResolveOwnedSegmentChoiceWeightMultiplier(entry.NormalizedId, ownedCountsBySegmentId, reductionPerOwned, minimumMultiplier);
+    }
+
+    private static float ResolveOwnedSegmentChoiceWeightMultiplier(
+        string segmentId,
+        Dictionary<string, int> ownedCountsBySegmentId,
+        float reductionPerOwned,
+        float minimumWeightMultiplier) // 보유 개수별 등장 가중치 배율
+    {
+        int ownedCount = 0; // 기본: 미보유
+        if (!string.IsNullOrWhiteSpace(segmentId)
+            && ownedCountsBySegmentId != null
+            && ownedCountsBySegmentId.TryGetValue(segmentId.Trim(), out int countForId))
+        {
+            ownedCount = Mathf.Max(0, countForId);
+        }
+
+        float reduction = ownedCount * Mathf.Clamp01(reductionPerOwned); // 1개당 감소율
+        float minimum = Mathf.Clamp01(minimumWeightMultiplier); // 최소 배율
+        return Mathf.Clamp(1f - reduction, minimum, 1f);
     }
 
     private static bool IsOwnedSegmentChoiceGuaranteeLevelEligible(SegmentCatalogEntry entry)
@@ -1400,6 +1511,14 @@ public partial class CardUI
         }
     }
 
+    private static string BuildSegmentSelectionDescription(SegmentCatalogEntry catalogEntry)
+    {
+        string description = string.IsNullOrWhiteSpace(catalogEntry.Description)
+            ? $"{catalogEntry.NormalizedId} 선택"
+            : catalogEntry.Description; // 선택 카드는 카탈로그 설명 그대로
+        return description; // 상태이상 태그 자동 추가 없음
+    }
+
     // 세그먼트 후보 카드 데이터 주입
     private void ConfigureSegmentCandidateEntry(SpawnedCardEntry entry, SegmentCatalogEntry catalogEntry)
     {
@@ -1417,7 +1536,7 @@ public partial class CardUI
             int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
             Sprite icon = GetSegmentIconSprite(segId, currentLevel);
             string title = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName;
-            string desc = string.IsNullOrWhiteSpace(catalogEntry.Description) ? $"{catalogEntry.NormalizedId} 선택" : catalogEntry.Description;
+            string desc = BuildSegmentSelectionDescription(catalogEntry);
             ApplyCardTextsDirectly(entry.Root, title, desc, icon, GetSegmentIconSizeOffset(segId));
         }
     }
@@ -1439,7 +1558,8 @@ public partial class CardUI
         string displayName = string.IsNullOrWhiteSpace(catalogEntry.DisplayName) ? segId : catalogEntry.DisplayName; // 표시명
         // 안건준 수정 - 0623 : Card_Text = 세그먼트 이름만
         string title = displayName;
-        string description = BuildSegmentActionDescription(segId, displayName, role, selectable); // 액션 설명
+        int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
+        string description = BuildSegmentActionDescription(segId, displayName, role, selectable); // 액션 카드에는 상태이상 태그를 붙이지 않음
         entry.SegmentRole = role; // 액션 역할
         entry.SegmentCatalogEntry = catalogEntry; // 대상 후보 저장
         entry.SegmentId = segId; // 대상 ID
@@ -1450,7 +1570,6 @@ public partial class CardUI
         // 안건준 추가 - 0623 : 레벨에 맞는 아이콘 적용 (레벨업 카드는 다음 레벨 이미지)
         if (entry.Root != null)
         {
-            int currentLevel = CoreStatProvider.Active?.Convoy?.GetCurrentSegmentLevel(segId) ?? 1;
             int iconLevel = (role == SegmentCardRole.LevelUpAction) ? currentLevel + 1 : currentLevel; // 레벨업=다음레벨
             Sprite icon = GetSegmentIconSprite(segId, iconLevel);
             ApplyTierCardFrame(entry.Root, StatUpgrade.StatCardTier.Normal); // 액션카드는 강화카드 기본 이미지 사용

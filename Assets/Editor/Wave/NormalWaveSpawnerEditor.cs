@@ -18,8 +18,8 @@ namespace TeamProject01.Gameplay.EditorTools
             WaveInspectorUtility.DrawProperty(serializedObject, "baseSpawnCount", "기본 스폰 수");
             DrawScaleSteps();
 
-            WaveInspectorUtility.DrawSection("초중반 일반 수량 보정", "정확히 일치하는 Stage의 일반 몬스터 수만 덮어씁니다. 엘리트 수량은 그대로 둡니다.");
-            DrawNormalSpawnCountOverrides();
+            WaveInspectorUtility.DrawSection("초중반 3라운드 배율", "40 Stage 전까지 적용할 일반 몬스터 수량 배율입니다.");
+            DrawEarlyMidScaleSteps();
 
             WaveInspectorUtility.DrawSection("난이도 배율", "Stage별로 생성 직후 몬스터 체력/이동속도/Nexus 피해 배율을 적용합니다.");
             DrawDifficultySteps();
@@ -33,6 +33,10 @@ namespace TeamProject01.Gameplay.EditorTools
 
             WaveInspectorUtility.DrawSection("일반 스폰 분할", "일반 몬스터 총량을 기준으로 1회 스폰 수를 제한하고, 지정 시간 안에 반복 스폰합니다.");
             WaveInspectorUtility.DrawProperty(serializedObject, "normalSpawnWindowSeconds", "일반 스폰 완료 시간");
+            WaveInspectorUtility.DrawProperty(serializedObject, "quickSpawnWindowSeconds", "5회 이하 완료 시간");
+            WaveInspectorUtility.DrawProperty(serializedObject, "quickSpawnWindowMaxBatchCount", "빠른 완료 최대 분할 횟수");
+            WaveInspectorUtility.DrawProperty(serializedObject, "shortSpawnWindowSeconds", "10회 이하 완료 시간");
+            WaveInspectorUtility.DrawProperty(serializedObject, "shortSpawnWindowMaxBatchCount", "중간 완료 최대 분할 횟수");
             WaveInspectorUtility.DrawProperty(serializedObject, "normalSpawnSplitDivisor", "총량 분할 기준");
             WaveInspectorUtility.DrawProperty(serializedObject, "minMonstersPerSpawnTick", "1회 최소 스폰 수");
             WaveInspectorUtility.DrawProperty(serializedObject, "maxMonstersPerSpawnTick", "1회 최대 스폰 수");
@@ -79,6 +83,18 @@ namespace TeamProject01.Gameplay.EditorTools
                 "- 마지막 단계 삭제");
         }
 
+        private void DrawEarlyMidScaleSteps()
+        {
+            SerializedProperty steps = serializedObject.FindProperty("earlyMidSpawnScaleSteps");
+            WaveInspectorUtility.DrawArray(
+                steps,
+                "초중반 스폰 수 증가 단계",
+                GetScaleStepLabel,
+                DrawScaleStepBody,
+                "+ 단계 추가",
+                "- 마지막 단계 삭제");
+        }
+
         private static string GetScaleStepLabel(SerializedProperty step, int index)
         {
             SerializedProperty stage = step.FindPropertyRelative("startStage");
@@ -104,31 +120,6 @@ namespace TeamProject01.Gameplay.EditorTools
 
             int value = EditorGUILayout.IntField($"{label} (%)", property.intValue);
             property.intValue = UnityEngine.Mathf.Max(0, value);
-        }
-
-        private void DrawNormalSpawnCountOverrides()
-        {
-            SerializedProperty overrides = serializedObject.FindProperty("normalSpawnCountOverrides");
-            WaveInspectorUtility.DrawArray(
-                overrides,
-                "일반 몬스터 수량 보정",
-                GetNormalSpawnCountOverrideLabel,
-                DrawNormalSpawnCountOverrideBody,
-                "+ 수량 보정 추가",
-                "- 마지막 수량 보정 삭제");
-        }
-
-        private static string GetNormalSpawnCountOverrideLabel(SerializedProperty element, int index)
-        {
-            int stage = element.FindPropertyRelative("stage")?.intValue ?? 1;
-            int count = element.FindPropertyRelative("normalSpawnCount")?.intValue ?? 0;
-            return $"Stage {stage} - 일반 {count}";
-        }
-
-        private static void DrawNormalSpawnCountOverrideBody(SerializedProperty element)
-        {
-            EditorGUILayout.PropertyField(element.FindPropertyRelative("stage"), new UnityEngine.GUIContent("Stage"));
-            EditorGUILayout.PropertyField(element.FindPropertyRelative("normalSpawnCount"), new UnityEngine.GUIContent("일반 몬스터 수"));
         }
 
         private void DrawDifficultySteps()

@@ -15602,45 +15602,6 @@ MonoBehaviour:
     spawnScalePercent: 3000
   - startStage: 50
     spawnScalePercent: 3800
-  normalSpawnCountOverrides:
-  - stage: 1
-    normalSpawnCount: 35
-  - stage: 2
-    normalSpawnCount: 35
-  - stage: 3
-    normalSpawnCount: 40
-  - stage: 4
-    normalSpawnCount: 40
-  - stage: 5
-    normalSpawnCount: 55
-  - stage: 6
-    normalSpawnCount: 60
-  - stage: 7
-    normalSpawnCount: 65
-  - stage: 8
-    normalSpawnCount: 75
-  - stage: 9
-    normalSpawnCount: 80
-  - stage: 10
-    normalSpawnCount: 85
-  - stage: 11
-    normalSpawnCount: 90
-  - stage: 12
-    normalSpawnCount: 100
-  - stage: 13
-    normalSpawnCount: 105
-  - stage: 14
-    normalSpawnCount: 110
-  - stage: 15
-    normalSpawnCount: 115
-  - stage: 16
-    normalSpawnCount: 130
-  - stage: 17
-    normalSpawnCount: 135
-  - stage: 18
-    normalSpawnCount: 140
-  - stage: 19
-    normalSpawnCount: 145
   difficultyScaleSteps:
   - startStage: 1
     healthScalePercent: 100

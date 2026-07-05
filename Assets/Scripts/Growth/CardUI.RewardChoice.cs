@@ -32,7 +32,7 @@ public partial class CardUI
             return null;
         }
 
-        StatUpgrade.StatCardTier tier = RollRewardChoiceTier();
+        StatUpgrade.StatCardTier tier = RollRewardChoiceTier(kind);
         SpawnedCardEntry entry = CreateSpawnedCard(template, slot, template, skipStatUpgradeRoll: true);
         if (entry == null)
         {
@@ -78,10 +78,17 @@ public partial class CardUI
         return template != null ? template : segmentCardBasePrefab;
     }
 
-    private StatUpgrade.StatCardTier RollRewardChoiceTier()
+    private StatUpgrade.StatCardTier RollRewardChoiceTier(RewardChoiceKind kind)
     {
         float rareChance = Mathf.Clamp(rareCardChancePercent + pendingRewardRareChanceBonusPercent, 0.0f, 100.0f);
         float uniqueChance = Mathf.Clamp(uniqueCardChancePercent + pendingRewardUniqueChanceBonusPercent, 0.0f, 100.0f);
+        if (kind == RewardChoiceKind.SegmentChoiceTicket)
+        {
+            float multiplier = Mathf.Clamp01(rewardSegmentTicketHighTierChanceMultiplier); // x2/x3 확률 배율
+            rareChance *= multiplier;
+            uniqueChance *= multiplier;
+        }
+
         return StatUpgrade.RollTier(rareChance, uniqueChance); // 상자 등급 보너스 반영
     }
 
